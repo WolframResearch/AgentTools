@@ -103,6 +103,15 @@ $supportedMCPClients = <|
         "ProjectPath"     -> { ".kiro", "settings", "mcp.json" },
         "InstallLocation" :> { $HomeDirectory, ".kiro", "settings", "mcp.json" }
     |>,
+    "Junie" -> <|
+        "DisplayName"     -> "Junie",
+        "Aliases"         -> { },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://www.jetbrains.com/junie/",
+        "ProjectPath"     -> { ".junie", "mcp", "mcp.json" },
+        "InstallLocation" :> { $HomeDirectory, ".junie", "mcp", "mcp.json" }
+    |>,
     "OpenCode" -> <|
         "DisplayName"     -> "OpenCode",
         "Aliases"         -> { },

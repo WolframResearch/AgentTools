@@ -39,6 +39,7 @@ Replace `<ClientName>` with one of the supported clients:
 | Copilot CLI | `"CopilotCLI"` |
 | Cursor | `"Cursor"` |
 | Gemini CLI | `"GeminiCLI"` |
+| Junie | `"Junie"` |
 | OpenCode | `"OpenCode"` |
 | VS Code | `"VisualStudioCode"` |
 | Windsurf | `"Windsurf"` |

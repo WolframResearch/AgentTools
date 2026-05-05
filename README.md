@@ -123,6 +123,7 @@ AgentTools can be installed into the following MCP client applications:
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `"GeminiCLI"` | No |
 | [Goose](https://block.github.io/goose/) | `"Goose"` | No |
 | [Google Antigravity](https://antigravity.google) | `"Antigravity"` | No |
+| [Junie](https://www.jetbrains.com/junie/) | `"Junie"` | Yes |
 | [OpenAI Codex](https://openai.com/codex) | `"Codex"` | Yes |
 | [OpenCode](https://opencode.ai) | `"OpenCode"` | Yes |
 | [Visual Studio Code](https://code.visualstudio.com) | `"VisualStudioCode"` | Yes |
