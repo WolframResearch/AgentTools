@@ -261,9 +261,15 @@ $$deployAgentToolsOptions = OptionsPattern @ { DeployAgentTools, InstallMCPServe
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Main Definition*)
+(* Default server is `Automatic` *)
 DeployAgentTools[ target_, opts: $$deployAgentToolsOptions ] :=
     catchMine @ DeployAgentTools[ target, Automatic, opts ];
 
+(* Deploy for all clients *)
+DeployAgentTools[ All, server_, opts: $$deployAgentToolsOptions ] :=
+    catchMine @ deployAllAgentTools[ server, opts ];
+
+(* Resolve automatic server *)
 DeployAgentTools[ target_, Automatic, opts: $$deployAgentToolsOptions ] :=
     catchMine @ DeployAgentTools[
         target,
@@ -278,10 +284,82 @@ DeployAgentTools[ target_, Automatic, opts: $$deployAgentToolsOptions ] :=
         opts
     ];
 
+(* Proceed with deployment *)
 DeployAgentTools[ target_, server_, opts: $$deployAgentToolsOptions ] :=
     catchMine @ deployAgentTools[ target, ensureMCPServerExists @ MCPServerObject @ server, opts ];
 
 DeployAgentTools // endExportedDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployAllAgentTools*)
+deployAllAgentTools // beginDefinition;
+
+deployAllAgentTools[ server0_, opts: $$deployAgentToolsOptions ] := Enclose[
+    Module[ { clients, server, results },
+        clients = ConfirmMatch[ Keys @ $SupportedMCPClients, { __String }, "Clients" ];
+
+        server = If[ server0 === Automatic,
+                     Automatic,
+                     ConfirmBy[ ensureMCPServerExists @ MCPServerObject @ server0, MCPServerObjectQ, "Server" ]
+                 ];
+
+        results = ConfirmMatch[
+            Map[ deployAgentToolsQuietly[ #, resolveServerForClient[ #, server ], opts ] &, clients ],
+            { (_AgentToolsDeployment | Missing[ "DeploymentExists", _ ] | Missing[ "Unsupported", _ ]).. },
+            "Results"
+        ];
+
+        If[ MemberQ[ results, Missing[ "DeploymentExists", _ ] ],
+            messagePrint[ "DeploymentsExistWarning" ]
+        ];
+
+        results
+    ],
+    throwInternalFailure
+];
+
+deployAllAgentTools // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*resolveServerForClient*)
+(* When `server === Automatic`, resolve each client's `DefaultToolset` directly
+   from the client name.  Going through the 2-arg `defaultToolsetForTarget`
+   inside `DeployAgentTools[target, Automatic, opts]` would let an explicit
+   `"ApplicationName" -> name` option override the per-client default, which
+   defeats the point of `All`. *)
+resolveServerForClient // beginDefinition;
+resolveServerForClient[ client_String, Automatic ] := defaultToolsetForTarget @ client;
+resolveServerForClient[ _, server_ ] := server;
+resolveServerForClient // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployAgentToolsQuietly*)
+deployAgentToolsQuietly // beginDefinition;
+
+deployAgentToolsQuietly[ target_, server_, opts: $$deployAgentToolsOptions ] :=
+    Quiet[
+        Replace[
+            catchAlways @ DeployAgentTools[ target, server, opts ],
+            {
+                (* Used to issue a single warning about OverwriteTarget: *)
+                Failure[ "DeployAgentTools::DeploymentExists", _ ] :>
+                    Missing[ "DeploymentExists", target ],
+
+                (* Some clients aren't supported on all operating systems: *)
+                Failure[ "DeployAgentTools::UnknownInstallLocation", _ ] :>
+                    Missing[ "Unsupported", { target, $OperatingSystem } ],
+
+                (* Other failures are propagated to the top level: *)
+                other_Failure :> throwTop @ other
+            }
+        ],
+        { DeployAgentTools::DeploymentExists, DeployAgentTools::UnknownInstallLocation }
+    ];
+
+deployAgentToolsQuietly // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

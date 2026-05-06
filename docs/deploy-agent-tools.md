@@ -24,13 +24,15 @@ In the current phase, `DeployAgentTools` wraps `InstallMCPServer` to deploy MCP 
 DeployAgentTools[target]
 DeployAgentTools[target, server]
 DeployAgentTools[target, server, opts]
+DeployAgentTools[All]
+DeployAgentTools[All, server]
 ```
 
 ### Arguments
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `target` | `String`, `File[...]`, or `{String, dir}` | The client to deploy to (same target formats as `InstallMCPServer`) |
+| `target` | `String`, `File[...]`, `{String, dir}`, or `All` | The client to deploy to (same target formats as `InstallMCPServer`). Pass `All` to deploy to every client in `$SupportedMCPClients` (see [Deploying to All Clients](#deploying-to-all-clients)). |
 | `server` | `MCPServerObject`, `String`, or `Automatic` | The MCP server to deploy. Defaults to `Automatic`, which resolves to the target client's default toolset (see [mcp-clients.md](mcp-clients.md#clients-with-installmcpserver-support)) — `"WolframLanguage"` for coding clients and `"Wolfram"` for chat clients. For `File[...]` targets the per-client default only applies when the path or content identifies a known client (or `"ApplicationName"` is supplied); otherwise it falls back to `"Wolfram"`. |
 
 ### Options
@@ -62,6 +64,9 @@ dep = DeployAgentTools[{"ClaudeCode", "/path/to/project"}]
 dep = DeployAgentTools["ClaudeCode",
     "ToolOptions" -> <|"WolframLanguageEvaluator" -> <|"Method" -> "Local"|>|>
 ]
+
+(* Deploy to every supported client at once *)
+deps = DeployAgentTools[All]
 ```
 
 ### Behavior
@@ -73,6 +78,29 @@ dep = DeployAgentTools["ClaudeCode",
 5. Calls `InstallMCPServer` with the resolved target and filtered options
 6. Creates a persistent deployment record on disk
 7. Returns an `AgentToolsDeployment` object
+
+### Deploying to All Clients
+
+`DeployAgentTools[All]` deploys to every client in `$SupportedMCPClients`. The server defaults to `Automatic` so each client receives its own configured default toolset (`"WolframLanguage"` for coding clients, `"Wolfram"` for chat clients); pass an explicit second argument to deploy the same server everywhere.
+
+```wl
+(* One default deployment per supported client *)
+deps = DeployAgentTools[All]
+
+(* Force a specific toolset for every client *)
+deps = DeployAgentTools[All, "WolframLanguage"]
+
+(* Replace any existing deployments along the way *)
+deps = DeployAgentTools[All, OverwriteTarget -> True]
+```
+
+The return value is a list with one entry per client:
+
+- `AgentToolsDeployment[...]` for each newly created deployment
+- `Missing["DeploymentExists", target]` for any client that already had a deployment and was skipped (only when `OverwriteTarget -> False`)
+- `Missing["Unsupported", {target, $OperatingSystem}]` for any client that has no install location on the current operating system (e.g. clients with platform-specific config paths)
+
+When at least one client is skipped because of an existing deployment, `AgentTools::DeploymentsExistWarning` is issued. Use `OverwriteTarget -> True` to replace existing deployments instead of skipping them. The warning is not issued for unsupported clients — those entries simply appear in the result list so callers can see which clients were skipped.
 
 ## AgentToolsDeployment
 

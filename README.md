@@ -273,6 +273,7 @@ CreateMCPServer["My MCP Server", <|
 | `UninstallMCPServer[client]` | Remove all servers from a client |
 | `UninstallMCPServer[client, name]` | Remove a specific server from a client |
 | `DeployAgentTools[target]` | Deploy tools to a client with tracked deployment management |
+| `DeployAgentTools[All]` | Deploy tools to every client in `$SupportedMCPClients` (see [docs/deploy-agent-tools.md](docs/deploy-agent-tools.md#deploying-to-all-clients)) |
 | `ValidateAgentToolsPacletExtension[paclet]` | Validate an `"AgentTools"` paclet extension |
 | `DeployedAgentTools[]` | List all tracked deployments |
 | `CreatePreferencesContent[]` | Build the preferences panel UI for managing deployed Wolfram toolsets (see [docs/preferences-content.md](docs/preferences-content.md)) |

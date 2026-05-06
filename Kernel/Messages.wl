@@ -69,9 +69,10 @@ AgentTools::CodeInspectorInvalidConfidence  = "Confidence level must be between 
 
 (* DeployAgentTools messages *)
 AgentTools::DeploymentExists                = "A deployment already exists for target `1`. Use OverwriteTarget -> True to replace it.";
+AgentTools::DeploymentsExistWarning         = "Warning: Some deployments already exist. Use OverwriteTarget -> True to replace them.";
 AgentTools::DeploymentNotFound              = "No deployment found with UUID \"`1`\".";
 AgentTools::InvalidDeploymentData           = "Invalid deployment data: `1`.";
-AgentTools::InvalidDeployTarget             = "Invalid deployment target: `1`. Expected a client name string, {name, directory}, or File[\[Ellipsis]].";
+AgentTools::InvalidDeployTarget             = "Invalid deployment target: `1`. Expected a client name string, {name, directory}, File[\[Ellipsis]], or All.";
 
 (* PacletTools messages *)
 AgentTools::PacletToolsInvalidPath          = "The path \"`1`\" does not exist. Provide an absolute path to either the paclet root directory or the definition notebook (.nb) file.";
