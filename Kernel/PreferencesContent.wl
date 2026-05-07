@@ -33,6 +33,16 @@ ldsGray[n_] := LightDarkSwitched[GrayLevel[n]]
 $allowDirectoryOperations = False;
 
 
+clientControlFrameOptions[opts___] := Sequence @@ {
+	opts,
+	BaselinePosition -> Baseline,
+	RoundingRadius -> 3,
+	FrameMargins -> {{7,7},{2,2}},
+	FrameStyle -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.7], ldsGray[0.85]]],
+	Background -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.94], ldsGray[0.97]]]
+}
+
+
 (* ::Section::Closed:: *)
 (*docsLink*)
 
@@ -45,7 +55,7 @@ docsLink[] :=
 				RoundingRadius -> 2,
 				FrameMargins -> {{5,5},{1,1}},
 				FrameStyle -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.7], ldsGray[0.85]]],
-				Background -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.9], ldsGray[0.97]]]],
+				Background -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.94], ldsGray[0.97]]]],
 			If[
 				TrueQ @ CurrentValue["OptionKey"],
 				CreateDocument[{
@@ -85,57 +95,80 @@ clientInterfaces[] :=
 						{
 							If[
 								globallyConfiguredClients === {}, Nothing, 
-								Column[
-									Prepend[
-										clientRow["Configured", #, clientNameSpacer, Dynamic[refresh]]& /@ globallyConfiguredClients,
-										Style[tr["prefsHarnessesConfigured"], Smaller, FontColor -> ldsGray[0.5], Bold]
+								Framed[
+									Column[
+										Prepend[
+											clientRow["Configured", #, clientNameSpacer, Dynamic[refresh]]& /@ globallyConfiguredClients,
+											Grid[{{
+												Pane[
+													icon["prefsConfiguredIcon"],
+													BaselinePosition -> Scaled[0.15]
+												],
+												Style[tr["prefsHarnessesConfigured"],
+													FontSize -> Inherited,
+													FontColor -> LightDarkSwitched[RGBColor["#408021"]],
+													FontWeight -> "DemiBold"
+												]
+											}}]
+										],
+										ItemSize -> Scaled[1],
+										Spacings -> {Automatic, {2 -> 1.5}}
 									],
-									ItemSize -> Scaled[1]
+									FrameStyle -> LightDarkSwitched[ RGBColor["#B5CCAD"] ],
+									FrameMargins -> 15,
+									RoundingRadius -> 6
 								]
 							],
 							
 							If[
 								detectedClients === {}, Nothing,
-								Column[
-									Join[
-										{
-											Style[tr["prefsHarnessesDetected"], Smaller, FontColor -> ldsGray[0.5], Bold],
-											Button[tr["prefsConfigureAllButton"],
-												refresh @ Do[
-													DeployAgentTools[
-														client,
-														CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}]
+								Framed[
+									Column[
+										Join[
+											{
+												Style[tr["prefsHarnessesDetected"],
+														FontSize -> Inherited,
+														FontColor -> ldsGray[0.4],
+														FontWeight -> "DemiBold"
 													],
-													{client, detectedClients}
-												],
-												ImageSize -> Automatic,
-												FrameMargins -> {{30,30},{10,10}},
-												BaseStyle -> {},
-												DefaultBaseStyle -> {}
-											]
-										},
-										clientRow["Detected", #, clientNameSpacer, Dynamic[refresh]]& /@ detectedClients
+												configureAllButton[detectedClients, Dynamic[refresh]]
+											},
+											clientRow["Detected", #, clientNameSpacer, Dynamic[refresh]]& /@ detectedClients
+										],
+										ItemSize -> Scaled[1],
+										Spacings -> {Automatic, {2 -> 1, 3 -> 1}}
 									],
-									ItemSize -> Scaled[1]
+									FrameStyle -> ldsGray[0.8],
+									FrameMargins -> 15,
+									RoundingRadius -> 6
 								]
 							],
 							If[
 								otherClients === {}, Nothing,
-								Column[
-									Prepend[
-										clientRow["Other", #, clientNameSpacer, Dynamic[refresh]]& /@ otherClients,
-										If[globallyConfiguredClients === detectedClients === {},
-											Style[tr["prefsHarnessesAll"], Smaller, FontColor -> ldsGray[0.5], Bold],
-											Style[tr["prefsHarnessesMore"], Smaller, FontColor -> ldsGray[0.5], Bold]
-										]
-									]
+								Framed[
+									Column[
+										Prepend[
+											clientRow["Other", #, clientNameSpacer, Dynamic[refresh]]& /@ otherClients,
+											Style[
+												If[globallyConfiguredClients === detectedClients === {}, 
+													tr["prefsHarnessesAll"],
+													tr["prefsHarnessesMore"]
+												],
+												FontSize -> Inherited,
+												FontColor -> ldsGray[0.4],
+												FontWeight -> "DemiBold"
+											]
+										],
+										ItemSize -> Scaled[1],
+										Spacings -> {Automatic, {2 -> 1.5}}
+									],
+									FrameStyle -> ldsGray[0.8],
+									FrameMargins -> 15,
+									RoundingRadius -> 6
 								]
-							
 							]
 						},
-						Dividers -> Center,
-						FrameStyle -> ldsGray[0.8],
-						Spacings -> 3
+						Spacings -> 1
 					]
 			],
 			TrackedSymbols :> {initDone, update}
@@ -185,6 +218,44 @@ clientInterfaces[] :=
 
 
 (* ::Section::Closed:: *)
+(*configureAllButton*)
+
+
+configureAllButton[detectedClients_, Dynamic[refresh_]] := 
+	MouseAppearance[
+		Button[
+			Framed[
+				Grid[{{
+					Pane[
+						icon["prefsConfigureAllIcon"],
+						BaselinePosition -> Scaled[0.15]
+					],
+					tr["prefsConfigureAllButton"]
+				}}],
+				clientControlFrameOptions[
+					FrameMargins -> {{15,15},{10,10}}
+				]
+			],
+			refresh @ Do[
+				DeployAgentTools[
+					client,
+					CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}]
+				],
+				{client, detectedClients}
+			],
+			ImageSize -> Automatic,
+			BaseStyle -> {},
+			DefaultBaseStyle -> {},
+			Appearance -> None,
+			BaselinePosition -> Baseline,
+			Method -> "Queued"
+		]
+		,
+		"LinkHand"
+	]
+
+
+(* ::Section::Closed:: *)
 (*clientRow*)
 
 
@@ -197,11 +268,7 @@ clientRow[category_, client_, spacer_, Dynamic[refresh_]] :=
 		}},
 		Dividers -> {{False, True, False}, None},
 		FrameStyle -> ldsGray[0.85],
-		Spacings -> {2,2},
-		Background -> If[ category === "Configured",
-			LightDarkSwitched[RGBColor[0.797, 0.931, 0.859]],
-			Automatic
-		]
+		Spacings -> {2,2}
 	]
 
 
@@ -260,80 +327,9 @@ clientControls[category_, client_, Dynamic[refresh_]] :=
 		Grid[
 			{
 				{
-					(* menu *)
-					PopupMenu[
-						Dynamic[
-							CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
-							(
-								CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}] = #;
-								If[category === "Configured", refresh @ DeployAgentTools[client, #, OverwriteTarget -> True]]
-							)&
-						]
-						,
-						{
-							"Wolfram" -> tr["prefsComputationTools"],
-							"WolframLanguage" -> tr["prefsDevelopmentTools"]
-						},
-						None,
-						Framed[
-							Grid[
-								{{
-									Item[
-										Dynamic[
-											Replace[
-												CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
-												{
-													"Wolfram" -> tr["prefsComputationTools"],
-													"WolframLanguage" -> tr["prefsDevelopmentTools"]
-												}
-											]
-										],
-										ItemSize -> Fit
-									],
-									icon["prefsDownPointer", ldsGray[0.2], 10]
-								}},
-								Alignment -> Left
-							],
-							RoundingRadius -> 3,
-							ImageSize -> 320,
-							FrameStyle -> (*ldsGray[0.85]*)Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.7], ldsGray[0.85]]],
-							Background -> (*ldsGray[0.97]*)Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.9], ldsGray[0.97]]]
-						],
-						ImageSize -> 320,
-						Appearance -> "ActionMenu",
-						BaseStyle -> {}, (* needed to avoid very strange notebook-level settings in the Preferences Dialog *)
-						DefaultBaseStyle -> {},
-						DefaultMenuStyle -> {}
-					],
-					(* action button *)
-					If[category === "Configured",
-						Button[ (* disable *)
-							PaneSelector[{0 -> tr["prefsDisableButton"], 1 -> tr["prefsConfigureButton"]}, 0, Alignment -> Center],
-							refresh @ DeleteObject @ Select[
-								DeployedAgentTools @ client,
-								#["Scope"] === "Global" && MatchQ[#["Toolset"], "Wolfram"|"WolframLanguage"]&
-							],
-							Method -> "Queued",
-							BaseStyle -> {},
-							DefaultBaseStyle -> {},
-							BaselinePosition -> Baseline
-						],
-						Button[ (* configure *)
-							PaneSelector[{0 -> tr["prefsDisableButton"], 1 -> tr["prefsConfigureButton"]}, 1, Alignment -> Center],
-							refresh @ DeployAgentTools[
-								client,
-								CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
-								OverwriteTarget -> True
-							],
-							Method -> "Queued",
-							BaseStyle -> {},
-							DefaultBaseStyle -> {},
-							BaselinePosition -> Baseline
-						]
-					]
-					,
-					(* info link *)
-					infoLink[category, client]
+					clientMenu[category, client, Dynamic[refresh]],
+					clientButton[category, client, Dynamic[refresh]],
+					clientInfoButton[category, client]
 				},
 				(*
 					We cache per-directory settings when each instance of the interface is
@@ -348,31 +344,7 @@ clientControls[category_, client_, Dynamic[refresh_]] :=
 				If[dirSettings === {},
 					Nothing,
 					{
-						Pane[
-							Dynamic[
-								Grid[
-									{
-										{
-											Style[tr["prefsSpecificDirectories"], Smaller, FontColor -> ldsGray[0.5], Bold],
-											SpanFromLeft,
-											SpanFromLeft
-										},
-										Splice @ Table[
-											dirSettingsRow[Dynamic[dirSettings], i, dirSettings[[i]]],
-											{i, Length[dirSettings]}
-										]
-									},
-									Alignment -> {{Left, Right, Right}},
-									ItemSize -> {{Fit, Automatic, Automatic}},
-									Spacings -> {1, Automatic},
-									BaseStyle -> {PrivateFontOptions -> {"OperatorSubstitution" -> False}}
-								],
-								TrackedSymbols :> {dirSettings}
-							],
-							ImageSize -> 310,
-							Alignment -> Left,
-							ImageMargins -> 5
-						],
+						clientDirectorySettings[dirSettings],
 						"", (* action button column *)
 						"" (* info button column *)
 					}
@@ -386,13 +358,114 @@ clientControls[category_, client_, Dynamic[refresh_]] :=
 
 
 (* ::Section::Closed:: *)
-(*infoLink*)
+(*clientMenu*)
+
+
+clientMenu[category_, client_, Dynamic[refresh_]] := 
+	PopupMenu[
+		Dynamic[
+			CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
+			(
+				CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}] = #;
+				If[category === "Configured", refresh @ DeployAgentTools[client, #, OverwriteTarget -> True]]
+			)&
+		]
+		,
+		{
+			"Wolfram" -> tr["prefsComputationTools"],
+			"WolframLanguage" -> tr["prefsDevelopmentTools"]
+		},
+		None,
+		Framed[
+			Grid[
+				{{
+					Item[
+						Dynamic[
+							Replace[
+								CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
+								{
+									"Wolfram" -> tr["prefsComputationTools"],
+									"WolframLanguage" -> tr["prefsDevelopmentTools"]
+								}
+							]
+						],
+						ItemSize -> Fit
+					],
+					icon["prefsDownPointer", ldsGray[0.2], 10]
+				}},
+				Alignment -> Left,
+				BaselinePosition -> {1,1}
+			],
+			clientControlFrameOptions[
+				ImageSize -> 320
+			]
+		],
+		ImageSize -> 320,
+		Appearance -> "ActionMenu",
+		BaseStyle -> {}, (* needed to avoid very strange notebook-level settings in the Preferences Dialog *)
+		DefaultBaseStyle -> {},
+		DefaultMenuStyle -> {}
+	]
+
+
+(* ::Section::Closed:: *)
+(*clientButton*)
+
+
+ClearAll[clientButton]
+
+
+clientButton[category: "Configured", client_, Dynamic[refresh_]] := 
+	MouseAppearance[
+		Button[ (* Disable button *)
+			Framed[
+				PaneSelector[{0 -> tr["prefsDisableButton"], 1 -> tr["prefsConfigureButton"]}, 0, Alignment -> Center],
+				clientControlFrameOptions[]
+			],
+			refresh @ DeleteObject @ Select[
+				DeployedAgentTools @ client,
+				#["Scope"] === "Global" && MatchQ[#["Toolset"], "Wolfram"|"WolframLanguage"]&
+			],
+			Method -> "Queued",
+			BaseStyle -> {},
+			DefaultBaseStyle -> {},
+			BaselinePosition -> Baseline,
+			Appearance -> None
+		],
+		"LinkHand"
+	]
+
+
+clientButton[category_, client_, Dynamic[refresh_]] := 
+	MouseAppearance[
+		Button[ (* Configure button *)
+			Framed[
+				PaneSelector[{0 -> tr["prefsDisableButton"], 1 -> tr["prefsConfigureButton"]}, 1, Alignment -> Center],
+				clientControlFrameOptions[]
+			],
+			refresh @ DeployAgentTools[
+				client,
+				CurrentValue[$FrontEnd, {PrivateFrontEndOptions, "InterfaceSettings", "ServicesForAIs", "SelectedToolset", client}],
+				OverwriteTarget -> True
+			],
+			Method -> "Queued",
+			BaseStyle -> {},
+			DefaultBaseStyle -> {},
+			BaselinePosition -> Baseline,
+			Appearance -> None
+		],
+		"LinkHand"
+	]
+
+
+(* ::Section::Closed:: *)
+(*clientInfoButton*)
 
 
 (* Styling of this link/tooltip matches the standard Preferences dialog styling for such. *)
 
 
-infoLink[category_, client_] := 
+clientInfoButton[category_, client_] := 
 	Module[{objects, info, locations},
 		Switch[category,
 			"Configured",
@@ -451,6 +524,41 @@ infoLink[category_, client_] :=
 
 
 (* ::Section::Closed:: *)
+(*clientDirectorySettings*)
+
+
+clientDirectorySettings[dirSettings_] := 
+	Pane[
+		Dynamic[
+			Grid[
+				{
+					{
+						Style[tr["prefsSpecificDirectories"], 
+							FontSize -> Inherited - 2,
+							FontColor -> ldsGray[0.537]
+						],
+						SpanFromLeft,
+						SpanFromLeft
+					},
+					Splice @ Table[
+						dirSettingsRow[Dynamic[dirSettings], i, dirSettings[[i]]],
+						{i, Length[dirSettings]}
+					]
+				},
+				Alignment -> {{Left, Right, Right}},
+				ItemSize -> {{Fit, Automatic, Automatic}},
+				Spacings -> {1, Automatic},
+				BaseStyle -> {PrivateFontOptions -> {"OperatorSubstitution" -> False}}
+			],
+			TrackedSymbols :> {dirSettings}
+		],
+		ImageSize -> 310,
+		Alignment -> Left,
+		ImageMargins -> 5
+	]
+
+
+(* ::Section::Closed:: *)
 (*dirSettingsRow*)
 
 
@@ -472,7 +580,7 @@ dirSettingsRow[Dynamic[dirSettings_], i_, {obj_, server_, scope_, active_}] :=
 				DefaultBaseStyle -> {},
 				Enabled -> active,
 				BaseStyle -> {
-					FontColor -> Dynamic[If[active && CurrentValue["MouseOver"], StandardBlue, ldsGray[0.5]]],
+					FontColor -> Dynamic[If[active && CurrentValue["MouseOver"], StandardBlue, ldsGray[0.2]]],
 					FontVariations -> If[active, {}, {"StrikeThrough" -> True}],
 					FontSize -> Inherited - 2
 				},
@@ -488,7 +596,7 @@ dirSettingsRow[Dynamic[dirSettings_], i_, {obj_, server_, scope_, active_}] :=
 				"Wolfram" :> tr["prefsComputationTools"],
 				"WolframLanguage" :> tr["prefsDevelopmentTools"]
 			}],
-			FontColor -> If[active, Inherited, ldsGray[0.5], Inherited],
+			FontColor -> If[active, Inherited, ldsGray[0.392], Inherited],
 			FontVariations -> If[active, {}, {"StrikeThrough" -> True}],
 			FontSize -> Inherited - 2
 		],
@@ -529,45 +637,57 @@ Deploy[
 				Grid[
 					{{
 						Item[
-							StringTemplate[
-									FrontEndResource["AgentToolsStrings", "prefsSubtitle"],
-									CombinerFunction -> Row, 
-									InsertionFunction -> Identity] @@
-								Table[
-									Tooltip[
-										Mouseover[
-											Row[{
-												Style[tr[id], FontColor -> LightDarkSwitched @ Black],
-												" ",
-												icon["prefsInfoIcon", LightDarkSwitched @ RGBColor["#898989"], 14]
-											}],
-											Row[{
-												Style[tr[id], FontColor -> LightDarkSwitched @ Gray],
-												" ",
-												icon["prefsInfoIcon", LightDarkSwitched @ RGBColor[0.692, 0.692, 0.692], 14]
-											}]
+							Pane[
+								StringTemplate[
+										FrontEndResource["AgentToolsStrings", "prefsSubtitle"],
+										CombinerFunction -> Row, 
+										InsertionFunction -> Identity] @@
+									Table[
+										Tooltip[
+											Mouseover[
+												Row[{
+													Style[tr[id], FontColor -> LightDarkSwitched @ Black],
+													" ",
+													icon["prefsInfoIcon", LightDarkSwitched @ RGBColor["#898989"], 14]
+												}],
+												Row[{
+													Style[tr[id], FontColor -> LightDarkSwitched @ Gray],
+													" ",
+													icon["prefsInfoIcon", LightDarkSwitched @ RGBColor[0.692, 0.692, 0.692], 14]
+												}]
+											],
+											tr[id <> "Description"]
 										],
-										tr[id <> "Description"]
+										{id, {"prefsComputationTools", "prefsDevelopmentTools"}}
 									],
-									{id, {"prefsComputationTools", "prefsDevelopmentTools"}}
-								],
+								Alignment -> Left,
+								ImageMargins -> {{25,25},{0,15}}
+							],	
 							ItemSize -> Fit
 						],
-						Item[docsLink[], Alignment -> Right]
+						Pane[
+							Item[docsLink[], Alignment -> Right],
+							Alignment -> Left,
+							ImageMargins -> {{0,20},{0,0}}
+						]
+							
 					}},
 					Alignment -> {Left, Center},
 					BaseStyle -> {LinebreakAdjustments -> {1, 10, 1, 0, 1}},
 					Spacings -> {2,0}
 				],
 
-				clientInterfaces[]
+				Pane[
+					clientInterfaces[],
+					Alignment -> Left,
+					ImageMargins -> {{15,5},{0,0}}
+				]
 			},
-			Dividers -> {None, {None, ldsGray[0.85], None}},
 			ItemSize -> Scaled[1],
-			Spacings -> {Automatic, {0,3}}
+			Spacings -> {Automatic, {0,1}}
 		],
 		Alignment -> Left,
-		ImageMargins -> {{25,25},{11,11}}
+		ImageMargins -> {0,{11,11}}
 	]
 ]
 
