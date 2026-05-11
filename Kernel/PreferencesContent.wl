@@ -83,7 +83,11 @@ clientInterfaces[] :=
 			Which[
 				update;
 				initDone =!= True,
-					ProgressIndicator[Appearance -> "Necklace"],
+					Pane[
+						ProgressIndicator[Appearance -> "Necklace"],
+						Alignment -> Left,
+						ImageMargins -> {{15,0},{0,0}}
+					],
 
 				MatchQ[clients, Except[{__String}]],
 					Style[tr["prefsNoMCPClients"], Italic, FontColor -> ldsGray[0.5]],
