@@ -356,7 +356,7 @@ clientControls[category_, client_, Dynamic[refresh_]] :=
 				If[dirSettings === {},
 					Nothing,
 					{
-						clientDirectorySettings[dirSettings],
+						clientDirectorySettings[category, dirSettings],
 						"", (* action button column *)
 						"" (* info button column *)
 					}
@@ -418,7 +418,18 @@ clientMenu[category_, client_, Dynamic[refresh_]] :=
 		BaseStyle -> {}, (* needed in part to avoid very strange notebook-level settings in the Preferences Dialog *)
 		DefaultBaseStyle -> {FrameBoxOptions -> {clientControlFrameOptions[]}},
 		DefaultMenuStyle -> {}
+	] // dimUnconfigured[category]
+
+
+dimUnconfigured[category_][expr_] := 
+If[
+	category === "Configured",
+	expr,
+	RawBoxes @ Cell[
+		BoxData @ FormBox[ToBoxes @ expr, "NoForm"],
+		PrivateCellOptions -> {"ContentsOpacity" -> 0.3}
 	]
+]
 
 
 (* ::Section::Closed:: *)
@@ -545,7 +556,7 @@ clientInfoButton[category_, client_] :=
 (*clientDirectorySettings*)
 
 
-clientDirectorySettings[dirSettings_] := 
+clientDirectorySettings[category_, dirSettings_] := 
 	Pane[
 		Dynamic[
 			Grid[
@@ -573,7 +584,7 @@ clientDirectorySettings[dirSettings_] :=
 		ImageSize -> 310,
 		Alignment -> Left,
 		ImageMargins -> 5
-	]
+	] // dimUnconfigured[category]
 
 
 (* ::Section::Closed:: *)
