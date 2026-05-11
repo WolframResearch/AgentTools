@@ -408,14 +408,15 @@ clientMenu[category_, client_, Dynamic[refresh_]] :=
 				Alignment -> Left,
 				BaselinePosition -> {1,1}
 			],
-			clientControlFrameOptions[
-				ImageSize -> 320
+			Sequence @@ DeleteCases[
+				{clientControlFrameOptions[ImageSize -> 320]},
+				_[Background | FrameStyle, _]
 			]
 		],
 		ImageSize -> 320,
 		Appearance -> "ActionMenu",
-		BaseStyle -> {}, (* needed to avoid very strange notebook-level settings in the Preferences Dialog *)
-		DefaultBaseStyle -> {},
+		BaseStyle -> {}, (* needed in part to avoid very strange notebook-level settings in the Preferences Dialog *)
+		DefaultBaseStyle -> {FrameBoxOptions -> {clientControlFrameOptions[]}},
 		DefaultMenuStyle -> {}
 	]
 
