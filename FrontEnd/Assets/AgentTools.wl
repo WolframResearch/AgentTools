@@ -64,13 +64,13 @@
 		"Spanish"            -> "Configured on your system:"
 	|>],
 	
-	"prefsHarnessesDetected" -> LanguageSwitched["Detected on your system:", <|
-		"ChineseSimplified"  -> "Detected on your system:",
-		"ChineseTraditional" -> "Detected on your system:",
-		"French"             -> "Detected on your system:",
-		"Japanese"           -> "Detected on your system:",
-		"Korean"             -> "Detected on your system:",
-		"Spanish"            -> "Detected on your system:"
+	"prefsHarnessesDetected" -> LanguageSwitched["Unconfigured AI environments detected on your system:", <|
+		"ChineseSimplified"  -> "Unconfigured AI environments detected on your system:",
+		"ChineseTraditional" -> "Unconfigured AI environments detected on your system:",
+		"French"             -> "Unconfigured AI environments detected on your system:",
+		"Japanese"           -> "Unconfigured AI environments detected on your system:",
+		"Korean"             -> "Unconfigured AI environments detected on your system:",
+		"Spanish"            -> "Unconfigured AI environments detected on your system:"
 	|>],
 	
 	"prefsHarnessesMore" -> LanguageSwitched["Other supported AI environments:", <|
