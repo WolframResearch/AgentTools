@@ -1,3 +1,5 @@
+(* ::Package:: *)
+
 <|
 "AgentToolsStrings" -> {
 
@@ -11,48 +13,48 @@
 	|>],
 	
 	"prefsDocsLinkText" -> LanguageSwitched["Documentation", <|
-		"ChineseSimplified"  -> "Documentation",
-		"ChineseTraditional" -> "Documentation",
+		"ChineseSimplified"  -> "\:8bf4\:660e\:6587\:6863",
+		"ChineseTraditional" -> "\:53c3\:8003\:6587\:4ef6",
 		"French"             -> "Documentation",
-		"Japanese"           -> "Documentation",
-		"Korean"             -> "Documentation",
-		"Spanish"            -> "Documentation"
+		"Japanese"           -> "\:30c9\:30ad\:30e5\:30e1\:30f3\:30c8",
+		"Korean"             -> "\:b3c4\:c6c0\:b9d0",
+		"Spanish"            -> "Documentaci\[OAcute]n"
 	|>],
 	
 	"prefsComputationTools" -> LanguageSwitched["Computation Tools", <|
-		"ChineseSimplified"  -> "Computation Tools",
-		"ChineseTraditional" -> "Computation Tools",
-		"French"             -> "Computation Tools",
-		"Japanese"           -> "Computation Tools",
-		"Korean"             -> "Computation Tools",
-		"Spanish"            -> "Computation Tools"
+		"ChineseSimplified"  -> "\:8ba1\:7b97\:5de5\:5177",
+		"ChineseTraditional" -> "\:8a08\:7b97\:5de5\:5177",
+		"French"             -> "Outils pour le calcul",
+		"Japanese"           -> "\:8a08\:7b97\:30c4\:30fc\:30eb",
+		"Korean"             -> "\:c5f0\:c0b0 \:b3c4\:ad6c",
+		"Spanish"            -> "Herramientas de computaci\[OAcute]n"
 	|>],
 	
 	"prefsComputationToolsDescription" -> LanguageSwitched["Tools for general computation and knowledge", <|
-		"ChineseSimplified"  -> "Tools for general computation and knowledge",
-		"ChineseTraditional" -> "Tools for general computation and knowledge",
-		"French"             -> "Tools for general computation and knowledge",
-		"Japanese"           -> "Tools for general computation and knowledge",
-		"Korean"             -> "Tools for general computation and knowledge",
-		"Spanish"            -> "Tools for general computation and knowledge"
+		"ChineseSimplified"  -> "\:901a\:7528\:8ba1\:7b97\:4e0e\:77e5\:8bc6\:5de5\:5177",
+		"ChineseTraditional" -> "\:901a\:7528\:8a08\:7b97\:8207\:77e5\:8b58\:5de5\:5177",
+		"French"             -> "Outils pour le calcul et les connaissances g\[EAcute]n\[EAcute]rales",
+		"Japanese"           -> "\:4e00\:822c\:7684\:306a\:8a08\:7b97\:3068\:77e5\:8b58\:306e\:305f\:3081\:306e\:30c4\:30fc\:30eb",
+		"Korean"             -> "\:c77c\:bc18 \:c5f0\:c0b0 \:bc0f \:c9c0\:c2dd\:c6a9 \:b3c4\:ad6c",
+		"Spanish"            -> "Herramientas para computaci\[OAcute]n y conocimiento generales"
 	|>],
 	
 	"prefsDevelopmentTools" -> LanguageSwitched["Development Tools", <|
-		"ChineseSimplified"  -> "Development Tools",
-		"ChineseTraditional" -> "Development Tools",
-		"French"             -> "Development Tools",
-		"Japanese"           -> "Development Tools",
-		"Korean"             -> "Development Tools",
-		"Spanish"            -> "Development Tools"
+		"ChineseSimplified"  -> "\:7814\:53d1\:5de5\:5177",
+		"ChineseTraditional" -> "\:7814\:767c\:5de5\:5177",
+		"French"             -> "Outils pour le d\[EAcute]veloppement",
+		"Japanese"           -> "\:958b\:767a\:7528\:30c4\:30fc\:30eb",
+		"Korean"             -> "\:ac1c\:bc1c \:b3c4\:ad6c",
+		"Spanish"            -> "Herramientas de desarrollo"
 	|>],
 	
 	"prefsDevelopmentToolsDescription" -> LanguageSwitched["Tools for Wolfram Language development", <|
-		"ChineseSimplified"  -> "Tools for Wolfram Language development",
-		"ChineseTraditional" -> "Tools for Wolfram Language development",
-		"French"             -> "Tools for Wolfram Language development",
-		"Japanese"           -> "Tools for Wolfram Language development",
-		"Korean"             -> "Tools for Wolfram Language development",
-		"Spanish"            -> "Tools for Wolfram Language development"
+		"ChineseSimplified"  -> "Wolfram \:8bed\:8a00\:7814\:53d1\:5de5\:5177",
+		"ChineseTraditional" -> "Wolfram \:8a9e\:8a00\:7814\:767c\:5de5\:5177",
+		"French"             -> "Outils pour le d\[EAcute]veloppement de Wolfram Language",
+		"Japanese"           -> "Wolfram\:8a00\:8a9e\:958b\:767a\:7528\:30c4\:30fc\:30eb",
+		"Korean"             -> "Wolfram \:c5b8\:c5b4 \:ac1c\:bc1c\:c6a9 \:b3c4\:ad6c",
+		"Spanish"            -> "Herramientas para desarrollo en Wolfram Language"
 	|>],
 	
 	"prefsHarnessesConfigured" -> LanguageSwitched["Configured on your system:", <|
@@ -119,30 +121,30 @@
 	|>],
 
 	"prefsInstallLocation" -> LanguageSwitched["Install location:", <|
-		"ChineseSimplified"  -> "Install location:",
-		"ChineseTraditional" -> "Install location:",
-		"French"             -> "Install location:",
-		"Japanese"           -> "Install location:",
-		"Korean"             -> "Install location:",
-		"Spanish"            -> "Install location:"
+		"ChineseSimplified"  -> "\:5b89\:88c5\:4f4d\:7f6e\:ff1a",
+		"ChineseTraditional" -> "\:5b89\:88dd\:4f4d\:7f6e\:ff1a",
+		"French"             -> "Emplacement de l'installation :",
+		"Japanese"           -> "\:30a4\:30f3\:30b9\:30c8\:30fc\:30eb\:3059\:308b\:5834\:6240\:ff1a",
+		"Korean"             -> "\:c124\:ce58 \:c704\:ce58:",
+		"Spanish"            -> "Ubicaci\[OAcute]n de instalaci\[OAcute]n:"
 	|>],
 	
 	"prefsSpecificDirectories" -> LanguageSwitched["Settings for specific directories:", <|
-		"ChineseSimplified"  -> "Settings for specific directories:",
-		"ChineseTraditional" -> "Settings for specific directories:",
-		"French"             -> "Settings for specific directories:",
-		"Japanese"           -> "Settings for specific directories:",
-		"Korean"             -> "Settings for specific directories:",
-		"Spanish"            -> "Settings for specific directories:"
+		"ChineseSimplified"  -> "\:7279\:5b9a\:76ee\:5f55\:7684\:8bbe\:7f6e\:ff1a",
+		"ChineseTraditional" -> "\:7279\:5b9a\:76ee\:9304\:7684\:8a2d\:5b9a\:ff1a",
+		"French"             -> "Param\[EGrave]tres pour des r\[EAcute]pertoires sp\[EAcute]cifiques :",
+		"Japanese"           -> "\:7279\:5b9a\:306e\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:306e\:8a2d\:5b9a\:ff1a",
+		"Korean"             -> "\:d2b9\:c815 \:b514\:b809\:d130\:b9ac \:c124\:c815:",
+		"Spanish"            -> "Configuraci\[OAcute]n para directorios espec\[IAcute]ficos:"
 	|>],
 	
 	"prefsUninstallTool" -> LanguageSwitched["Uninstall this toolset", <|
-		"ChineseSimplified"  -> "Uninstall this toolset",
-		"ChineseTraditional" -> "Uninstall this toolset",
-		"French"             -> "Uninstall this toolset",
-		"Japanese"           -> "Uninstall this toolset",
-		"Korean"             -> "Uninstall this toolset",
-		"Spanish"            -> "Uninstall this toolset"
+		"ChineseSimplified"  -> "\:5378\:8f7d\:8be5\:5de5\:5177\:96c6",
+		"ChineseTraditional" -> "\:89e3\:9664\:5b89\:88dd\:6b64\:5de5\:5177\:96c6",
+		"French"             -> "D\[EAcute]sinstaller cet ensemble d'outils",
+		"Japanese"           -> "\:3053\:306e\:30c4\:30fc\:30eb\:30bb\:30c3\:30c8\:3092\:30a2\:30f3\:30a4\:30f3\:30b9\:30c8\:30fc\:30eb",
+		"Korean"             -> "\:c774 \:b3c4\:ad6c \:c138\:d2b8 \:c81c\:ac70",
+		"Spanish"            -> "Desinstalar este conjunto de herramientas"
 	|>],
 	
 	"prefsNoMCPClients" -> LanguageSwitched["The list of supported MCP clients is not available.", <|
