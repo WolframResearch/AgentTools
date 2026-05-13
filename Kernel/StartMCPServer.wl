@@ -12,12 +12,13 @@ Needs[ "Wolfram`Chatbook`" -> "cb`" ];
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
-$protocolVersion    = "2024-11-05";
-$toolWarmupDelay    = 5; (* seconds *)
-$clientName         = None;
-$clientSupportsUI   = False;
-$currentMCPServer   = None;
-$mcpEvaluation      = False;
+$protocolVersion     = "2024-11-05";
+$toolWarmupDelay     = 5; (* seconds *)
+$waImageFetchTimeout = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
+$clientName          = None;
+$clientSupportsUI    = False;
+$currentMCPServer    = None;
+$mcpEvaluation       = False;
 
 $logTimeStamp := DateString[
     {
@@ -728,13 +729,35 @@ graphicsToImageContent // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*makeImageContent*)
+makeImageContent // beginDefinition;
+
+makeImageContent[
+    URL[ url_String ],
+    KeyValuePattern @ {
+        "StatusCode"    -> 200,
+        "BodyByteArray" -> bytes_ByteArray,
+        "Headers"       -> KeyValuePattern[ "content-type" -> type_String ? (StringStartsQ[ "image/" ]) ]
+    }
+] := {
+    <| "type" -> "text" , "text" -> "![Image](" <> url <> ")" |>,
+    <| "type" -> "image", "data" -> BaseEncode @ bytes, "mimeType" -> type |>
+};
+
+makeImageContent[ URL[ url_String ], _ ] :=
+    { <| "type" -> "text", "text" -> "![Image](" <> url <> ")" |> };
+
+makeImageContent // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*extractWolframAlphaImages*)
 
 (* Pattern for WolframAlpha image URLs in markdown *)
 (* Matches: public6.wolframalpha.com, www6.wolframalpha.com, etc. *)
 $$waImageURLPattern = Shortest[
     "![" ~~ Except[ "]" ]... ~~ "](" ~~
-    url: ("https://" ~~ __ ~~ "wolframalpha.com/files/" ~~ __ ~~ (".gif" | ".png" | ".jpg" | ".jpeg")) ~~
+    url: ("https://" ~~ __ ~~ "wolframalpha.com/files/" ~~ __ ~~ (".gif"|".png"|".jpg"|".jpeg"|".webp"|".svg")) ~~
     ")"
 ];
 
@@ -744,44 +767,50 @@ extractWolframAlphaImages // beginDefinition;
 extractWolframAlphaImages[ str_String ] /; ! $mcpEvaluation := str;
 
 extractWolframAlphaImages[ str_String ] := Enclose[
-    Catch @ Module[ { parts, hasImages, contentItems },
+    Catch @ Module[ { parts, urls, fetched, tasks, replaced, contentItems },
 
-        (* Split string into text segments and URLs *)
-        parts = StringSplit[ str, $$waImageURLPattern :> url ];
+        (* Split string into text segments and URL[..] tokens *)
+        parts = StringSplit[ str, $$waImageURLPattern :> URL[ url ] ];
+        urls  = Cases[ parts, _URL ];
 
-        (* If no images found, return plain text *)
-        If[ Length @ parts === 1 && StringQ @ First @ parts,
-            Throw @ str  (* Return plain string for backward compatibility *)
+        (* If no images found, return plain text for backward compatibility *)
+        If[ urls === { }, Throw @ str ];
+
+        (* Pre-fill every URL with a text-only fallback so a timeout still yields the markdown link *)
+        fetched = AssociationMap[ <| "type" -> "text", "text" -> "![Image](" <> First @ # <> ")" |> &, urls ];
+
+        (* Submit all URLs concurrently; each handler overwrites its slot in `fetched` on success.
+           The outer Function captures the URL in a closure so each handler knows its own key. *)
+        tasks = Function[ u,
+            URLSubmit[
+                u,
+                HandlerFunctions     -> <| "BodyReceived" -> Function[ fetched[ u ] = makeImageContent[ u, # ] ] |>,
+                HandlerFunctionsKeys -> { "StatusCode", "BodyByteArray", "Headers" }
+            ]
+        ] /@ urls;
+
+        (* Bound the whole batch, not each request *)
+        TaskWait[ tasks, TimeConstraint -> $waImageFetchTimeout ];
+        Quiet[ TaskRemove /@ tasks ];
+
+        replaced = Flatten @ Replace[
+            parts,
+            {
+                ""       :> Nothing,
+                s_String :> <| "type" -> "text", "text" -> s |>,
+                u_URL    :> fetched[ u ]
+            },
+            { 1 }
         ];
 
-        hasImages = False;
-        contentItems = Flatten @ Map[
-            Function[ item,
-                If[ StringQ @ item && ! StringStartsQ[ item, "https://" ],
-                    (* Text segment: create text content *)
-                    If[ StringLength @ item > 0,
-                        { <| "type" -> "text", "text" -> item |> },
-                        { }
-                    ],
-                    (* URL: import image and create both text + image content *)
-                    hasImages = True;
-                    Module[ { img, imageContent },
-                        img = Quiet @ TimeConstrained[ Import[ item, "Image" ], 5, $Failed ];
-                        imageContent = If[ ImageQ @ img, graphicsToImageContent @ img, $Failed ];
-                        Flatten @ {
-                            (* Always include the markdown link as text *)
-                            <| "type" -> "text", "text" -> "![Image](" <> item <> ")" |>,
-                            (* Add base64 image if import succeeded *)
-                            If[ AssociationQ @ imageContent, imageContent, Nothing ]
-                        }
-                    ]
-                ]
-            ],
-            parts
+        (* Merge runs of adjacent text items into one *)
+        contentItems = SequenceReplace[
+            replaced,
+            { as: KeyValuePattern[ "type" -> "text" ].. } :>
+                <| "type" -> "text", "text" -> StringJoin @ Lookup[ { as }, "text" ] |>
         ];
 
-        (* If we successfully extracted images, return structured content *)
-        If[ TrueQ @ hasImages && MatchQ[ contentItems, { __Association } ],
+        If[ MatchQ[ contentItems, { __Association } ],
             <| "Content" -> contentItems |>,
             str  (* Fallback to plain string *)
         ]
