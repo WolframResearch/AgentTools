@@ -38,8 +38,8 @@ clientControlFrameOptions[opts___] := Sequence @@ {
 	BaselinePosition -> Baseline,
 	RoundingRadius -> 3,
 	FrameMargins -> {{7,7},{2,2}},
-	FrameStyle -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.7], ldsGray[0.85]]],
-	Background -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.94], ldsGray[0.97]]]
+	FrameStyle -> (Dynamic[If[CurrentValue["MouseOver"], #1, #2]]&[ ldsGray[0.7], ldsGray[0.85]]),
+	Background -> (Dynamic[If[CurrentValue["MouseOver"], #1, #2]]&[ ldsGray[0.94], ldsGray[0.97]])
 }
 
 
@@ -54,8 +54,8 @@ docsLink[] :=
 				Row[{tr["prefsDocsLinkText"], " \[UpperRightArrow]"}, BaseStyle -> {FontSize -> Inherited - 2}],
 				RoundingRadius -> 2,
 				FrameMargins -> {{5,5},{1,1}},
-				FrameStyle -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.7], ldsGray[0.85]]],
-				Background -> Dynamic[If[CurrentValue["MouseOver"], ldsGray[0.94], ldsGray[0.97]]]],
+				FrameStyle -> (Dynamic[If[CurrentValue["MouseOver"], #1, #2]]&[ ldsGray[0.7], ldsGray[0.85]]),
+				Background -> (Dynamic[If[CurrentValue["MouseOver"], #1, #2]]&[ ldsGray[0.94], ldsGray[0.97]])],
 			If[
 				TrueQ @ CurrentValue["OptionKey"],
 				CreateDocument[{
@@ -210,6 +210,7 @@ clientInterfaces[] :=
 					globallyConfiguredClients
 				];
 				otherClients = Complement[clients, globallyConfiguredClients, detectedClients];
+				ManageWelcomeScreenData["Update"];
 				++update;
 			];
 			
@@ -240,7 +241,7 @@ configureAllButton[detectedClients_, Dynamic[refresh_]] :=
 								False ->  tr["prefsConfigureAllButton"],
 								True -> ProgressIndicator[Appearance -> "Percolate"]
 							},
-							Dynamic[Now; clicked],
+							Dynamic[clicked],
 							BaselinePosition -> Baseline
 						]
 					}}],
@@ -248,7 +249,7 @@ configureAllButton[detectedClients_, Dynamic[refresh_]] :=
 						FrameMargins -> {{15,15},{10,10}}
 					]
 				],
-				clicked = True;
+				FE`Evaluate[FEPrivate`Set[clicked, True]];
 				refresh @ Do[
 					DeployAgentTools[
 						client,
@@ -451,13 +452,14 @@ clientButtonTemplate[label_, action_] :=
 							False -> label,
 							True -> ProgressIndicator[Appearance -> "Percolate"]
 						},
-						Dynamic[Now; clicked],
+						Dynamic[clicked],
 						Alignment -> {Center, Center},
 						BaselinePosition -> Baseline
 					],
 					clientControlFrameOptions[]
 				],
-				clicked = True; action,
+				FE`Evaluate[FEPrivate`Set[clicked, True]];
+				action,
 				Method -> "Queued",
 				BaseStyle -> {},
 				DefaultBaseStyle -> {},
@@ -613,7 +615,7 @@ dirSettingsRow[Dynamic[dirSettings_], i_, {obj_, server_, scope_, active_}] :=
 				DefaultBaseStyle -> {},
 				Enabled -> active,
 				BaseStyle -> {
-					FontColor -> Dynamic[If[active && CurrentValue["MouseOver"], StandardBlue, ldsGray[0.2]]],
+					FontColor -> (Dynamic[If[active && CurrentValue["MouseOver"], #1, #2]]&[ StandardBlue, ldsGray[0.2]]),
 					FontVariations -> If[active, {}, {"StrikeThrough" -> True}],
 					FontSize -> Inherited - 2
 				},
@@ -645,7 +647,7 @@ dirSettingsRow[Dynamic[dirSettings_], i_, {obj_, server_, scope_, active_}] :=
 				Appearance -> None,
 				DefaultBaseStyle -> {},
 				BaseStyle -> {
-					FontColor -> Dynamic[If[CurrentValue["MouseOver"], StandardBlue, ldsGray[0.5]]],
+					FontColor -> (Dynamic[If[CurrentValue["MouseOver"], #1, #2]]&[StandardBlue, ldsGray[0.5]]),
 					ShowContents -> active
 				},
 				Tooltip -> ToBoxes @ tr["prefsUninstallTool"]
@@ -727,6 +729,313 @@ Deploy[
 
 
 CreatePreferencesContent // endExportedDefinition;
+
+
+(* ::Section::Closed:: *)
+(*ManageWelcomeScreenData*)
+
+
+ManageWelcomeScreenData // beginDefinition;
+
+
+ManageWelcomeScreenData["Clear" | "Remove"] :=
+	Remove[PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"]];
+
+
+ManageWelcomeScreenData["Reset" | "Initialize"] :=
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = initializeWelcomeScreenData[];
+
+
+ManageWelcomeScreenData["Get"] :=
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"];
+
+
+ManageWelcomeScreenData["Set", value_] :=
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = value;
+
+
+ManageWelcomeScreenData["Update"] :=
+	Module[{assoc},
+		assoc = PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"];
+		PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] =
+			If[
+				(* if the relevant PersistentSymbol doesn't yet exist, create it *)
+				!AssociationQ[assoc],
+				initializeWelcomeScreenData[],
+				(* otherwise, compare the stored data with the current state, and update as appropriate *)
+				updateWelcomeScreenData[assoc]
+			]
+	];
+
+
+ManageWelcomeScreenData // endExportedDefinition;
+
+
+initializeWelcomeScreenData[] :=
+	<|
+		"DeployedAgentsData" -> updateDeployedAgentsData[None, False],
+		"InstalledAgentsData" -> updateAllClientData[None, False],
+		"DeployedCloseButtonClicked" -> False,
+		"InstalledCloseButtonClicked" -> False
+	|>;
+
+
+updateWelcomeScreenData[assoc_] :=
+	Module[
+		{
+			previousDeployedCloseClicked,
+			previousInstalledCloseClicked
+		},
+		previousDeployedCloseClicked = TrueQ[assoc["DeployedCloseButtonClicked"]]; (* Deployed stripe's previous open-state. *)
+		previousInstalledCloseClicked = TrueQ[assoc["InstalledCloseButtonClicked"]]; (* Installed stripe's previous open-state. *)
+		<|
+			"DeployedAgentsData" -> updateDeployedAgentsData[assoc["DeployedAgentsData"], previousDeployedCloseClicked],
+			"InstalledAgentsData" -> updateAllClientData[assoc["InstalledAgentsData"], previousInstalledCloseClicked],
+			"DeployedCloseButtonClicked" -> False,
+			"InstalledCloseButtonClicked" -> False
+		|>
+	];
+
+
+updateDeployedAgentsData[deployedAssoc_, closeButtonClicked_] := 
+	Module[
+		{
+			assoc,
+			deployedDate,
+			previousShowState
+		},
+		
+		assoc = deployedAssoc;
+		
+		If[AssociationQ[assoc],
+			deployedDate = assoc["Date"];
+			previousShowState = assoc["ShowAIBanner"];
+			If[dateExpiredQ[deployedDate],
+				assoc["ShowAIBanner"] = True
+			];
+			If[!DateObjectQ[deployedDate], assoc["Date"] = Today]
+			,
+			previousShowState = False;
+			assoc = <|"Date" -> Today, "ShowAIBanner" -> True|>
+		];
+		
+		(* 
+			If the CloseButton was clicked, increment the expiration date and
+			set ShowDeployedBanner to False only if:
+			* the stripe was previously open
+			* if the button had not been clicked, the stripe would've remained open
+		*)
+		If[And[
+				TrueQ[closeButtonClicked], (* Was the button clicked? *)
+				TrueQ[previousShowState], (* The previous show state *)
+				TrueQ[assoc["ShowAIBanner"]] (* The current show state if the button wasn't clicked *)
+			],
+			assoc["Date"] = incrementExpirationDate[];
+			assoc["ShowAIBanner"] = False
+		];
+		
+		assoc["DeployedAITools"] = getDeployedClients[];
+		
+		KeyTake[assoc, {
+			"Date",
+			"ShowAIBanner",
+			"DeployedAITools"
+		}]
+	];
+
+
+updateAllClientData[clientAssocs_, closeButtonClicked_] :=
+	Module[
+		{
+			assocs,
+			clientNames
+		},
+		
+		assocs = clientAssocs;
+		
+		clientNames = Last /@ clientNameRules[];
+		
+		If[MatchQ[assocs, {__?AssociationQ}],
+			(* Update existing client data *)
+			(
+				(* Cleanup: Discard unrecognized client associations *)
+				assocs = Select[assocs, MemberQ[clientNames, #["ClientName"]]&]; 
+				
+				Module[
+					{clientAssoc, name = #},
+					clientAssoc = First[Select[assocs, #["ClientName"] === name&], $Failed];
+					
+					If[AssociationQ[clientAssoc],
+						updateClientData[clientAssoc, closeButtonClicked],
+						initializeClientData[name]
+					]
+					
+				]& /@ clientNames
+			)
+			,
+			(* Fully initialize the client data *)
+			initializeClientData /@ clientNames
+		]
+	];
+
+
+updateClientData[clientAssoc_, closeButtonClicked_] := 
+	Module[
+		{
+			assoc,
+			installedClients,
+			(* States *)
+			previousInstalledState, (* the previous installed state *)
+			currentInstalledState, (* the current installed state *)
+			previousShowState (* the previous show state (i.e., did the stripe display and was the ClientName listed) *)
+		},
+		
+		assoc = clientAssoc;
+		
+		installedClients = getInstalledMCPClients[];
+		
+		(* Previous installed state *)
+		previousInstalledState = assoc["IsInstalled"];
+		
+		(* Current installed state *)
+		currentInstalledState = MemberQ[installedClients, assoc["ClientName"]];
+		
+		(* Previous show state *)
+		previousShowState = assoc["ShowAIBanner"];
+		
+		(* 
+			If previousInstalledState === True (was previously installed) and  
+			currentInstalledState === True (is currently installed), make no changes
+			to the client's Association.
+		*)
+		If[!(TrueQ[previousInstalledState] && TrueQ[currentInstalledState]),
+			(* 
+				If the client is not currently installed, or was previously uninstalled 
+				but its status changed to installed, reset its expiration date to Today which
+				is instantly expired. That allows the client to be made visible
+				in the InstalledClientsBanner as soon as it's installed.
+			*)
+			assoc["Date"] = Today;
+			
+			(*
+				Because the expiration date is pre-expired, there's no need to check whether
+				to immediately display an installed client aside from knowing that it's 
+				actually installed (in this particular case).
+			*)
+			assoc["IsInstalled"] = TrueQ[currentInstalledState];
+			assoc["ShowAIBanner"] = TrueQ[currentInstalledState]
+		];
+		
+		(* 
+			If the CloseButton click was detected, increment the expiration date,
+			and set ShowInstalledClient to False only if all of the following
+			criteria are met:
+			* the ClientName appeared in the stripe previously
+			* had the button not been clicked banner would reopen with the ClientName
+		*)
+		If[And[
+				TrueQ[closeButtonClicked], (* Was the button clicked? *)
+				TrueQ[previousShowState], (* The previous show state *)
+				TrueQ[assoc["ShowAIBanner"]] (* The current show state if the button wasn't clicked *)
+			],
+			assoc["Date"] = incrementExpirationDate[];
+			assoc["ShowAIBanner"] = False
+		];
+		
+		KeyTake[assoc, {
+			"ClientName",
+			"Date",
+			"IsInstalled",
+			"ShowAIBanner"
+		}]
+	];
+
+
+initializeClientData[clientName_] :=
+	Module[
+		{
+			assoc,
+			installed,
+			installedClients
+		},
+		
+		installedClients = getInstalledMCPClients[];
+		installed = MemberQ[installedClients, clientName];
+		assoc = <|
+			"ClientName" -> clientName,
+			"Date" -> Today, 
+			"IsInstalled" -> installed
+		|>;
+		
+		assoc["ShowAIBanner"] = showInstalledClientQ[assoc];
+		assoc
+	];
+
+
+incrementExpirationDate[] := DatePlus[Today, {1, "Month"}];
+
+
+showInstalledClientQ[clientAssoc_Association] := True /; TrueQ[clientAssoc["ShowAIBanner"]];
+
+showInstalledClientQ[clientAssoc_Association] :=
+	Module[{installedClients, deployedClients, isInstalled},
+		installedClients = getInstalledMCPClients[];
+		deployedClients = getDeployedClients[];
+		
+		(* Remove those clients from the installedClients list that are also deployed *)
+		installedClients = Complement[installedClients, deployedClients];
+		
+		isInstalled = MemberQ[installedClients, clientAssoc["ClientName"]];
+		
+		And[
+			dateExpiredQ[clientAssoc["Date"]],
+			TrueQ[isInstalled]
+		]
+		
+	];
+
+
+(*
+	A date is expired if it is not a DateObject, or if today is the same day as
+	or later than the date (day-granularity). Setting Date -> Today makes it
+	instantly expired, which several callers rely on to surface the banner
+	immediately (see initializeClientData, updateClientData, and
+	updateDeployedAgentsData).
+*)
+dateExpiredQ[date_] :=
+	Or[
+		!DateObjectQ[date],
+		DateOverlapsQ[Today, Last @ Sort @ {Today, date}]
+	];
+
+
+(*
+clientNameRules is a list of replacement Rules to make sure that the
+client name that appears in the dialog is the "DisplayName" form.
+*)
+clientNameRules[] :=
+	KeyValueMap[#1 -> #2["DisplayName"] &, $SupportedMCPClients];
+
+
+getDeployedClients[] := 
+	Module[{deployed, nameRules},
+		deployed = {#["ClientName"], #["Server"]}& /@ DeployedAgentTools[];
+		nameRules = clientNameRules[];
+		DeleteDuplicates @ Cases[
+			deployed,
+			{name_, "Wolfram" | "WolframLanguage"} :> Replace[name, nameRules]
+		]
+	];
+
+
+getInstalledMCPClients[] := Module[{detectedNames},
+	detectedNames = Keys @ DetectedMCPClients[];
+	If[
+		MatchQ[detectedNames, {___String}],
+		Replace[detectedNames, clientNameRules[], {1}],
+		{}
+	]
+];
 
 
 (* ::Section::Closed:: *)
