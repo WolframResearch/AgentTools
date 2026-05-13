@@ -39,6 +39,7 @@ PacletObject[ <|
                 "Wolfram`AgentTools`CreatePreferencesContent",
                 "Wolfram`AgentTools`DetectedMCPClients",
                 "Wolfram`AgentTools`InstallMCPServer",
+                "Wolfram`AgentTools`ManageWelcomeScreenData",
                 "Wolfram`AgentTools`MCPServerObject",
                 "Wolfram`AgentTools`MCPServerObjectQ",
                 "Wolfram`AgentTools`MCPServerObjects",
