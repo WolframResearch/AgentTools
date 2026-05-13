@@ -995,7 +995,7 @@ showInstalledClientQ[clientAssoc_Association] :=
 	];
 
 
-(* A date is expired if date is not a DateObject, or if today's date is later than the data *)
+(* A date is expired if date is not a DateObject, or if today's date is later than the date *)
 dateExpiredQ[date_] :=
 	Or[
 		!DateObjectQ[date],
