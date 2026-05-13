@@ -987,13 +987,9 @@ showInstalledClientQ[clientAssoc_Association] :=
 		
 		isInstalled = MemberQ[installedClients, clientAssoc["ClientName"]];
 		
-		(*EchoEvaluation @ *)Or[
-			(* If the stripe remained open while the Client was present, it should appear in the stripe again. *)
-			TrueQ[clientAssoc["ShowAIBanner"]], 
-			And[
-				dateExpiredQ[clientAssoc["Date"]],
-				TrueQ[isInstalled]
-			]
+		(*EchoEvaluation @ *)And[
+			dateExpiredQ[clientAssoc["Date"]],
+			TrueQ[isInstalled]
 		]
 		
 	];
