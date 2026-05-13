@@ -987,7 +987,7 @@ showInstalledClientQ[clientAssoc_Association] :=
 		
 		isInstalled = MemberQ[installedClients, clientAssoc["ClientName"]];
 		
-		(*EchoEvaluation @ *)And[
+		And[
 			dateExpiredQ[clientAssoc["Date"]],
 			TrueQ[isInstalled]
 		]
