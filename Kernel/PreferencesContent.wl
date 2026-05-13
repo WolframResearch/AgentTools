@@ -743,21 +743,21 @@ ManageWelcomeScreenData["Clear" | "Remove"] :=
 
 
 ManageWelcomeScreenData["Reset" | "Initialize"] :=
-	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = initializeWelcomeScreenData[]
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = initializeWelcomeScreenData[];
 
 
 ManageWelcomeScreenData["Get"] :=
-	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"]
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"];
 
 
 ManageWelcomeScreenData["Set", value_] :=
-	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = value
+	PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = value;
 
 
 ManageWelcomeScreenData["Update"] :=
 	Module[{assoc},
 		assoc = PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"];
-		PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] = 
+		PersistentSymbol["WelcomeScreenAIBannerTracking", "FrontEnd"] =
 			If[
 				(* if the relevant PersistentSymbol doesn't yet exist, create it *)
 				!AssociationQ[assoc],
@@ -765,7 +765,7 @@ ManageWelcomeScreenData["Update"] :=
 				(* otherwise, compare the stored data with the current state, and update as appropriate *)
 				updateWelcomeScreenData[assoc]
 			]
-	]
+	];
 
 
 ManageWelcomeScreenData // endExportedDefinition;
@@ -777,7 +777,7 @@ initializeWelcomeScreenData[] :=
 		"InstalledAgentsData" -> updateAllClientData[None, False],
 		"DeployedCloseButtonClicked" -> False,
 		"InstalledCloseButtonClicked" -> False
-	|>
+	|>;
 
 
 updateWelcomeScreenData[assoc_] :=
@@ -969,13 +969,13 @@ initializeClientData[clientName_] :=
 		
 		assoc["ShowAIBanner"] = showInstalledClientQ[assoc];
 		assoc
-	]
+	];
 
 
 incrementExpirationDate[] := DatePlus[Today, {1, "Month"}];
 
 
-showInstalledClientQ[clientAssoc_Association] := True /; TrueQ[clientAssoc["ShowAIBanner"]]
+showInstalledClientQ[clientAssoc_Association] := True /; TrueQ[clientAssoc["ShowAIBanner"]];
 
 showInstalledClientQ[clientAssoc_Association] :=
 	Module[{installedClients, deployedClients, isInstalled},
@@ -1000,15 +1000,15 @@ dateExpiredQ[date_] :=
 	Or[
 		!DateObjectQ[date],
 		DateOverlapsQ[Today, Last @ Sort @ {Today, date}]
-	]
+	];
 
 
-(* 
-clientNameRules is a list of replacement Rules to make sure that the 
+(*
+clientNameRules is a list of replacement Rules to make sure that the
 client name that appears in the dialog is the "DisplayName" form.
 *)
-clientNameRules[] := 
-	KeyValueMap[#1 -> #2["DisplayName"] &, $SupportedMCPClients]
+clientNameRules[] :=
+	KeyValueMap[#1 -> #2["DisplayName"] &, $SupportedMCPClients];
 
 
 getDeployedClients[] := 
