@@ -2,7 +2,7 @@
 
 ## Overview
 
-[Continue](https://www.continue.dev/) is an open-source AI code assistant that runs as an extension for VS Code and JetBrains IDEs (with an emerging CLI). It supports MCP natively and acts as an MCP **Host** that orchestrates user-configured MCP servers.
+[Continue](https://www.continue.dev/) is an open-source AI code assistant. It ships in three forms — a VS Code extension, a JetBrains plugin, and a standalone CLI called `cn` (installed via `npm i -g @continuedev/cli`) — and all three read the **same** configuration files. The Continue CLI docs state explicitly: *"`cn` uses `config.yaml`, the exact same configuration file as Continue,"* and *"`cn` supports MCP tools, which can be configured in the same way as with the Continue IDE extensions."* This means a single `InstallMCPServer["Continue", ...]` covers every distribution. Continue acts as an MCP **Host** that orchestrates user-configured MCP servers.
 
 > **Important:** MCP can only be used in Continue's **agent mode** — it is not active in autocomplete or chat-only modes.
 

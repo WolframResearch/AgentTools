@@ -199,7 +199,7 @@ Notes:
 - Global scope writes into the user's single `config.yaml` and **preserves any unrelated top-level keys** (`models:`, `slashCommands:`, `rules:`, etc.) — only the `mcpServers` array is modified.
 - Project scope writes a dedicated standalone block file at `<project>/.continue/mcpServers/wolfram.yaml`, including the required top-level metadata fields (`name`, `version`, `schema: v1`). Continue auto-discovers any `.yaml` or `.json` file in that directory.
 - Continue supports `stdio`, `sse`, and `streamable-http` transports. `InstallMCPServer` writes the stdio form. MCP is only active in Continue's **agent mode**.
-- The single integration covers both supported distributions of Continue: the VS Code extension and the JetBrains plugin (they share the same config files).
+- A single `InstallMCPServer["Continue", ...]` covers all three distributions of Continue — the VS Code extension, the JetBrains plugin, and the standalone [`cn` CLI](https://www.npmjs.com/package/@continuedev/cli) (`npm i -g @continuedev/cli`) — because they all read the same `~/.continue/config.yaml` and `<project>/.continue/mcpServers/<*>.yaml` files.
 
 ### Copilot CLI
 
