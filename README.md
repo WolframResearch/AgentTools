@@ -123,6 +123,7 @@ AgentTools can be installed into the following MCP client applications:
 | [Claude Code](https://code.claude.com) | `"ClaudeCode"` | Yes |
 | [Claude Desktop](https://claude.ai/download) | `"ClaudeDesktop"` | No |
 | [Cline](https://cline.bot) | `"Cline"` | No |
+| [Continue](https://www.continue.dev/) (VS Code + JetBrains) | `"Continue"` | Yes |
 | [Copilot CLI](https://github.com/features/copilot/cli) | `"CopilotCLI"` | No |
 | [Cursor](https://www.cursor.com) | `"Cursor"` | No |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `"GeminiCLI"` | No |

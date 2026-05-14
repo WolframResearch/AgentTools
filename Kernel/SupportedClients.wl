@@ -54,6 +54,17 @@ $supportedMCPClients = <|
         "ProjectPath"     -> { ".mcp.json" },
         "InstallLocation" :> { $HomeDirectory, ".claude.json" }
     |>,
+    "Continue" -> <|
+        "DisplayName"     -> "Continue",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { },
+        "ConfigFormat"    -> "YAML",
+        "ConfigKey"       -> { "mcpServers" },
+        "ServerConverter" -> convertToContinueFormat,
+        "URL"             -> "https://www.continue.dev/",
+        "ProjectPath"     -> { ".continue", "mcpServers", "wolfram.yaml" },
+        "InstallLocation" :> { $HomeDirectory, ".continue", "config.yaml" }
+    |>,
     "Cursor" -> <|
         "DisplayName"     -> "Cursor",
         "DefaultToolset"  -> "WolframLanguage",
@@ -441,6 +452,43 @@ convertToAugmentCodeIDEFormat[ server_Association, os_String ] := Enclose[
 ];
 
 convertToAugmentCodeIDEFormat // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*convertToContinueFormat*)
+(* Continue stores MCP servers as an array under a top-level `mcpServers` key in a
+   YAML file. Each entry carries an inline `name` field rather than being keyed by
+   name like Claude Desktop. This converter produces the per-entry shape *without*
+   the `name` field: the dedicated install overload prepends `name` after conversion
+   (it knows the configName; the converter does not). We also drop the `"type"` key
+   from the standard server association: Continue infers the transport from whether
+   `command` or `url` is present, and an explicit `type: stdio` is documented as
+   optional. *)
+convertToContinueFormat // beginDefinition;
+
+convertToContinueFormat[ server_Association ] := Enclose[
+    Module[ { command, args, env, result },
+        result = <| |>;
+
+        command = Lookup[ server, "command", Missing[ ] ];
+        If[ StringQ @ command, result[ "command" ] = command ];
+
+        args = Lookup[ server, "args", { } ];
+        If[ ListQ @ args && Length @ args > 0,
+            result[ "args" ] = args
+        ];
+
+        env = Lookup[ server, "env", <| |> ];
+        If[ AssociationQ @ env && Length @ env > 0,
+            result[ "env" ] = env
+        ];
+
+        result
+    ],
+    throwInternalFailure
+];
+
+convertToContinueFormat // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

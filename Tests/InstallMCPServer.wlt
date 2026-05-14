@@ -1198,6 +1198,445 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Continue (YAML) Support*)
+
+(* Helper for Continue YAML test files *)
+testContinueFile = Function[
+    File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "continue_test_", CreateUUID[ ], ".yaml" ] }
+];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Install Location for Continue*)
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "Continue", "Windows" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-Continue-Windows"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "Continue", "MacOSX" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-Continue-MacOSX"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "Continue", "Unix" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-Continue-Unix"
+]
+
+(* Continue's user-scope path is .continue/config.yaml under $HomeDirectory on every OS *)
+VerificationTest[
+    Module[ { file, split },
+        file = Wolfram`AgentTools`Common`installLocation[ "Continue", $OperatingSystem ];
+        split = FileNameSplit @ First @ file;
+        Take[ split, -2 ]
+    ],
+    { ".continue", "config.yaml" },
+    SameTest -> Equal,
+    TestID   -> "InstallLocation-Continue-PathShape"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Name Normalization*)
+VerificationTest[
+    Wolfram`AgentTools`Common`toInstallName[ "Continue" ],
+    "Continue",
+    SameTest -> Equal,
+    TestID   -> "ToInstallName-Continue"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Continue" ],
+    "Continue",
+    SameTest -> Equal,
+    TestID   -> "InstallDisplayName-Continue"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*convertToContinueFormat*)
+
+(* Drops "type" key, keeps command/args/env; omits empty args/env *)
+VerificationTest[
+    Wolfram`AgentTools`SupportedClients`Private`convertToContinueFormat @ <|
+        "type" -> "stdio",
+        "command" -> "wolfram",
+        "args" -> { "-run", "test" },
+        "env" -> <| "KEY" -> "value" |>
+    |>,
+    <|
+        "command" -> "wolfram",
+        "args" -> { "-run", "test" },
+        "env" -> <| "KEY" -> "value" |>
+    |>,
+    SameTest -> Equal,
+    TestID   -> "ConvertToContinueFormat-Basic"
+]
+
+(* Empty args and env are omitted *)
+VerificationTest[
+    Wolfram`AgentTools`SupportedClients`Private`convertToContinueFormat @ <|
+        "command" -> "wolfram",
+        "args" -> { },
+        "env" -> <| |>
+    |>,
+    <| "command" -> "wolfram" |>,
+    SameTest -> Equal,
+    TestID   -> "ConvertToContinueFormat-OmitsEmpty"
+]
+
+(* Converter does NOT set the "name" field — the install flow prepends it after conversion *)
+VerificationTest[
+    KeyExistsQ[
+        Wolfram`AgentTools`SupportedClients`Private`convertToContinueFormat @ <| "command" -> "/tmp/wolfram" |>,
+        "name"
+    ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "ConvertToContinueFormat-NoNameField"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*readExistingContinueConfig*)
+
+(* Non-existent file returns empty mapping *)
+VerificationTest[
+    Wolfram`AgentTools`InstallMCPServer`Private`readExistingContinueConfig @ File @
+        FileNameJoin @ { $TemporaryDirectory, "continue_noexist_" <> CreateUUID[] <> ".yaml" },
+    <| |>,
+    SameTest -> Equal,
+    TestID   -> "ReadExistingContinueConfig-NonExistent"
+]
+
+(* Valid YAML with mcpServers array is returned as an Association *)
+VerificationTest[
+    Module[ { file, result },
+        file = File @ FileNameJoin @ { $TemporaryDirectory, "continue_valid_" <> CreateUUID[] <> ".yaml" };
+        WithCleanup[
+            Wolfram`AgentTools`Common`exportYAML[
+                file,
+                <| "mcpServers" -> { <| "name" -> "X", "command" -> "y" |> } |>
+            ];
+            result = Wolfram`AgentTools`InstallMCPServer`Private`readExistingContinueConfig @ file,
+            Quiet @ DeleteFile @ First @ file
+        ];
+        AssociationQ @ result && ListQ @ result[ "mcpServers" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "ReadExistingContinueConfig-ValidYAML"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Continue Install and Uninstall (Global Scope)*)
+VerificationTest[
+    continueConfigFile = testContinueFile[ ];
+    installResult = InstallMCPServer[
+        continueConfigFile,
+        "WolframLanguage",
+        "VerifyLLMKit" -> False,
+        "ApplicationName" -> "Continue"
+    ],
+    _Success,
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-Continue-Basic"
+]
+
+VerificationTest[
+    FileExistsQ[ continueConfigFile ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-FileExists"
+]
+
+(* Root is an Association with mcpServers as an array *)
+VerificationTest[
+    Module[ { content },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        AssociationQ @ content &&
+        ListQ @ content[ "mcpServers" ] &&
+        Length @ content[ "mcpServers" ] === 1
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-RootShape"
+]
+
+(* The single entry has inline name + command + args + env *)
+VerificationTest[
+    Module[ { content, entry },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        entry = First @ content[ "mcpServers" ];
+        AssociationQ @ entry &&
+        entry[ "name" ] === "Wolfram" &&
+        StringQ @ entry[ "command" ] &&
+        ListQ @ Lookup[ entry, "args", { } ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-EntryShape"
+]
+
+(* Global scope must NOT add standalone-file metadata (name / version / schema) at the top level —
+   those are only for project-scope block files in .continue/mcpServers/. *)
+VerificationTest[
+    Module[ { content },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        ! KeyExistsQ[ content, "version" ] && ! KeyExistsQ[ content, "schema" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-Global-NoMetadata"
+]
+
+(* Continue uses the standard server fields — no Cline disabled/autoApprove, no Copilot tools *)
+VerificationTest[
+    Module[ { content, entry },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        entry = First @ content[ "mcpServers" ];
+        ! KeyExistsQ[ entry, "disabled" ] &&
+        ! KeyExistsQ[ entry, "autoApprove" ] &&
+        ! KeyExistsQ[ entry, "tools" ] &&
+        ! KeyExistsQ[ entry, "type" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-StandardFormat"
+]
+
+(* Idempotent re-install: array stays length 1 *)
+VerificationTest[
+    InstallMCPServer[ continueConfigFile, "WolframLanguage",
+        "VerifyLLMKit" -> False, "ApplicationName" -> "Continue" ];
+    Module[ { content },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        Length @ Cases[ content[ "mcpServers" ], KeyValuePattern @ { "name" -> "Wolfram" } ]
+    ],
+    1,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-Idempotent"
+]
+
+(* Second, differently-named server is appended, not replaced *)
+VerificationTest[
+    InstallMCPServer[ continueConfigFile, "WolframAlpha",
+        "VerifyLLMKit" -> False, "ApplicationName" -> "Continue", "MCPServerName" -> "WolframAlphaExtra" ];
+    Module[ { content, names },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        names = Sort @ Cases[ content[ "mcpServers" ], KeyValuePattern @ { "name" -> n_String } :> n ];
+        names
+    ],
+    { "Wolfram", "WolframAlphaExtra" },
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-MultiServer"
+]
+
+VerificationTest[
+    uninstallResult = UninstallMCPServer[ continueConfigFile, "WolframLanguage", "ApplicationName" -> "Continue" ],
+    _Success,
+    SameTest -> MatchQ,
+    TestID   -> "UninstallMCPServer-Continue-Basic"
+]
+
+(* After removing WolframLanguage, only WolframAlphaExtra remains *)
+VerificationTest[
+    Module[ { content, names },
+        content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
+        names = Cases[ content[ "mcpServers" ], KeyValuePattern @ { "name" -> n_String } :> n ];
+        names
+    ],
+    { "WolframAlphaExtra" },
+    SameTest -> Equal,
+    TestID   -> "UninstallMCPServer-Continue-VerifyRemoval"
+]
+
+(* Uninstalling a name that isn't in the array returns NotInstalled *)
+VerificationTest[
+    UninstallMCPServer[ continueConfigFile, "WolframLanguage", "ApplicationName" -> "Continue" ],
+    Missing[ "NotInstalled", _ ],
+    SameTest -> MatchQ,
+    TestID   -> "UninstallMCPServer-Continue-NotInstalled"
+]
+
+VerificationTest[
+    cleanupTestFiles[ continueConfigFile ],
+    { Null },
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-Continue-Cleanup"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Continue Project-Level Install (Standalone Block File)*)
+
+(* Project-scope writes a standalone block file in .continue/mcpServers/ with required metadata *)
+VerificationTest[
+    Module[ { dir, projectFile, content, result },
+        dir = FileNameJoin @ { $TemporaryDirectory, "continue_proj_" <> CreateUUID[] };
+        CreateDirectory @ dir;
+        WithCleanup[
+            result = InstallMCPServer[
+                { "Continue", dir },
+                "WolframLanguage",
+                "VerifyLLMKit" -> False
+            ];
+            projectFile = FileNameJoin @ { dir, ".continue", "mcpServers", "wolfram.yaml" };
+            content = If[ FileExistsQ @ projectFile,
+                Wolfram`AgentTools`Common`importYAML @ File @ projectFile,
+                Missing[ ]
+            ];
+            {
+                MatchQ[ result, _Success ],
+                FileExistsQ @ projectFile,
+                AssociationQ @ content,
+                content[ "name" ],
+                StringQ @ content[ "version" ],
+                content[ "schema" ],
+                ListQ @ content[ "mcpServers" ],
+                Length @ content[ "mcpServers" ]
+            },
+            Quiet @ DeleteDirectory[ dir, DeleteContents -> True ]
+        ]
+    ],
+    { True, True, True, "Wolfram", True, "v1", True, 1 },
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-ProjectLevel"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Continue Preserves Unrelated Top-Level Keys*)
+
+(* Continue's config.yaml may contain unrelated top-level sections (models:, rules:, etc.).
+   InstallMCPServer must preserve those — only the mcpServers section may change. *)
+VerificationTest[
+    Module[ { file, content },
+        file = testContinueFile[ ];
+        WithCleanup[
+            (* Seed the file with unrelated top-level keys *)
+            Wolfram`AgentTools`Common`exportYAML[
+                file,
+                <|
+                    "name"   -> "My Continue Config",
+                    "models" -> { <| "name" -> "gpt-4", "provider" -> "openai" |> },
+                    "rules"  -> { "Be concise." }
+                |>
+            ];
+            InstallMCPServer[ file, "WolframLanguage", "VerifyLLMKit" -> False, "ApplicationName" -> "Continue" ];
+            content = Wolfram`AgentTools`Common`importYAML @ file,
+            cleanupTestFiles @ file
+        ];
+        {
+            content[ "name" ],
+            content[ "models" ],
+            content[ "rules" ],
+            ListQ @ content[ "mcpServers" ],
+            Length @ content[ "mcpServers" ]
+        }
+    ],
+    { "My Continue Config", { <| "name" -> "gpt-4", "provider" -> "openai" |> }, { "Be concise." }, True, 1 },
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-PreservesUnrelatedKeys"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Auto-Detection from Path*)
+
+(* File at .continue/config.yaml is auto-detected as Continue when installing without ApplicationName *)
+VerificationTest[
+    Module[ { dir, file, content },
+        dir = FileNameJoin @ { $TemporaryDirectory, "continue_auto_" <> CreateUUID[], ".continue" };
+        CreateDirectory[ dir, CreateIntermediateDirectories -> True ];
+        file = FileNameJoin @ { dir, "config.yaml" };
+        WithCleanup[
+            InstallMCPServer[ File @ file, "WolframLanguage", "VerifyLLMKit" -> False ];
+            content = Wolfram`AgentTools`Common`importYAML @ File @ file,
+            Quiet @ DeleteDirectory[ DirectoryName @ dir, DeleteContents -> True ]
+        ];
+        AssociationQ @ content && ListQ @ content[ "mcpServers" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "GuessClientName-Continue-GlobalPath"
+]
+
+(* File at .continue/mcpServers/<X>.yaml is auto-detected as Continue *)
+VerificationTest[
+    Module[ { dir, file, content },
+        dir = FileNameJoin @ { $TemporaryDirectory, "continue_auto_proj_" <> CreateUUID[], ".continue", "mcpServers" };
+        CreateDirectory[ dir, CreateIntermediateDirectories -> True ];
+        file = FileNameJoin @ { dir, "wolfram.yaml" };
+        WithCleanup[
+            InstallMCPServer[ File @ file, "WolframLanguage", "VerifyLLMKit" -> False ];
+            content = Wolfram`AgentTools`Common`importYAML @ File @ file,
+            Quiet @ DeleteDirectory[ DirectoryName @ dir, DeleteContents -> True ];
+            Quiet @ DeleteDirectory[ DirectoryName[ dir, 2 ] ]
+        ];
+        AssociationQ @ content &&
+        content[ "schema" ] === "v1" &&
+        ListQ @ content[ "mcpServers" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "GuessClientName-Continue-ProjectPath"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$SupportedMCPClients metadata for Continue*)
+VerificationTest[
+    $SupportedMCPClients[ "Continue", "DisplayName" ],
+    "Continue",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueDisplayName"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "Continue", "ConfigFormat" ],
+    "YAML",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueConfigFormat"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "Continue", "ConfigKey" ],
+    { "mcpServers" },
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueConfigKey"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "Continue", "ProjectSupport" ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueProjectSupport"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "Continue", "DefaultToolset" ],
+    "WolframLanguage",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueDefaultToolset"
+]
+
+VerificationTest[
+    StringStartsQ[ $SupportedMCPClients[ "Continue", "URL" ], "https://" ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-ContinueURL"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Copilot CLI Support*)
 
 (* ::**************************************************************************************************************:: *)
@@ -2990,14 +3429,14 @@ VerificationTest[
 
 VerificationTest[
     Length @ $SupportedMCPClients,
-    18,
+    19,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-Has18Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
+    TestID   -> "SupportedMCPClients-Has19Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
 ]
 
 VerificationTest[
     Keys @ $SupportedMCPClients,
-    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
+    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "Continue", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
     SameTest -> Equal,
     TestID   -> "SupportedMCPClients-KeysSorted@@Tests/InstallMCPServer.wlt:2998,1-3003,2"
 ]
