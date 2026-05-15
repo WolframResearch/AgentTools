@@ -41,9 +41,14 @@ The `.continue/mcpServers/` directory is intentionally a **directory of independ
 
 #### Global `config.yaml`
 
-MCP servers are defined under the `mcpServers` key as an **array of objects** (not a keyed object like Claude Desktop):
+The top of every Continue `config.yaml` requires `name`, `version`, and `schema` — these are the same metadata fields needed by standalone block files (see below) and are **not** optional. The official [`config.yaml` reference](https://docs.continue.dev/reference) says: *"The top-level properties in the `config.yaml` configuration file are: `name` (required), `version` (required), `schema` (required)."* If any are missing, Continue's CLI and IDE plugin silently reject the file and fall back to a hub-hosted "Default Config" with none of the user's MCP servers visible.
+
+MCP servers themselves are defined under the `mcpServers` key as an **array of objects** (not a keyed object like Claude Desktop):
 
 ```yaml
+name: Local Config
+version: 1.0.0
+schema: v1
 mcpServers:
   - name: WolframLanguage
     command: wolfram
@@ -73,7 +78,7 @@ mcpServers:
 
 #### Standalone block files in `.continue/mcpServers/`
 
-Per-project block files need extra top-level metadata:
+Per-project block files require the same top-level metadata as the global `config.yaml`:
 
 ```yaml
 name: Wolfram
@@ -85,9 +90,9 @@ mcpServers:
     args: ["-run", "...", "-noinit", "-noprompt"]
 ```
 
-**Required top-level fields for standalone files:**
+**Required top-level fields (same as global `config.yaml`):**
 
-- `name` (string) — identifier for this block
+- `name` (string) — identifier for this block; for a project-scope block file `wolfram.yaml`, the natural value is `"Wolfram"` (the server's display name)
 - `version` (string) — version of the block
 - `schema` (string) — schema version (currently always `v1`)
 
@@ -213,10 +218,11 @@ The first pass of this research recommended writing JSON files into `.continue/m
 
 - **`guessClientName` collisions.** A YAML file with `mcpServers:` at the top of `~/.continue/config.yaml` is unique enough by path that path-based matching via `installLocation` / `ProjectPath` is sufficient. We should *not* rely on a content-level heuristic for Continue, because the same `mcpServers` key is used by every other JSON-based client. This mirrors how `Kiro` is handled today.
 - **Preserving user-edited YAML.** `exportYAML` already round-trips Goose user content. Continue's `config.yaml` is more elaborate (it has top-level `models:`, `slashCommands:`, `rules:`, etc.) — the install path needs to read-modify-write with `importYAML`, mutate only the `mcpServers` array, and re-export, never overwriting the whole file. The Goose path already does the equivalent.
-- **Standalone-file metadata fields.** For project scope, every `.continue/mcpServers/<*>.yaml` block file must carry top-level `name`, `version`, `schema: v1`. Suggested defaults:
-  - `name`: `"Wolfram"` (the MCP server's display name in Continue's UI)
-  - `version`: the AgentTools paclet version
+- **Top-level metadata fields are required at every scope.** The Continue [`config.yaml` reference](https://docs.continue.dev/reference) requires `name`, `version`, and `schema` at the top level of every config.yaml — both the user's global file and every standalone block file in `.continue/mcpServers/`. A file missing any of them fails schema validation and is silently rejected. The install path must add them when absent (and never overwrite a user-chosen `name`). Suggested defaults:
+  - `name`: `"Wolfram"` for project-scope block files (the server's display name); `"Local Config"` for the global `config.yaml`
+  - `version`: `"1.0.0"`
   - `schema`: `"v1"`
+  - *Original mistake (corrected May 2026)*: this note initially claimed these metadata fields were only required for "standalone files"; in fact they're required for the global `config.yaml` too. Without them the CLI shows "Default Config" with no servers, masquerading as a no-op install.
 - **Field naming on each MCP entry.** Continue does *not* use Cline-style `disabled` / `autoApprove` or Copilot-style `tools`. Don't emit those. The plain `name`/`command`/`args`/`env` set is sufficient.
 - **JetBrains AI Assistant and Continue are distinct clients.** The JetBrains AI Assistant plugin is a separate target (not yet supported here); Continue's IDE plugin is the one configured via `~/.continue/config.yaml`.
 - **Windows home resolution.** `$HomeDirectory` resolves to `%USERPROFILE%` (e.g. `C:\Users\<user>`) on Windows. AgentTools already relies on this for every other client; no new risk here.

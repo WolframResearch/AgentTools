@@ -1385,16 +1385,19 @@ VerificationTest[
     TestID   -> "InstallMCPServer-Continue-EntryShape"
 ]
 
-(* Global scope must NOT add standalone-file metadata (name / version / schema) at the top level —
-   those are only for project-scope block files in .continue/mcpServers/. *)
+(* Continue REQUIRES name / version / schema at the top of every config.yaml — including
+   the global one. A file missing any of these fails Continue's schema validation and
+   is silently ignored. *)
 VerificationTest[
     Module[ { content },
         content = Wolfram`AgentTools`Common`importYAML @ continueConfigFile;
-        ! KeyExistsQ[ content, "version" ] && ! KeyExistsQ[ content, "schema" ]
+        StringQ @ content[ "name" ] &&
+        StringQ @ content[ "version" ] &&
+        content[ "schema" ] === "v1"
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InstallMCPServer-Continue-Global-NoMetadata"
+    TestID   -> "InstallMCPServer-Continue-Global-RequiredMetadata"
 ]
 
 (* Continue uses the standard server fields — no Cline disabled/autoApprove, no Copilot tools *)
@@ -1515,13 +1518,15 @@ VerificationTest[
 (* ::Subsection::Closed:: *)
 (*Continue Preserves Unrelated Top-Level Keys*)
 
-(* Continue's config.yaml may contain unrelated top-level sections (models:, rules:, etc.).
-   InstallMCPServer must preserve those — only the mcpServers section may change. *)
+(* Continue's config.yaml may contain unrelated top-level sections (models:, rules:, etc.)
+   and a user-chosen `name`. InstallMCPServer must preserve those — only the mcpServers
+   section may change. The required top-level `version` and `schema` should be added
+   if missing, but a pre-existing `name` must not be overwritten. *)
 VerificationTest[
     Module[ { file, content },
         file = testContinueFile[ ];
         WithCleanup[
-            (* Seed the file with unrelated top-level keys *)
+            (* Seed the file with unrelated top-level keys and a user-chosen name *)
             Wolfram`AgentTools`Common`exportYAML[
                 file,
                 <|
@@ -1539,12 +1544,32 @@ VerificationTest[
             content[ "models" ],
             content[ "rules" ],
             ListQ @ content[ "mcpServers" ],
-            Length @ content[ "mcpServers" ]
+            Length @ content[ "mcpServers" ],
+            (* Version and schema must be added when missing *)
+            StringQ @ content[ "version" ],
+            content[ "schema" ]
         }
     ],
-    { "My Continue Config", { <| "name" -> "gpt-4", "provider" -> "openai" |> }, { "Be concise." }, True, 1 },
+    { "My Continue Config", { <| "name" -> "gpt-4", "provider" -> "openai" |> }, { "Be concise." }, True, 1, True, "v1" },
     SameTest -> Equal,
     TestID   -> "InstallMCPServer-Continue-PreservesUnrelatedKeys"
+]
+
+(* Fresh global config.yaml (no pre-existing user keys) gets the "Local Config" default
+   name rather than the project-scope "Wolfram" name. *)
+VerificationTest[
+    Module[ { file, content },
+        file = testContinueFile[ ];
+        WithCleanup[
+            InstallMCPServer[ file, "WolframLanguage", "VerifyLLMKit" -> False, "ApplicationName" -> "Continue" ];
+            content = Wolfram`AgentTools`Common`importYAML @ file,
+            cleanupTestFiles @ file
+        ];
+        content[ "name" ]
+    ],
+    "Local Config",
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-Continue-Global-DefaultName"
 ]
 
 (* ::**************************************************************************************************************:: *)

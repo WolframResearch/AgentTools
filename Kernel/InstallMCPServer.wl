@@ -242,16 +242,28 @@ installMCPServer[ target0_File, obj_MCPServerObject, env_Association, verifyLLMK
         ];
         existing[ "mcpServers" ] = entries;
 
-        (* Project-scope standalone block files require top-level metadata (`name`,
-           `version`, `schema`). Detect project scope from the target path tail. *)
+        (* Continue requires `name`, `version`, and `schema` at the top level of EVERY
+           config.yaml (and every standalone block file under .continue/mcpServers/) -
+           not just project-scope files. A file missing any of them fails schema
+           validation and is silently ignored by Continue's CLI / IDE plugin, falling
+           back to "Default Config" with no MCP servers visible. Only set defaults when
+           the user hasn't already provided them; never overwrite a user-chosen value.
+           The `name` default differs between scopes: project-scope block files in
+           .continue/mcpServers/ are server-specific blocks, so the natural name is the
+           server's display name; the global config.yaml is the user's main config and
+           gets a neutral "Local Config" placeholder. *)
         projectScopeQ = MatchQ[
             ToLowerCase /@ FileNameSplit @ target,
             { ___, ".continue", "mcpservers", __ }
         ];
-        If[ projectScopeQ,
-            If[ ! StringQ @ Lookup[ existing, "name"    , None ], existing[ "name"    ] = "Wolfram" ];
-            If[ ! StringQ @ Lookup[ existing, "version" , None ], existing[ "version" ] = "1.0.0"   ];
-            If[ ! StringQ @ Lookup[ existing, "schema"  , None ], existing[ "schema"  ] = "v1"      ]
+        If[ ! StringQ @ Lookup[ existing, "name", None ],
+            existing[ "name" ] = If[ projectScopeQ, "Wolfram", "Local Config" ]
+        ];
+        If[ ! StringQ @ Lookup[ existing, "version", None ],
+            existing[ "version" ] = "1.0.0"
+        ];
+        If[ ! StringQ @ Lookup[ existing, "schema", None ],
+            existing[ "schema" ] = "v1"
         ];
 
         ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];

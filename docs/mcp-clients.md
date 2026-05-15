@@ -167,8 +167,11 @@ Note: Cline uses the standard `mcpServers` format with additional `disabled` and
 | Global | `~/.continue/config.yaml` |
 | Project | `<project>/.continue/mcpServers/wolfram.yaml` |
 
-**Format (global `config.yaml` — YAML with `mcpServers` as an array, alongside the user's other top-level Continue config):**
+**Format (global `config.yaml` — YAML with `mcpServers` as an array, alongside the user's other top-level Continue config; the `name` / `version` / `schema` fields are required by Continue at the top level of every config.yaml):**
 ```yaml
+name: Local Config
+version: 1.0.0
+schema: v1
 mcpServers:
   - name: WolframLanguage
     command: wolfram
@@ -196,8 +199,9 @@ mcpServers:
 
 Notes:
 - Continue stores MCP servers as a **JSON/YAML array** under the top-level `mcpServers` key (not as a keyed object like Claude Desktop). Each entry carries its own `name` field, which `InstallMCPServer` uses as the upsert/delete key.
-- Global scope writes into the user's single `config.yaml` and **preserves any unrelated top-level keys** (`models:`, `slashCommands:`, `rules:`, etc.) — only the `mcpServers` array is modified.
-- Project scope writes a dedicated standalone block file at `<project>/.continue/mcpServers/wolfram.yaml`, including the required top-level metadata fields (`name`, `version`, `schema: v1`). Continue auto-discovers any `.yaml` or `.json` file in that directory.
+- Continue requires `name`, `version`, and `schema` at the top level of **every** `config.yaml` (and every standalone block file in `.continue/mcpServers/`). `InstallMCPServer` adds these fields with sensible defaults (`name: "Local Config"` for the global file, `name: "Wolfram"` for the project block file; `version: "1.0.0"`; `schema: "v1"`) when they aren't already present, and **never overwrites a user-chosen `name`**. Without these fields Continue's CLI and IDE plugin silently reject the file and fall back to "Default Config" with no MCP servers visible.
+- Global scope writes into the user's single `config.yaml` and **preserves any unrelated top-level keys** (`models:`, `slashCommands:`, `rules:`, etc.) — only the `mcpServers` array (and missing metadata) is modified.
+- Project scope writes a dedicated standalone block file at `<project>/.continue/mcpServers/wolfram.yaml`. Continue auto-discovers any `.yaml` or `.json` file in that directory.
 - Continue supports `stdio`, `sse`, and `streamable-http` transports. `InstallMCPServer` writes the stdio form. MCP is only active in Continue's **agent mode**.
 - A single `InstallMCPServer["Continue", ...]` covers all three distributions of Continue — the VS Code extension, the JetBrains plugin, and the standalone [`cn` CLI](https://www.npmjs.com/package/@continuedev/cli) (`npm i -g @continuedev/cli`) — because they all read the same `~/.continue/config.yaml` and `<project>/.continue/mcpServers/<*>.yaml` files.
 
