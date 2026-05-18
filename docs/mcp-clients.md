@@ -205,6 +205,14 @@ Notes:
 - Continue supports `stdio`, `sse`, and `streamable-http` transports. `InstallMCPServer` writes the stdio form. MCP is only active in Continue's **agent mode**.
 - A single `InstallMCPServer["Continue", ...]` covers all three distributions of Continue — the VS Code extension, the JetBrains plugin, and the standalone [`cn` CLI](https://www.npmjs.com/package/@continuedev/cli) (`npm i -g @continuedev/cli`) — because they all read the same `~/.continue/config.yaml` and `<project>/.continue/mcpServers/<*>.yaml` files.
 
+**Troubleshooting `cn` ("MCP Servers: No servers configured" after a successful install):** The `cn` CLI defaults to a Continue-Hub-hosted config (typically labeled `Default Config` in `cn`'s header), **not** your local `~/.continue/config.yaml`. The IDE extensions read the local file by default, but the CLI does not. To point `cn` at the local file:
+
+- **Windows:** `cn --config "$env:USERPROFILE\.continue\config.yaml"`
+- **macOS / Linux:** `cn --config ~/.continue/config.yaml`
+- Or, inside a running `cn` session, use the `/config` slash command and pick the entry that matches your local file's `name:` field (e.g. `Local Config`).
+
+When `cn` is correctly reading the local file, its header changes from `Config: Default Config` to `Config: <name from your config.yaml>`, and the Wolfram MCP server appears under **MCP Servers** with status `connected`.
+
 ### Copilot CLI
 
 | Scope | Config Location |
