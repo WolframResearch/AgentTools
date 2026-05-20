@@ -1,0 +1,769 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* Created By: SaveReadableNotebook *)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SaveReadableNotebook *)
+
+Notebook[
+ {
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "$DefaultMCPToolOptions",
+      "ObjectName",
+      CellID -> 23378113
+     ],
+     Cell[
+      TextData[
+       {
+        Cell["   ", "ModInfo"],
+        Cell[
+         BoxData[
+          ButtonBox[
+           "$DefaultMCPToolOptions",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/$DefaultMCPToolOptions"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        " \[LineSeparator]gives an association containing the default tool options used by built-in tools."
+       }
+      ],
+      "Usage",
+      CellID -> 67098767
+     ],
+     Cell[
+      TextData[
+       {
+        "See the ",
+        ButtonBox[
+         "Default Tools",
+         BaseStyle -> "Link",
+         ButtonData -> "paclet:Wolfram/AgentTools/tutorial/DefaultTools"
+        ],
+        " page for details on available tool options."
+       }
+      ],
+      "ExampleText",
+      CellID -> 53559494
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "See Also",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "SeeAlso",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related reference (function) pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "SeeAlsoSection",
+      CellID -> 609173213
+     ],
+     Cell[
+      TextData[
+       {
+        Cell[
+         BoxData[
+          ButtonBox[
+           "$DefaultMCPTools",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/$DefaultMCPTools"
+          ]
+         ],
+         "InlineSeeAlsoFunction",
+         TaggingRules -> {"PageType" -> "Function"}
+        ],
+        StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"],
+        Cell[
+         BoxData[
+          ButtonBox[
+           "InstallMCPServer",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+          ]
+         ],
+         "InlineSeeAlsoFunction",
+         TaggingRules -> {"PageType" -> "Function"}
+        ],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            Cell[
+             TextData[
+              StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"]
+             ]
+            ],
+            DynamicModuleBox[
+             {
+              nbobj$$ = 
+               NotebookObject[
+                "e4010396-6ef5-2d4f-85d2-53ac3b153ae6",
+                "f2a3fdb0-35cf-3c49-ac19-1354d2f225fb"
+               ],
+              cellobj$$ = 
+               CellObject[
+                "86355c0e-99ac-204c-b367-c71011d0b624",
+                "54f60e76-34b4-824a-82a3-9f29913393e1"
+               ]
+             },
+             TemplateBox[
+              {
+               GraphicsBox[
+                {
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  CircleBox[{0, 0}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{0, 0.62}, {0, -0.62}}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{-0.62, 0}, {0.62, 0}}]
+                 }
+                },
+                ImagePadding -> {{1.0, 1.0}, {2.4, 1.0}},
+                ImageSize -> 16,
+                PlotRange -> {{-1.06, 1.06}, {-1.06, 1.06}},
+                BaselinePosition -> Center -> Center
+               ],
+               nbobj$$,
+               cellobj$$
+              },
+              "InlineListingAddButton"
+             ],
+             Initialization :>
+              (nbobj$$ = EvaluationNotebook[];
+              cellobj$$ = EvaluationCell[])
+            ]
+           }
+          ]
+         ],
+         "InlineListingAddButton"
+        ]
+       }
+      ],
+      "SeeAlso",
+      CellID -> 895230724
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Tech Notes",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "TechNotes",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell["Insert links to related tech notes.", "MoreInfoText"],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "TechNotesSection",
+      CellID -> 92269066
+     ],
+     Cell[
+      TextData[
+       ButtonBox[
+        "Default Tools",
+        BaseStyle -> "Link",
+        ButtonData -> "paclet:Wolfram/AgentTools/tutorial/DefaultTools"
+       ]
+      ],
+      "Tutorials",
+      CellID -> 46422255
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "Related Guides",
+      "MoreAboutSection",
+      CellID -> 817083424
+     ],
+     Cell["XXXX", "MoreAbout", CellID -> 25294759]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Related Links",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "RelatedLinks",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related page, including web pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "RelatedLinksSection",
+      CellID -> 194648709
+     ],
+     Cell["XXXX", "RelatedLinks", CellID -> 203845618]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Examples Initialization",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "ExamplesInitialization",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Input that is to be evaluated before any examples are run, e.g. Needs[\[Ellipsis]].",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExamplesInitializationSection",
+      CellID -> 91877334
+     ],
+     Cell[
+      BoxData[
+       RowBox[{"Needs", "[", "\"Wolfram`AgentTools`\"", "]"}]
+      ],
+      "ExampleInitialization",
+      CellID -> 264046369
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      BoxData[
+       InterpretationBox[
+        GridBox[
+         {
+          {
+           StyleBox[
+            RowBox[{"Basic", " ", "Examples"}],
+            "PrimaryExamplesSection"
+           ],
+           ButtonBox[
+            RowBox[
+             {
+              RowBox[{"More", " ", "Examples"}],
+              " ",
+              "\[RightTriangle]"
+             }
+            ],
+            BaseStyle -> "ExtendedExamplesLink",
+            ButtonData :> "ExtendedExamples"
+           ]
+          }
+         }
+        ],
+        $Line = 0;
+       ]
+      ],
+      "PrimaryExamplesSection",
+      CellID -> 601156062
+     ],
+     Cell[
+      "Get the full set of default tool options:",
+      "ExampleText",
+      CellID -> 862745749
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData["$DefaultMCPToolOptions"],
+         "Input",
+         CellLabel -> "In[1]:=",
+         CellID -> 219685861
+        ],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            "\[LeftAssociation]",
+            RowBox[
+             {
+              RowBox[
+               {
+                "\"WolframAlphaContext\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"MaxItems\"", "\[Rule]", "Automatic"}],
+                    ",",
+                    RowBox[
+                     {
+                      "\"IncludeWolframLanguageResults\"",
+                      "\[Rule]",
+                      "Automatic"
+                     }
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"WolframContext\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"WolframLanguageMaxItems\"", "\[Rule]", "10"}],
+                    ",",
+                    RowBox[
+                     {"\"WolframAlphaMaxItems\"", "\[Rule]", "Automatic"}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"WolframLanguageContext\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[{"\"MaxItems\"", "\[Rule]", "10"}],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"WolframLanguageEvaluator\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Method\"", "\[Rule]", "\"Session\""}],
+                    ",",
+                    RowBox[{"\"ImageExportMethod\"", "\[Rule]", "\"None\""}],
+                    ",",
+                    RowBox[{"\"TimeConstraint\"", "\[Rule]", "60"}]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ]
+             }
+            ],
+            "\[RightAssociation]"
+           }
+          ]
+         ],
+         "Output",
+         CellLabel -> "Out[1]=",
+         CellID -> 399252451
+        ]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "More Examples",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "MoreExamples",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Extended examples in standardized sections.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExtendedExamplesSection",
+      CellTags -> "ExtendedExamples",
+      CellID -> 169584031
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Scope", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 41040451
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Generalizations & Extensions", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 558195240
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["Options", "ExampleSection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSection",
+         CellID -> 36678541
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 536007796
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 240232196
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Applications", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 292480186
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Properties & Relations", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 4934297
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Possible Issues", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 317852225
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Interactive Examples", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 505767865
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Neat Examples", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 116613429
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell["Metadata", "MetadataSection", CellID -> 109305845],
+     Cell[
+      TextData[
+       {
+        "New in: ",
+        Cell["XX", "HistoryData", CellTags -> "New"],
+        " | Modified in: ",
+        Cell[" ", "HistoryData", CellTags -> "Modified"],
+        " | Obsolete in: ",
+        Cell[" ", "HistoryData", CellTags -> "Obsolete"]
+       }
+      ],
+      "History",
+      CellID -> 342308289
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         TextData[
+          {
+           "Categorization",
+           Cell[
+            BoxData[
+             TemplateBox[
+              {
+               "Metadata",
+               Cell[
+                BoxData[
+                 FrameBox[
+                  Cell[
+                   "Metadata such as page URI, context, and type of documentation page.",
+                   "MoreInfoText"
+                  ],
+                  BaseStyle -> "IFrameBox"
+                 ]
+                ],
+                "MoreInfoTextOuter"
+               ]
+              },
+              "MoreInfoOpenerButtonTemplate"
+             ]
+            ]
+           ]
+          }
+         ],
+         "CategorizationSection",
+         CellID -> 190832110
+        ],
+        Cell[
+         "Symbol",
+         "Categorization",
+         CellLabel -> "Entity Type",
+         CellID -> 362763309
+        ],
+        Cell[
+         "Wolfram/AgentTools",
+         "Categorization",
+         CellLabel -> "Paclet Name",
+         CellID -> 575034655
+        ],
+        Cell[
+         "Wolfram`AgentTools`",
+         "Categorization",
+         CellLabel -> "Context",
+         CellID -> 282623659
+        ],
+        Cell[
+         "Wolfram/AgentTools/ref/$DefaultMCPToolOptions",
+         "Categorization",
+         CellLabel -> "URI",
+         CellID -> 853236353
+        ]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Keywords", "KeywordsSection", CellID -> 109492948],
+        Cell["XXXX", "Keywords", CellID -> 4391113]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Syntax Templates",
+         "TemplatesSection",
+         CellID -> 585727405
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Additional Function Template",
+         CellID -> 986867602
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Arguments Pattern",
+         CellID -> 157156253
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Local Variables",
+         CellID -> 839873100
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Color Equal Signs",
+         CellID -> 121268831
+        ]
+       },
+       Closed
+      ]
+     ]
+    },
+    Open
+   ]
+  ]
+ },
+ TaggingRules -> <|"Paclet" -> "Wolfram/AgentTools"|>,
+ StyleDefinitions ->
+  FrontEnd`FileName[
+   {"Wolfram"},
+   "FunctionPageStylesExt.nb",
+   CharacterEncoding -> "UTF-8"
+  ]
+]

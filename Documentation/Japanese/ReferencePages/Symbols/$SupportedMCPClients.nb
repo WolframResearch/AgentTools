@@ -1,0 +1,1272 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* Created By: SaveReadableNotebook *)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SaveReadableNotebook *)
+
+Notebook[
+ {
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "$SupportedMCPClients",
+      "ObjectName",
+      CellID -> 67259536
+     ],
+     Cell[
+      TextData[
+       {
+        Cell["   ", "ModInfo"],
+        Cell[
+         BoxData[
+          ButtonBox[
+           "$SupportedMCPClients",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/$SupportedMCPClients"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        " \[LineSeparator]gives an association with information about MCP clients supported by ",
+        Cell[
+         BoxData[
+          ButtonBox[
+           "InstallMCPServer",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        "."
+       }
+      ],
+      "Usage",
+      CellID -> 205888551
+     ],
+     Cell[
+      TextData[
+       {
+        "The keys in ",
+        Cell[
+         BoxData[
+          ButtonBox[
+           "$SupportedMCPClients",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/$SupportedMCPClients"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        " correspond to valid names usable in ",
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            ButtonBox[
+             "InstallMCPServer",
+             BaseStyle -> "Link",
+             ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+            ],
+            "[",
+            RowBox[
+             {
+              "\"\!\(\*StyleBox[\"name\", \"TI\"]\)\"",
+              ",",
+              StyleBox["\[Ellipsis]", "TR"]
+             }
+            ],
+            "]"
+           }
+          ]
+         ],
+         "InlineFormula"
+        ],
+        "."
+       }
+      ],
+      "Notes",
+      CellID -> 309537812
+     ],
+     Cell[
+      "The values are associations containing the following key/value pairs:",
+      "Notes",
+      CellID -> 343949418
+     ],
+     Cell[
+      BoxData[
+       GridBox[
+        {
+         {
+          Cell["      ", "ModInfo"],
+          "\"ConfigFormat\"",
+          Cell[
+           "the file format used by the configuration file",
+           "TableText"
+          ]
+         },
+         {
+          Cell["      ", "ModInfo"],
+          "\"ConfigKey\"",
+          Cell[
+           "the key under which MCP servers are configured",
+           "TableText"
+          ]
+         },
+         {
+          Cell["      ", "ModInfo"],
+          "\"ProjectSupport\"",
+          Cell[
+           "whether or not directory-based installations are supported",
+           "TableText"
+          ]
+         },
+         {
+          Cell["      ", "ModInfo"],
+          "\"URL\"",
+          Cell["the URL for the application", "TableText"]
+         }
+        }
+       ]
+      ],
+      "2ColumnTableMod",
+      TaggingRules -> {"Alphabetized" -> True},
+      CellID -> 44550766
+     ],
+     Cell[
+      TextData[
+       {
+        "If ",
+        Cell[BoxData["\"ProjectSupport\""], "InlineFormula"],
+        " is ",
+        Cell[
+         BoxData[ButtonBox["True", BaseStyle -> "Link"]],
+         "InlineFormula"
+        ],
+        ", then ",
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            ButtonBox[
+             "InstallMCPServer",
+             BaseStyle -> "Link",
+             ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+            ],
+            "[",
+            RowBox[
+             {
+              RowBox[
+               {
+                "{",
+                RowBox[
+                 {
+                  "\"\!\(\*StyleBox[\"name\", \"TI\"]\)\"",
+                  ",",
+                  "\"\!\(\*StyleBox[RowBox[{RowBox[{\"path\", \"/\", \"to\"}], \"/\", \"dir\"}], \"TI\"]\)\""
+                 }
+                ],
+                "}"
+               }
+              ],
+              ",",
+              StyleBox["\[Ellipsis]", "TR"]
+             }
+            ],
+            "]"
+           }
+          ]
+         ],
+         "InlineFormula"
+        ],
+        " can be used to install an MCP server that's specific to a particular directory."
+       }
+      ],
+      "Notes",
+      CellID -> 385484522
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "See Also",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "SeeAlso",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related reference (function) pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "SeeAlsoSection",
+      CellID -> 109380209
+     ],
+     Cell[
+      TextData[
+       {
+        Cell[
+         BoxData[
+          ButtonBox[
+           "InstallMCPServer",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+          ]
+         ],
+         "InlineSeeAlsoFunction",
+         TaggingRules -> {"PageType" -> "Function"}
+        ],
+        StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"],
+        Cell[
+         BoxData[
+          ButtonBox[
+           "UninstallMCPServer",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/UninstallMCPServer"
+          ]
+         ],
+         "InlineSeeAlsoFunction",
+         TaggingRules -> {"PageType" -> "Function"}
+        ],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            Cell[
+             TextData[
+              StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"]
+             ]
+            ],
+            DynamicModuleBox[
+             {
+              nbobj$$ = 
+               NotebookObject[
+                "d7eb890f-b324-b841-a214-af9dcb5c60ef",
+                "2bc9b775-ef98-8043-b938-eeef94f3e6d6"
+               ],
+              cellobj$$ = 
+               CellObject[
+                "d61f23f9-c61f-5448-94ac-dcb15ec4d4c2",
+                "fcffc6d7-ef88-ea45-b63a-20db57160a5f"
+               ]
+             },
+             TemplateBox[
+              {
+               GraphicsBox[
+                {
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  CircleBox[{0, 0}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{0, 0.62}, {0, -0.62}}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{-0.62, 0}, {0.62, 0}}]
+                 }
+                },
+                ImagePadding -> {{1.0, 1.0}, {2.4, 1.0}},
+                ImageSize -> 16,
+                PlotRange -> {{-1.06, 1.06}, {-1.06, 1.06}},
+                BaselinePosition -> Center -> Center
+               ],
+               nbobj$$,
+               cellobj$$
+              },
+              "InlineListingAddButton"
+             ],
+             Initialization :>
+              (nbobj$$ = EvaluationNotebook[];
+              cellobj$$ = EvaluationCell[])
+            ]
+           }
+          ]
+         ],
+         "InlineListingAddButton"
+        ]
+       }
+      ],
+      "SeeAlso",
+      CellID -> 262159146
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Tech Notes",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "TechNotes",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell["Insert links to related tech notes.", "MoreInfoText"],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "TechNotesSection",
+      CellID -> 112652480
+     ],
+     Cell["XXXX", "Tutorials", CellID -> 102798855]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "Related Guides",
+      "MoreAboutSection",
+      CellID -> 10272300
+     ],
+     Cell["XXXX", "MoreAbout", CellID -> 32086504]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Related Links",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "RelatedLinks",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related page, including web pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "RelatedLinksSection",
+      CellID -> 719977320
+     ],
+     Cell["XXXX", "RelatedLinks", CellID -> 747905538]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "Examples Initialization",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "ExamplesInitialization",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Input that is to be evaluated before any examples are run, e.g. Needs[\[Ellipsis]].",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExamplesInitializationSection",
+      CellID -> 31511308
+     ],
+     Cell[
+      BoxData[
+       RowBox[{"Needs", "[", "\"Wolfram`AgentTools`\"", "]"}]
+      ],
+      "ExampleInitialization",
+      CellID -> 887307835
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      BoxData[
+       InterpretationBox[
+        GridBox[
+         {
+          {
+           StyleBox[
+            RowBox[{"Basic", " ", "Examples"}],
+            "PrimaryExamplesSection"
+           ],
+           ButtonBox[
+            RowBox[
+             {
+              RowBox[{"More", " ", "Examples"}],
+              " ",
+              "\[RightTriangle]"
+             }
+            ],
+            BaseStyle -> "ExtendedExamplesLink",
+            ButtonData :> "ExtendedExamples"
+           ]
+          }
+         }
+        ],
+        $Line = 0;
+       ]
+      ],
+      "PrimaryExamplesSection",
+      CellID -> 479495164
+     ],
+     Cell[
+      TextData[
+       {
+        "Get information about MCP clients that are currently supported via ",
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            ButtonBox[
+             "InstallMCPServer",
+             BaseStyle -> "Link",
+             ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+            ],
+            "[",
+            RowBox[
+             {
+              "\"\!\(\*StyleBox[\"name\", \"TI\"]\)\"",
+              ",",
+              StyleBox["\[Ellipsis]", "TR"]
+             }
+            ],
+            "]"
+           }
+          ]
+         ],
+         "InlineFormula"
+        ],
+        ":"
+       }
+      ],
+      "ExampleText",
+      CellID -> 190721999
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData["$SupportedMCPClients"],
+         "Input",
+         CellLabel -> "In[1]:=",
+         CellID -> 106189953
+        ],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            "\[LeftAssociation]",
+            RowBox[
+             {
+              RowBox[
+               {
+                "\"Antigravity\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"GoogleAntigravity\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Antigravity\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Antigravity\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://antigravity.google\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"ClaudeCode\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Aliases\"", "\[Rule]", RowBox[{"{", "}"}]}],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Claude Code\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"ClaudeCode\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "True"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://code.claude.com\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"ClaudeDesktop\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"Claude\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[
+                     {"\"DisplayName\"", "\[Rule]", "\"Claude Desktop\""}
+                    ],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"ClaudeDesktop\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://claude.ai/download\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"Cline\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Aliases\"", "\[Rule]", RowBox[{"{", "}"}]}],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Cline\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Cline\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[{"\"URL\"", "\[Rule]", "\"https://cline.bot\""}]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"Codex\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"OpenAICodex\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"TOML\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcp_servers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Codex CLI\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Codex\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://openai.com/codex\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"CopilotCLI\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"Copilot\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Copilot CLI\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"CopilotCLI\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {
+                      "\"URL\"",
+                      "\[Rule]",
+                      "\"https://github.com/features/copilot/cli\""
+                     }
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"Cursor\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Aliases\"", "\[Rule]", RowBox[{"{", "}"}]}],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Cursor\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Cursor\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://www.cursor.com\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"GeminiCLI\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"Gemini\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Gemini CLI\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"GeminiCLI\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {
+                      "\"URL\"",
+                      "\[Rule]",
+                      "\"https://github.com/google-gemini/gemini-cli\""
+                     }
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"OpenCode\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Aliases\"", "\[Rule]", RowBox[{"{", "}"}]}],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcp\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"OpenCode\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"OpenCode\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "True"}],
+                    ",",
+                    RowBox[{"\"URL\"", "\[Rule]", "\"https://opencode.ai\""}]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"VisualStudioCode\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"VSCode\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcp.servers\""}],
+                    ",",
+                    RowBox[
+                     {"\"DisplayName\"", "\[Rule]", "\"Visual Studio Code\""}
+                    ],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"VisualStudioCode\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "True"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://code.visualstudio.com\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"Windsurf\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "\"Aliases\"",
+                      "\[Rule]",
+                      RowBox[{"{", "\"Codeium\"", "}"}]
+                     }
+                    ],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"mcpServers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Windsurf\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Windsurf\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "False"}],
+                    ",",
+                    RowBox[
+                     {"\"URL\"", "\[Rule]", "\"https://codeium.com/windsurf\""}
+                    ]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ],
+              ",",
+              RowBox[
+               {
+                "\"Zed\"",
+                "\[Rule]",
+                RowBox[
+                 {
+                  "\[LeftAssociation]",
+                  RowBox[
+                   {
+                    RowBox[{"\"Aliases\"", "\[Rule]", RowBox[{"{", "}"}]}],
+                    ",",
+                    RowBox[{"\"ConfigFormat\"", "\[Rule]", "\"JSON\""}],
+                    ",",
+                    RowBox[{"\"ConfigKey\"", "\[Rule]", "\"context_servers\""}],
+                    ",",
+                    RowBox[{"\"DisplayName\"", "\[Rule]", "\"Zed\""}],
+                    ",",
+                    RowBox[{"\"Name\"", "\[Rule]", "\"Zed\""}],
+                    ",",
+                    RowBox[{"\"ProjectSupport\"", "\[Rule]", "True"}],
+                    ",",
+                    RowBox[{"\"URL\"", "\[Rule]", "\"https://zed.dev\""}]
+                   }
+                  ],
+                  "\[RightAssociation]"
+                 }
+                ]
+               }
+              ]
+             }
+            ],
+            "\[RightAssociation]"
+           }
+          ]
+         ],
+         "Output",
+         CellLabel -> "Out[1]=",
+         CellID -> 573242543
+        ]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "More Examples",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "MoreExamples",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Extended examples in standardized sections.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExtendedExamplesSection",
+      CellTags -> "ExtendedExamples",
+      CellID -> 224732476
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Scope", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 80555562
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Generalizations & Extensions", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 162761349
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["Options", "ExampleSection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSection",
+         CellID -> 19688071
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 437514791
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 4207953
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Applications", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 91254136
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Properties & Relations", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 260798594
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Possible Issues", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 353055748
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Interactive Examples", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 416117987
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["Neat Examples", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 75871097
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell["Metadata", "MetadataSection", CellID -> 149448601],
+     Cell[
+      TextData[
+       {
+        "New in: ",
+        Cell["XX", "HistoryData", CellTags -> "New"],
+        " | Modified in: ",
+        Cell[" ", "HistoryData", CellTags -> "Modified"],
+        " | Obsolete in: ",
+        Cell[" ", "HistoryData", CellTags -> "Obsolete"]
+       }
+      ],
+      "History",
+      CellID -> 248187649
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         TextData[
+          {
+           "Categorization",
+           Cell[
+            BoxData[
+             TemplateBox[
+              {
+               "Metadata",
+               Cell[
+                BoxData[
+                 FrameBox[
+                  Cell[
+                   "Metadata such as page URI, context, and type of documentation page.",
+                   "MoreInfoText"
+                  ],
+                  BaseStyle -> "IFrameBox"
+                 ]
+                ],
+                "MoreInfoTextOuter"
+               ]
+              },
+              "MoreInfoOpenerButtonTemplate"
+             ]
+            ]
+           ]
+          }
+         ],
+         "CategorizationSection",
+         CellID -> 181867412
+        ],
+        Cell[
+         "Symbol",
+         "Categorization",
+         CellLabel -> "Entity Type",
+         CellID -> 297325831
+        ],
+        Cell[
+         "Wolfram/AgentTools",
+         "Categorization",
+         CellLabel -> "Paclet Name",
+         CellID -> 603046235
+        ],
+        Cell[
+         "Wolfram`AgentTools`",
+         "Categorization",
+         CellLabel -> "Context",
+         CellID -> 107898593
+        ],
+        Cell[
+         "Wolfram/AgentTools/ref/$SupportedMCPClients",
+         "Categorization",
+         CellLabel -> "URI",
+         CellID -> 8449599
+        ]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Keywords", "KeywordsSection", CellID -> 184289076],
+        Cell["XXXX", "Keywords", CellID -> 260749161]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Syntax Templates",
+         "TemplatesSection",
+         CellID -> 187747287
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Additional Function Template",
+         CellID -> 155658057
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Arguments Pattern",
+         CellID -> 90743871
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Local Variables",
+         CellID -> 1031926
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Color Equal Signs",
+         CellID -> 385123573
+        ]
+       },
+       Closed
+      ]
+     ]
+    },
+    Open
+   ]
+  ]
+ },
+ TaggingRules -> <|"Paclet" -> "Wolfram/AgentTools"|>,
+ StyleDefinitions ->
+  FrontEnd`FileName[
+   {"Wolfram"},
+   "FunctionPageStylesExt.nb",
+   CharacterEncoding -> "UTF-8"
+  ]
+]

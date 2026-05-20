@@ -1,0 +1,2448 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* Created By: SaveReadableNotebook *)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SaveReadableNotebook *)
+
+Notebook[
+ {
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "Quick Start for AI Coding Applications",
+      "Title",
+      CellID -> 252778366
+     ],
+     Cell[
+      "This guide walks you through setting up the Wolfram MCP Server with AI coding applications like Claude Code, Cursor, Visual Studio Code, and others. By the end, your AI coding assistant will be able to evaluate Wolfram Language code, search documentation, read and write notebooks, run tests, and inspect code.",
+      "Text",
+      CellID -> 45152051
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Recommended Server", "Section", CellID -> 20240614],
+        Cell[
+         TextData[
+          {
+           "For Wolfram Language development, it's recommended to use the ",
+           StyleBox["WolframLanguage", "InlineCode"],
+           " server. It gives the AI the ability to:"
+          }
+         ],
+         "Text",
+         CellID -> 163743119
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Search Wolfram resources", FontWeight -> Bold],
+           " including documentation, function repository, data repository, and more"
+          }
+         ],
+         "Item",
+         CellID -> 29860757
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Execute code", FontWeight -> Bold],
+           " to test implementations and verify behavior"
+          }
+         ],
+         "Item",
+         CellID -> 134261439
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Read and write notebooks", FontWeight -> Bold],
+           " for working with ",
+           Cell[
+            BoxData[Cell[".nb", Background -> None]],
+            "InlineCode"
+           ],
+           " files as markdown"
+          }
+         ],
+         "Item",
+         CellID -> 71060673
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Look up symbol definitions", FontWeight -> Bold],
+           " to understand existing code"
+          }
+         ],
+         "Item",
+         CellID -> 443492278
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Inspect code", FontWeight -> Bold],
+           " for potential issues and style problems"
+          }
+         ],
+         "Item",
+         CellID -> 875700
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Run tests", FontWeight -> Bold],
+           " to validate changes against your test suite"
+          }
+         ],
+         "Item",
+         CellID -> 1694173
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Installation", "Section", CellID -> 21492039],
+        Cell[
+         TextData[
+          {
+           "All installation methods use the ",
+           Cell[
+            BoxData[
+             ButtonBox[
+              "InstallMCPServer",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+             ]
+            ],
+            "InlineFormula"
+           ],
+           " function. Open a Wolfram Language session and run the appropriate command for your application."
+          }
+         ],
+         "Text",
+         CellID -> 417606428
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Claude Code", "Subsection", CellID -> 473004862],
+           Cell[
+            "Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation is available only in a specific project directory.",
+            "Text",
+            CellID -> 587836698
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Global installation:",
+               "MathCaption",
+               CellID -> 360997577
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[{"\"ClaudeCode\"", ",", "\"WolframLanguage\""}],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 225747086
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Project-level installation:",
+               "MathCaption",
+               CellID -> 668996838
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "{",
+                      RowBox[{"\"ClaudeCode\"", ",", "\"/path/to/project\""}],
+                      "}"
+                     }
+                    ],
+                    ",",
+                    "\"WolframLanguage\""
+                   }
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 209348474
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Verify the installation from the command line:",
+               "MathCaption",
+               CellID -> 223231909
+              ],
+              Cell[
+               "claude mcp get WolframLanguage",
+               "ExternalLanguage",
+               CellEvaluationLanguage -> "Shell",
+               CellID -> 40285647
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "The output should indicate that the \"WolframLanguage\" server is connected.",
+            "Text",
+            CellID -> 58055741
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Cline", "Subsection", CellID -> 962855634],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Cline\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 44390945
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Copilot CLI", "Subsection", CellID -> 28915509],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"CopilotCLI\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 373383170
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "To verify the installation from the command line:",
+               "MathCaption",
+               CellID -> 15460488
+              ],
+              Cell[
+               "copilot -i \"/mcp show\"",
+               "ExternalLanguage",
+               CellEvaluationLanguage -> "Shell",
+               CellID -> 427698004
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "The output should indicate that the \"WolframLanguage\" server is configured.",
+            "Text",
+            CellID -> 243159260
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Cursor", "Subsection", CellID -> 16561161],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Cursor\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 158083412
+           ],
+           Cell[
+            "To verify the installation:",
+            "Text",
+            CellID -> 211186324
+           ],
+           Cell[
+            "Navigate to Cursor settings",
+            "Item",
+            CellID -> 242341421
+           ],
+           Cell[
+            "Select the \"Tools & MCP\" tab",
+            "Item",
+            CellID -> 495461010
+           ],
+           Cell[
+            "Verify that \"WolframLanguage\" is listed under \"Installed MCP Servers\"",
+            "Item",
+            CellID -> 106649718
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Gemini CLI", "Subsection", CellID -> 438009868],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"GeminiCLI\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 307809286
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "To verify the installation from the command line:",
+               "MathCaption",
+               CellID -> 6936848
+              ],
+              Cell[
+               "gemini -i \"/mcp\"",
+               "ExternalLanguage",
+               CellEvaluationLanguage -> "Shell",
+               CellID -> 181421179
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "The output should indicate that the \"WolframLanguage\" server is configured.",
+            "Text",
+            CellID -> 238422330
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Google Antigravity",
+            "Subsection",
+            CellID -> 422986796
+           ],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Antigravity\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 12039926
+           ],
+           Cell[
+            "To verify the installation:",
+            "Text",
+            CellID -> 28462221
+           ],
+           Cell[
+            "In the editor view, click the \"...\" menu at the top right of the \"Agent\" panel",
+            "Item",
+            CellID -> 776175506
+           ],
+           Cell["Select \"MCP Servers\"", "Item", CellID -> 322829750],
+           Cell[
+            "Click \"Manage MCP Servers\" at the top right of the panel",
+            "Item",
+            CellID -> 453151772
+           ],
+           Cell[
+            "Verify that \"WolframLanguage\" is listed under \"Installed MCP Servers\"",
+            "Item",
+            CellID -> 395951229
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            TextData[StyleBox["Kiro", IgnoreSpellCheck -> True]],
+            "Subsection",
+            CellID -> 485644884
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Global installation:",
+               "MathCaption",
+               CellID -> 680099035
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[{"\"Kiro\"", ",", "\"WolframLanguage\""}],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 508309466
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Project-level installation:",
+               "MathCaption",
+               CellID -> 889938143
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "{",
+                      RowBox[{"\"Kiro\"", ",", "\"/path/to/project\""}],
+                      "}"
+                     }
+                    ],
+                    ",",
+                    "\"WolframLanguage\""
+                   }
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 27559843
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            TextData[
+             {
+              "Ensure MCP is enabled in the ",
+              StyleBox["Kiro", IgnoreSpellCheck -> True],
+              " IDE by following these steps:"
+             }
+            ],
+            "Text",
+            CellID -> 152959268
+           ],
+           Cell[
+            "Click on the Kiro icon on the left side bar",
+            "Item",
+            CellID -> 2872413
+           ],
+           Cell[
+            "Under \"MCP Servers\", click on the \"Enable MCP\" button if it is not already enabled",
+            "Item",
+            CellID -> 395518729
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["OpenAI Codex", "Subsection", CellID -> 3310560],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Codex\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 660227621
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "To verify the installation from the command line:",
+               "MathCaption",
+               CellID -> 306930245
+              ],
+              Cell[
+               "codex mcp get WolframLanguage",
+               "ExternalLanguage",
+               CellEvaluationLanguage -> "Shell",
+               CellID -> 446582763
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "The output should indicate that the \"WolframLanguage\" server is enabled.",
+            "Text",
+            CellID -> 725136532
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["OpenCode", "Subsection", CellID -> 209014095],
+           Cell[
+            "Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation is available only in a specific project directory.",
+            "Text",
+            CellID -> 402161500
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Global installation:",
+               "MathCaption",
+               CellID -> 111372503
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[{"\"OpenCode\"", ",", "\"WolframLanguage\""}],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 130077181
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Project-level installation:",
+               "MathCaption",
+               CellID -> 151841815
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "{",
+                      RowBox[{"\"OpenCode\"", ",", "\"/path/to/project\""}],
+                      "}"
+                     }
+                    ],
+                    ",",
+                    "\"WolframLanguage\""
+                   }
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 85021059
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "To verify the installation from the command line:",
+               "MathCaption",
+               CellID -> 474390559
+              ],
+              Cell[
+               "opencode mcp list",
+               "ExternalLanguage",
+               CellEvaluationLanguage -> "Shell",
+               CellID -> 213669027
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "The output should indicate that the \"WolframLanguage\" server is connected. ",
+            "Text",
+            CellID -> 145828150
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Visual Studio Code",
+            "Subsection",
+            CellID -> 358304962
+           ],
+           Cell[
+            "Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation is available only in a specific project directory.",
+            "Text",
+            CellID -> 487374692
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Global installation:",
+               "MathCaption",
+               CellID -> 354557782
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[
+                   {"\"VisualStudioCode\"", ",", "\"WolframLanguage\""}
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 59885571
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Project-level installation:",
+               "MathCaption",
+               CellID -> 260881034
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "InstallMCPServer",
+                  "[",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      "{",
+                      RowBox[
+                       {"\"VisualStudioCode\"", ",", "\"/path/to/project\""}
+                      ],
+                      "}"
+                     }
+                    ],
+                    ",",
+                    "\"WolframLanguage\""
+                   }
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 355122900
+              ]
+             },
+             Open
+            ]
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Windsurf", "Subsection", CellID -> 308002613],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Windsurf\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 382155078
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Zed", "Subsection", CellID -> 169119072],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "InstallMCPServer",
+               "[",
+               RowBox[{"\"Zed\"", ",", "\"WolframLanguage\""}],
+               "]"
+              }
+             ]
+            ],
+            "Input",
+            CellID -> 657386784
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Other Clients", "Subsection", CellID -> 45503149],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "For other MCP-compatible clients, you can generate the raw JSON configuration and adapt it manually:",
+               "MathCaption",
+               CellID -> 476425863
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  RowBox[
+                   {"MCPServerObject", "[", "\"WolframLanguage\"", "]"}
+                  ],
+                  "[",
+                  "\"JSONConfiguration\"",
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 219411299
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Verifying the Installation",
+               "Subsubsection",
+               CellID -> 121314755
+              ],
+              Cell[
+               "After installing, restart your coding tool and confirm the Wolfram tools are available. Most applications have a way to list configured MCP servers and their status. If you're unsure, you can always just ask the AI:",
+               "Text",
+               CellID -> 642278401
+              ],
+              Cell[
+               BoxData[
+                GridBox[
+                 {
+                  {
+                   PaneBox[
+                    "\"\\\"What Wolfram Language tools do you have access to?\\\"\"",
+                    BaseStyle -> {
+                     "Text",
+                     FontColor ->
+                      LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                    },
+                    ImageMargins -> 5,
+                    ImageSize -> {Full, Automatic}
+                   ]
+                  }
+                 },
+                 AutoDelete -> False,
+                 GridBoxBackground -> {
+                  "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+                 },
+                 GridBoxDividers -> {
+                  "ColumnsIndexed" -> {
+                   1 ->
+                    Directive[
+                     LightDarkSwitched[
+                      RGBColor[0.87, 0.94, 1],
+                      RGBColor[0.249113, 0.329519, 0.42312]
+                     ],
+                     AbsoluteThickness[4]
+                    ]
+                  },
+                  "Rows" -> {{False}}
+                 },
+                 GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                ]
+               ],
+               "Text",
+               "BlockQuote",
+               ShowStringCharacters -> False,
+               Background -> None,
+               CellID -> 426436109
+              ],
+              Cell[
+               TextData[
+                {
+                 "The AI should list tools like ",
+                 StyleBox["WolframLanguageEvaluator", "InlineCode"],
+                 ", ",
+                 StyleBox["WolframLanguageContext", "InlineCode"],
+                 ", ",
+                 StyleBox["TestReport", "InlineCode"],
+                 ", etc."
+                }
+               ],
+               "Text",
+               CellID -> 529677147
+              ]
+             },
+             Open
+            ]
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Configuring AI Guidance with AGENTS.md",
+         "Section",
+         CellID -> 53298116
+        ],
+        Cell[
+         TextData[
+          {
+           "AI coding tools start each session with no memory of previous conversations. An ",
+           Cell[
+            BoxData[Cell["AGENTS.md", Background -> None]],
+            "InlineCode"
+           ],
+           " file (or similar project-level instructions file) at the root of your project gives the AI essential context about your codebase, conventions, and how to use the Wolfram Language tools effectively."
+          }
+         ],
+         "Text",
+         CellID -> 242095628
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["Note for Claude Code users:", FontWeight -> Bold],
+           " Claude Code uses a ",
+           Cell[
+            BoxData[Cell["CLAUDE.md", Background -> None]],
+            "InlineCode"
+           ],
+           " file for project instructions rather than ",
+           Cell[
+            BoxData[Cell["AGENTS.md", Background -> None]],
+            "InlineCode"
+           ],
+           ". If your project only uses Claude Code, you can name your instructions file ",
+           Cell[
+            BoxData[Cell["CLAUDE.md", Background -> None]],
+            "InlineCode"
+           ],
+           " instead. If you use multiple AI coding tools and want to maintain a single source of truth, you have two options: "
+          }
+         ],
+         "Text",
+         CellID -> 331350253
+        ],
+        Cell[
+         TextData[
+          {
+           "Put ",
+           Cell[
+            BoxData[Cell["@AGENTS.md", Background -> None]],
+            "InlineCode"
+           ],
+           " in your ",
+           Cell[
+            BoxData[Cell["CLAUDE.md", Background -> None]],
+            "InlineCode"
+           ],
+           " file to automatically include the contents of ",
+           Cell[
+            BoxData[Cell["AGENTS.md", Background -> None]],
+            "InlineCode"
+           ]
+          }
+         ],
+         "Item",
+         CellID -> 686770717
+        ],
+        Cell[
+         TextData[
+          {
+           "Create ",
+           Cell[
+            BoxData[Cell["CLAUDE.md", Background -> None]],
+            "InlineCode"
+           ],
+           " as a ",
+           StyleBox["symlink", IgnoreSpellCheck -> True],
+           " to ",
+           Cell[
+            BoxData[Cell["AGENTS.md", Background -> None]],
+            "InlineCode"
+           ],
+           " (e.g., ",
+           Cell[
+            BoxData[
+             Cell["ln -s AGENTS.md CLAUDE.md", Background -> None]
+            ],
+            "InlineCode"
+           ],
+           ")"
+          }
+         ],
+         "Item",
+         CellID -> 625813132
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Why AGENTS.md Matters",
+            "Subsection",
+            CellID -> 188150770
+           ],
+           Cell[
+            "Without guidance, the AI will:",
+            "Text",
+            CellID -> 4099103
+           ],
+           Cell[
+            TextData[
+             {
+              "Not know when to use ",
+              Cell[
+               BoxData[Cell["WolframLanguageContext", Background -> None]],
+               "InlineCode"
+              ],
+              " to look up documentation"
+             }
+            ],
+            "Item",
+            CellID -> 196469298
+           ],
+           Cell[
+            "Miss your project's coding conventions and patterns",
+            "Item",
+            CellID -> 168589247
+           ],
+           Cell[
+            "Write code in unfamiliar styles or use deprecated patterns",
+            "Item",
+            CellID -> 175079940
+           ],
+           Cell[
+            "Skip testing and code inspection",
+            "Item",
+            CellID -> 343077630
+           ],
+           Cell[
+            TextData[
+             {
+              "With a well-written ",
+              StyleBox["AGENTS.md", "InlineCode"],
+              ", the AI will follow your conventions from the start."
+             }
+            ],
+            "Text",
+            CellID -> 361607913
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["What to Include", "Subsection", CellID -> 18765451],
+           Cell[
+            TextData[
+             {
+              "1. ",
+              StyleBox["Tool guidance", FontWeight -> Bold],
+              " - When and how to use each Wolfram Language tool"
+             }
+            ],
+            "Text",
+            CellID -> 36628611
+           ],
+           Cell[
+            TextData[
+             {
+              "2. ",
+              StyleBox["Project layout", FontWeight -> Bold],
+              " - Directory structure, key files, entry points"
+             }
+            ],
+            "Text",
+            CellID -> 422594424
+           ],
+           Cell[
+            TextData[
+             {
+              "3. ",
+              StyleBox["Code style", FontWeight -> Bold],
+              " - Naming conventions, patterns, error handling approach"
+             }
+            ],
+            "Text",
+            CellID -> 94795104
+           ],
+           Cell[
+            TextData[
+             {
+              "4. ",
+              StyleBox["Testing", FontWeight -> Bold],
+              " - How to run tests, where test files live, test format"
+             }
+            ],
+            "Text",
+            CellID -> 173768514
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell["Available Tools", "Subsection", CellID -> 61825447],
+           Cell[
+            TextData[
+             {
+              "The ",
+              StyleBox["WolframLanguage", "InlineCode"],
+              " server provides these tools that you can reference in your ",
+              StyleBox["AGENTS.md", "InlineCode"],
+              ":"
+             }
+            ],
+            "Text",
+            CellID -> 647305114
+           ],
+           Cell[
+            BoxData[
+             GridBox[
+              {
+               {
+                "WolframLanguageContext",
+                Cell[
+                 "Semantic search across Wolfram resources (documentation, function repository, data repository, neural net repository, and more)",
+                 "TableText"
+                ]
+               },
+               {
+                "WolframLanguageEvaluator",
+                Cell["Execute Wolfram Language code", "TableText"]
+               },
+               {
+                "ReadNotebook",
+                Cell[
+                 "Read Wolfram notebooks (.nb) as markdown",
+                 "TableText"
+                ]
+               },
+               {
+                "WriteNotebook",
+                Cell["Convert markdown to Wolfram notebooks", "TableText"]
+               },
+               {
+                "SymbolDefinition",
+                Cell[
+                 "Look up symbol definitions in readable format",
+                 "TableText"
+                ]
+               },
+               {
+                "CodeInspector",
+                Cell[
+                 "Inspect code for issues and return a formatted report",
+                 "TableText"
+                ]
+               },
+               {
+                "TestReport",
+                Cell["Run Wolfram Language test files (.wlt)", "TableText"]
+               }
+              }
+             ]
+            ],
+            "DefinitionBox",
+            CellID -> 498691150
+           ],
+           Cell[
+            TextData[
+             {
+              "Tools provided by the ",
+              StyleBox["WolframLanguage", "InlineCode"],
+              " MCP server."
+             }
+            ],
+            "Caption",
+            CellID -> 48455874
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "AGENTS.md Template",
+            "Subsection",
+            CellID -> 177100587
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Below is a template you can adapt for your Wolfram Language project:",
+               "Text",
+               CellID -> 6877108
+              ],
+              Cell[
+               TextData[
+                {
+                 "# AGENTS.md\n\n## Overview\n\nBrief description of what your project does.\n\n## Development\n\nAlways use the WolframLanguageContext tool when working with Wolfram Language code\nto look up documentation and find relevant functions before writing code.\n\nWhen you make changes to source code, write and run tests using the TestReport tool\nand check your work with the CodeInspector tool.\n\n## Project Structure\n\n- `Kernel/` - Main source files\n  - `MyPaclet.wl` - Entry point\n  - `Utilities.wl` - Helper functions\n- `Tests/` - Test files (.wlt)\n- `Documentation/` - Notebooks and docs\n\n## Code Style\n\n- Use `UpperCamelCase` for public function names\n- Use `lowerCamelCase` for internal function names\n- Use `Enclose`/`Confirm` for error handling:\n  ```wl\n  myFunction[arg_] := Enclose[\n      Module[{result},\n          result = ConfirmBy[computation[",
+                 StyleBox["arg", IgnoreSpellCheck -> True],
+                 "], StringQ];\n          result\n      ]\n  ];\n  ```\n\n## Writing Tests\n\nWrite tests in this format:\n\n```wl\nVerificationTest[\n    input,\n    expected,\n    TestID -> \"DescriptiveTestID\"\n]\n```\n\nTest files go in the `Tests/` directory with a `.wlt` extension.\n\n## Key Patterns\n\nDescribe any project-specific patterns, conventions, or architectural decisions\nthat the AI should follow."
+                }
+               ],
+               "Program",
+               CellID -> 146381601
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            "Adjust the template to match your actual project structure, conventions, and requirements.",
+            "Text",
+            CellID -> 183210177
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               TextData[
+                {
+                 "To see a real-world ",
+                 StyleBox["AGENTS.md", "InlineCode"],
+                 " file, view the one used during development of this paclet:"
+                }
+               ],
+               "MathCaption",
+               CellID -> 105849119
+              ],
+              Cell[
+               BoxData[
+                RowBox[
+                 {
+                  "Import",
+                  "[",
+                  RowBox[
+                   {
+                    RowBox[
+                     {
+                      RowBox[
+                       {"PacletObject", "[", "\"Wolfram/AgentTools\"", "]"}
+                      ],
+                      "[",
+                      RowBox[{"\"AssetLocation\"", ",", "\"AGENTS.md\""}],
+                      "]"
+                     }
+                    ],
+                    ",",
+                    "\"Text\""
+                   }
+                  ],
+                  "]"
+                 }
+                ]
+               ],
+               "Input",
+               CellID -> 73860916
+              ]
+             },
+             Open
+            ]
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            TextData[
+             {
+              "Keeping ",
+              StyleBox["AGENTS.md", "InlineCode"],
+              " Up to Date"
+             }
+            ],
+            "Subsection",
+            CellID -> 177881101
+           ],
+           Cell[
+            TextData[
+             {
+              "Your ",
+              Cell[
+               BoxData[Cell["AGENTS.md", Background -> None]],
+               "InlineCode"
+              ],
+              " is a living document that should evolve with your project. Update it when you:"
+             }
+            ],
+            "Text",
+            CellID -> 712505701
+           ],
+           Cell[
+            "Add new files, directories, or architectural components",
+            "Item",
+            CellID -> 184563806
+           ],
+           Cell[
+            "Establish new coding patterns or conventions",
+            "Item",
+            CellID -> 636056347
+           ],
+           Cell[
+            "Discover edge cases or gotchas the AI should know about",
+            "Item",
+            CellID -> 593706313
+           ],
+           Cell[
+            "Change testing strategies or workflows",
+            "Item",
+            CellID -> 408023110
+           ],
+           Cell[
+            TextData[
+             {
+              "A few minutes spent updating ",
+              Cell[
+               BoxData[Cell["AGENTS.md", Background -> None]],
+               "InlineCode"
+              ],
+              " after significant changes saves time in future sessions by preventing the AI from making outdated assumptions."
+             }
+            ],
+            "Text",
+            CellID -> 726437045
+           ],
+           Cell[
+            BoxData[
+             GridBox[
+              {
+               {
+                PaneBox[
+                 Cell[
+                  TextData[
+                   {
+                    StyleBox["Tip:", FontWeight -> Bold],
+                    " AI coding assistants can help you write and update this file\[LongDash]just ask! However, always review AI-suggested changes carefully to ensure they accurately reflect your project's conventions and requirements."
+                   }
+                  ],
+                  Background -> None
+                 ],
+                 BaseStyle -> {
+                  "Text",
+                  FontColor ->
+                   LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                 },
+                 ImageMargins -> 5,
+                 ImageSize -> {Full, Automatic},
+                 ScrollPosition -> {0.0, 0.0}
+                ]
+               }
+              },
+              AutoDelete -> False,
+              GridBoxBackground -> {
+               "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+              },
+              GridBoxDividers -> {
+               "ColumnsIndexed" -> {
+                1 ->
+                 Directive[
+                  LightDarkSwitched[
+                   RGBColor[0.87, 0.94, 1],
+                   RGBColor[0.249113, 0.329519, 0.42312]
+                  ],
+                  AbsoluteThickness[4]
+                 ]
+               },
+               "Rows" -> {{False}}
+              },
+              GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+             ]
+            ],
+            "Text",
+            "BlockQuote",
+            ShowStringCharacters -> False,
+            Background -> None,
+            CellID -> 141046162
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Best Practices for AI-Assisted Development",
+         "Section",
+         CellID -> 295086114
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Test-Driven Development",
+            "Subsection",
+            CellID -> 10996841
+           ],
+           Cell[
+            "AI coding tools work well with a test-driven workflow:",
+            "Text",
+            CellID -> 895907941
+           ],
+           Cell[
+            TextData[
+             {
+              "1. ",
+              StyleBox["Write tests first", FontWeight -> Bold],
+              " describing the expected behavior"
+             }
+            ],
+            "Text",
+            CellID -> 272445577
+           ],
+           Cell[
+            TextData[
+             {
+              "2. ",
+              StyleBox["Ask the AI to implement", FontWeight -> Bold],
+              " the function to pass the tests"
+             }
+            ],
+            "Text",
+            CellID -> 283173657
+           ],
+           Cell[
+            TextData[
+             {
+              "3. ",
+              StyleBox["Run tests with TestReport", FontWeight -> Bold],
+              " to verify"
+             }
+            ],
+            "Text",
+            CellID -> 119584645
+           ],
+           Cell[
+            TextData[
+             {
+              "4. ",
+              StyleBox["Iterate", FontWeight -> Bold],
+              " until all tests pass"
+             }
+            ],
+            "Text",
+            CellID -> 57905655
+           ],
+           Cell[
+            "This gives the AI a concrete specification to work against and provides automatic verification.",
+            "Text",
+            CellID -> 292120757
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Use Planning Mode",
+            "Subsection",
+            CellID -> 332403986
+           ],
+           Cell[
+            "For non-trivial tasks, ask the AI to plan before implementing:",
+            "Text",
+            CellID -> 548525010
+           ],
+           Cell[
+            BoxData[
+             GridBox[
+              {
+               {
+                PaneBox[
+                 "\"\\\"I need to add a function that parses CSV files into Associations according to a given schema. Plan the implementation before writing code and ask me clarifying questions as needed.\\\"\"",
+                 BaseStyle -> {
+                  "Text",
+                  FontColor ->
+                   LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                 },
+                 ImageMargins -> 5,
+                 ImageSize -> {Full, Automatic}
+                ]
+               }
+              },
+              AutoDelete -> False,
+              GridBoxBackground -> {
+               "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+              },
+              GridBoxDividers -> {
+               "ColumnsIndexed" -> {
+                1 ->
+                 Directive[
+                  LightDarkSwitched[
+                   RGBColor[0.87, 0.94, 1],
+                   RGBColor[0.249113, 0.329519, 0.42312]
+                  ],
+                  AbsoluteThickness[4]
+                 ]
+               },
+               "Rows" -> {{False}}
+              },
+              GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+             ]
+            ],
+            "Text",
+            "BlockQuote",
+            ShowStringCharacters -> False,
+            Background -> None,
+            CellID -> 17091729
+           ],
+           Cell[
+            "This lets the AI explore the codebase, understand existing patterns, and propose an approach for your review before making changes.",
+            "Text",
+            CellID -> 20414306
+           ],
+           Cell[
+            TextData[
+             {
+              StyleBox["Note:", FontWeight -> Bold],
+              " Many applications support a built-in \"planning mode\" that switches it into a mode that is optimized for this type of work. If your application supports this, you should use it to plan the implementation before writing code."
+             }
+            ],
+            "Text",
+            CellID -> 849064227
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Avoiding \"Context Rot\" in Large Tasks",
+            "Subsection",
+            CellID -> 188603163
+           ],
+           Cell[
+            "AI coding tools have finite context windows. When implementing large features, accumulated context can degrade performance as the conversation grows. Many tools offer mitigation strategies\[LongDash]context compression, sub-agents, task management\[LongDash]but these rely on AI deciding what information matters. Mistakes compound over time, leading to progressively worse results.",
+            "Text",
+            CellID -> 236151048
+           ],
+           Cell[
+            "For complex features spanning multiple sessions, a manual approach to context management often works better. Here we'll describe an example workflow that efficiently manages context. The core idea: instead of continuing one long conversation, start fresh sessions with carefully curated context.",
+            "Text",
+            CellID -> 545559776
+           ],
+           Cell[
+            TextData[
+             StyleBox["When to use this approach:", FontWeight -> Bold]
+            ],
+            "Text",
+            CellID -> 82089831
+           ],
+           Cell[
+            "Features requiring more than one implementation session",
+            "Item",
+            CellID -> 708221200
+           ],
+           Cell[
+            "Work that's likely to span multiple hours (or days)",
+            "Item",
+            CellID -> 564445208
+           ],
+           Cell[
+            "Tasks where maintaining accuracy is critical",
+            "Item",
+            CellID -> 18136131
+           ],
+           Cell[
+            TextData[
+             StyleBox["When it's overkill:", FontWeight -> Bold]
+            ],
+            "Text",
+            CellID -> 504429862
+           ],
+           Cell[
+            "Single-session features",
+            "Item",
+            CellID -> 346324516
+           ],
+           Cell[
+            "Quick bug fixes or refactors",
+            "Item",
+            CellID -> 665674270
+           ],
+           Cell[
+            "Exploratory prototyping",
+            "Item",
+            CellID -> 292196197
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell["The Workflow", "Subsubsection", CellID -> 7609188],
+              Cell[
+               "Organize your feature work using three documents:",
+               "Text",
+               CellID -> 434082901
+              ],
+              Cell[
+               BoxData[
+                GridBox[
+                 {
+                  {
+                   RowBox[{"Specs", "/", RowBox[{"FeatureName", ".", "md"}]}],
+                   Cell[
+                    "What to build (requirements, API, edge cases)",
+                    "TableText"
+                   ]
+                  },
+                  {
+                   RowBox[{"TODO", "/", RowBox[{"FeatureName", ".", "md"}]}],
+                   Cell["Tasks to complete (checklist)", "TableText"]
+                  },
+                  {
+                   RowBox[
+                    {"Progress", "/", RowBox[{"FeatureName", ".", "md"}]}
+                   ],
+                   Cell["What's been done (session summaries)", "TableText"]
+                  }
+                 }
+                ]
+               ],
+               "DefinitionBox",
+               CellID -> 20659446
+              ],
+              Cell[
+               "Suggested working documents.",
+               "Caption",
+               CellID -> 372684583
+              ],
+              Cell[
+               "Each session, you provide these three files as context along with instructions to complete one task. After completing a task, the AI updates the progress log and task list, then you start a fresh session for the next task.",
+               "Text",
+               CellID -> 783824928
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Create a Specifications Document",
+               "Subsubsection",
+               CellID -> 51982903
+              ],
+              Cell[
+               CellGroupData[
+                {
+                 Cell[
+                  "Before starting, write a detailed spec:",
+                  "Text",
+                  CellID -> 175029031
+                 ],
+                 Cell[
+                  "# Feature: CSV Import with Schema Validation\n\n## Requirements\n- Parse CSV files into lists of Associations\n- Support custom column type specifications\n- Validate data against provided schema\n- Return Failure objects for invalid data\n\n## API Design\n```wl\nCSVImportValidated[file, schema] (* returns {<|...|>, ...} or Failure *)\n```\n\n## Schema Format\n```wl\n<|\"Name\" -> \"String\", \"Age\" -> \"Integer\", \"Score\" -> \"Real\"|>\n```\n\n## Edge Cases\n- Empty files return {}\n- Missing columns return Failure[\"MissingColumn\", ...]\n- Type mismatches return Failure[\"TypeError\", ...]",
+                  "Program",
+                  CellID -> 217614637
+                 ]
+                },
+                Open
+               ]
+              ],
+              Cell[
+               "AI assistants can help draft this spec\[LongDash]ask them to propose an API design or identify edge cases you might have missed. However, iterate until every detail is correct. This spec becomes the source of truth for all implementation work, so inaccuracies here will propagate into the code.",
+               "Text",
+               CellID -> 76417110
+              ],
+              Cell[
+               TextData[
+                StyleBox["Tips for good specs:", FontWeight -> Bold]
+               ],
+               "Text",
+               CellID -> 51731880
+              ],
+              Cell[
+               "Be explicit about return types and error conditions",
+               "Item",
+               CellID -> 7971379
+              ],
+              Cell[
+               "Include concrete examples for non-obvious behavior",
+               "Item",
+               CellID -> 584637548
+              ],
+              Cell[
+               "Document assumptions and constraints",
+               "Item",
+               CellID -> 10345139
+              ],
+              Cell[
+               TextData[
+                {
+                 ButtonBox[
+                  "Click here",
+                  BaseStyle -> "Hyperlink",
+                  ButtonData -> {
+                   URL[
+                    "https://github.com/WolframResearch/AgentTools/blob/main/Specs/CodeInspectorTool.md"
+                   ],
+                   None
+                  },
+                  ButtonNote -> "https://github.com/WolframResearch/AgentTools/blob/main/Specs/CodeInspectorTool.md"
+                 ],
+                 " to view a real example used to implement a feature for the AgentTools paclet."
+                }
+               ],
+               "Text",
+               CellID -> 293826924
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Generate a Task List",
+               "Subsubsection",
+               CellID -> 891639401
+              ],
+              Cell[
+               "In a new session, ask the AI to generate a task list based on the spec:",
+               "Text",
+               CellID -> 287516331
+              ],
+              Cell[
+               BoxData[
+                GridBox[
+                 {
+                  {
+                   PaneBox[
+                    "\"\\\"Analyze @Specs/CSVImportValidated.md and break it down into implementation tasks. Create TODO/CSVImportValidated.md with a checklist.\\\"\"",
+                    BaseStyle -> {
+                     "Text",
+                     FontColor ->
+                      LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                    },
+                    ImageMargins -> 5,
+                    ImageSize -> {Full, Automatic}
+                   ]
+                  }
+                 },
+                 AutoDelete -> False,
+                 GridBoxBackground -> {
+                  "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+                 },
+                 GridBoxDividers -> {
+                  "ColumnsIndexed" -> {
+                   1 ->
+                    Directive[
+                     LightDarkSwitched[
+                      RGBColor[0.87, 0.94, 1],
+                      RGBColor[0.249113, 0.329519, 0.42312]
+                     ],
+                     AbsoluteThickness[4]
+                    ]
+                  },
+                  "Rows" -> {{False}}
+                 },
+                 GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                ]
+               ],
+               "Text",
+               "BlockQuote",
+               ShowStringCharacters -> False,
+               Background -> None,
+               CellID -> 412321688
+              ],
+              Cell[
+               CellGroupData[
+                {
+                 Cell[
+                  "Aim for tasks that can each be completed in a single focused session:",
+                  "Text",
+                  CellID -> 38139106
+                 ],
+                 Cell[
+                  "# TODO: CSVImportValidated\n\n- [ ] Implement CSVImportValidated with basic parsing\n- [ ] Add schema validation for String, Integer, Real types\n- [ ] Write 12 tests, all passing\n- [ ] Add support for DateObject columns\n- [ ] Handle quoted strings with commas\n- [ ] Add Options for delimiter and header row\n- [ ] Verify all tests pass\n- [ ] Update documentation\n- [ ] Perform final review",
+                  "Program",
+                  CellID -> 669334432
+                 ]
+                },
+                Open
+               ]
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Write Progress Reports",
+               "Subsubsection",
+               CellID -> 870930092
+              ],
+              Cell[
+               "At the end of each session, have the AI append a progress report:",
+               "Text",
+               CellID -> 14652548
+              ],
+              Cell[
+               BoxData[
+                GridBox[
+                 {
+                  {
+                   PaneBox[
+                    "\"\\\"Append a progress report to Progress/CSVImportValidated.md as a new '## Session N' section summarizing what was accomplished and anything useful for resuming this task.\\\"\"",
+                    BaseStyle -> {
+                     "Text",
+                     FontColor ->
+                      LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                    },
+                    ImageMargins -> 5,
+                    ImageSize -> {Full, Automatic}
+                   ]
+                  }
+                 },
+                 AutoDelete -> False,
+                 GridBoxBackground -> {
+                  "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+                 },
+                 GridBoxDividers -> {
+                  "ColumnsIndexed" -> {
+                   1 ->
+                    Directive[
+                     LightDarkSwitched[
+                      RGBColor[0.87, 0.94, 1],
+                      RGBColor[0.249113, 0.329519, 0.42312]
+                     ],
+                     AbsoluteThickness[4]
+                    ]
+                  },
+                  "Rows" -> {{False}}
+                 },
+                 GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                ]
+               ],
+               "Text",
+               "BlockQuote",
+               ShowStringCharacters -> False,
+               Background -> None,
+               CellID -> 516123482
+              ],
+              Cell[
+               CellGroupData[
+                {
+                 Cell[
+                  "This log captures institutional knowledge that would otherwise be lost between sessions. After the first session:",
+                  "Text",
+                  CellID -> 236734993
+                 ],
+                 Cell[
+                  "# Progress: CSVImportValidated\n\n## Session 1\n\nTask: Implement CSVImportValidated with basic parsing\nStatus: Completed\n\nWork completed:\n\n- Created Kernel/CSVImportValidated.wl with basic parsing implementation\n- CSVImportValidated currently returns a list of associations with no validation yet\n...\n\nThings learned:\n\n- `FileFormatQ[\"path/to/file.csv\", \"CSV\"]` can check if a file is a valid CSV file without fully importing it",
+                  "Program",
+                  CellID -> 131582854
+                 ]
+                },
+                Open
+               ]
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Iteratively Implement Tasks",
+               "Subsubsection",
+               CellID -> 166953659
+              ],
+              Cell[
+               CellGroupData[
+                {
+                 Cell[
+                  TextData[
+                   {
+                    "For each session, provide the three context files with instructions to complete one task. Save this as a reusable prompt file (e.g., ",
+                    Cell[
+                     BoxData[Cell["prompt.md", Background -> None]],
+                     "InlineCode"
+                    ],
+                    "):"
+                   }
+                  ],
+                  "Text",
+                  CellID -> 45584196
+                 ],
+                 Cell[
+                  "## Context\n\n@TODO/CSVImportValidated.md\n@Specs/CSVImportValidated.md\n@Progress/CSVImportValidated.md\n\n## Instructions\n\n1. Choose the next incomplete task from the task list\n2. Study the specification requirements for that task\n3. Implement the task\n4. Append a progress report to Progress/CSVImportValidated.md\n5. Mark the task complete in TODO/CSVImportValidated.md\n6. Commit your changes\n7. Stop and wait for user input\n\nIMPORTANT: Complete only ONE task per session.",
+                  "Program",
+                  CellID -> 66649984
+                 ]
+                },
+                Open
+               ]
+              ],
+              Cell[
+               CellGroupData[
+                {
+                 Cell[
+                  "Then start each session using that prompt file as input. For example, using Claude Code:",
+                  "Text",
+                  CellID -> 7066980
+                 ],
+                 Cell[
+                  "claude \"$(cat prompt.md)\"",
+                  "ExternalLanguage",
+                  CellEvaluationLanguage -> "Shell",
+                  CellID -> 114277712
+                 ]
+                },
+                Open
+               ]
+              ],
+              Cell[
+               BoxData[
+                GridBox[
+                 {
+                  {
+                   PaneBox[
+                    Cell[
+                     TextData[
+                      {
+                       StyleBox["Note:", FontWeight -> Bold],
+                       " The ",
+                       Cell[
+                        BoxData[Cell["@path/to/file", Background -> None]],
+                        "InlineCode"
+                       ],
+                       " syntax inserts file contents into the prompt. Most AI coding tools support similar syntax. If yours doesn't, ask the AI to read the files as its first action."
+                      }
+                     ],
+                     Background -> None
+                    ],
+                    BaseStyle -> {
+                     "Text",
+                     FontColor ->
+                      LightDarkSwitched[GrayLevel[0.35], GrayLevel[0.860247]]
+                    },
+                    ImageMargins -> 5,
+                    ImageSize -> {Full, Automatic}
+                   ]
+                  }
+                 },
+                 AutoDelete -> False,
+                 GridBoxBackground -> {
+                  "Columns" -> {{LightDarkSwitched[GrayLevel[1], GrayLevel[0.278317]]}}
+                 },
+                 GridBoxDividers -> {
+                  "ColumnsIndexed" -> {
+                   1 ->
+                    Directive[
+                     LightDarkSwitched[
+                      RGBColor[0.87, 0.94, 1],
+                      RGBColor[0.249113, 0.329519, 0.42312]
+                     ],
+                     AbsoluteThickness[4]
+                    ]
+                  },
+                  "Rows" -> {{False}}
+                 },
+                 GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                ]
+               ],
+               "Text",
+               "BlockQuote",
+               ShowStringCharacters -> False,
+               Background -> None,
+               CellID -> 95493957
+              ]
+             },
+             Open
+            ]
+           ],
+           Cell[
+            CellGroupData[
+             {
+              Cell[
+               "Best Practices",
+               "Subsubsection",
+               CellID -> 642318468
+              ],
+              Cell[
+               TextData[
+                {
+                 StyleBox["Start fresh sessions:", FontWeight -> Bold],
+                 " After completing a task, start a new session with the same prompt rather than continuing. This prevents context accumulation."
+                }
+               ],
+               "Text",
+               CellID -> 533446386
+              ],
+              Cell[
+               TextData[
+                {
+                 StyleBox["Monitor and edit:", FontWeight -> Bold],
+                 " Review changes to the progress file. When necessary, manually edit it to ensure good context for the next session\[LongDash]the AI may miss important details or include irrelevant information."
+                }
+               ],
+               "Text",
+               CellID -> 404187417
+              ],
+              Cell[
+               TextData[
+                {
+                 StyleBox["Stay involved:", FontWeight -> Bold],
+                 " This approach works best when you're actively reviewing changes, not running unattended. Your judgment about what context matters is what prevents \"context rot.\""
+                }
+               ],
+               "Text",
+               CellID -> 632432714
+              ],
+              Cell[
+               TextData[
+                {
+                 StyleBox["Automation:", FontWeight -> Bold],
+                 " You can script this as a loop that runs until all tasks are checked off, but monitor the results carefully."
+                }
+               ],
+               "Text",
+               CellID -> 55208744
+              ]
+             },
+             Open
+            ]
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Security Considerations",
+         "Section",
+         CellID -> 41892277
+        ],
+        Cell[
+         TextData[
+          {
+           "The ",
+           StyleBox["WolframLanguageEvaluator", "InlineCode"],
+           " and ",
+           StyleBox["TestReport", "InlineCode"],
+           " tools execute arbitrary Wolfram Language code. This means they can perform any action that a Wolfram kernel can perform, including:"
+          }
+         ],
+         "Text",
+         CellID -> 172768939
+        ],
+        Cell[
+         "Reading, writing, and deleting files",
+         "Item",
+         CellID -> 132372000
+        ],
+        Cell["Making network requests", "Item", CellID -> 81219079],
+        Cell["Running system commands", "Item", CellID -> 4729710],
+        Cell[
+         "Accessing environment variables",
+         "Item",
+         CellID -> 376003767
+        ],
+        Cell[
+         TextData[
+          {
+           "Most AI coding applications support ",
+           StyleBox["approval-based permissions", FontWeight -> Bold],
+           " that prompt you before the AI executes potentially dangerous tools. You should configure your application to require approval for these tools:"
+          }
+         ],
+         "Text",
+         CellID -> 45932390
+        ],
+        Cell[
+         BoxData[
+          GridBox[
+           {
+            {
+             "WolframLanguageEvaluator",
+             Cell["Executes arbitrary code", "TableText"]
+            },
+            {
+             "TestReport",
+             Cell["Runs test files (which execute code)", "TableText"]
+            },
+            {
+             "WriteNotebook",
+             Cell[
+              "Writes notebook files, potentially overwriting",
+              "TableText"
+             ]
+            },
+            {
+             "CodeInspector",
+             Cell["Read-only, but reads file contents", "TableText"]
+            },
+            {
+             "ReadNotebook",
+             Cell["Read-only, but reads file contents", "TableText"]
+            },
+            {
+             "WolframLanguageContext",
+             Cell["Read-only documentation search", "TableText"]
+            },
+            {
+             "SymbolDefinition",
+             Cell["Read-only symbol definitions", "TableText"]
+            }
+           }
+          ]
+         ],
+         "DefinitionBox",
+         CellID -> 510575945
+        ],
+        Cell[
+         "Potential risks associated with each tool.",
+         "Caption",
+         CellID -> 543657130
+        ],
+        Cell[
+         TextData[
+          {
+           StyleBox["CodeInspector", "InlineCode"],
+           " and ",
+           StyleBox["ReadNotebook", "InlineCode"],
+           " read file contents that are sent to your LLM provider. If your project contains sensitive information you wouldn't want included in LLM context, consider requiring approval for these tools as well. Note that these tools are designed for Wolfram Language files and notebooks respectively, so they will likely fail on other file types."
+          }
+         ],
+         "Text",
+         CellID -> 166193624
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Prompt Injection Considerations",
+            "Subsection",
+            CellID -> 73396737
+           ],
+           Cell[
+            "If your AI coding application has access to tools that fetch content from the web or other untrusted sources, be aware of prompt injection risks. Malicious content could instruct the AI to use other tools in unintended ways.",
+            "Text",
+            CellID -> 158499191
+           ],
+           Cell[
+            TextData[
+             {
+              "For example, ",
+              StyleBox["SymbolDefinition", "InlineCode"],
+              " is generally safe, but if the AI previously used ",
+              StyleBox["WolframLanguageEvaluator", "InlineCode"],
+              " to connect to a service (storing API keys in memory), a prompt injection attack could potentially instruct the AI to use ",
+              StyleBox["SymbolDefinition", "InlineCode"],
+              " to extract those values."
+             }
+            ],
+            "Text",
+            CellID -> 568440468
+           ],
+           Cell[
+            "As a general rule: if you auto-approve any tools that read untrusted external content, consider requiring approval for all other tools that could expose sensitive information.",
+            "Text",
+            CellID -> 522376375
+           ],
+           Cell[
+            "Consult your AI coding application's documentation for how to configure tool permissions.",
+            "Text",
+            CellID -> 108418660
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Troubleshooting", "Section", CellID -> 370178754],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Server not connecting",
+            "Subsection",
+            CellID -> 192942910
+           ],
+           Cell[
+            "Fully restart your coding application after installation (closing the window often just minimizes it to the system tray)",
+            "Item",
+            CellID -> 84453282
+           ],
+           Cell[
+            TextData[
+             {
+              "Manually inspect the configuration file returned by ",
+              Cell[
+               BoxData[
+                ButtonBox[
+                 "InstallMCPServer",
+                 BaseStyle -> "Link",
+                 ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+                ]
+               ],
+               "InlineFormula"
+              ],
+              " to ensure the server is configured correctly"
+             }
+            ],
+            "Item",
+            CellID -> 513835098
+           ],
+           Cell[
+            "Check your client's documentation for location of log files or other diagnostic information to check for errors",
+            "Item",
+            CellID -> 552567934
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "WolframLanguageContext not working as expected",
+            "Subsection",
+            CellID -> 583744373
+           ],
+           Cell[
+            TextData[
+             {
+              "The ",
+              StyleBox["WolframLanguageContext", "InlineCode"],
+              " tool requires an ",
+              ButtonBox[
+               "LLM Kit subscription",
+               BaseStyle -> "Hyperlink",
+               ButtonData -> {
+                URL["https://www.wolfram.com/notebook-assistant-llm-kit/"],
+                None
+               },
+               ButtonNote -> "https://www.wolfram.com/notebook-assistant-llm-kit/"
+              ],
+              " for best results. Without it, documentation search will be less accurate. Code execution (",
+              StyleBox["WolframLanguageEvaluator", "InlineCode"],
+              ") and other tools work without LLM Kit."
+             }
+            ],
+            "Text",
+            CellID -> 152248262
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            "Server is using the wrong version of Wolfram Language",
+            "Subsection",
+            CellID -> 681211025
+           ],
+           Cell[
+            "The installed MCP server will use the same version of Wolfram Language as the session it was installed from. If you want to use a different version of Wolfram Language, you need to install the MCP server in a session of that version or manually edit the configuration file to point to a different Wolfram kernel.",
+            "Text",
+            CellID -> 244356551
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Related Guides",
+         "TutorialMoreAboutSection",
+         CellID -> 146072902
+        ],
+        Cell["XXXX", "TutorialMoreAbout", CellID -> 322478743]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Related Tech Notes",
+         "RelatedTutorialsSection",
+         CellID -> 496468733
+        ],
+        Cell[
+         TextData[
+          ButtonBox[
+           "Quick Start for Chat Clients",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/tutorial/QuickStartforChatClients"
+          ]
+         ],
+         "RelatedTutorials",
+         CellID -> 29597763
+        ]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell["Metadata", "MetadataSection", CellID -> 94523210],
+     Cell[
+      TextData[
+       {
+        "New in: ",
+        Cell["XX", "HistoryData", CellTags -> "New"],
+        " | Modified in: ",
+        Cell[" ", "HistoryData", CellTags -> "Modified"],
+        " | Obsolete in: ",
+        Cell[" ", "HistoryData", CellTags -> "Obsolete"]
+       }
+      ],
+      "History",
+      CellID -> 952480352
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Categorization",
+         "CategorizationSection",
+         CellID -> 805537969
+        ],
+        Cell[
+         "Tech Note",
+         "Categorization",
+         CellLabel -> "Entity Type",
+         CellID -> 556623940
+        ],
+        Cell[
+         "Wolfram/AgentTools",
+         "Categorization",
+         CellLabel -> "Paclet Name",
+         CellID -> 908031750
+        ],
+        Cell[
+         "Wolfram`AgentTools`",
+         "Categorization",
+         CellLabel -> "Context",
+         CellID -> 258958626
+        ],
+        Cell[
+         "Wolfram/AgentTools/tutorial/QuickStartforAICodingApplications",
+         "Categorization",
+         CellLabel -> "URI",
+         CellID -> 328724414
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Keywords", "KeywordsSection", CellID -> 177822517],
+        Cell["XXXX", "Keywords", CellID -> 790169956]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ]
+ },
+ TaggingRules -> <|"Paclet" -> "Wolfram/AgentTools"|>,
+ SpellingDictionaries -> {
+  "CorrectWords" -> {"tokenizers", "Hennigan", "Keene", "md", "csv", "wlt"}
+ },
+ StyleDefinitions ->
+  FrontEnd`FileName[
+   {"Wolfram"},
+   "TechNotePageStylesExt.nb",
+   CharacterEncoding -> "UTF-8"
+  ]
+]
