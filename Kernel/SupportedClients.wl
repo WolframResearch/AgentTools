@@ -92,7 +92,25 @@ $supportedMCPClients = <|
         "ConfigFormat"    -> "JSON",
         "ConfigKey"       -> { "mcpServers" },
         "URL"             -> "https://antigravity.google",
-        "InstallLocation" :> { $HomeDirectory, ".gemini", "antigravity", "mcp_config.json" }
+        (* Antigravity 2.0 moves the MCP config to ~/.gemini/config/mcp_config.json for
+           installs that migrated forward from the pre-2.0 IDE. The 2.0 installer drops a
+           ~/.gemini/config/.migrated marker after the conversation/skills/MCP migration
+           completes; once present, the historical ~/.gemini/antigravity/mcp_config.json
+           is ignored by the IDE. Fresh 2.0 installs without a migration history keep the
+           original path. We detect the marker and route accordingly so a single
+           InstallMCPServer["Antigravity"] call lands in the file the running IDE actually
+           reads on both fresh and upgraded systems. *)
+        "InstallLocation" :> antigravityInstallLocation[ ]
+    |>,
+    "AntigravityCLI" -> <|
+        "DisplayName"     -> "Antigravity CLI",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { "GoogleAntigravityCLI" },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://antigravity.google/docs/cli-overview",
+        "ProjectPath"     -> { ".agents", "mcp_config.json" },
+        "InstallLocation" :> { $HomeDirectory, ".gemini", "antigravity-cli", "mcp_config.json" }
     |>,
     "AugmentCode" -> <|
         "DisplayName"     -> "Augment Code",
@@ -302,6 +320,30 @@ defaultToolsetForTarget[ _, name_String ] := defaultToolsetForTarget @ name;
 defaultToolsetForTarget[ target_, _ ]     := defaultToolsetForTarget @ target;
 
 defaultToolsetForTarget // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Install Location Helpers*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*antigravityInstallLocation*)
+(* See the rationale in the "Antigravity" entry of $supportedMCPClients: when the 2.0
+   installer migrates a pre-2.0 IDE forward, it drops a `.migrated` marker into
+   ~/.gemini/config/ and the IDE switches to reading ~/.gemini/config/mcp_config.json
+   instead of the historical ~/.gemini/antigravity/mcp_config.json. Fresh 2.0 installs
+   that never went through migration keep the historical path. This helper is called
+   each time installLocation["Antigravity"] is evaluated, so the decision adapts if the
+   user later migrates between machines or reinstalls. *)
+antigravityInstallLocation // beginDefinition;
+
+antigravityInstallLocation[ ] := If[
+    FileExistsQ @ FileNameJoin @ { $HomeDirectory, ".gemini", "config", ".migrated" },
+    { $HomeDirectory, ".gemini", "config", "mcp_config.json" },
+    { $HomeDirectory, ".gemini", "antigravity", "mcp_config.json" }
+];
+
+antigravityInstallLocation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
