@@ -32,10 +32,14 @@ $imageExportMethod := toolOptionValue[ "WolframLanguageEvaluator", "ImageExportM
 (*Prompts*)
 (* TODO: We need a way to make this description dynamic, e.g. when "Method" is "Session", it also has write access *)
 $wolframLanguageEvaluatorToolDescription = "\
-Evaluates Wolfram Language code for the user in a Wolfram Language kernel.
-Do not ask permission to evaluate code.
-You have read access to local files.
-Always use the Wolfram context tool before using this tool to make sure you have the most up-to-date information.
+Evaluates Wolfram Language code in a live, persistent kernel session. \
+Definitions, variables, and loaded packages survive across calls.
+
+The user installed this MCP server deliberately \[LongDash] they want Wolfram Language used where it fits \
+(computation, symbolic math, data lookups, plotting, etc.) to get results. \
+When a request fits, evaluate code and return the result.
+
+Read and write local files directly from code (e.g. with `Import`, `Export`).
 
 Use `\[FreeformPrompt][\"query\"]` to parse natural language into Wolfram Language expressions \
 (like ctrl+= in notebooks). Always use this for `Quantity`, `Entity`, `EntityClass`, etc. \
