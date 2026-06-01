@@ -89,8 +89,22 @@ toolOptionValue // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Shared Resource Functions*)
-importResourceFunction[ exportMarkdownString, "ExportMarkdownString" ];
-importResourceFunction[ importMarkdownString, "ImportMarkdownString" ];
+importResourceFunction[ exportMarkdownString0, "ExportMarkdownString" ];
+importResourceFunction[ importMarkdownString0, "ImportMarkdownString" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*exportMarkdownString*)
+exportMarkdownString // beginDefinition;
+exportMarkdownString[ args___ ] := useEvaluatorKernel @ exportMarkdownString0 @ args;
+exportMarkdownString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*importMarkdownString*)
+importMarkdownString // beginDefinition;
+importMarkdownString[ args___ ] := useEvaluatorKernel @ importMarkdownString0 @ args;
+importMarkdownString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
