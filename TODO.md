@@ -20,9 +20,6 @@ Consolidated list of TODO/FIXME items from the codebase.
 
 ## MCP Protocol Support
 
-- [ ] Query client roots and set directory appropriately
-  - Source: `Kernel/StartMCPServer.wl`
-  - Spec: https://modelcontextprotocol.io/specification/2025-11-25/client/roots#protocol-messages
 - [ ] Support logging capability
   - Source: `Kernel/StartMCPServer.wl`
 - [ ] Support resources capability
@@ -48,9 +45,6 @@ Consolidated list of TODO/FIXME items from the codebase.
   - Maybe just add something to the WL tool description that mentions this can be done?
 
 ### Tool Improvements
-
-- [x] Tool options set via environment variables
-  - Implemented: `"ToolOptions"` option in `InstallMCPServer`, `MCP_TOOL_OPTIONS` env var (JSON), `toolOptionValue` lookup, legacy env var migration
 
 - [ ] Support file inputs in the evaluator tool
   - Could use the existing "code" parameter or add a new "file" parameter (only one can be used at a time)
