@@ -129,7 +129,7 @@ evaluateWolframLanguage0[ code_String, timeConstraint_Integer ] :=
             "Line"                  -> $line++,
             "MaxCharacterCount"     -> 10000,
             "AppendRetryNotice"     -> False,
-            "AppendURIInstructions" -> False,
+            "AppendURIInstructions" -> False, (* FIXME: This should be True when the WriteNotebook tool is available *)
             "Method"                -> $evaluatorMethod,
             "TimeConstraint"        -> timeConstraint
         ]

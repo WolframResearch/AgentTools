@@ -90,6 +90,10 @@ Consolidated list of TODO/FIXME items from the codebase.
 - [ ] Group similar tools and have another tool to activate them when needed (to save on token usage)
 - [ ] WriteNotebook improvements: support Append/Prepend/Insert modes (not just Overwrite), option to evaluate input cells, or create a separate EditNotebook tool
   - Source: `Kernel/Tools/Notebooks.wl`
+- [ ] ReadNotebook: support `offset` and `range` parameters with character-count-based truncation for large notebooks
+  - Source: `Kernel/Tools/Notebooks.wl`
+- [ ] Enable `"AppendURIInstructions"` in the evaluator and append URI inlining instructions to the WriteNotebook description
+  - Source: `Kernel/Tools/Notebooks.wl`, `Kernel/Tools/WolframLanguageEvaluator.wl`
 - [ ] Documentation editing tools should have examples evaluation be optional
 - [ ] Implement `ReadableForm` in this paclet for better code formatting
   - Source: `Kernel/Tools/TestReport.wl`
