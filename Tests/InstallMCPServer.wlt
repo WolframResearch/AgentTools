@@ -441,6 +441,19 @@ VerificationTest[
     TestID   -> "InstallLocation-AntigravityCLI-Unix@@Tests/InstallMCPServer.wlt:433,1-438,2"
 ]
 
+(* The Antigravity CLI reads global MCP servers from ~/.gemini/config/mcp_config.json
+   (the shared per-user config dir), per the official gcli-migration guide -- NOT from
+   ~/.gemini/antigravity-cli/, which holds skills/cache/settings only. *)
+VerificationTest[
+    FileNameTake[
+        First @ Wolfram`AgentTools`Common`installLocation[ "AntigravityCLI", "Windows" ],
+        -2
+    ],
+    FileNameJoin @ { "config", "mcp_config.json" },
+    SameTest -> Equal,
+    TestID   -> "InstallLocation-AntigravityCLI-ConfigDir@@Tests/InstallMCPServer.wlt:440,1-450,2"
+]
+
 VerificationTest[
     Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "AntigravityCLI" ],
     "Antigravity CLI",
@@ -1809,90 +1822,6 @@ VerificationTest[
     <| "command" -> "/no/spaces/here" |>,
     SameTest -> Equal,
     TestID   -> "ConvertToAugmentCodeFormat-OneArgForm@@Tests/InstallMCPServer.wlt:1735,1-1742,2"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*convertToAntigravityFormat*)
-
-(* Non-Windows: converter returns the entry unchanged regardless of the command path *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat[
-        <|
-            "command" -> "/usr/local/bin/wolfram",
-            "args" -> { "-run", "test" },
-            "env" -> <| "KEY" -> "value" |>
-        |>,
-        "Unix"
-    ],
-    <|
-        "command" -> "/usr/local/bin/wolfram",
-        "args" -> { "-run", "test" },
-        "env" -> <| "KEY" -> "value" |>
-    |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-NonWindows@@Tests/InstallMCPServer.wlt:1815,1-1831,2"
-]
-
-(* Non-Windows with a space-containing command: still unchanged *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat[
-        <| "command" -> "/Applications/Wolfram Desktop.app/Contents/MacOS/wolfram" |>,
-        "MacOSX"
-    ],
-    <| "command" -> "/Applications/Wolfram Desktop.app/Contents/MacOS/wolfram" |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-NonWindows-WithSpaces@@Tests/InstallMCPServer.wlt:1834,1-1842,2"
-]
-
-(* Windows with a space-free command: unchanged (no short-path lookup needed) *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat[
-        <|
-            "command" -> "C:\\Wolfram\\wolfram.exe",
-            "args" -> { "-run", "test" }
-        |>,
-        "Windows"
-    ],
-    <|
-        "command" -> "C:\\Wolfram\\wolfram.exe",
-        "args" -> { "-run", "test" }
-    |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-Windows-NoSpaces@@Tests/InstallMCPServer.wlt:1845,1-1859,2"
-]
-
-(* Missing command: converter should not error *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat[
-        <| "args" -> { "-run", "test" } |>,
-        "Windows"
-    ],
-    <| "args" -> { "-run", "test" } |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-MissingCommand@@Tests/InstallMCPServer.wlt:1862,1-1870,2"
-]
-
-(* Windows with a space-containing path to a non-existent file: falls back to the
-   original path (toWindowsShortPath returns unchanged when the file does not exist) *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat[
-        <| "command" -> "C:\\Does Not Exist\\wolfram.exe" |>,
-        "Windows"
-    ],
-    <| "command" -> "C:\\Does Not Exist\\wolfram.exe" |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-Windows-NonExistentPath@@Tests/InstallMCPServer.wlt:1874,1-1882,2"
-]
-
-(* 1-arg form dispatches to 2-arg form using $OperatingSystem *)
-VerificationTest[
-    Wolfram`AgentTools`SupportedClients`Private`convertToAntigravityFormat @ <|
-        "command" -> "/no/spaces/here"
-    |>,
-    <| "command" -> "/no/spaces/here" |>,
-    SameTest -> Equal,
-    TestID   -> "ConvertToAntigravityFormat-OneArgForm@@Tests/InstallMCPServer.wlt:1885,1-1892,2"
 ]
 
 (* ::**************************************************************************************************************:: *)

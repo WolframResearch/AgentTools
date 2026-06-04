@@ -91,7 +91,6 @@ $supportedMCPClients = <|
         "Aliases"         -> { "GoogleAntigravity" },
         "ConfigFormat"    -> "JSON",
         "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToAntigravityFormat,
         "URL"             -> "https://antigravity.google",
         (* Antigravity 2.0 moves the MCP config to ~/.gemini/config/mcp_config.json for
            installs that migrated forward from the pre-2.0 IDE. The 2.0 installer drops a
@@ -109,10 +108,20 @@ $supportedMCPClients = <|
         "Aliases"         -> { "GoogleAntigravityCLI" },
         "ConfigFormat"    -> "JSON",
         "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToAntigravityFormat,
-        "URL"             -> "https://antigravity.google/docs/cli-overview",
+        "URL"             -> "https://antigravity.google/docs/gcli-migration",
+        (* Per the official Gemini-CLI -> Antigravity-CLI migration guide
+           (https://antigravity.google/docs/gcli-migration), the CLI reads global MCP
+           servers from ~/.gemini/config/mcp_config.json and workspace servers from
+           .agents/mcp_config.json. The global file is the SAME one the migrated IDE reads
+           (~/.gemini/config/ is the shared per-user Antigravity config dir), so on a
+           migrated machine InstallMCPServer["Antigravity"] and ["AntigravityCLI"] target
+           the same file -- that is intentional and correct ("shared config across
+           Antigravity tools"). The ~/.gemini/antigravity-cli/ dir holds CLI skills/cache/
+           settings only, NOT mcp_config.json; writing a server there created a duplicate
+           definition that the CLI failed to reconcile ("failed to stop mcp instance:
+           Wolfram: exit status 1"). *)
         "ProjectPath"     -> { ".agents", "mcp_config.json" },
-        "InstallLocation" :> { $HomeDirectory, ".gemini", "antigravity-cli", "mcp_config.json" }
+        "InstallLocation" :> { $HomeDirectory, ".gemini", "config", "mcp_config.json" }
     |>,
     "AugmentCode" -> <|
         "DisplayName"     -> "Augment Code",
@@ -411,42 +420,6 @@ convertToClineFormat[ server_Association ] := Enclose[
 ];
 
 convertToClineFormat // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*convertToAntigravityFormat*)
-(* Antigravity CLI 1.0.3+ (and likely earlier versions for some users) shell-invokes the
-   MCP command on Windows and splits on whitespace, which breaks when the wolfram.exe
-   path contains spaces (e.g. "C:\Program Files\..."). The first token becomes
-   "C:\Program" and the spawn fails before the MCP initialize handshake completes,
-   producing the observable "failed to stop mcp instance: Wolfram: exit status 1" error
-   in the CLI -- the CLI tries to clean up a server it never actually started. We coerce
-   the command to its 8.3 short-path form on Windows so the unquoted shell invocation
-   resolves correctly. Applied to both the IDE and the CLI entries since they share the
-   same spawn architecture (language_server.exe in the IDE, agy.exe in the CLI). *)
-convertToAntigravityFormat // beginDefinition;
-
-convertToAntigravityFormat[ server_Association ] :=
-    convertToAntigravityFormat[ server, $OperatingSystem ];
-
-convertToAntigravityFormat[ server_Association, os_String ] := Enclose[
-    Module[ { result, command, shortCommand },
-        result = ConfirmBy[ server, AssociationQ, "Server" ];
-        If[ os === "Windows",
-            command = Lookup[ result, "command", Missing[ ] ];
-            If[ StringQ @ command && StringContainsQ[ command, " " ],
-                shortCommand = toWindowsShortPath @ command;
-                If[ StringQ @ shortCommand && shortCommand =!= command,
-                    result[ "command" ] = shortCommand
-                ]
-            ]
-        ];
-        result
-    ],
-    throwInternalFailure
-];
-
-convertToAntigravityFormat // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
