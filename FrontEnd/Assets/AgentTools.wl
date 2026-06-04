@@ -3,13 +3,13 @@
 <|
 "AgentToolsStrings" -> {
 
-	"prefsSubtitle" -> LanguageSwitched["LLMs and their calling harnesses can be configured to access your Wolfram System through either of the following toolsets:", <|
-		"ChineseSimplified"  -> "\:53ef\:901a\:8fc7\:4ee5\:4e0b\:4efb\:4e00\:5de5\:5177\:96c6\:914d\:7f6e LLM \:53ca\:5176\:8c03\:7528\:6846\:67b6\:ff0c\:4f7f\:5176\:53ef\:4ee5\:8bbf\:95ee\:60a8\:7684 Wolfram \:7cfb\:7edf",
-		"ChineseTraditional" -> "LLM \:53ca\:5176\:547c\:53eb\:4ecb\:9762\:53ef\:900f\:904e\:4e0b\:5217\:4efb\:4e00\:5de5\:5177\:96c6\:9032\:884c\:914d\:7f6e\:ff0c\:9032\:800c\:5b58\:53d6 Wolfram \:7cfb\:7d71\:ff1a",
-		"French"             -> "Les LLM et leurs modules d'appel peuvent \[EHat]tre configur\[EAcute]s pour acc\[EAcute]der \[AGrave] votre syst\[EGrave]me Wolfram \[AGrave] l'aide de l'un des ensembles d'outils suivants :",
-		"Japanese"           -> "LLM\:304a\:3088\:3073\:305d\:306e\:547c\:51fa\:3057\:30cf\:30fc\:30cd\:30b9\:306f\:ff0c\:4ee5\:4e0b\:306e\:3044\:305a\:308c\:304b\:306e\:30c4\:30fc\:30eb\:30bb\:30c3\:30c8\:3092\:901a\:3058\:3066\[InvisibleSpace]Wolfram\:30b7\:30b9\:30c6\:30e0\:306b\[InvisibleSpace]\:30a2\:30af\:30bb\:30b9\:3059\:308b\:3088\:3046\[InvisibleSpace]\:8a2d\:5b9a\:3067\:304d\:307e\:3059\:ff1a",
-		"Korean"             -> "LLM \:bc0f \:d574\:b2f9 \:d638\:cd9c \:d558\:b124\:c2a4\:ac00 \:b2e4\:c74c \:b3c4\:ad6c \:c138\:d2b8 \:c911 \:d558\:b098\:b97c \:d1b5\:d574 \:c0ac\:c6a9\:c790\:c758 Wolfram \:c2dc\:c2a4\:d15c\:c5d0 \:c811\:adfc\:c744 \:ad6c\:c131\:d560 \:c218 \:c788\:c2b5\:b2c8\:b2e4:",
-		"Spanish"            -> "Los LLM y sus entornos de invocaci\[OAcute]n pueden configurarse para acceder a su Sistema Wolfram mediante cualquiera de los siguientes conjuntos de herramientas:"
+	"prefsSubtitle" -> LanguageSwitched["AI environments can be configured to access `1` or `2`", <|
+		"ChineseSimplified"  -> "\:53ef\:5bf9 AI \:73af\:5883\:8fdb\:884c\:914d\:7f6e\:ff0c\:4f7f\:5176\:53ef\:4ee5\:8bbf\:95ee `1` \:6216 `2`",
+		"ChineseTraditional" -> "AI \:74b0\:5883\:53ef\:914d\:7f6e\:70ba\:5b58\:53d6`1`\:6216`2`",
+		"French"             -> "Vous pouvez configurer les environnements d'IA pour acc\[EAcute]der \[AGrave] `1` ou `2`",
+		"Japanese"           -> "AI\:74b0\:5883\:306f\:ff0c`1`\:307e\:305f\:306f`2`\:306b\:30a2\:30af\:30bb\:30b9\:3067\:304d\:308b\:3088\:3046\:306b\:8a2d\:5b9a\:3067\:304d\:307e\:3059\:ff0e",
+		"Korean"             -> "AI \:d658\:acbd\:c774 `1` \:b610\:b294 `2`\:c5d0 \:c561\:c138\:c2a4\:d558\:b3c4\:b85d \:c124\:c815\:d560 \:c218 \:c788\:c2b5\:b2c8\:b2e4",
+		"Spanish"            -> "Los entornos de IA pueden configurarse para acceder a `1` o `2`"
 	|>],
 
 	"prefsDocsLinkText" -> LanguageSwitched["Documentation", <|
@@ -58,66 +58,66 @@
 	|>],
 
 	"prefsHarnessesConfigured" -> LanguageSwitched["Configured on your system:", <|
-		"ChineseSimplified"  -> "Configured on your system:",
-		"ChineseTraditional" -> "Configured on your system:",
-		"French"             -> "Configured on your system:",
-		"Japanese"           -> "Configured on your system:",
-		"Korean"             -> "Configured on your system:",
-		"Spanish"            -> "Configured on your system:"
+		"ChineseSimplified"  -> "\:7cfb\:7edf\:4e2d\:5df2\:5b8c\:6210\:914d\:7f6e\:7684\:6a21\:578b\:ff1a",
+		"ChineseTraditional" -> "\:5df2\:5728\:7cfb\:7d71\:4e0a\:914d\:7f6e\:5b8c\:7562\:ff1a",
+		"French"             -> "Configur\[EAcute]s sur votre syst\[EGrave]me\[NonBreakingSpace]:",
+		"Japanese"           -> "\:30b7\:30b9\:30c6\:30e0\:4e0a\:3067\:8a2d\:5b9a\:6e08\:307f\:ff1a",
+		"Korean"             -> "\:c2dc\:c2a4\:d15c\:c5d0 \:ad6c\:c131\:b428:",
+		"Spanish"            -> "Configurado en su sistema:"
 	|>],
 
 	"prefsHarnessesDetected" -> LanguageSwitched["Unconfigured AI environments detected on your system:", <|
-		"ChineseSimplified"  -> "Unconfigured AI environments detected on your system:",
-		"ChineseTraditional" -> "Unconfigured AI environments detected on your system:",
-		"French"             -> "Unconfigured AI environments detected on your system:",
-		"Japanese"           -> "Unconfigured AI environments detected on your system:",
-		"Korean"             -> "Unconfigured AI environments detected on your system:",
-		"Spanish"            -> "Unconfigured AI environments detected on your system:"
+		"ChineseSimplified"  -> "\:5728\:7cfb\:7edf\:4e2d\:68c0\:6d4b\:5230\:7684\:672a\:914d\:7f6e\:7684 AI \:73af\:5883\:ff1a",
+		"ChineseTraditional" -> "\:7cfb\:7d71\:5075\:6e2c\:5230\:672a\:914d\:7f6e\:7684 AI \:74b0\:5883\:ff1a",
+		"French"             -> "Des environnements d'IA non configur\[EAcute]s ont \[EAcute]t\[EAcute] d\[EAcute]tect\[EAcute]s sur votre syst\[EGrave]me :",
+		"Japanese"           -> "\:30b7\:30b9\:30c6\:30e0\:4e0a\:3067\:691c\:51fa\:3055\:308c\:305f\:672a\:8a2d\:5b9a\:306eAI\:74b0\:5883\:ff1a",
+		"Korean"             -> "\:c2dc\:c2a4\:d15c\:c5d0\:c11c \:ad6c\:c131\:b418\:c9c0 \:c54a\:c740 AI \:d658\:acbd\:c774 \:ac10\:c9c0\:b418\:c5c8\:c2b5\:b2c8\:b2e4:",
+		"Spanish"            -> "Se han detectado entornos de IA no configurados en su sistema:"
 	|>],
 
 	"prefsHarnessesMore" -> LanguageSwitched["Other supported AI environments:", <|
-		"ChineseSimplified"  -> "Other supported AI environments:",
-		"ChineseTraditional" -> "Other supported AI environments:",
-		"French"             -> "Other supported AI environments:",
-		"Japanese"           -> "Other supported AI environments:",
-		"Korean"             -> "Other supported AI environments:",
-		"Spanish"            -> "Other supported AI environments:"
+		"ChineseSimplified"  -> "\:652f\:6301\:7684\:5176\:4ed6 AI \:73af\:5883\:ff1a",
+		"ChineseTraditional" -> "\:5176\:4ed6\:652f\:63f4\:7684 AI \:74b0\:5883\:ff1a",
+		"French"             -> "Autres environnements d'IA pris en charge :",
+		"Japanese"           -> "\:305d\:306e\:4ed6\:306e\:30b5\:30dd\:30fc\:30c8\:3055\:308c\:3066\:3044\:308bAI\:74b0\:5883\:ff1a",
+		"Korean"             -> "\:ae30\:d0c0 \:c9c0\:c6d0\:b418\:b294 AI \:d658\:acbd:",
+		"Spanish"            -> "Otros entornos de IA compatibles:"
 	|>],
 
 	"prefsHarnessesAll" -> LanguageSwitched["Supported AI environments:", <|
-		"ChineseSimplified"  -> "Supported AI environments:",
-		"ChineseTraditional" -> "Supported AI environments:",
-		"French"             -> "Supported AI environments:",
-		"Japanese"           -> "Supported AI environments:",
-		"Korean"             -> "Supported AI environments:",
-		"Spanish"            -> "Supported AI environments:"
+		"ChineseSimplified"  -> "\:652f\:6301\:7684 AI \:73af\:5883\:ff1a",
+		"ChineseTraditional" -> "\:652f\:63f4\:7684 AI \:74b0\:5883\:ff1a",
+		"French"             -> "Environnements d'IA pris en charge :",
+		"Japanese"           -> "\:30b5\:30dd\:30fc\:30c8\:3055\:308c\:3066\:3044\:308bAI\:74b0\:5883\:ff1a",
+		"Korean"             -> "\:c9c0\:c6d0\:b418\:b294 AI \:d658\:acbd:",
+		"Spanish"            -> "Entornos de IA compatibles:"
 	|>],
 
 	"prefsConfigureAllButton" -> LanguageSwitched["Configure All", <|
-		"ChineseSimplified"  -> "Configure All",
-		"ChineseTraditional" -> "Configure All",
-		"French"             -> "Configure All",
-		"Japanese"           -> "Configure All",
-		"Korean"             -> "Configure All",
-		"Spanish"            -> "Configure All"
+		"ChineseSimplified"  -> "\:5bf9\:6240\:6709\:6a21\:578b\:8fdb\:884c\:914d\:7f6e",
+		"ChineseTraditional" -> "\:5168\:90e8\:914d\:7f6e",
+		"French"             -> "Tout configurer",
+		"Japanese"           -> "\:3059\:3079\:3066\:3092\:8a2d\:5b9a",
+		"Korean"             -> "\:baa8\:b450 \:ad6c\:c131",
+		"Spanish"            -> "Configurar todos"
 	|>],
 
 	"prefsConfigureButton" -> LanguageSwitched["Configure", <|
-		"ChineseSimplified"  -> "Configure",
-		"ChineseTraditional" -> "Configure",
-		"French"             -> "Configure",
-		"Japanese"           -> "Configure",
-		"Korean"             -> "Configure",
-		"Spanish"            -> "Configure"
+		"ChineseSimplified"  -> "\:914d\:7f6e",
+		"ChineseTraditional" -> "\:914d\:7f6e",
+		"French"             -> "Configurer",
+		"Japanese"           -> "\:8a2d\:5b9a",
+		"Korean"             -> "\:ad6c\:c131",
+		"Spanish"            -> "Configurar"
 	|>],
 
 	"prefsDisableButton" -> LanguageSwitched["Disable", <|
-		"ChineseSimplified"  -> "Disable",
-		"ChineseTraditional" -> "Disable",
-		"French"             -> "Disable",
-		"Japanese"           -> "Disable",
-		"Korean"             -> "Disable",
-		"Spanish"            -> "Disable"
+		"ChineseSimplified"  -> "\:7981\:7528",
+		"ChineseTraditional" -> "\:5931\:6548",
+		"French"             -> "D\[EAcute]sactiver",
+		"Japanese"           -> "\:7121\:52b9\:5316",
+		"Korean"             -> "\:be44\:d65c\:c131\:d654",
+		"Spanish"            -> "Deshabilitar"
 	|>],
 
 	"prefsInstallLocation" -> LanguageSwitched["Install location:", <|
@@ -148,21 +148,21 @@
 	|>],
 
 	"prefsNoMCPClients" -> LanguageSwitched["The list of supported MCP clients is not available.", <|
-		"ChineseSimplified"  -> "The list of supported MCP clients is not available.",
-		"ChineseTraditional" -> "The list of supported MCP clients is not available.",
-		"French"             -> "The list of supported MCP clients is not available.",
-		"Japanese"           -> "The list of supported MCP clients is not available.",
-		"Korean"             -> "The list of supported MCP clients is not available.",
-		"Spanish"            -> "The list of supported MCP clients is not available."
+		"ChineseSimplified"  -> "\:65e0\:6cd5\:63d0\:4f9b\:652f\:6301\:7684 MCP \:5ba2\:6237\:7aef\:5217\:8868\:3002",
+		"ChineseTraditional" -> "\:76ee\:524d\:5c1a\:7121\:652f\:63f4\:7684 MCP \:5ba2\:6236\:7aef\:6e05\:55ae\:3002",
+		"French"             -> "La liste des clients MCP pris en charge n'est pas disponible.",
+		"Japanese"           -> "\:30b5\:30dd\:30fc\:30c8\:3055\:308c\:3066\:3044\:308bMCP\:30af\:30e9\:30a4\:30a2\:30f3\:30c8\:306e\:30ea\:30b9\:30c8\:306f\:5229\:7528\:3067\:304d\:307e\:305b\:3093\:ff0e",
+		"Korean"             -> "\:c9c0\:c6d0\:b418\:b294 MCP \:d074\:b77c\:c774\:c5b8\:d2b8 \:baa9\:b85d\:c744 \:c0ac\:c6a9\:d560 \:c218 \:c5c6\:c2b5\:b2c8\:b2e4.",
+		"Spanish"            -> "La lista de clientes MCP compatibles no est\[AAcute] disponible."
 	|>],
 
 	"prefsNoMCPServers" -> LanguageSwitched["The list of default MCP servers is not available.", <|
-		"ChineseSimplified"  -> "The list of default MCP servers is not available.",
-		"ChineseTraditional" -> "The list of default MCP servers is not available.",
-		"French"             -> "The list of default MCP servers is not available.",
-		"Japanese"           -> "The list of default MCP servers is not available.",
-		"Korean"             -> "The list of default MCP servers is not available.",
-		"Spanish"            -> "The list of default MCP servers is not available."
+		"ChineseSimplified"  -> "\:65e0\:6cd5\:63d0\:4f9b\:9ed8\:8ba4\:7684 MCP \:670d\:52a1\:5668\:5217\:8868\:3002",
+		"ChineseTraditional" -> "\:7121\:6cd5\:53d6\:5f97\:9810\:8a2d MCP \:4f3a\:670d\:5668\:7684\:6e05\:55ae\:3002",
+		"French"             -> "La liste des serveurs MCP par d\[EAcute]faut n'est pas disponible.",
+		"Japanese"           -> "\:30c7\:30d5\:30a9\:30eb\:30c8\:306eMCP\:30b5\:30fc\:30d0\:306e\:30ea\:30b9\:30c8\:306f\:5229\:7528\:3067\:304d\:307e\:305b\:3093\:ff0e",
+		"Korean"             -> "\:ae30\:bcf8 MCP \:c11c\:bc84 \:baa9\:b85d\:c744 \:c0ac\:c6a9\:d560 \:c218 \:c5c6\:c2b5\:b2c8\:b2e4.",
+		"Spanish"            -> "La lista de servidores MCP predeterminados no est\[AAcute] disponible."
 	|>]
 
 },
