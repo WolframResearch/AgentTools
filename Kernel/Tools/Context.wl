@@ -32,19 +32,30 @@ $$maxItemsSpec = Automatic | _Integer? Positive;
 (* ::Subsection::Closed:: *)
 (*WolframContext*)
 $wolframContextToolDescription = "\
-Uses semantic search to retrieve any relevant information from Wolfram. Always use this tool at the start of \
-new conversations or if the topic changes to ensure you have up-to-date relevant information. This uses semantic \
-search, so the context argument should be written in natural language (not a search query) and contain as much detail \
-as possible (up to 250 words).";
+Combined lookup spanning both Wolfram Language documentation and Wolfram|Alpha knowledge. \
+Use this tool to:
+- Approach a topic that spans both real-world knowledge and Wolfram Language programming \
+(e.g., chemistry, physics, finance, geography).
+- Cast a wider net early in exploration to surface relevant context from both sources at once.
+- Survey a domain before deciding whether you need data lookup, code reference, or both.
+
+When the question is clearly programming-focused or clearly factual, prefer the more specific \
+`WolframLanguageContext` or `WolframAlphaContext` instead.
+
+Argument is a natural-language description, not a search query.";
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*WolframAlphaContext*)
 $waContextToolDescription = "\
-Uses semantic search to retrieve any relevant information from Wolfram Alpha. Always use this tool at the start of \
-new conversations or if the topic changes to ensure you have up-to-date relevant information. This uses semantic \
-search, so the context argument should be written in natural language (not a search query) and contain as much detail \
-as possible (up to 250 words).";
+Computational knowledge lookup powered by Wolfram|Alpha \[LongDash] the authoritative source for \
+real-world data, scientific constants, entity properties, and curated factual knowledge. \
+Use this tool to:
+- Look up real-world data and current facts (populations, prices, dates, geographic info, scientific constants).
+- Resolve natural-language quantities and entities to structured form (`Quantity`, `Entity`, `DateObject`, etc.).
+- Cross-reference factual knowledge alongside symbolic computation.
+
+Argument is a natural-language description, not a search query.";
 
 $wolframAlphaMissingLLMKitTemplate = StringTemplate[ "\
 `Level`: Unable to generate Wolfram|Alpha context due to missing LLMKit subscription. \
@@ -57,10 +68,13 @@ $wolframAlphaNoCloudTemplate = StringTemplate[ "\
 (* ::Subsection::Closed:: *)
 (*WolframLanguageContext*)
 $wlContextToolDescription = "\
-Uses semantic search to retrieve information from various sources that can be used to help write Wolfram Language \
-code. Always use this tool at the start of new conversations or if the topic changes to ensure you have up-to-date \
-relevant information. This uses semantic search, so the context argument should be written in natural language \
-(not a search query) and contain as much detail as possible.";
+Documentation lookup for Wolfram Language. WL has 6000+ functions with non-obvious naming \[LongDash] \
+its API surface is wide and often surprising. Use this tool to:
+- Find full documentation, options, and calling forms for a function you're about to use.
+- Verify a function's documented behavior when code isn't behaving as expected.
+- Discover what built-in functions exist for a given goal, or look up the right symbol when you don't know its name.
+
+Argument is a natural-language description, not a search query.";
 
 $documentationPromptHeader = "\
 IMPORTANT: Here are some Wolfram documentation snippets that you should use to respond:\n\n";
