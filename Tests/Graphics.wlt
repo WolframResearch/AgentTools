@@ -283,14 +283,16 @@ VerificationTest[
 ]
 
 VerificationTest[
-    With[
-        { result = extractWolframAlphaImages @
-            "Before ![Image](https://public6.wolframalpha.com/files/test.jpg) After" },
-        (* Should have at least text content items *)
-        Length @ result[ "Content" ] >= 2
+    With[ { result = extractWolframAlphaImages[ "Before ![Image](https://public6.wolframalpha.com/files/test.jpg) After" ] },
+        And[
+            AssociationQ @ result,
+            MatchQ[ result, KeyValuePattern[ "Content" -> { __Association } ] ],
+            MemberQ[ result[ "Content" ], KeyValuePattern @ { "type" -> "text", "text" -> _? (StringContainsQ[ "Before" ]) } ],
+            MemberQ[ result[ "Content" ], KeyValuePattern @ { "type" -> "text", "text" -> _? (StringContainsQ[ "After" ]) } ]
+        ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-MultipleContentItems@@Tests/Graphics.wlt:285,1-294,2"
+    TestID -> "extractWolframAlphaImages-MultipleContentItems@@Tests/Graphics.wlt:285,1-296,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -306,7 +308,7 @@ VerificationTest[
         AssociationQ @ result || StringContainsQ[ result, "wolframalpha.com" ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-WWW6Domain@@Tests/Graphics.wlt:301,1-310,2"
+    TestID -> "extractWolframAlphaImages-WWW6Domain@@Tests/Graphics.wlt:303,1-312,2"
 ]
 
 VerificationTest[
@@ -317,7 +319,7 @@ VerificationTest[
         AssociationQ @ result || StringContainsQ[ result, "wolframalpha.com" ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-JpegExtension@@Tests/Graphics.wlt:312,1-321,2"
+    TestID -> "extractWolframAlphaImages-JpegExtension@@Tests/Graphics.wlt:314,1-323,2"
 ]
 
 VerificationTest[
@@ -325,7 +327,7 @@ VerificationTest[
         "![Result](https://example.com/files/image.png)",
     _String,
     SameTest -> MatchQ,
-    TestID   -> "extractWolframAlphaImages-NonWADomain@@Tests/Graphics.wlt:323,1-329,2"
+    TestID   -> "extractWolframAlphaImages-NonWADomain@@Tests/Graphics.wlt:325,1-331,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -338,7 +340,7 @@ VerificationTest[
         MemberQ[ result[ "Content" ], KeyValuePattern[ { "type" -> "text", "text" -> _? (StringContainsQ[ "Before" ]) } ] ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-PreservesTextBefore@@Tests/Graphics.wlt:334,1-342,2"
+    TestID -> "extractWolframAlphaImages-PreservesTextBefore@@Tests/Graphics.wlt:336,1-344,2"
 ]
 
 VerificationTest[
@@ -348,7 +350,7 @@ VerificationTest[
         MemberQ[ result[ "Content" ], KeyValuePattern[ { "type" -> "text", "text" -> _? (StringContainsQ[ "After" ]) } ] ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-PreservesTextAfter@@Tests/Graphics.wlt:344,1-352,2"
+    TestID -> "extractWolframAlphaImages-PreservesTextAfter@@Tests/Graphics.wlt:346,1-354,2"
 ]
 
 VerificationTest[
@@ -359,7 +361,7 @@ VerificationTest[
         MemberQ[ result[ "Content" ], KeyValuePattern[ { "type" -> "text", "text" -> _? (StringContainsQ[ "wolframalpha.com" ]) } ] ]
     ],
     True,
-    TestID -> "extractWolframAlphaImages-PreservesURLInText@@Tests/Graphics.wlt:354,1-363,2"
+    TestID -> "extractWolframAlphaImages-PreservesURLInText@@Tests/Graphics.wlt:356,1-365,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

@@ -35,7 +35,7 @@ VerificationTest[
 VerificationTest[
     SubsetQ[ Keys @ $SupportedMCPClients, Keys @ DetectedMCPClients[ ] ],
     True,
-    TestID -> "DetectedMCPClients-Subset@@Tests/SupportedClients.wlt:36,1-40,2"
+    TestID -> "DetectedMCPClients-Subset@@Tests/SupportedClients.wlt:35,1-39,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -46,7 +46,7 @@ VerificationTest[
         Keys[ detected ] === Select[ Keys @ $SupportedMCPClients, KeyExistsQ[ detected, # ] & ]
     ],
     True,
-    TestID -> "DetectedMCPClients-Ordering@@Tests/SupportedClients.wlt:46,1-50,2"
+    TestID -> "DetectedMCPClients-Ordering@@Tests/SupportedClients.wlt:44,1-50,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -57,5 +57,5 @@ VerificationTest[
     _Failure,
     { DetectedMCPClients::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "DetectedMCPClients-InvalidArguments@@Tests/SupportedClients.wlt:57,1-63,2"
+    TestID   -> "DetectedMCPClients-InvalidArguments@@Tests/SupportedClients.wlt:55,1-61,2"
 ]

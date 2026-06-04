@@ -1192,7 +1192,7 @@ VerificationTest[
     ];
     Length @ $allTestClients,
     2,
-    TestID -> "DeployAgentTools-All-Setup"
+    TestID -> "DeployAgentTools-All-Setup@@Tests/DeployAgentTools.wlt:1186,1-1196,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1209,13 +1209,13 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-BasicResultShape"
+    TestID   -> "DeployAgentTools-All-BasicResultShape@@Tests/DeployAgentTools.wlt:1201,1-1213,2"
 ]
 
 VerificationTest[
     Length @ $allDep1,
     Length @ $allTestClients,
-    TestID -> "DeployAgentTools-All-LengthMatchesClients"
+    TestID -> "DeployAgentTools-All-LengthMatchesClients@@Tests/DeployAgentTools.wlt:1215,1-1219,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1227,13 +1227,13 @@ VerificationTest[
 VerificationTest[
     Sort @ Map[ #[ "Toolset" ] &, $allDep1 ],
     { "WolframLanguage", "WolframLanguage" },
-    TestID -> "DeployAgentTools-All-AutomaticToolsetPerClient"
+    TestID -> "DeployAgentTools-All-AutomaticToolsetPerClient@@Tests/DeployAgentTools.wlt:1227,1-1231,2"
 ]
 
 VerificationTest[
     Sort @ Map[ #[ "ClientName" ] &, $allDep1 ],
     Sort @ Keys @ $allTestClients,
-    TestID -> "DeployAgentTools-All-CoversEveryClient"
+    TestID -> "DeployAgentTools-All-CoversEveryClient@@Tests/DeployAgentTools.wlt:1233,1-1237,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1253,13 +1253,13 @@ VerificationTest[
     ],
     { Missing[ "DeploymentExists", _ ], Missing[ "DeploymentExists", _ ] },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-MissingDeploymentExistsEntries"
+    TestID   -> "DeployAgentTools-All-MissingDeploymentExistsEntries@@Tests/DeployAgentTools.wlt:1242,1-1257,2"
 ]
 
 VerificationTest[
     Sort @ Map[ #[[ 2 ]] &, $allDep2 ],
     Sort @ Keys @ $allTestClients,
-    TestID -> "DeployAgentTools-All-MissingTargetsAreClientNames"
+    TestID -> "DeployAgentTools-All-MissingTargetsAreClientNames@@Tests/DeployAgentTools.wlt:1259,1-1263,2"
 ]
 
 (* The DeploymentsExistWarning message should be issued when at least one
@@ -1276,7 +1276,7 @@ VerificationTest[
     _List,
     { DeployAgentTools::DeploymentsExistWarning },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-WarningMessageIssued"
+    TestID   -> "DeployAgentTools-All-WarningMessageIssued@@Tests/DeployAgentTools.wlt:1267,1-1280,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1294,14 +1294,14 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-OverwriteShape"
+    TestID   -> "DeployAgentTools-All-OverwriteShape@@Tests/DeployAgentTools.wlt:1285,1-1298,2"
 ]
 
 VerificationTest[
     (* All UUIDs in the new result should be different from the originals *)
     Intersection[ Sort @ Map[ #[ "UUID" ] &, $allDep3 ], $allDep1UUIDs ],
     { },
-    TestID -> "DeployAgentTools-All-OverwriteNewUUIDs"
+    TestID -> "DeployAgentTools-All-OverwriteNewUUIDs@@Tests/DeployAgentTools.wlt:1300,1-1305,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1325,13 +1325,13 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-ExplicitServerShape"
+    TestID   -> "DeployAgentTools-All-ExplicitServerShape@@Tests/DeployAgentTools.wlt:1312,1-1329,2"
 ]
 
 VerificationTest[
     Sort @ DeleteDuplicates @ Map[ #[ "Toolset" ] &, $allDep4 ],
     { "Wolfram" },
-    TestID -> "DeployAgentTools-All-ExplicitServerOverridesDefault"
+    TestID -> "DeployAgentTools-All-ExplicitServerOverridesDefault@@Tests/DeployAgentTools.wlt:1331,1-1335,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1354,14 +1354,14 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-1ArgForm"
+    TestID   -> "DeployAgentTools-All-1ArgForm@@Tests/DeployAgentTools.wlt:1343,1-1358,2"
 ]
 
 VerificationTest[
     (* 1-arg form falls through to per-client DefaultToolset, like Automatic *)
     Sort @ DeleteDuplicates @ Map[ #[ "Toolset" ] &, $allDep5 ],
     { "WolframLanguage" },
-    TestID -> "DeployAgentTools-All-1ArgFormUsesDefaultToolset"
+    TestID -> "DeployAgentTools-All-1ArgFormUsesDefaultToolset@@Tests/DeployAgentTools.wlt:1360,1-1365,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1374,19 +1374,19 @@ VerificationTest[
     resolveServerForClient = Wolfram`AgentTools`DeployAgentTools`Private`resolveServerForClient;
     resolveServerForClient[ "Cursor", Automatic ],
     "WolframLanguage",
-    TestID -> "DeployAgentTools-All-resolveServerForClient-CursorAutomatic"
+    TestID -> "DeployAgentTools-All-resolveServerForClient-CursorAutomatic@@Tests/DeployAgentTools.wlt:1373,1-1378,2"
 ]
 
 VerificationTest[
     resolveServerForClient[ "ClaudeDesktop", Automatic ],
     "Wolfram",
-    TestID -> "DeployAgentTools-All-resolveServerForClient-ClaudeDesktopAutomatic"
+    TestID -> "DeployAgentTools-All-resolveServerForClient-ClaudeDesktopAutomatic@@Tests/DeployAgentTools.wlt:1380,1-1384,2"
 ]
 
 VerificationTest[
     resolveServerForClient[ "Cursor", "Wolfram" ],
     "Wolfram",
-    TestID -> "DeployAgentTools-All-resolveServerForClient-ExplicitPassthrough"
+    TestID -> "DeployAgentTools-All-resolveServerForClient-ExplicitPassthrough@@Tests/DeployAgentTools.wlt:1386,1-1390,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1413,7 +1413,7 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-ApplicationName-Setup"
+    TestID   -> "DeployAgentTools-All-ApplicationName-Setup@@Tests/DeployAgentTools.wlt:1400,1-1417,2"
 ]
 
 VerificationTest[
@@ -1423,7 +1423,7 @@ VerificationTest[
        so the correct result is "WolframLanguage" for both. *)
     Sort @ DeleteDuplicates @ Map[ #[ "Toolset" ] &, $allDepAppName ],
     { "WolframLanguage" },
-    TestID -> "DeployAgentTools-All-ApplicationName-PerClientDefault"
+    TestID -> "DeployAgentTools-All-ApplicationName-PerClientDefault@@Tests/DeployAgentTools.wlt:1419,1-1427,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1462,19 +1462,19 @@ VerificationTest[
     ],
     _List? (Length @ # === 2 &),
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-UnsupportedClientShape"
+    TestID   -> "DeployAgentTools-All-UnsupportedClientShape@@Tests/DeployAgentTools.wlt:1450,1-1466,2"
 ]
 
 VerificationTest[
     Cases[ $allDepUnsupported, _Missing ],
     { Missing[ "Unsupported", { "AlwaysUnsupported", $OperatingSystem } ] },
-    TestID -> "DeployAgentTools-All-UnsupportedClientPayload"
+    TestID -> "DeployAgentTools-All-UnsupportedClientPayload@@Tests/DeployAgentTools.wlt:1468,1-1472,2"
 ]
 
 VerificationTest[
     Length @ Cases[ $allDepUnsupported, _AgentToolsDeployment ],
     1,
-    TestID -> "DeployAgentTools-All-UnsupportedClientStillDeploysSupported"
+    TestID -> "DeployAgentTools-All-UnsupportedClientStillDeploysSupported@@Tests/DeployAgentTools.wlt:1474,1-1478,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1497,7 +1497,7 @@ VerificationTest[
     { Missing[ "Unsupported", { "AlwaysUnsupported", $OperatingSystem } ] },
     { },
     SameTest -> MatchQ,
-    TestID   -> "DeployAgentTools-All-NoWarningForUnsupportedOnly"
+    TestID   -> "DeployAgentTools-All-NoWarningForUnsupportedOnly@@Tests/DeployAgentTools.wlt:1485,1-1501,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1507,7 +1507,7 @@ VerificationTest[
     Quiet @ DeleteDirectory[ $allTestTmpHome, DeleteContents -> True ];
     True,
     True,
-    TestID -> "DeployAgentTools-All-Cleanup"
+    TestID -> "DeployAgentTools-All-Cleanup@@Tests/DeployAgentTools.wlt:1506,1-1511,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
