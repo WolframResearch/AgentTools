@@ -1,0 +1,1950 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* Created By: SaveReadableNotebook *)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SaveReadableNotebook *)
+
+Notebook[
+ {
+  Cell[
+   CellGroupData[
+    {
+     Cell["MCPServerObjectQ", "ObjectName", CellID -> 278535327],
+     Cell[
+      TextData[
+       {
+        Cell["   ", "ModInfo"],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            ButtonBox[
+             "MCPServerObjectQ",
+             BaseStyle -> "Link",
+             ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObjectQ"
+            ],
+            "[",
+            StyleBox["server", "TI"],
+            "]"
+           }
+          ]
+         ],
+         "InlineFormula"
+        ],
+        " \[LineSeparator]",
+        Cell[BoxData[StyleBox["server", "TI"]], "InlineFormula"],
+        " \:304c\:6709\:52b9\:306a",
+        Cell[
+         BoxData[
+          ButtonBox[
+           "MCPServerObject",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObject"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        "\:3067\:3042\:308c\:3070",
+        Cell[
+         BoxData[ButtonBox["True", BaseStyle -> "Link"]],
+         "InlineFormula"
+        ],
+        " \:3092\:ff0c\:305d\:308c\:4ee5\:5916\:306e\:5834\:5408\:306f",
+        Cell[
+         BoxData[ButtonBox["False", BaseStyle -> "Link"]],
+         "InlineFormula"
+        ],
+        "\:3092\:8fd4\:3059\:ff0e"
+       }
+      ],
+      "Usage",
+      TaggingRules -> <|
+       "OrignialExpressionUUID" -> "86d0183a-a33f-4b47-9fb1-c446ec075a46",
+       "TranslationLanguage" -> "Japanese (Dearu)",
+       "TranslatedQ" -> True,
+       "Date" -> {2026, 5, 22, 5, 32, 37.9444},
+       "Model" -> <|"Service" -> "OpenAI", "Name" -> "gpt-5.4"|>,
+       "Temperature" -> 1,
+       "OriginalCellString" -> "Cell[TextData[{Cell[\"   \", \"ModInfo\"], Cell[BoxData[RowBox[{ButtonBox[\"MCPServerObjectQ\", BaseStyle -> \"Link\", ButtonData -> \"paclet:Wolfram/AgentTools/ref/MCPServerObjectQ\"], \"[\", StyleBox[\"server\", \"TI\"], \"]\"}]], \"InlineFormula\"], \" \[LineSeparator]gives \", Cell[BoxData[ButtonBox[\"True\", BaseStyle -> \"Link\"]], \"InlineFormula\"], \" if \", Cell[BoxData[StyleBox[\"server\", \"TI\"]], \"InlineFormula\"], \" is a valid \", Cell[BoxData[ButtonBox[\"MCPServerObject\", BaseStyle -> \"Link\", ButtonData -> \"paclet:Wolfram/AgentTools/ref/MCPServerObject\"]], \"InlineFormula\"], \" and \", Cell[BoxData[ButtonBox[\"False\", BaseStyle -> \"Link\"]], \"InlineFormula\"], \" otherwise.\"}], \"Usage\", CellID -> 22091999]"
+      |>,
+      CellTags -> "Translated",
+      CellID -> 22091999
+     ],
+     Cell["XXXX", "Notes", CellID -> 585495582]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "\:95a2\:9023\:9805\:76ee",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "SeeAlso",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related reference (function) pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "SeeAlsoSection",
+      CellID -> 4086756
+     ],
+     Cell[
+      TextData[
+       {
+        Cell[
+         BoxData[
+          ButtonBox[
+           "MCPServerObject",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObject"
+          ]
+         ],
+         "InlineSeeAlsoFunction",
+         TaggingRules -> {"PageType" -> "Function"}
+        ],
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            Cell[
+             TextData[
+              StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"]
+             ]
+            ],
+            DynamicModuleBox[
+             {
+              nbobj$$ = 
+               NotebookObject[
+                "22c59c35-37c5-4a97-8bbf-f2a3deb0b54d",
+                "0f176905-6585-4940-93e2-0203475425fc"
+               ],
+              cellobj$$ = 
+               CellObject[
+                "d6845046-e275-4f3e-a477-d8d1654e8736",
+                "c4a190d2-b563-49fb-92ba-01ec2b65826f"
+               ]
+             },
+             TemplateBox[
+              {
+               GraphicsBox[
+                {
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  CircleBox[{0, 0}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{0, 0.62}, {0, -0.62}}]
+                 },
+                 {
+                  Thickness[0.06],
+                  StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                  LineBox[{{-0.62, 0}, {0.62, 0}}]
+                 }
+                },
+                ImagePadding -> {{1.0, 1.0}, {2.4, 1.0}},
+                ImageSize -> 16,
+                PlotRange -> {{-1.06, 1.06}, {-1.06, 1.06}},
+                BaselinePosition -> Center -> Center
+               ],
+               nbobj$$,
+               cellobj$$
+              },
+              "InlineListingAddButton"
+             ],
+             Initialization :>
+              (nbobj$$ = EvaluationNotebook[];
+              cellobj$$ = EvaluationCell[])
+            ]
+           }
+          ]
+         ],
+         "InlineListingAddButton"
+        ]
+       }
+      ],
+      "SeeAlso",
+      CellID -> 667697070
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "\:30c6\:30af\:30cb\:30ab\:30eb\:30ce\:30fc\:30c8",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "TechNotes",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell["Insert links to related tech notes.", "MoreInfoText"],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "TechNotesSection",
+      CellID -> 172645056
+     ],
+     Cell["XXXX", "Tutorials", CellID -> 215228507]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "\:95a2\:9023\:3059\:308b\:30ac\:30a4\:30c9",
+      "MoreAboutSection",
+      CellID -> 118862528
+     ],
+     Cell["XXXX", "MoreAbout", CellID -> 602707628]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "\:95a2\:9023\:30ea\:30f3\:30af",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "RelatedLinks",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Insert links to any related page, including web pages.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "RelatedLinksSection",
+      CellID -> 687367542
+     ],
+     Cell["XXXX", "RelatedLinks", CellID -> 50211630]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "\:4f8b\:984c\:306e\:521d\:671f\:5316",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "ExamplesInitialization",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Input that is to be evaluated before any examples are run, e.g. Needs[\[Ellipsis]].",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExamplesInitializationSection",
+      CellID -> 137342190
+     ],
+     Cell[
+      BoxData[
+       RowBox[{"Needs", "[", "\"Wolfram`AgentTools`\"", "]"}]
+      ],
+      "ExampleInitialization",
+      CellID -> 932189874
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      BoxData[
+       InterpretationBox[
+        GridBox[
+         {
+          {
+           StyleBox[
+            "\:57fa\:672c\:4f8b\:984c",
+            "PrimaryExamplesSection"
+           ],
+           ButtonBox[
+            RowBox[
+             {"\:8ffd\:52a0\:4f8b\:984c", " ", "\[RightTriangle]"}
+            ],
+            BaseStyle -> "ExtendedExamplesLink",
+            ButtonData :> "ExtendedExamples"
+           ]
+          }
+         }
+        ],
+        $Line = 0;
+       ]
+      ],
+      "PrimaryExamplesSection",
+      CellID -> 33930945
+     ],
+     Cell[
+      TextData[
+       {
+        "\:5f0f\:304c\:6709\:52b9\:306a",
+        Cell[
+         BoxData[
+          ButtonBox[
+           "MCPServerObject",
+           BaseStyle -> "Link",
+           ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObject"
+          ]
+         ],
+         "InlineFormula"
+        ],
+        "\:304b\:3069\:3046\:304b\:30c6\:30b9\:30c8\:3059\:308b\:ff1a"
+       }
+      ],
+      "ExampleText",
+      CellID -> 79034404
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[
+          RowBox[
+           {
+            "server",
+            "=",
+            RowBox[{"MCPServerObject", "[", "\"Wolfram\"", "]"}]
+           }
+          ]
+         ],
+         "Input",
+         CellLabel -> "In[1]:=",
+         CellID -> 18361783
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           RowBox[
+            {
+             TagBox["MCPServerObject", "SummaryHead"],
+             "[",
+             DynamicModuleBox[
+              {Typeset`open$$ = False, Typeset`embedState$$ = "Ready"},
+              TemplateBox[
+               {
+                PaneSelectorBox[
+                 {
+                  False ->
+                   GridBox[
+                    {
+                     {
+                      PaneBox[
+                       ButtonBox[
+                        DynamicBox[
+                         FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxOpener"],
+                         ImageSizeCache -> {9.87553, {0.0, 9.87553}}
+                        ],
+                        Appearance -> None,
+                        BaseStyle -> { },
+                        ButtonFunction :> (Typeset`open$$ = True),
+                        Evaluator -> Automatic,
+                        Method -> "Preemptive"
+                       ],
+                       Alignment -> {Center, Center},
+                       ImageSize ->
+                        Dynamic[
+                         {
+                          Automatic,
+                          Times[
+                           3.5,
+                           Times[
+                            CurrentValue["FontCapHeight"],
+                            AbsoluteCurrentValue[Magnification]^(-1)
+                           ]
+                          ]
+                         }
+                        ]
+                      ],
+                      GraphicsBox[
+                       {
+                        Thickness[0.005979],
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                          {
+                           {
+                            {25.0, 97.147},
+                            {92.882, 165.03},
+                            {102.25, 174.4},
+                            {117.45, 174.4},
+                            {126.82, 165.03},
+                            {136.2, 155.66},
+                            {136.2, 140.46},
+                            {126.82, 131.09},
+                            {75.558, 79.823}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        },
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {
+                           {
+                            {0, 2, 0},
+                            {1, 3, 3},
+                            {0, 1, 0},
+                            {1, 3, 3},
+                            {0, 1, 0},
+                            {1, 3, 3},
+                            {0, 1, 0}
+                           }
+                          },
+                          {
+                           {
+                            {76.265, 80.53},
+                            {126.82, 131.09},
+                            {136.2, 140.46},
+                            {151.39, 140.46},
+                            {160.76, 131.09},
+                            {161.12, 130.73},
+                            {170.49, 121.36},
+                            {170.49, 106.17},
+                            {161.12, 96.794},
+                            {99.725, 35.4},
+                            {96.601, 32.276},
+                            {96.601, 27.211},
+                            {99.725, 24.087},
+                            {112.33, 11.48}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        },
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                          {
+                           {
+                            {109.85, 148.06},
+                            {59.648, 97.854},
+                            {50.276, 88.482},
+                            {50.276, 73.286},
+                            {59.648, 63.913},
+                            {69.021, 54.541},
+                            {84.217, 54.541},
+                            {93.589, 63.913},
+                            {143.79, 114.12}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        }
+                       },
+                       ImageSize -> 24
+                      ],
+                      GridBox[
+                       {
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Name: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox["\"Wolfram\"", "SummaryItem"]
+                          }
+                         ]
+                        },
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Transport: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox["\"StandardInputOutput\"", "SummaryItem"]
+                          }
+                         ]
+                        }
+                       },
+                       AutoDelete -> False,
+                       BaseStyle -> {
+                        ShowStringCharacters -> False,
+                        NumberMarks -> False,
+                        PrintPrecision -> 3,
+                        ShowSyntaxStyles -> False
+                       },
+                       GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Automatic}}},
+                       GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                       GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}}
+                      ]
+                     }
+                    },
+                    AutoDelete -> False,
+                    BaselinePosition -> {1, 1},
+                    GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
+                    GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                   ],
+                  True ->
+                   GridBox[
+                    {
+                     {
+                      PaneBox[
+                       ButtonBox[
+                        DynamicBox[
+                         FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxCloser"]
+                        ],
+                        Appearance -> None,
+                        BaseStyle -> { },
+                        ButtonFunction :> (Typeset`open$$ = False),
+                        Evaluator -> Automatic,
+                        Method -> "Preemptive"
+                       ],
+                       Alignment -> {Center, Center},
+                       ImageSize ->
+                        Dynamic[
+                         {
+                          Automatic,
+                          Times[
+                           3.5,
+                           Times[
+                            CurrentValue["FontCapHeight"],
+                            AbsoluteCurrentValue[Magnification]^(-1)
+                           ]
+                          ]
+                         }
+                        ]
+                      ],
+                      GraphicsBox[
+                       {
+                        Thickness[0.005979],
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                          {
+                           {
+                            {25.0, 97.147},
+                            {92.882, 165.03},
+                            {102.25, 174.4},
+                            {117.45, 174.4},
+                            {126.82, 165.03},
+                            {136.2, 155.66},
+                            {136.2, 140.46},
+                            {126.82, 131.09},
+                            {75.558, 79.823}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        },
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {
+                           {
+                            {0, 2, 0},
+                            {1, 3, 3},
+                            {0, 1, 0},
+                            {1, 3, 3},
+                            {0, 1, 0},
+                            {1, 3, 3},
+                            {0, 1, 0}
+                           }
+                          },
+                          {
+                           {
+                            {76.265, 80.53},
+                            {126.82, 131.09},
+                            {136.2, 140.46},
+                            {151.39, 140.46},
+                            {160.76, 131.09},
+                            {161.12, 130.73},
+                            {170.49, 121.36},
+                            {170.49, 106.17},
+                            {161.12, 96.794},
+                            {99.725, 35.4},
+                            {96.601, 32.276},
+                            {96.601, 27.211},
+                            {99.725, 24.087},
+                            {112.33, 11.48}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        },
+                        {
+                         Thickness[0.071749],
+                         CapForm["Round"],
+                         JoinForm[{"Miter", 1.0}],
+                         JoinedCurveBox[
+                          {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                          {
+                           {
+                            {109.85, 148.06},
+                            {59.648, 97.854},
+                            {50.276, 88.482},
+                            {50.276, 73.286},
+                            {59.648, 63.913},
+                            {69.021, 54.541},
+                            {84.217, 54.541},
+                            {93.589, 63.913},
+                            {143.79, 114.12}
+                           }
+                          },
+                          CurveClosed -> {0}
+                         ]
+                        }
+                       },
+                       ImageSize -> 24
+                      ],
+                      GridBox[
+                       {
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Name: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox["\"Wolfram\"", "SummaryItem"]
+                          }
+                         ]
+                        },
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Transport: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox["\"StandardInputOutput\"", "SummaryItem"]
+                          }
+                         ]
+                        },
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"JSON Configuration: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox[
+                            TagBox[
+                             DynamicModuleBox[
+                              {boxObj, cellObj},
+                              TagBox[
+                               TagBox[
+                                ButtonBox[
+                                 TagBox[
+                                  "\"{\[Ellipsis]}\"",
+                                  BoxForm`Undeploy,
+                                  DefaultBaseStyle -> {Deployed -> False}
+                                 ],
+                                 Appearance -> {
+                                  "Default" -> None,
+                                  "Hover" ->
+                                   FrontEnd`FileName[
+                                    {"Typeset", "ClickToCopy"},
+                                    "Hover.9.png"
+                                   ],
+                                  "Pressed" ->
+                                   FrontEnd`FileName[
+                                    {"Typeset", "ClickToCopy"},
+                                    "Pressed.9.png"
+                                   ]
+                                 },
+                                 BaseStyle -> { },
+                                 BaselinePosition -> Baseline,
+                                 ButtonFunction :> {
+                                  CopyToClipboard[
+                                   "{\n\t\"mcpServers\":{\n\t\t\"Wolfram\":{\n\t\t\t\"command\":\"wolfram\",\n\t\t\t\"args\":[\n\t\t\t\t\"-run\",\n\t\t\t\t\"Wolfram`AgentTools`StartMCPServer[]\",\n\t\t\t\t\"-noinit\",\n\t\t\t\t\"-noprompt\"\n\t\t\t],\n\t\t\t\"env\":{\n\t\t\t\t\"MCP_SERVER_NAME\":\"Wolfram\"\n\t\t\t}\n\t\t}\n\t}\n}"
+                                  ],
+                                  NotebookDelete[cellObj],
+                                  FrontEndExecute[
+                                   FrontEnd`AttachCell[
+                                    boxObj,
+                                    Cell[
+                                     BoxData[TemplateBox[{"Copied"}, "ClickToCopyTooltip"]]
+                                    ],
+                                    {1, {Center, Bottom}},
+                                    {Center, Top},
+                                    "ClosingActions" -> {"ParentChanged", "MouseExit"}
+                                   ]
+                                  ]
+                                 },
+                                 DefaultBaseStyle -> { },
+                                 Evaluator -> Automatic,
+                                 FrameMargins -> 2,
+                                 Method -> "Preemptive"
+                                ],
+                                EventHandlerTag[
+                                 {
+                                  "MouseEntered" :>
+                                   (cellObj = 
+                                    MathLink`CallFrontEnd[
+                                     FrontEnd`AttachCell[
+                                      boxObj,
+                                      Cell[BoxData[TemplateBox[{"Copy"}, "ClickToCopyTooltip"]]],
+                                      {1, {Center, Bottom}},
+                                      {Center, Top},
+                                      "ClosingActions" -> {"ParentChanged"}
+                                     ]
+                                    ]),
+                                  "MouseExited" :> NotebookDelete[cellObj],
+                                  PassEventsDown -> True,
+                                  Method -> "Preemptive",
+                                  PassEventsUp -> True
+                                 }
+                                ]
+                               ],
+                               MouseAppearanceTag["LinkHand"]
+                              ],
+                              BaseStyle -> {Editable -> False},
+                              DynamicModuleValues :> { },
+                              Initialization :> (boxObj = EvaluationBox[]),
+                              UnsavedVariables :> {boxObj, cellObj}
+                             ],
+                             Deploy,
+                             DefaultBaseStyle -> "Deploy"
+                            ],
+                            "SummaryItem"
+                           ]
+                          }
+                         ]
+                        },
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Tool Names: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox[
+                            TagBox[
+                             GridBox[
+                              {
+                               {
+                                "\"WolframContext\"",
+                                "\"WolframLanguageEvaluator\"",
+                                "\"WolframAlpha\"",
+                                "",
+                                ""
+                               }
+                              },
+                              AutoDelete -> False,
+                              GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+                              GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                             ],
+                             "Grid"
+                            ],
+                            "SummaryItem"
+                           ]
+                          }
+                         ]
+                        },
+                        {
+                         RowBox[
+                          {
+                           TagBox["\"Location: \"", "SummaryItemAnnotation"],
+                           "\[InvisibleSpace]",
+                           TagBox["\"BuiltIn\"", "SummaryItem"]
+                          }
+                         ]
+                        }
+                       },
+                       AutoDelete -> False,
+                       BaseStyle -> {
+                        ShowStringCharacters -> False,
+                        NumberMarks -> False,
+                        PrintPrecision -> 3,
+                        ShowSyntaxStyles -> False
+                       },
+                       GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Automatic}}},
+                       GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                       GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}}
+                      ]
+                     }
+                    },
+                    AutoDelete -> False,
+                    BaselinePosition -> {1, 1},
+                    GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
+                    GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                   ]
+                 },
+                 Dynamic[Typeset`open$$],
+                 ImageSize -> Automatic
+                ]
+               },
+               "SummaryPanel"
+              ],
+              DynamicModuleValues :> { }
+             ],
+             "]"
+            }
+           ],
+           Wolfram`AgentTools`MCPServerObject[
+            <|
+             "Name" -> "Wolfram",
+             "Location" -> "BuiltIn",
+             "Transport" -> "StandardInputOutput",
+             "ServerVersion" -> "1.0.0",
+             "ObjectVersion" -> 1,
+             "LLMEvaluator" -> <|
+              "Tools" -> {
+               LLMTool[
+                <|
+                 "Name" -> "WolframContext",
+                 "Description" -> "Uses semantic search to retrieve any relevant information from Wolfram. Always use this tool at the start of new conversations or if the topic changes to ensure you have up-to-date relevant information. This uses semantic search, so the context argument should be written in natural language (not a search query) and contain as much detail as possible.",
+                 "Parameters" -> {
+                  "context" -> <|
+                   "Interpreter" -> "String",
+                   "Help" -> "A detailed summary of what the user is trying to achieve or learn about.",
+                   "Required" -> True
+                  |>
+                 },
+                 "Function" -> Wolfram`AgentTools`DefaultServers`Private`relatedWolframContext,
+                 "Options" -> { },
+                 "LLMPacletVersion" -> "1.6.10"
+                |>
+               ],
+               LLMTool[
+                <|
+                 "Name" -> "WolframLanguageEvaluator",
+                 "Description" -> "Evaluate Wolfram Language code for the user in a separate kernel. The user does not automatically see the result. Do not ask permission to evaluate code. You must include the result in your response in order for them to see it. If a formatted result is provided as a markdown link, use that in your response instead of typing out the output. The evaluator supports interactive content such as Manipulate. You have read access to local files.\nParse natural language input with `\[FreeformPrompt][\"query\"]`, which is analogous to ctrl-= input in notebooks. Natural language input is parsed before evaluation, so it works like macro expansion. You should ALWAYS use this natural language input to obtain things like `Quantity`, `DateObject`, `Entity`, etc.\n\nAlways use the Wolfram context tool before using this tool to make sure you have the most up-to-date information.",
+                 "Parameters" -> {
+                  "code" -> <|
+                   "Interpreter" -> "String",
+                   "Help" -> "The Wolfram Language code to evaluate.",
+                   "Required" -> True
+                  |>,
+                  "timeConstraint" -> <|
+                   "Interpreter" -> "Integer",
+                   "Help" -> "The time constraint for the evaluation (default is 60 seconds).",
+                   "Required" -> False
+                  |>
+                 },
+                 "Function" -> Wolfram`AgentTools`DefaultServers`Private`evaluateWolframLanguage,
+                 "Options" -> { },
+                 "LLMPacletVersion" -> "1.6.10"
+                |>
+               ],
+               LLMTool[
+                <|
+                 "Name" -> "WolframAlpha",
+                 "Description" -> "Use natural language queries with Wolfram|Alpha to get up-to-date computational results about entities in chemistry, physics, geography, history, art, astronomy, and more.\nAlways use the Wolfram context tool before using this tool to make sure you have the most up-to-date information.",
+                 "Parameters" -> {
+                  "query" -> <|
+                   "Interpreter" -> "String",
+                   "Help" -> "the input",
+                   "Required" -> True
+                  |>,
+                  "steps" -> <|
+                   "Interpreter" -> "Boolean",
+                   "Help" -> "whether to show step-by-step solution",
+                   "Required" -> False
+                  |>
+                 },
+                 "Function" -> Wolfram`Chatbook`Common`getWolframAlphaText,
+                 "Options" -> { },
+                 "LLMPacletVersion" -> "1.6.10"
+                |>
+               ]
+              }
+             |>
+            |>
+           ],
+           Editable -> False,
+           SelectWithContents -> True,
+           Selectable -> False
+          ]
+         ],
+         "Output",
+         CellLabel -> "Out[1]=",
+         CellID -> 252400189
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[RowBox[{"MCPServerObjectQ", "[", "server", "]"}]],
+         "Input",
+         CellLabel -> "In[2]:=",
+         CellID -> 351779039
+        ],
+        Cell[
+         BoxData["True"],
+         "Output",
+         CellLabel -> "Out[2]=",
+         CellID -> 216573667
+        ]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      TextData[
+       {
+        "\:8ffd\:52a0\:4f8b\:984c",
+        Cell[
+         BoxData[
+          TemplateBox[
+           {
+            "MoreExamples",
+            Cell[
+             BoxData[
+              FrameBox[
+               Cell[
+                "Extended examples in standardized sections.",
+                "MoreInfoText"
+               ],
+               BaseStyle -> "IFrameBox"
+              ]
+             ],
+             "MoreInfoTextOuter"
+            ]
+           },
+           "MoreInfoOpenerButtonTemplate"
+          ]
+         ]
+        ]
+       }
+      ],
+      "ExtendedExamplesSection",
+      CellTags -> "ExtendedExamples",
+      CellID -> 133175109
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["\:30b9\:30b3\:30fc\:30d7", "ExampleSection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSection",
+         CellID -> 81841482
+        ],
+        Cell[
+         TextData[
+          {
+           "\:30ab\:30b9\:30bf\:30e0\:306e",
+           Cell[
+            BoxData[
+             ButtonBox[
+              "MCPServerObject",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObject"
+             ]
+            ],
+            "InlineFormula"
+           ],
+           "\:306f\:6709\:52b9\:3067\:3042\:308b\:ff1a"
+          }
+         ],
+         "ExampleText",
+         CellID -> 188884219
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               "server",
+               "=",
+               RowBox[
+                {
+                 "CreateMCPServer",
+                 "[",
+                 RowBox[
+                  {
+                   "\"My MCP Server\"",
+                   ",",
+                   RowBox[
+                    {
+                     "<|",
+                     RowBox[
+                      {
+                       "\"Tools\"",
+                       "->",
+                       RowBox[
+                        {
+                         "{",
+                         RowBox[
+                          {
+                           "LLMTool",
+                           "[",
+                           RowBox[
+                            {
+                             "\"PrimeFinder\"",
+                             ",",
+                             RowBox[{"{", RowBox[{"\"n\"", "->", "\"Integer\""}], "}"}],
+                             ",",
+                             RowBox[{RowBox[{"Prime", "[", "#n", "]"}], "&"}]
+                            }
+                           ],
+                           "]"
+                          }
+                         ],
+                         "}"
+                        }
+                       ]
+                      }
+                     ],
+                     "|>"
+                    }
+                   ]
+                  }
+                 ],
+                 "]"
+                }
+               ]
+              }
+             ]
+            ],
+            "Input",
+            CellLabel -> "In[1]:=",
+            CellID -> 355377765
+           ],
+           Cell[
+            BoxData[
+             InterpretationBox[
+              RowBox[
+               {
+                TagBox["MCPServerObject", "SummaryHead"],
+                "[",
+                DynamicModuleBox[
+                 {Typeset`open$$ = False, Typeset`embedState$$ = "Ready"},
+                 TemplateBox[
+                  {
+                   PaneSelectorBox[
+                    {
+                     False ->
+                      GridBox[
+                       {
+                        {
+                         PaneBox[
+                          ButtonBox[
+                           DynamicBox[
+                            FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxOpener"]
+                           ],
+                           ButtonFunction :> (Typeset`open$$ = True),
+                           Appearance -> None,
+                           BaseStyle -> { },
+                           Evaluator -> Automatic,
+                           Method -> "Preemptive"
+                          ],
+                          Alignment -> {Center, Center},
+                          ImageSize ->
+                           Dynamic[
+                            {
+                             Automatic,
+                             Times[
+                              3.5,
+                              Times[
+                               CurrentValue["FontCapHeight"],
+                               AbsoluteCurrentValue[Magnification]^(-1)
+                              ]
+                             ]
+                            }
+                           ]
+                         ],
+                         GraphicsBox[
+                          {
+                           Thickness[0.005979],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                              {
+                               {
+                                {25.0, 97.147},
+                                {92.882, 165.03},
+                                {102.25, 174.4},
+                                {117.45, 174.4},
+                                {126.82, 165.03},
+                                {136.2, 155.66},
+                                {136.2, 140.46},
+                                {126.82, 131.09},
+                                {75.558, 79.823}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {
+                               {
+                                {0, 2, 0},
+                                {1, 3, 3},
+                                {0, 1, 0},
+                                {1, 3, 3},
+                                {0, 1, 0},
+                                {1, 3, 3},
+                                {0, 1, 0}
+                               }
+                              },
+                              {
+                               {
+                                {76.265, 80.53},
+                                {126.82, 131.09},
+                                {136.2, 140.46},
+                                {151.39, 140.46},
+                                {160.76, 131.09},
+                                {161.12, 130.73},
+                                {170.49, 121.36},
+                                {170.49, 106.17},
+                                {161.12, 96.794},
+                                {99.725, 35.4},
+                                {96.601, 32.276},
+                                {96.601, 27.211},
+                                {99.725, 24.087},
+                                {112.33, 11.48}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                              {
+                               {
+                                {109.85, 148.06},
+                                {59.648, 97.854},
+                                {50.276, 88.482},
+                                {50.276, 73.286},
+                                {59.648, 63.913},
+                                {69.021, 54.541},
+                                {84.217, 54.541},
+                                {93.589, 63.913},
+                                {143.79, 114.12}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ]
+                          },
+                          ImageSize -> 24
+                         ],
+                         GridBox[
+                          {
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Name: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox["\"My MCP Server\"", "SummaryItem"]
+                             }
+                            ]
+                           },
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Transport: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox["\"StandardInputOutput\"", "SummaryItem"]
+                             }
+                            ]
+                           }
+                          },
+                          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Automatic}}},
+                          AutoDelete -> False,
+                          GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                          GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+                          BaseStyle -> {
+                           ShowStringCharacters -> False,
+                           NumberMarks -> False,
+                           PrintPrecision -> 3,
+                           ShowSyntaxStyles -> False
+                          }
+                         ]
+                        }
+                       },
+                       GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
+                       AutoDelete -> False,
+                       GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                       BaselinePosition -> {1, 1}
+                      ],
+                     True ->
+                      GridBox[
+                       {
+                        {
+                         PaneBox[
+                          ButtonBox[
+                           DynamicBox[
+                            FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxCloser"]
+                           ],
+                           ButtonFunction :> (Typeset`open$$ = False),
+                           Appearance -> None,
+                           BaseStyle -> { },
+                           Evaluator -> Automatic,
+                           Method -> "Preemptive"
+                          ],
+                          Alignment -> {Center, Center},
+                          ImageSize ->
+                           Dynamic[
+                            {
+                             Automatic,
+                             Times[
+                              3.5,
+                              Times[
+                               CurrentValue["FontCapHeight"],
+                               AbsoluteCurrentValue[Magnification]^(-1)
+                              ]
+                             ]
+                            }
+                           ]
+                         ],
+                         GraphicsBox[
+                          {
+                           Thickness[0.005979],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                              {
+                               {
+                                {25.0, 97.147},
+                                {92.882, 165.03},
+                                {102.25, 174.4},
+                                {117.45, 174.4},
+                                {126.82, 165.03},
+                                {136.2, 155.66},
+                                {136.2, 140.46},
+                                {126.82, 131.09},
+                                {75.558, 79.823}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {
+                               {
+                                {0, 2, 0},
+                                {1, 3, 3},
+                                {0, 1, 0},
+                                {1, 3, 3},
+                                {0, 1, 0},
+                                {1, 3, 3},
+                                {0, 1, 0}
+                               }
+                              },
+                              {
+                               {
+                                {76.265, 80.53},
+                                {126.82, 131.09},
+                                {136.2, 140.46},
+                                {151.39, 140.46},
+                                {160.76, 131.09},
+                                {161.12, 130.73},
+                                {170.49, 121.36},
+                                {170.49, 106.17},
+                                {161.12, 96.794},
+                                {99.725, 35.4},
+                                {96.601, 32.276},
+                                {96.601, 27.211},
+                                {99.725, 24.087},
+                                {112.33, 11.48}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ],
+                           StyleBox[
+                            {
+                             JoinedCurveBox[
+                              {{{0, 2, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}}},
+                              {
+                               {
+                                {109.85, 148.06},
+                                {59.648, 97.854},
+                                {50.276, 88.482},
+                                {50.276, 73.286},
+                                {59.648, 63.913},
+                                {69.021, 54.541},
+                                {84.217, 54.541},
+                                {93.589, 63.913},
+                                {143.79, 114.12}
+                               }
+                              },
+                              CurveClosed -> {0}
+                             ]
+                            },
+                            {
+                             CapForm["Round"],
+                             JoinForm[{"Miter", 1.0}],
+                             Thickness[0.071749]
+                            },
+                            StripOnInput -> False
+                           ]
+                          },
+                          ImageSize -> 24
+                         ],
+                         GridBox[
+                          {
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Name: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox["\"My MCP Server\"", "SummaryItem"]
+                             }
+                            ]
+                           },
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Transport: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox["\"StandardInputOutput\"", "SummaryItem"]
+                             }
+                            ]
+                           },
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"JSON Configuration: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox[
+                               TagBox[
+                                DynamicModuleBox[
+                                 {boxObj, cellObj},
+                                 TagBox[
+                                  TagBox[
+                                   ButtonBox[
+                                    TagBox[
+                                     "\"{\[Ellipsis]}\"",
+                                     BoxForm`Undeploy,
+                                     DefaultBaseStyle -> {Deployed -> False}
+                                    ],
+                                    ButtonFunction :> {
+                                     CopyToClipboard[
+                                      "{\n\t\"mcpServers\":{\n\t\t\"My MCP Server\":{\n\t\t\t\"command\":\"wolfram\",\n\t\t\t\"args\":[\n\t\t\t\t\"-run\",\n\t\t\t\t\"Wolfram`AgentTools`StartMCPServer[]\",\n\t\t\t\t\"-noinit\",\n\t\t\t\t\"-noprompt\"\n\t\t\t],\n\t\t\t\"env\":{\n\t\t\t\t\"MCP_SERVER_NAME\":\"My MCP Server\"\n\t\t\t}\n\t\t}\n\t}\n}"
+                                     ],
+                                     NotebookDelete[cellObj],
+                                     FrontEndExecute[
+                                      FrontEnd`AttachCell[
+                                       boxObj,
+                                       Cell[
+                                        BoxData[TemplateBox[{"Copied"}, "ClickToCopyTooltip"]]
+                                       ],
+                                       {1, {Center, Bottom}},
+                                       {Center, Top},
+                                       "ClosingActions" -> {"ParentChanged", "MouseExit"}
+                                      ]
+                                     ]
+                                    },
+                                    Evaluator -> Automatic,
+                                    Appearance -> {
+                                     "Default" -> None,
+                                     "Hover" ->
+                                      FrontEnd`FileName[
+                                       {"Typeset", "ClickToCopy"},
+                                       "Hover.9.png"
+                                      ],
+                                     "Pressed" ->
+                                      FrontEnd`FileName[
+                                       {"Typeset", "ClickToCopy"},
+                                       "Pressed.9.png"
+                                      ]
+                                    },
+                                    BaseStyle -> { },
+                                    DefaultBaseStyle -> { },
+                                    BaselinePosition -> Baseline,
+                                    FrameMargins -> 2,
+                                    Method -> "Preemptive"
+                                   ],
+                                   EventHandlerTag[
+                                    {
+                                     "MouseEntered" :>
+                                      (cellObj = 
+                                       MathLink`CallFrontEnd[
+                                        FrontEnd`AttachCell[
+                                         boxObj,
+                                         Cell[BoxData[TemplateBox[{"Copy"}, "ClickToCopyTooltip"]]],
+                                         {1, {Center, Bottom}},
+                                         {Center, Top},
+                                         "ClosingActions" -> {"ParentChanged"}
+                                        ]
+                                       ]),
+                                     "MouseExited" :> NotebookDelete[cellObj],
+                                     PassEventsDown -> True,
+                                     Method -> "Preemptive",
+                                     PassEventsUp -> True
+                                    }
+                                   ]
+                                  ],
+                                  MouseAppearanceTag["LinkHand"]
+                                 ],
+                                 Initialization :> (boxObj = EvaluationBox[]),
+                                 DynamicModuleValues :> { },
+                                 UnsavedVariables :> {boxObj, cellObj},
+                                 BaseStyle -> {Editable -> False}
+                                ],
+                                Deploy,
+                                DefaultBaseStyle -> "Deploy"
+                               ],
+                               "SummaryItem"
+                              ]
+                             }
+                            ]
+                           },
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Tool Names: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox[
+                               TagBox[
+                                GridBox[
+                                 {{"\"PrimeFinder\"", "", "", "", ""}},
+                                 GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+                                 AutoDelete -> False,
+                                 GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}
+                                ],
+                                "Grid"
+                               ],
+                               "SummaryItem"
+                              ]
+                             }
+                            ]
+                           },
+                           {
+                            RowBox[
+                             {
+                              TagBox["\"Location: \"", "SummaryItemAnnotation"],
+                              "\[InvisibleSpace]",
+                              TagBox[
+                               RowBox[
+                                {
+                                 "File",
+                                 "[",
+                                 TemplateBox[
+                                  {
+                                   "\"C:\\\\Users\\\\rhennigan\\\\AppData\\\\Roaming\\\\Wolfram\\\\ApplicationData\\\\Wolfram\\\\MCPServer\\\\Servers\\\\My%20MCP%20Server\""
+                                  },
+                                  "FileArgument"
+                                 ],
+                                 "]"
+                                }
+                               ],
+                               "SummaryItem"
+                              ]
+                             }
+                            ]
+                           }
+                          },
+                          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Automatic}}},
+                          AutoDelete -> False,
+                          GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                          GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+                          BaseStyle -> {
+                           ShowStringCharacters -> False,
+                           NumberMarks -> False,
+                           PrintPrecision -> 3,
+                           ShowSyntaxStyles -> False
+                          }
+                         ]
+                        }
+                       },
+                       GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
+                       AutoDelete -> False,
+                       GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+                       BaselinePosition -> {1, 1}
+                      ]
+                    },
+                    Dynamic[Typeset`open$$],
+                    ImageSize -> Automatic
+                   ]
+                  },
+                  "SummaryPanel"
+                 ],
+                 DynamicModuleValues :> { }
+                ],
+                "]"
+               }
+              ],
+              Wolfram`AgentTools`MCPServerObject[
+               <|
+                "Name" -> "My MCP Server",
+                "LLMEvaluator" -> <|
+                 "Tools" -> {
+                  LLMTool[
+                   <|
+                    "Name" -> "PrimeFinder",
+                    "Description" -> "",
+                    "Parameters" -> {
+                     "n" -> <|
+                      "Interpreter" -> "Integer",
+                      "Help" -> Missing["NotSpecified"],
+                      "Required" -> True
+                     |>
+                    },
+                    "Function" -> (Prime[#n] &),
+                    "Options" -> { },
+                    "LLMPacletVersion" -> "1.6.10"
+                   |>
+                  ]
+                 }
+                |>,
+                "Location" ->
+                 File[
+                  "C:\\Users\\rhennigan\\AppData\\Roaming\\Wolfram\\ApplicationData\\Wolfram\\MCPServer\\Servers\\My%20MCP%20Server"
+                 ],
+                "Transport" -> "StandardInputOutput",
+                "ServerVersion" -> "1.0.0",
+                "ObjectVersion" -> 1
+               |>
+              ],
+              Editable -> False,
+              SelectWithContents -> True,
+              Selectable -> False
+             ]
+            ],
+            "Output",
+            CellLabel -> "Out[1]=",
+            CellID -> 55147875
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            BoxData[RowBox[{"MCPServerObjectQ", "[", "server", "]"}]],
+            "Input",
+            CellLabel -> "In[2]:=",
+            CellID -> 413451691
+           ],
+           Cell[
+            BoxData["True"],
+            "Output",
+            CellLabel -> "Out[2]=",
+            CellID -> 71662113
+           ]
+          },
+          Open
+         ]
+        ],
+        Cell[
+         "\:4e00\:65e6\:524a\:9664\:3055\:308c\:308b\:3068\:ff0c\:6709\:52b9\:3067\:306f\:306a\:304f\:306a\:308b\:ff1a",
+         "ExampleText",
+         CellID -> 341969515
+        ],
+        Cell[
+         BoxData[RowBox[{"DeleteObject", "[", "server", "]"}]],
+         "Input",
+         CellLabel -> "In[3]:=",
+         CellID -> 292211447
+        ],
+        Cell[
+         CellGroupData[
+          {
+           Cell[
+            BoxData[RowBox[{"MCPServerObjectQ", "[", "server", "]"}]],
+            "Input",
+            CellLabel -> "In[4]:=",
+            CellID -> 138861782
+           ],
+           Cell[
+            BoxData["False"],
+            "Output",
+            CellLabel -> "Out[4]=",
+            CellID -> 52932615
+           ]
+          },
+          Open
+         ]
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell[
+         "\:4e00\:822c\:5316\:3068\:62e1\:5f35",
+         "ExampleSection"
+        ],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 256597815
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["\:30aa\:30d7\:30b7\:30e7\:30f3", "ExampleSection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSection",
+         CellID -> 66376322
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 634868308
+        ],
+        Cell[
+         BoxData[
+          InterpretationBox[
+           Cell["XXXX", "ExampleSubsection"],
+           $Line = 0;
+          ]
+         ],
+         "ExampleSubsection",
+         CellID -> 165488405
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell[
+         "\:30a2\:30d7\:30ea\:30b1\:30fc\:30b7\:30e7\:30f3",
+         "ExampleSection"
+        ],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 182414845
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell["\:7279\:6027\:3068\:95a2\:4fc2", "ExampleSection"],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 949668290
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell[
+         "\:8003\:3048\:3089\:308c\:308b\:554f\:984c",
+         "ExampleSection"
+        ],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 334549200
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell[
+         "\:30a4\:30f3\:30bf\:30e9\:30af\:30c6\:30a3\:30d6\:306a\:4f8b\:984c",
+         "ExampleSection"
+        ],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 810910852
+     ],
+     Cell[
+      BoxData[
+       InterpretationBox[
+        Cell[
+         "\:304a\:3082\:3057\:308d\:3044\:4f8b\:984c",
+         "ExampleSection"
+        ],
+        $Line = 0;
+       ]
+      ],
+      "ExampleSection",
+      CellID -> 119682790
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell["Metadata", "MetadataSection", CellID -> 415361720],
+     Cell[
+      TextData[
+       {
+        "New in: ",
+        Cell["XX", "HistoryData", CellTags -> "New"],
+        " | Modified in: ",
+        Cell[" ", "HistoryData", CellTags -> "Modified"],
+        " | Obsolete in: ",
+        Cell[" ", "HistoryData", CellTags -> "Obsolete"]
+       }
+      ],
+      "History",
+      CellID -> 81966376
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         TextData[
+          {
+           "Categorization",
+           Cell[
+            BoxData[
+             TemplateBox[
+              {
+               "Metadata",
+               Cell[
+                BoxData[
+                 FrameBox[
+                  Cell[
+                   "Metadata such as page URI, context, and type of documentation page.",
+                   "MoreInfoText"
+                  ],
+                  BaseStyle -> "IFrameBox"
+                 ]
+                ],
+                "MoreInfoTextOuter"
+               ]
+              },
+              "MoreInfoOpenerButtonTemplate"
+             ]
+            ]
+           ]
+          }
+         ],
+         "CategorizationSection",
+         CellID -> 145831344
+        ],
+        Cell[
+         "Symbol",
+         "Categorization",
+         CellLabel -> "Entity Type",
+         CellID -> 405114878
+        ],
+        Cell[
+         "Wolfram/AgentTools",
+         "Categorization",
+         CellLabel -> "Paclet Name",
+         CellID -> 2308871
+        ],
+        Cell[
+         "Wolfram`AgentTools`",
+         "Categorization",
+         CellLabel -> "Context",
+         CellID -> 204971323
+        ],
+        Cell[
+         "Wolfram/AgentTools/ref/MCPServerObjectQ",
+         "Categorization",
+         CellLabel -> "URI",
+         CellID -> 286126405
+        ]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Keywords", "KeywordsSection", CellID -> 28015249],
+        Cell["XXXX", "Keywords", CellID -> 401878919]
+       },
+       Closed
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Syntax Templates",
+         "TemplatesSection",
+         CellID -> 458703059
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Additional Function Template",
+         CellID -> 2642746
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Arguments Pattern",
+         CellID -> 108747647
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Local Variables",
+         CellID -> 107920253
+        ],
+        Cell[
+         BoxData[""],
+         "Template",
+         CellLabel -> "Color Equal Signs",
+         CellID -> 2022293
+        ]
+       },
+       Closed
+      ]
+     ]
+    },
+    Open
+   ]
+  ]
+ },
+ TaggingRules -> <|"Paclet" -> "Wolfram/AgentTools"|>,
+ StyleDefinitions ->
+  FrontEnd`FileName[
+   {"Wolfram"},
+   "FunctionPageStylesExt.nb",
+   CharacterEncoding -> "UTF-8"
+  ]
+]

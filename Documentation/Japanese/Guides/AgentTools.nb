@@ -1,0 +1,411 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* Created By: SaveReadableNotebook *)
+(* https://resources.wolframcloud.com/FunctionRepository/resources/SaveReadableNotebook *)
+
+Notebook[
+ {
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "\:30a8\:30fc\:30b8\:30a7\:30f3\:30c8\:30c4\:30fc\:30eb",
+      "GuideTitle",
+      CellID -> 66967217
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "MCP\:30b5\:30fc\:30d0\:7ba1\:7406",
+         "GuideFunctionsSubsection",
+         CellID -> 252514811
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "InstallMCPServer",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/InstallMCPServer"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "c40ac8e4-27e1-4161-a8df-4d4f38357a23"
+           ],
+           " \[LongDash] \:5916\:90e8\:30a2\:30d7\:30ea\:30b1\:30fc\:30b7\:30e7\:30f3\:3092MCP\:30b5\:30fc\:30d0\:3092\:4f7f\:7528\:3059\:308b\:3088\:3046\:306b\:5b8c\:5168\:306b\:69cb\:200b\:200b\:6210\:3059\:308b"
+          }
+         ],
+         "GuideText",
+         CellID -> 500994432
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "UninstallMCPServer",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/UninstallMCPServer"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "fbf4ba60-7a72-45ec-b45a-a15490a8defc"
+           ],
+           " \[LongDash] \:5916\:90e8\:30a2\:30d7\:30ea\:30b1\:30fc\:30b7\:30e7\:30f3\:304b\:3089\:30a4\:30f3\:30b9\:30c8\:30fc\:30eb\:6e08\:307f\:306eMCP\:30b5\:30fc\:30d0\:3092\:524a\:9664\:3059\:308b"
+          }
+         ],
+         "GuideText",
+         CellID -> 751509667
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "MCPServerObject",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObject"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "fbf4ba60-7a72-45ec-b45a-a15490a8defc"
+           ],
+           " \[LongDash] MCP\:30b5\:30fc\:30d0\:306e\:8a18\:53f7\:7684\:8868\:73fe"
+          }
+         ],
+         "GuideText",
+         CellID -> 683007992
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "\:30b5\:30fc\:30d0\:306e\:30ab\:30b9\:30bf\:30de\:30a4\:30ba",
+         "GuideFunctionsSubsection",
+         CellID -> 538656471
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "CreateMCPServer",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/CreateMCPServer"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "c5c6736a-1ff4-4e4e-8fcf-2d9846cbae62"
+           ],
+           " \[LongDash] ",
+           Cell[
+            BoxData[ButtonBox["LLMConfiguration", BaseStyle -> "Link"]],
+            "InlineFormula"
+           ],
+           "\:304b\:3089\:30ab\:30b9\:30bf\:30e0\:306eMCP\:30b5\:30fc\:30d0\:3092\:4f5c\:6210\:3059\:308b"
+          }
+         ],
+         "GuideText",
+         CellID -> 450596874
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "MCPServerObjects",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObjects"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "fbf4ba60-7a72-45ec-b45a-a15490a8defc"
+           ],
+           " \[LongDash] ",
+           Cell[
+            BoxData[
+             ButtonBox[
+              "CreateMCPServer",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/CreateMCPServer"
+             ]
+            ],
+            "InlineFormula"
+           ],
+           "\:3092\:7528\:3044\:3066\:4f5c\:6210\:3055\:308c\:305fMCP\:30b5\:30fc\:30d0\:306e\:30ea\:30b9\:30c8\:3092\:53d6\:5f97\:3059\:308b"
+          }
+         ],
+         "GuideText",
+         CellID -> 259941104
+        ],
+        Cell[
+         TextData[
+          {
+           Cell[
+            BoxData[
+             ButtonBox[
+              "$DefaultMCPServers",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/$DefaultMCPServers"
+             ]
+            ],
+            "InlineGuideFunction"
+           ],
+           StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"],
+           Cell[
+            BoxData[
+             ButtonBox[
+              "$DefaultMCPTools",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/$DefaultMCPTools"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"}
+           ],
+           StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"],
+           Cell[
+            BoxData[
+             ButtonBox[
+              "MCPServerObjectQ",
+              BaseStyle -> "Link",
+              ButtonData -> "paclet:Wolfram/AgentTools/ref/MCPServerObjectQ"
+             ]
+            ],
+            "InlineGuideFunction",
+            TaggingRules -> {"PageType" -> "Function"},
+            CellTags -> "499d1fa4-0fdc-487d-b6f2-f1d012e199a1"
+           ],
+           Cell[
+            BoxData[
+             RowBox[
+              {
+               Cell[
+                TextData[
+                 StyleBox[" \[FilledVerySmallSquare] ", "InlineSeparator"]
+                ]
+               ],
+               DynamicModuleBox[
+                {
+                 nbobj$$ = 
+                  NotebookObject[
+                   "85790706-31b7-4d81-9083-bab750617578",
+                   "ed77086f-bc31-46f3-b204-2deffb96ee10"
+                  ],
+                 cellobj$$ = 
+                  CellObject[
+                   "29ae8455-571b-4029-a63d-8c7e06e9acd2",
+                   "33f4210e-2ad6-4719-9788-45c05d73f2e1"
+                  ]
+                },
+                TemplateBox[
+                 {
+                  GraphicsBox[
+                   {
+                    {
+                     Thickness[0.06],
+                     StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                     CircleBox[{0, 0}]
+                    },
+                    {
+                     Thickness[0.06],
+                     StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                     LineBox[{{0, 0.62}, {0, -0.62}}]
+                    },
+                    {
+                     Thickness[0.06],
+                     StrokeForm[Hue[0.4167, 0.406, 0.502]],
+                     LineBox[{{-0.62, 0}, {0.62, 0}}]
+                    }
+                   },
+                   ImagePadding -> {{1.0, 1.0}, {2.4, 1.0}},
+                   ImageSize -> 16,
+                   PlotRange -> {{-1.06, 1.06}, {-1.06, 1.06}},
+                   BaselinePosition -> Center -> Center
+                  ],
+                  nbobj$$,
+                  cellobj$$
+                 },
+                 "InlineListingAddButton"
+                ],
+                Initialization :>
+                 (nbobj$$ = EvaluationNotebook[];
+                 cellobj$$ = EvaluationCell[])
+               ]
+              }
+             ]
+            ],
+            "InlineListingAddButton"
+           ]
+          }
+         ],
+         "InlineGuideFunctionListing",
+         CellID -> 156833729
+        ]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "Tech Notes",
+      "GuideTutorialsSection",
+      CellID -> 9818744
+     ],
+     Cell[
+      TextData[
+       ButtonBox[
+        "AI\:30b3\:30fc\:30c7\:30a3\:30f3\:30b0\:30a2\:30d7\:30ea\:30b1\:30fc\:30b7\:30e7\:30f3\:306e\:30af\:30a4\:30c3\:30af\:30b9\:30bf\:30fc\:30c8",
+        BaseStyle -> "Link",
+        ButtonData -> "paclet:Wolfram/AgentTools/tutorial/QuickStartforAICodingApplications"
+       ]
+      ],
+      "GuideTutorial",
+      CellID -> 525159485
+     ],
+     Cell[
+      TextData[
+       ButtonBox[
+        "\:30c1\:30e3\:30c3\:30c8\:30af\:30e9\:30a4\:30a2\:30f3\:30c8\:306e\:30af\:30a4\:30c3\:30af\:30b9\:30bf\:30fc\:30c8",
+        BaseStyle -> "Link",
+        ButtonData -> "paclet:Wolfram/AgentTools/tutorial/QuickStartforChatClients"
+       ]
+      ],
+      "GuideTutorial",
+      CellID -> 65981070
+     ],
+     Cell[
+      TextData[
+       ButtonBox[
+        "\:30c7\:30d5\:30a9\:30eb\:30c8\:30c4\:30fc\:30eb",
+        BaseStyle -> "Link",
+        ButtonData -> "paclet:Wolfram/AgentTools/tutorial/DefaultTools"
+       ]
+      ],
+      "GuideTutorial",
+      CellID -> 56397439
+     ]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell[
+      "Related Guides",
+      "GuideMoreAboutSection",
+      CellID -> 387625190
+     ],
+     Cell["XXXX", "GuideMoreAbout", CellID -> 77090600],
+     Cell["XXXX", "GuideMoreAbout", CellID -> 739768088]
+    },
+    Open
+   ]
+  ],
+  Cell[
+   "Related Links",
+   "GuideRelatedLinksSection",
+   CellID -> 764788054
+  ],
+  Cell[
+   CellGroupData[
+    {
+     Cell["Metadata", "MetadataSection", CellID -> 447262185],
+     Cell[
+      TextData[
+       {
+        "New in: ",
+        Cell["XX", "HistoryData", CellTags -> "New"],
+        " | Modified in: ",
+        Cell[" ", "HistoryData", CellTags -> "Modified"],
+        " | Obsolete in: ",
+        Cell[" ", "HistoryData", CellTags -> "Obsolete"]
+       }
+      ],
+      "History",
+      CellID -> 316197786
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell[
+         "Categorization",
+         "CategorizationSection",
+         CellID -> 51418852
+        ],
+        Cell[
+         "Guide",
+         "Categorization",
+         CellLabel -> "Entity Type",
+         CellID -> 131112038
+        ],
+        Cell[
+         "Wolfram/AgentTools",
+         "Categorization",
+         CellLabel -> "Paclet Name",
+         CellID -> 372802092
+        ],
+        Cell[
+         "Wolfram`AgentTools`",
+         "Categorization",
+         CellLabel -> "Context",
+         CellID -> 53987209
+        ],
+        Cell[
+         "Wolfram/AgentTools/guide/AgentTools",
+         "Categorization",
+         CellLabel -> "URI",
+         CellID -> 180858926
+        ]
+       },
+       Open
+      ]
+     ],
+     Cell[
+      CellGroupData[
+       {
+        Cell["Keywords", "KeywordsSection", CellID -> 454644389],
+        Cell["XXXX", "Keywords", CellID -> 117574774]
+       },
+       Open
+      ]
+     ]
+    },
+    Open
+   ]
+  ]
+ },
+ TaggingRules -> <|"Paclet" -> "Wolfram/AgentTools"|>,
+ StyleDefinitions ->
+  FrontEnd`FileName[
+   {"Wolfram"},
+   "GuidePageStylesExt.nb",
+   CharacterEncoding -> "UTF-8"
+  ]
+]
