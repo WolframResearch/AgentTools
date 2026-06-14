@@ -396,6 +396,65 @@ VerificationTest[
     TestID   -> "ToInstallName-GoogleAntigravity@@Tests/InstallMCPServer.wlt:392,1-397,2"
 ]
 
+(* Antigravity install path detection: when the 2.0 installer migrates a pre-2.0 IDE
+   forward it drops ~/.gemini/config/.migrated; the helper must route to ~/.gemini/config/
+   in that case and to the historical ~/.gemini/antigravity/ otherwise. We exercise both
+   branches by stubbing FileExistsQ for the duration of the test. *)
+VerificationTest[
+    Module[ { migrated, fresh },
+        Block[
+            { FileExistsQ },
+            FileExistsQ[ p_ ] := StringEndsQ[ p, ".migrated" ];
+            migrated = Wolfram`AgentTools`SupportedClients`Private`antigravityInstallLocation[ ];
+            FileExistsQ[ p_ ] := False;
+            fresh = Wolfram`AgentTools`SupportedClients`Private`antigravityInstallLocation[ ]
+        ];
+        { Last @ migrated, FileNameTake[ FileNameJoin @ migrated, -2 ],
+          Last @ fresh,    FileNameTake[ FileNameJoin @ fresh, -2 ] }
+    ],
+    {
+        "mcp_config.json", FileNameJoin @ { "config",      "mcp_config.json" },
+        "mcp_config.json", FileNameJoin @ { "antigravity", "mcp_config.json" }
+    },
+    SameTest -> Equal,
+    TestID   -> "AntigravityInstallLocation-MigratedVsFresh@@Tests/InstallMCPServer.wlt:398,1-417,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "AntigravityCLI", "Windows" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-AntigravityCLI-Windows@@Tests/InstallMCPServer.wlt:419,1-424,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "AntigravityCLI", "MacOSX" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-AntigravityCLI-MacOSX@@Tests/InstallMCPServer.wlt:426,1-431,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "AntigravityCLI", "Unix" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-AntigravityCLI-Unix@@Tests/InstallMCPServer.wlt:433,1-438,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "AntigravityCLI" ],
+    "Antigravity CLI",
+    SameTest -> Equal,
+    TestID   -> "InstallDisplayName-AntigravityCLI@@Tests/InstallMCPServer.wlt:440,1-445,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`toInstallName[ "GoogleAntigravityCLI" ],
+    "AntigravityCLI",
+    SameTest -> Equal,
+    TestID   -> "ToInstallName-GoogleAntigravityCLI@@Tests/InstallMCPServer.wlt:447,1-452,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*projectInstallLocation*)
@@ -442,6 +501,17 @@ VerificationTest[
     FileNameJoin @ { ".codex", "config.toml" },
     SameTest -> Equal,
     TestID   -> "ProjectInstallLocation-Codex@@Tests/InstallMCPServer.wlt:436,1-445,2"
+]
+
+VerificationTest[
+    Module[ { path, result },
+        path = FileNameJoin @ { $TemporaryDirectory, "TestProject" };
+        result = Wolfram`AgentTools`Common`projectInstallLocation[ "AntigravityCLI", path ];
+        FileNameTake[ First @ result, -2 ]
+    ],
+    FileNameJoin @ { ".agents", "mcp_config.json" },
+    SameTest -> Equal,
+    TestID   -> "ProjectInstallLocation-AntigravityCLI@@Tests/InstallMCPServer.wlt:447,1-456,2"
 ]
 
 VerificationTest[
@@ -2990,14 +3060,14 @@ VerificationTest[
 
 VerificationTest[
     Length @ $SupportedMCPClients,
-    18,
+    19,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-Has18Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
+    TestID   -> "SupportedMCPClients-Has19Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
 ]
 
 VerificationTest[
     Keys @ $SupportedMCPClients,
-    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
+    { "AmazonQ", "Antigravity", "AntigravityCLI", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
     SameTest -> Equal,
     TestID   -> "SupportedMCPClients-KeysSorted@@Tests/InstallMCPServer.wlt:2998,1-3003,2"
 ]

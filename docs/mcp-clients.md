@@ -25,6 +25,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Gemini CLI | `"GeminiCLI"` | `"Gemini"` | JSON | No | `"WolframLanguage"` |
 | Goose | `"Goose"` | — | YAML | No | `"Wolfram"` |
 | Antigravity | `"Antigravity"` | `"GoogleAntigravity"` | JSON | No | `"WolframLanguage"` |
+| Antigravity CLI | `"AntigravityCLI"` | `"GoogleAntigravityCLI"` | JSON | Yes | `"WolframLanguage"` |
 | Junie (IDE + CLI) | `"Junie"` | `"JetBrainsJunie"` | JSON | Yes | `"WolframLanguage"` |
 | Kiro | `"Kiro"` | — | JSON | Yes | `"WolframLanguage"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
@@ -191,6 +192,8 @@ Note: Copilot CLI requires the `tools` field to specify which tools to enable. `
 
 ### Gemini CLI
 
+> **Deprecation notice (announced at Google I/O 2026):** Google is retiring Gemini CLI for free / consumer tiers on **June 18, 2026** and unifying its CLI offering under [Antigravity CLI](#antigravity-cli). Enterprise customers on Standard or Enterprise licenses can continue using Gemini CLI unchanged. New users should target `"AntigravityCLI"` instead — see the [official migration announcement](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
+
 | Scope | Config Location |
 |-------|----------------|
 | Global | `~/.gemini/settings.json` |
@@ -199,11 +202,53 @@ Note: Copilot CLI requires the `tools` field to specify which tools to enable. `
 
 ### Antigravity
 
-| Scope | Config Location |
-|-------|----------------|
-| Global | `~/.gemini/antigravity/mcp_config.json` |
+This entry targets the **Antigravity IDE** and the **Antigravity 2.0 standalone desktop app** (the agent-first VS Code-style editor). For the new terminal agent that replaces Gemini CLI, use [`"AntigravityCLI"`](#antigravity-cli) instead.
+
+| Scope | Condition | Config Location |
+|-------|-----------|----------------|
+| Global (fresh 2.0 install) | `~/.gemini/config/.migrated` is **absent** | `~/.gemini/antigravity/mcp_config.json` |
+| Global (migrated from pre-2.0 IDE) | `~/.gemini/config/.migrated` is **present** | `~/.gemini/config/mcp_config.json` |
 
 **Format:** Same as Claude Desktop (`mcpServers` key).
+
+`InstallMCPServer["Antigravity"]` auto-detects which path the running IDE actually reads. When the 2.0 installer migrates a pre-2.0 install forward, it drops a zero-byte `~/.gemini/config/.migrated` marker and the IDE switches to reading `~/.gemini/config/mcp_config.json`; the historical `~/.gemini/antigravity/mcp_config.json` is then ignored at runtime. Fresh 2.0 installs that never went through migration use the historical path. The installer picks the right one per call, so the same `InstallMCPServer["Antigravity"]` works on both fresh and upgraded systems.
+
+#### Antigravity 2.0 troubleshooting
+
+If `InstallMCPServer["Antigravity"]` writes the file but Antigravity 2.0 does not pick the server up, the cause is almost always one of the following:
+
+1. **App restart required.** Antigravity caches the config on launch; "reload window" is not always enough — fully quit and relaunch the app.
+2. **Installer directory conflict (Windows).** The Antigravity 2.0 installer can drop `app.asar` into a previous 1.x install dir under `%LOCALAPPDATA%\Programs\Antigravity\resources`. Electron's `.asar` priority then causes the wrong binary to launch, and that binary may read a different config dir than you expect. Reinstall into a clean, dedicated folder (the installer accepts `/DIR="..."`). See the [forum thread](https://discuss.ai.google.dev/t/fixing-the-antigravity-2-0-installer-directory-conflict/145591).
+3. **macOS GUI launch doesn't inherit `$PATH`.** When Antigravity is launched from Finder/Dock, MCP servers that rely on user-shell `$PATH` (including the `wolframscript`/`wolfram` resolution used by the Wolfram MCP server) crash silently. Either launch Antigravity from a terminal, or pass an absolute command path in `mcp_config.json`. See the [bug report](https://discuss.ai.google.dev/t/bug-mcp-servers-crash-with-executable-file-not-found-in-path-when-antigravity-is-launched-via-macos-gui/138495).
+4. **WSL file permissions.** When Antigravity is running inside WSL, the agent may not be able to write `~/.gemini/` on the Linux side — `InstallMCPServer` succeeds but the server is invisible at runtime. Run `InstallMCPServer` from within the same WSL distribution Antigravity is launched from.
+5. **Cloud-synced settings overriding local edits.** Google syncs some Antigravity settings to your Google account. If the cloud copy doesn't list your server, Antigravity may overwrite your local `mcp_config.json` on next launch. Sign out / sign back in to force a resync after installing.
+
+Post-migration directory layout (Antigravity 2.0 creates several siblings under `~/.gemini/` during the 1.x → 2.0 upgrade — `InstallMCPServer` only writes to the one the IDE actually reads):
+
+| Path | Role |
+|------|------|
+| `~/.gemini/antigravity/` | Pre-migration runtime data; the historical MCP config path is here |
+| `~/.gemini/config/` | Post-migration shared per-user config; the migrated MCP config path lives here, alongside the `.migrated` marker |
+| `~/.gemini/antigravity-cli/` | Antigravity CLI runtime data and config (separate file) |
+| `~/.gemini/antigravity-ide/` | Old pre-2.0 IDE data — not read by 2.0; safe to delete after upgrading |
+| `~/.gemini/antigravity-backup/` | Pre-migration backup created by the 2.0 installer; safe to delete after confirming 2.0 works |
+| `~/.gemini/antigravity-browser-profile/` | Embedded browser profile for the in-app browser tool |
+
+### Antigravity CLI
+
+Antigravity CLI is Google's terminal-based agent (announced at I/O 2026) that replaces Gemini CLI for free / consumer tiers on **June 18, 2026**. It shares the Antigravity agent engine with the desktop app but reads a separate config file, and — unlike Gemini CLI — keeps MCP servers in a dedicated `mcp_config.json` rather than inline in `settings.json`.
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.gemini/antigravity-cli/mcp_config.json` |
+| Project | `.agents/mcp_config.json` (in project root) |
+
+**Format:** Same as Claude Desktop (`mcpServers` key).
+
+Notes:
+- Note the directory split: the IDE/desktop app uses `~/.gemini/antigravity/` or `~/.gemini/config/` (depending on migration state) while the CLI uses `~/.gemini/antigravity-cli/` — sibling directories, different files. A single `InstallMCPServer["AntigravityCLI"]` only covers the CLI; install to `"Antigravity"` as well if you also use the desktop app.
+- Workspace skills moved from Gemini CLI's `.gemini/skills/` to Antigravity CLI's `.agents/skills/`, and workspace MCP config moved from `.gemini/settings.json` to `.agents/mcp_config.json`. If you previously checked in a `.gemini/settings.json` for Gemini CLI users, you'll need to add an equivalent `.agents/mcp_config.json` for Antigravity CLI users.
+- Antigravity CLI renamed the HTTP-transport field from `"url"` (Gemini CLI) to `"serverUrl"`. The Wolfram MCP server is stdio (`command`/`args`), so this doesn't affect `InstallMCPServer` output — relevant only if you hand-edit an HTTP entry.
 
 ### Augment Code
 
