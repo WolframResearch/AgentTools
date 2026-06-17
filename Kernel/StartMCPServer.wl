@@ -482,6 +482,24 @@ normalizeArgument // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*stdinShutdownQ*)
+(* The MCP stdio transport signals shutdown by closing the server's stdin, after which
+   InputString[""] returns the EndOfFile symbol on every call. We must exit the process
+   when that happens. Historically the read loop only detected client death on Unix (via
+   $ParentProcessID === 1) and treated EndOfFile as a transient empty read -- Pause[0.1]
+   and retry -- so on Windows a closed stdin left the kernel busy-spinning forever. The
+   Antigravity CLI then force-killed the hung process during a `/mcp` reload, and Go's
+   exec surfaced the TerminateProcess as "failed to stop mcp instance: <name>: exit
+   status 1". Treating the EndOfFile symbol (and the explicit "Quit" sentinel) as a
+   shutdown signal makes the server exit cleanly on all platforms. *)
+stdinShutdownQ // beginDefinition;
+stdinShutdownQ[ EndOfFile ] := True;
+stdinShutdownQ[ "Quit" ]    := True;
+stdinShutdownQ[ _ ]         := False;
+stdinShutdownQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*processRequest*)
 processRequest // beginDefinition;
 
@@ -490,7 +508,7 @@ processRequest // beginDefinition;
 processRequest[ ] :=
     Catch @ Enclose @ Module[ { stdin, message, method, id, req, response },
         stdin = InputString[ "" ];
-        If[ stdin === "Quit", Exit[ 0 ] ];
+        If[ stdinShutdownQ @ stdin, Exit[ 0 ] ];
         If[ ! StringQ @ stdin || StringTrim @ stdin === "", Throw @ EndOfFile ];
         message = ConfirmBy[ Developer`ReadRawJSONString @ stdin, AssociationQ ];
         writeLog[ "Request" -> message ];

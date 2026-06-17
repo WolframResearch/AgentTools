@@ -481,6 +481,43 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*stdinShutdownQ*)
+
+(* A closed stdin surfaces as the EndOfFile symbol from InputString and must trigger a
+   clean exit; the "Quit" sentinel does too. Anything else (a real request line, an empty
+   keep-alive line) must NOT be treated as shutdown. This guards the fix for the
+   Antigravity CLI "failed to stop mcp instance: <name>: exit status 1" hang. *)
+VerificationTest[
+    Wolfram`AgentTools`StartMCPServer`Private`stdinShutdownQ @ EndOfFile,
+    True,
+    SameTest -> Equal,
+    TestID   -> "StdinShutdownQ-EndOfFile@@Tests/StartMCPServer.wlt:482,1-487,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`StartMCPServer`Private`stdinShutdownQ @ "Quit",
+    True,
+    SameTest -> Equal,
+    TestID   -> "StdinShutdownQ-Quit@@Tests/StartMCPServer.wlt:489,1-494,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`StartMCPServer`Private`stdinShutdownQ @
+        "{\"jsonrpc\":\"2.0\",\"id\":0,\"method\":\"initialize\"}",
+    False,
+    SameTest -> Equal,
+    TestID   -> "StdinShutdownQ-RequestLine@@Tests/StartMCPServer.wlt:496,1-502,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`StartMCPServer`Private`stdinShutdownQ @ "",
+    False,
+    SameTest -> Equal,
+    TestID   -> "StdinShutdownQ-EmptyLine@@Tests/StartMCPServer.wlt:504,1-509,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*runToolInitialization*)
 VerificationTest[
     $initTestValue = 0;
