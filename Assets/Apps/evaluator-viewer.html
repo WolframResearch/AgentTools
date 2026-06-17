@@ -176,7 +176,7 @@
             loadingEl.style.display = "flex";
 
             embedderLoaded.then(function() {
-                return WolframNotebookEmbedder.embed(url, notebookContainer, {
+                return WolframNotebookEmbedder.embed((url.startsWith("http") ? url : {expr: url}), notebookContainer, {
                     allowInteract: true,
                     showRenderProgress: true,
                     width: null,

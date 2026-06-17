@@ -26,6 +26,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `catchTopAs;
 `chatbookVersionCheck;
 `defaultEnvironment;
+`delayedDisplay;
 `deployCloudNotebookForMCPApp;
 `directoryQ;
 `endDefinition;

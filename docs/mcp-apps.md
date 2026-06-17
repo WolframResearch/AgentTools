@@ -82,6 +82,21 @@ The fallback is per-tool:
 - `WolframLanguageEvaluator` always has a text/image result it can return, so it degrades in place.
 - `WolframAlpha` has no text-only fallback app view, so its entry in `$toolUIAssociations` is itself conditional on `$deployCloudNotebooks` — when the flag is `False`, no `_meta.ui` is attached to the tool definition and the client never sees it as a UI-enabled tool.
 
+### Notebook Delivery: Cloud vs. Inline
+
+By default, a UI-enhanced notebook is deployed to the Wolfram Cloud and its URL is sent to the app in `_meta.notebookUrl`. An experimental alternative serializes the notebook and embeds it inline, avoiding the cloud round-trip. The delivery method is selected by the `MCP_APPS_NOTEBOOK_METHOD` environment variable:
+
+| `MCP_APPS_NOTEBOOK_METHOD` | Behavior of `deployCloudNotebookForMCPApp` |
+|----------------------------|--------------------------------------------|
+| unset (default) | Deploys the notebook with `CloudDeploy` and returns the cloud URL |
+| `"Inline"` | Returns `ExportString[nb, "NB"]` — the serialized notebook itself — instead of a URL |
+
+The same `notebookUrl` field carries both forms. Each viewer app (`evaluator-viewer.html`, `notebook-viewer.html`, `wolframalpha-viewer.html`) decides how to embed based on the value: a string starting with `http` is embedded as a cloud URL, while any other value is passed to `WolframNotebookEmbedder.embed` as an inline notebook expression (`{expr: ...}`).
+
+Inline embedding is **experimental and not yet the default**. Both methods currently require an active cloud connection, since the UI-enhanced path is gated on `$deployCloudNotebooks` regardless of the delivery method (the `"Inline"` branch only asserts the flag rather than deploying).
+
+When inline embedding is active, graphics can render empty in the embedded notebook. The `delayedDisplay` helper works around this for `WolframLanguageEvaluator` output: any output boxes containing `GraphicsBox`/`Graphics3DBox` are serialized and reconstructed asynchronously inside a `DynamicModule` (showing a progress indicator until ready). Outside inline mode, or for output without graphics, `delayedDisplay` returns the boxes unchanged.
+
 ## Available UI Resources
 
 | URI | HTML Asset | Description |
@@ -205,7 +220,8 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$uiResourceRegistry` | `Common` | Association of loaded UI resources keyed by URI |
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
 | `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
-| `deployCloudNotebookForMCPApp` | `Common` | Shared helper that deploys a notebook for a UI-enhanced tool result and disables `$deployCloudNotebooks` on failure |
+| `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
+| `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |
 | `initializeUIResources` | `Common` | Loads HTML assets into the resource registry |

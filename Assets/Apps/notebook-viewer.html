@@ -194,7 +194,7 @@
                     maxHeight: typeof maxHeight === "number" && maxHeight > 0 ? maxHeight : Infinity
                 };
 
-                return WolframNotebookEmbedder.embed(url, containerEl, opts);
+                return WolframNotebookEmbedder.embed((url.startsWith("http") ? url : {expr: url}), containerEl, opts);
             }).then(function(nb) {
                 embedded = nb;
                 loadingEl.style.display = "none";

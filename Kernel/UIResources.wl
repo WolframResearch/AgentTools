@@ -23,6 +23,10 @@ $includeAppearanceElements = False;
 $deployedNotebookRoot      = "AgentTools/Notebooks";
 $deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be connected to deploy notebooks *)
 
+(* Inline notebooks are not yet the default since there are still some issues to work out.
+   These can be enabled via the following environment variable: *)
+$mcpAppsNotebookMethod := $mcpAppsNotebookMethod = Environment[ "MCP_APPS_NOTEBOOK_METHOD" ];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Cloud Notebooks*)
@@ -31,6 +35,14 @@ $deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be
 (* ::Subsection::Closed:: *)
 (*deployCloudNotebookForMCPApp*)
 deployCloudNotebookForMCPApp // beginDefinition;
+
+deployCloudNotebookForMCPApp[ nb_Notebook, _ ] /; $mcpAppsNotebookMethod === "Inline" := Enclose[
+    (* This should be true if this function is being called: *)
+    ConfirmAssert[ $deployCloudNotebooks, "DeployCloudNotebooksAssert" ];
+
+    ConfirmBy[ ExportString[ nb, "NB" ], StringQ, "Exported" ],
+    throwInternalFailure
+];
 
 deployCloudNotebookForMCPApp[ nb_Notebook, identifier_ ] := Enclose[
     Module[ { hash, target, deployed },
@@ -66,6 +78,29 @@ deployCloudNotebookForMCPApp[ nb_Notebook, identifier_ ] := Enclose[
 ];
 
 deployCloudNotebookForMCPApp // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*delayedDisplay*)
+(* This is a workaround for plots showing up empty when embedding an inline notebook expression instead of a URL *)
+delayedDisplay // beginDefinition;
+
+delayedDisplay[ boxes_ ] /; $mcpAppsNotebookMethod =!= "Inline" := boxes;
+
+delayedDisplay[ boxes_ ] /; FreeQ[ boxes, GraphicsBox|Graphics3DBox ] := boxes;
+
+delayedDisplay[ boxes_ ] :=
+    With[ { b64 = BaseEncode @ BinarySerialize[ Unevaluated @ RawBoxes @ boxes, PerformanceGoal -> "Size" ] },
+        ToBoxes @ DynamicModule[
+            { display },
+            Dynamic[ Replace[ display, _Symbol :> ProgressIndicator[ Appearance -> "Percolate" ] ] ],
+            Initialization            :> (display = BinaryDeserialize @ BaseDecode @ b64),
+            SynchronousInitialization -> False,
+            UnsavedVariables          :> { display }
+        ]
+    ];
+
+delayedDisplay // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

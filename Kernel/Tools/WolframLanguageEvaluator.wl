@@ -351,7 +351,7 @@ toOutputBoxes // beginDefinition;
 
 toOutputBoxes[ (HoldForm|HoldCompleteForm)[ expr_ ] ] :=
     Block[ { $OutputSizeLimit = $outputSizeLimit },
-        cb`CachedBoxes @ OutputSizeLimit`PrePrint @ expr
+        delayedDisplay @ cb`CachedBoxes @ OutputSizeLimit`PrePrint @ expr
     ];
 
 toOutputBoxes // endDefinition;

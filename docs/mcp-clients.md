@@ -469,6 +469,7 @@ Include these environment variables for proper operation:
 | `WOLFRAM_USERBASE` | Path to user's Wolfram files (`$UserBaseDirectory`) |
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
+| `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |
 | `MCP_TOOL_OPTIONS` | JSON string of tool option overrides, set automatically by `"ToolOptions"` (optional) |
 
 ### Getting the Configuration

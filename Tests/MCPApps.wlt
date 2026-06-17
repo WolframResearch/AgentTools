@@ -1194,4 +1194,121 @@ VerificationTest[
     TestID   -> "DeployCloudNotebookForMCPApp-NotANotebook@@Tests/MCPApps.wlt:1190,1-1195,2"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline Method Returns Serialized Notebook String*)
+VerificationTest[
+    Block[ {
+        Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline",
+        Wolfram`AgentTools`Common`$deployCloudNotebooks = True
+    },
+        StringQ @ Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[
+            Notebook @ { Cell[ "1 + 1", "Input" ] },
+            "some-id"
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineReturnsString@@Tests/MCPApps.wlt:1200,1-1213,2"
+]
+
+VerificationTest[
+    Block[ {
+        Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline",
+        Wolfram`AgentTools`Common`$deployCloudNotebooks = True
+    },
+        ImportString[
+            Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[
+                Notebook @ { Cell[ "1 + 1", "Input" ] },
+                "some-id"
+            ],
+            "NB"
+        ]
+    ],
+    _Notebook,
+    SameTest -> MatchQ,
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineRoundTrips@@Tests/MCPApps.wlt:1215,1-1231,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline Method Still Asserts Deploy Enabled*)
+VerificationTest[
+    Quiet @ Block[ {
+        Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline",
+        Wolfram`AgentTools`Common`$deployCloudNotebooks = False
+    },
+        Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[
+            Notebook @ { Cell[ "test", "Input" ] },
+            "some-id"
+        ]
+    ],
+    _Failure,
+    SameTest -> MatchQ,
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineAssertsDeployEnabled@@Tests/MCPApps.wlt:1236,1-1249,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*delayedDisplay*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline Mode Wraps Graphics Output Asynchronously*)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline" },
+        Wolfram`AgentTools`Common`delayedDisplay @ ToBoxes @ Graphics @ { Disk[ ] }
+    ],
+    _DynamicModuleBox,
+    SameTest -> MatchQ,
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1258,1-1265,2"
+]
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline" },
+        Wolfram`AgentTools`Common`delayedDisplay @ ToBoxes @ Graphics3D @ { Sphere[ ] }
+    ],
+    _DynamicModuleBox,
+    SameTest -> MatchQ,
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1267,1-1274,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline Mode Serializes the Original Graphics Box Away*)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline" },
+        FreeQ[ Wolfram`AgentTools`Common`delayedDisplay @ ToBoxes @ Graphics @ { Disk[ ] }, GraphicsBox ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1279,1-1286,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline Mode Leaves Graphics-Free Output Unchanged*)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = "Inline" },
+        Wolfram`AgentTools`Common`delayedDisplay @ RowBox @ { "1", "+", "1" }
+    ],
+    RowBox @ { "1", "+", "1" },
+    SameTest -> MatchQ,
+    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1291,1-1298,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*No-Op Outside Inline Mode*)
+VerificationTest[
+    With[ { boxes = ToBoxes @ Graphics @ { Disk[ ] } },
+        Block[ { Wolfram`AgentTools`UIResources`Private`$mcpAppsNotebookMethod = Null },
+            Wolfram`AgentTools`Common`delayedDisplay @ boxes === boxes
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1303,1-1312,2"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)
