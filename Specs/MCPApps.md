@@ -437,7 +437,8 @@ The app identifies the metadata item by attempting to parse each text content it
     "ui": {
         "csp": {
             "connectDomains": [
-                "https://www.wolframcloud.com"
+                "https://www.wolframcloud.com",
+                "data:"
             ],
             "resourceDomains": [
                 "https://unpkg.com",
@@ -455,7 +456,7 @@ The app identifies the metadata item by attempting to parse each text content it
 
 This is identical to `notebook-viewer.json` because the WolframAlpha viewer uses the same WolframNotebookEmbedder approach:
 
-- `connectDomains`: WolframNotebookEmbedder needs XHR/WebSocket access to wolframcloud.com
+- `connectDomains`: WolframNotebookEmbedder needs XHR/WebSocket access to wolframcloud.com, plus `data:` so its WXFWeb library can instantiate a WebAssembly module loaded from a `data:` URI (the browser governs this under `connect-src`)
 - `resourceDomains`: The embedder JS library loads from unpkg.com; notebook resources load from wolframcloud.com
 - `frameDomains`: The embedded notebook renders in an iframe pointing to wolframcloud.com
 
@@ -552,8 +553,14 @@ For each content item in tool result:
 {
     "ui": {
         "csp": {
-            "connectDomains": [],
-            "resourceDomains": [],
+            "connectDomains": [
+                "https://www.wolframcloud.com",
+                "data:"
+            ],
+            "resourceDomains": [
+                "https://unpkg.com",
+                "https://www.wolframcloud.com"
+            ],
             "frameDomains": [
                 "https://www.wolframcloud.com",
                 "https://wolfr.am"
@@ -564,7 +571,7 @@ For each content item in tool result:
 }
 ```
 
-The `frameDomains` entry allows embedding Wolfram Cloud deployed content in iframes within the app.
+The evaluator viewer renders UI-enhanced results with `WolframNotebookEmbedder`, so its CSP is identical to `wolframalpha-viewer.json` and `notebook-viewer.json`: `connectDomains` for wolframcloud.com plus `data:` (the embedder's WXFWeb WebAssembly module loads from a `data:` URI), `resourceDomains` for unpkg.com (embedder library) and wolframcloud.com (notebook resources), and `frameDomains` for the embedded notebook iframe.
 
 ---
 
@@ -860,8 +867,8 @@ The server does **not** generate CSP headers or embed them in the HTML. The serv
 
 **Per-app CSP:**
 
-- **WolframAlpha viewer**: Requires `connectDomains` for `https://www.wolframcloud.com` (WolframNotebookEmbedder API communication), `resourceDomains` for `https://unpkg.com` (embedder JS library) and `https://www.wolframcloud.com` (notebook resources), and `frameDomains` for `https://www.wolframcloud.com` and `https://wolfr.am` (embedded notebook iframe). This is identical to the NotebookViewer CSP because both apps use the same WolframNotebookEmbedder approach.
-- **Evaluator viewer**: Requires `frameDomains` for `https://www.wolframcloud.com` and `https://wolfr.am` to embed CloudDeploy results. No `connectDomains` needed since the app does not make direct API calls.
+- **WolframAlpha viewer**: Requires `connectDomains` for `https://www.wolframcloud.com` (WolframNotebookEmbedder API communication) and `data:` (the embedder's WXFWeb WebAssembly module is loaded from a `data:` URI under `connect-src`), `resourceDomains` for `https://unpkg.com` (embedder JS library) and `https://www.wolframcloud.com` (notebook resources), and `frameDomains` for `https://www.wolframcloud.com` and `https://wolfr.am` (embedded notebook iframe). This is identical to the NotebookViewer CSP because both apps use the same WolframNotebookEmbedder approach.
+- **Evaluator viewer**: Now embeds results with WolframNotebookEmbedder as well, so it requires the same CSP as the WolframAlpha and NotebookViewer apps: `connectDomains` for `https://www.wolframcloud.com` and `data:`, `resourceDomains` for `https://unpkg.com` and `https://www.wolframcloud.com`, and `frameDomains` for `https://www.wolframcloud.com` and `https://wolfr.am`.
 
 ### Iframe Sandbox
 

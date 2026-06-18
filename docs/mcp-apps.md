@@ -176,7 +176,17 @@ Create a JSON metadata file with the same base name:
 Assets/Apps/my-app.json
 ```
 
-This file can contain CSP declarations and other metadata used by the host.
+This file can contain CSP declarations and other metadata used by the host. Under `csp`, the host adds an implicit `'self'` and appends each declared domain to the matching directive:
+
+| `csp` field | Maps to | Governs |
+|-------------|---------|---------|
+| `connectDomains` | `connect-src` | `fetch`/XHR/WebSocket, and `data:`/streaming WebAssembly loads |
+| `resourceDomains` | `script-src`, `style-src`, `img-src`, … | External scripts, styles, images, fonts |
+| `frameDomains` | `frame-src` | Nested iframes (e.g. the embedded notebook) |
+
+Apps that embed a notebook with `WolframNotebookEmbedder` must include `"data:"` in `connectDomains`: the embedder's WXFWeb library instantiates a WebAssembly module from a `data:` URI, which the browser governs under `connect-src`. The `evaluator-viewer`, `notebook-viewer`, and `wolframalpha-viewer` apps declare this.
+
+CSP only governs whether a request may *start*; cross-origin *responses* are still subject to CORS, which the host cannot influence through this metadata.
 
 ### Step 3: Associate with a Tool
 
