@@ -65,6 +65,55 @@ $fallBackLLMKitInfo := <|
 |>;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitUsageLimitFailureQ*)
+
+(* Detects the Failure that LLMKit-backed services (e.g. RelatedWolframAlphaResults, RelatedDocumentation)
+   return when the user has exhausted their LLMKit usage/credit allotment. The service responds with HTTP 429
+   and an error code such as "credits-per-month-limit-exceeded". The markers can be buried inside nested
+   Failure objects, so we search the whole expression rather than matching a fixed shape. *)
+llmKitUsageLimitFailureQ // beginDefinition;
+
+llmKitUsageLimitFailureQ[ failure_Failure ] := Or[
+    ! FreeQ[ failure, KeyValuePattern[ "StatusCode" -> 429 ] ],
+    ! FreeQ[ failure, _String? usageLimitCodeQ ]
+];
+
+llmKitUsageLimitFailureQ[ _ ] := False;
+
+llmKitUsageLimitFailureQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*usageLimitCodeQ*)
+usageLimitCodeQ // beginDefinition;
+usageLimitCodeQ[ s_String ] := StringContainsQ[ s, "credits" | "limit-exceeded" | "quota" | "usage-limit", IgnoreCase -> True ];
+usageLimitCodeQ[ _ ] := False;
+usageLimitCodeQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitUsageLimitMessage*)
+
+$defaultUsageLimitMessage = "The LLMKit usage limit has been exceeded.";
+
+(* Extracts the human-readable error message from an LLMKit usage-limit Failure, falling back to a generic
+   message when the service response does not include one. *)
+llmKitUsageLimitMessage // beginDefinition;
+
+llmKitUsageLimitMessage[ failure_Failure ] := Replace[
+    FirstCase[
+        failure,
+        KeyValuePattern[ "error" -> KeyValuePattern[ "message" -> message_String ] ] :> message,
+        Missing[ "NotFound" ],
+        Infinity
+    ],
+    Except[ _String ] :> $defaultUsageLimitMessage
+];
+
+llmKitUsageLimitMessage // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Dependencies*)
 $minimumChatbookVersion = "2.3.0";

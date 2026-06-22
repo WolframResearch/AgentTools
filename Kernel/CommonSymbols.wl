@@ -41,6 +41,8 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `importResourceFunction;
 `initializeVectorDatabases;
 `llmKitSubscribedQ;
+`llmKitUsageLimitFailureQ;
+`llmKitUsageLimitMessage;
 `makeDeploymentBoxes;
 `makeMCPServerObjectBoxes;
 `mcpServerDirectory;

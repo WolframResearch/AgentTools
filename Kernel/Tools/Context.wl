@@ -53,6 +53,11 @@ Inform the user that they can subscribe at the following URL in order to improve
 $wolframAlphaNoCloudTemplate = StringTemplate[ "\
 `Level`: Unable to generate Wolfram|Alpha context due to missing cloud connection." ];
 
+$wolframAlphaUsageLimitTemplate = StringTemplate[ "\
+`Level`: Unable to generate Wolfram|Alpha context because the LLMKit usage limit has been exceeded. \
+Inform the user that they have exceeded their LLMKit usage limit. \
+The service returned the following message: `Message`" ];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*WolframLanguageContext*)
@@ -66,6 +71,11 @@ $documentationPromptHeader = "\
 IMPORTANT: Here are some Wolfram documentation snippets that you should use to respond:\n\n";
 
 $snippetTemplate = StringTemplate[ "<result url='`URI`'>\n\n`Text`\n\n</result>" ];
+
+$documentationUsageLimitTemplate = StringTemplate[ "\
+Unable to retrieve relevant Wolfram Language documentation because the LLMKit usage limit has been exceeded. \
+Inform the user that they have exceeded their LLMKit usage limit. \
+The service returned the following message: `Message`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -226,11 +236,11 @@ relatedWolframAlphaPrompt[ context_, level_ ] :=
 
 (* When subscribed and called as a tool (not internally), extract images *)
 relatedWolframAlphaPrompt[ context_, "Error", True ] :=
-    extractWolframAlphaImages @ relatedWolframAlphaResults @ context;
+    extractWolframAlphaImages @ relatedWolframAlphaResults[ context, "Error" ];
 
 (* When called internally (e.g., from relatedWolframContext), return plain string *)
 relatedWolframAlphaPrompt[ context_, level_, True ] :=
-    relatedWolframAlphaResults @ context;
+    relatedWolframAlphaResults[ context, level ];
 
 relatedWolframAlphaPrompt[ context_, level_, False ] := Enclose[
     Module[ { info, url, connected, template },
@@ -253,29 +263,41 @@ relatedWolframAlphaResults // beginDefinition;
 relatedWolframAlphaResults[ KeyValuePattern[ "context" -> context_ ] ] :=
     relatedWolframAlphaResults @ context;
 
-relatedWolframAlphaResults[ context_String ] := Enclose[
-    Module[ { maxItems, includeWLResults, prompt },
+relatedWolframAlphaResults[ context_String ] :=
+    relatedWolframAlphaResults[ context, "Error" ];
+
+relatedWolframAlphaResults[ context_String, level_String ] := Enclose[
+    Module[ { maxItems, includeWLResults, result },
 
         ConfirmMatch[ chatbookVersionCheck[ ], True, "ChatbookVersionCheck" ];
 
         maxItems = ConfirmMatch[ toMaxItems @ $waMaxItems, $$maxItemsSpec, "WolframAlphaMaxItems" ];
         includeWLResults = Replace[ $waIncludeWLResults, Except[ True|False ] :> Automatic ];
 
-        prompt = ConfirmBy[
-            Quiet[
-                cb`RelatedWolframAlphaResults[
-                    context,
-                    "Prompt",
-                    "MaxItems"         -> maxItems,
-                    "IncludeWLResults" -> includeWLResults
-                ],
-                { WolframAlpha::kbserr }
+        result = Quiet[
+            cb`RelatedWolframAlphaResults[
+                context,
+                "Prompt",
+                "MaxItems"         -> maxItems,
+                "IncludeWLResults" -> includeWLResults
             ],
-            StringQ,
-            "Prompt"
+            { WolframAlpha::kbserr }
         ];
 
-        StringTrim @ prompt
+        (* A user who has exceeded their LLMKit usage limit gets a Failure here; turn it into a useful
+           message instead of letting it become an opaque internal failure. *)
+        If[ llmKitUsageLimitFailureQ @ result,
+            ConfirmBy[
+                TemplateApply[
+                    $wolframAlphaUsageLimitTemplate,
+                    <| "Level" -> level, "Message" -> llmKitUsageLimitMessage @ result |>
+                ],
+                StringQ,
+                "UsageLimitMessage"
+            ],
+            (* else *)
+            StringTrim @ ConfirmBy[ result, StringQ, "Prompt" ]
+        ]
     ],
     throwInternalFailure
 ];
@@ -291,18 +313,33 @@ relatedDocumentation[ KeyValuePattern[ "context" -> context_ ] ] :=
     relatedDocumentation @ context;
 
 relatedDocumentation[ context_String ] := Enclose[
-    Module[ { prompt, formatted },
+    Module[ { result, prompt, formatted },
 
         ConfirmMatch[ chatbookVersionCheck[ ], True, "ChatbookVersionCheck" ];
 
-        prompt = ConfirmBy[ relatedDocumentation0 @ context, StringQ, "Prompt" ];
+        result = relatedDocumentation0 @ context;
 
-        formatted = If[ StringTrim @ prompt === "",
-                        "",
-                        $documentationPromptHeader <> formatDocumentationSnippets @ prompt
-                    ];
+        (* A user who has exceeded their LLMKit usage limit gets a Failure here; turn it into a useful
+           message instead of letting it become an opaque internal failure. *)
+        If[ llmKitUsageLimitFailureQ @ result,
+            ConfirmBy[
+                TemplateApply[
+                    $documentationUsageLimitTemplate,
+                    <| "Message" -> llmKitUsageLimitMessage @ result |>
+                ],
+                StringQ,
+                "UsageLimitMessage"
+            ],
+            (* else *)
+            prompt = ConfirmBy[ result, StringQ, "Prompt" ];
 
-        ConfirmBy[ formatted, StringQ, "Result" ]
+            formatted = If[ StringTrim @ prompt === "",
+                            "",
+                            $documentationPromptHeader <> formatDocumentationSnippets @ prompt
+                        ];
+
+            ConfirmBy[ formatted, StringQ, "Result" ]
+        ]
     ],
     throwInternalFailure
 ];
