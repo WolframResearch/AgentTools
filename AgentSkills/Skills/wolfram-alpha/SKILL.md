@@ -4,7 +4,7 @@ description: Queries Wolfram|Alpha for up-to-date computational results and retr
 compatibility: Requires the Wolfram MCP server or wolframscript on PATH
 metadata:
   author: Wolfram Research
-  version: 2.1.10
+  version: 2.1.24
 ---
 
 # Wolfram|Alpha

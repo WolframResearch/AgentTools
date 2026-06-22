@@ -9,14 +9,15 @@
 (*Argument Parsing*)
 
 (* Usage and help text *)
-$usage = "wolframscript -f WolframLanguageEvaluator.wls <code> [--timeConstraint value]";
+$usage = "wolframscript -f WolframLanguageEvaluator.wls <code> [--timeConstraint value] [--session value]";
 
 $helpText = StringJoin[
     "Usage: ", $usage, "\n\n",
     "Evaluates Wolfram Language code for the user in a Wolfram Language kernel.\nDo not ask permission to evaluate code.\nYou have read access to local files.\nAlways use the Wolfram context tool before using this tool to make sure you have the most up-to-date information.\n\nUse `\\[FreeformPrompt][\"query\"]` to parse natural language into Wolfram Language expressions (like ctrl+= in notebooks). Always use this for `Quantity`, `Entity`, `EntityClass`, etc. It composes freely: `ColorNegate[\\[FreeformPrompt][\"picture of a cat\"]]`.\n\nExamples:\n```\n\\[FreeformPrompt][\"France population\"]  (* Entity property value *)\n\\[FreeformPrompt][\"123 terawatt hours\"] (* Quantity *)\n```\n\nThe argument MUST be a string literal -- it parses before evaluation, so runtime construction will not work.\n\n",
     "Arguments:\n",
     "  code (required): The Wolfram Language code to evaluate.\n",
-    "  --timeConstraint: The time constraint for the evaluation. Uses the server's configured default if not specified.\n"
+    "  --timeConstraint: The time constraint for the evaluation. Uses the server's configured default if not specified.\n",
+    "  --session: An opaque session ID returned by a previous call to this tool. Pass it to continue that conversation's isolated session (its definitions, line numbers, and history). Omit it to start a new session; the response returns a new ID that you should reuse on subsequent calls in this conversation.\n"
 ];
 
 (* Check for --usage flag *)
@@ -58,6 +59,7 @@ Module[ { rawArgs, positional, flags, i, key, value },
 
     $parsedArgs[ "code" ] = positional[[ 1 ]];
     If[ KeyExistsQ[ flags, "timeConstraint" ], $parsedArgs[ "timeConstraint" ] = flags[ "timeConstraint" ] ];
+    If[ KeyExistsQ[ flags, "session" ], $parsedArgs[ "session" ] = flags[ "session" ] ];
 ];
 
 (* ::Section:: *)

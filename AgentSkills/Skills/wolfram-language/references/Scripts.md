@@ -41,7 +41,7 @@ The argument MUST be a string literal -- it parses before evaluation, so runtime
 **Usage:**
 
 ```
-wolframscript -f scripts/WolframLanguageEvaluator.wls <code> [--timeConstraint value]
+wolframscript -f scripts/WolframLanguageEvaluator.wls <code> [--timeConstraint value] [--session value]
 ```
 
 **Arguments:**
@@ -50,6 +50,7 @@ wolframscript -f scripts/WolframLanguageEvaluator.wls <code> [--timeConstraint v
 | --- | --- | --- |
 | `code` | Yes | The Wolfram Language code to evaluate. |
 | `--timeConstraint` | No | The time constraint for the evaluation. Uses the server's configured default if not specified. |
+| `--session` | No | An opaque session ID returned by a previous call to this tool. Pass it to continue that conversation's isolated session (its definitions, line numbers, and history). Omit it to start a new session; the response returns a new ID that you should reuse on subsequent calls in this conversation. |
 
 ---
 
