@@ -178,11 +178,45 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Missing Directories*)
+
+(* Writing to a path whose parent directories do not exist should create the
+   intermediate directories rather than failing with an internal error (GH#200). *)
+VerificationTest[
+    $missingDirRoot         = FileNameJoin @ { $TemporaryDirectory, "AgentToolsMissingDir_" <> CreateUUID[ ] };
+    $missingDirNotebookFile = FileNameJoin @ { $missingDirRoot, "nested", "test.nb" };
+    { DirectoryQ @ $missingDirRoot, StringQ @ $missingDirNotebookFile },
+    { False, True },
+    SameTest -> MatchQ,
+    TestID   -> "WriteNotebook-MissingDirectory-Setup-GH#200"
+]
+
+VerificationTest[
+    $writeNotebookTool[ <|
+        "markdown"  -> "# Created In New Directory",
+        "file"      -> $missingDirNotebookFile,
+        "overwrite" -> False
+    |> ],
+    _String? FileExistsQ,
+    SameTest -> MatchQ,
+    TestID   -> "WriteNotebook-MissingDirectory-CreatesPath-GH#200"
+]
+
+VerificationTest[
+    FileExistsQ @ $missingDirNotebookFile,
+    True,
+    SameTest -> SameQ,
+    TestID   -> "WriteNotebook-MissingDirectory-FileExists-GH#200"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*Cleanup*)
 VerificationTest[
     If[ FileExistsQ @ $tempNotebookFile, DeleteFile @ $tempNotebookFile ];
-    FileExistsQ @ $tempNotebookFile,
-    False,
+    If[ DirectoryQ @ $missingDirRoot, DeleteDirectory[ $missingDirRoot, DeleteContents -> True ] ];
+    { FileExistsQ @ $tempNotebookFile, DirectoryQ @ $missingDirRoot },
+    { False, False },
     SameTest -> SameQ,
     TestID   -> "WriteNotebook-Cleanup@@Tests/Tools.wlt:182,1-188,2"
 ]

@@ -35,7 +35,7 @@ wolframscript -f scripts/WriteNotebook.wls <file> <markdown> [--overwrite value]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `file` | Yes | The file to write the notebook to (must end in .nb). |
+| `file` | Yes | The file to write the notebook to (must end in .nb). Any missing parent directories are created automatically. |
 | `markdown` | Yes | The markdown text to write to a notebook. |
 | `--overwrite` | No | Whether to overwrite an existing file (default is False). |
 

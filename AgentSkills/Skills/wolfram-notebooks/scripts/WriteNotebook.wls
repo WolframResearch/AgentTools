@@ -15,7 +15,7 @@ $helpText = StringJoin[
     "Usage: ", $usage, "\n\n",
     "Converts markdown text to a Wolfram notebook and saves it to a file.\n\n",
     "Arguments:\n",
-    "  file (required): The file to write the notebook to (must end in .nb).\n",
+    "  file (required): The file to write the notebook to (must end in .nb). Any missing parent directories are created automatically.\n",
     "  markdown (required): The markdown text to write to a notebook.\n",
     "  --overwrite: Whether to overwrite an existing file (default is False).\n"
 ];

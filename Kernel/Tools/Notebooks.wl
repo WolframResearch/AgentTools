@@ -44,7 +44,7 @@ $defaultMCPTools[ "WriteNotebook" ] := LLMTool @ <|
     "Parameters"  -> {
         "file" -> <|
             "Interpreter" -> "String",
-            "Help"        -> "The file to write the notebook to (must end in .nb).",
+            "Help"        -> "The file to write the notebook to (must end in .nb). Any missing parent directories are created automatically.",
             "Required"    -> True
         |>,
         "overwrite" -> <|
@@ -119,11 +119,23 @@ writeNotebook[ KeyValuePattern @ { "markdown" -> markdown_, "file" -> file_, "ov
     writeNotebook[ markdown, file, TrueQ @ overwrite ];
 
 writeNotebook[ markdown_String, file_String, overwrite: True|False ] := Enclose[
-    Catch @ Module[ { nb },
+    Catch @ Module[ { dir, nb, exported },
         If[ FileExistsQ @ file && ! overwrite, Throw[ "File already exists: " <> file ] ];
+        dir = DirectoryName @ file;
+        If[ dir =!= "" && ! DirectoryQ @ dir,
+            Quiet @ CreateDirectory[ dir, CreateIntermediateDirectories -> True ];
+            If[ ! DirectoryQ @ dir,
+                Throw[ "Cannot write the notebook because the directory does not exist and could not be created: " <> dir ]
+            ]
+        ];
         ConfirmMatch[ chatbookVersionCheck[ ], True, "ChatbookVersionCheck" ];
         nb = ConfirmMatch[ importMarkdownString[ markdown, "Notebook" ], _Notebook, "Notebook" ];
-        ConfirmBy[ Export[ file, nb, "NB" ], FileExistsQ, "File" ]
+        exported = Quiet @ Export[ file, nb, "NB" ];
+        If[ ! StringQ @ exported || ! FileExistsQ @ exported,
+            Throw[ "Unable to write the notebook to the file: " <> file <>
+                   ". The path may be invalid or the location may not be writable." ]
+        ];
+        exported
     ],
     throwInternalFailure
 ];
