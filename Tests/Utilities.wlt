@@ -361,4 +361,97 @@ VerificationTest[
     TestID   -> "ToJSRegex-NoLiteralDelimiters@@Tests/Utilities.wlt:357,1-362,2"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*LLMKit Usage Limits*)
+
+(* A representative Failure of the kind RelatedWolframAlphaResults / RelatedDocumentation return when the
+   user has exhausted their monthly LLMKit credit allotment (HTTP 429). *)
+$usageLimitFailure = Failure[ "APIError", <|
+    "MessageTemplate"   -> "The service returned the following error message: `1`.",
+    "MessageParameters" -> { "credits-per-month-limit-exceeded - User has exceeded credits limit." },
+    "StatusCode"        -> 429,
+    "Body"              -> <|
+        "success" -> False,
+        "error"   -> <|
+            "code"    -> "credits-per-month-limit-exceeded",
+            "message" -> "credits-per-month-limit-exceeded - User has exceeded credits limit."
+        |>
+    |>
+|> ];
+
+(* The same failure as it appears after ConfirmBy has wrapped it, to confirm detection survives nesting. *)
+$wrappedUsageLimitFailure = Enclose[
+    ConfirmBy[ $usageLimitFailure, StringQ, "Prompt" ],
+    ( # & )
+];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitUsageLimitFailureQ*)
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $usageLimitFailure ],
+    True,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitFailureQ-APIError@@Tests/Utilities.wlt:392,1-397,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $wrappedUsageLimitFailure ],
+    True,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitFailureQ-Wrapped@@Tests/Utilities.wlt:399,1-404,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ "A normal documentation result." ],
+    False,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitFailureQ-PlainString@@Tests/Utilities.wlt:406,1-411,2"
+]
+
+(* An unrelated API failure must NOT be treated as a usage-limit failure (it should remain an internal failure). *)
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[
+        Failure[ "APIError", <| "StatusCode" -> 500, "Body" -> "Internal Server Error" |> ]
+    ],
+    False,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitFailureQ-UnrelatedFailure@@Tests/Utilities.wlt:414,1-421,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $Failed ],
+    False,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitFailureQ-NonFailure@@Tests/Utilities.wlt:423,1-428,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitUsageLimitMessage*)
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitMessage[ $usageLimitFailure ],
+    "credits-per-month-limit-exceeded - User has exceeded credits limit.",
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitMessage-ExtractsServiceMessage@@Tests/Utilities.wlt:433,1-438,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`llmKitUsageLimitMessage[ $wrappedUsageLimitFailure ],
+    "credits-per-month-limit-exceeded - User has exceeded credits limit.",
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitMessage-ExtractsFromWrapped@@Tests/Utilities.wlt:440,1-445,2"
+]
+
+(* Falls back to a generic message when the service response carries no human-readable message. *)
+VerificationTest[
+    StringQ @ Wolfram`AgentTools`Common`llmKitUsageLimitMessage[
+        Failure[ "APIError", <| "StatusCode" -> 429 |> ]
+    ],
+    True,
+    SameTest -> SameQ,
+    TestID   -> "LLMKitUsageLimitMessage-FallbackString@@Tests/Utilities.wlt:448,1-455,2"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)
