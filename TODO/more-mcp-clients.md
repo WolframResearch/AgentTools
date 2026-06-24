@@ -66,3 +66,42 @@ Continue uses a YAML config file (`~/.continue/config.yaml`) with `mcpServers` a
 
 - [x] Research how MCP servers are added to Continue and write a detailed report in [continue.md](../client-research/continue.md) (revised May 2026 to use native YAML)
 - [x] Implement support for `InstallMCPServer["Continue", ...]` — writes into `~/.continue/config.yaml` (global) and `.continue/mcpServers/wolfram.yaml` (project), reusing the Goose YAML pattern and the AugmentCodeIDE name-based upsert pattern. Covers all three Continue distributions — VS Code extension, JetBrains plugin, and the `cn` CLI (`npm i -g @continuedev/cli`) — because they all read the same config files.
+
+### [LM Studio](https://lmstudio.ai/)
+
+LM Studio is a cross-platform (macOS / Windows / Linux) desktop app for running local LLMs that doubles as an MCP client. It uses a single file-based config at `~/.lmstudio/mcp.json` (`%USERPROFILE%\.lmstudio\mcp.json` on Windows) and explicitly "follows Cursor's `mcp.json` notation" — a top-level `mcpServers` object keyed by name with the standard `command`/`args`/`env` fields. It supports both local stdio and remote MCP servers, has no project scope, and needs no custom `ServerConverter`. This makes it one of the easiest clients to add — effectively a clone of the `Cursor` entry with a different path. See [lmstudio.md](../client-research/lmstudio.md) for the full plan. Fully testable on Windows (a Windows build exists).
+
+- [x] Research how MCP servers are added to LM Studio and write a detailed report in [lmstudio.md](../client-research/lmstudio.md)
+- [x] Implement support for `InstallMCPServer["LMStudio", ...]` — `$supportedMCPClients` entry pointing at `~/.lmstudio/mcp.json` (standard `mcpServers` JSON, no converter, no project scope, default toolset `"Wolfram"`), `guessClientName` path pattern, tests, and docs rows
+
+## Rejected / Not Feasible
+
+These clients were researched and rejected for `InstallMCPServer` support. The common blocker is the same as Cherry Studio: no documented, stable, external configuration file to write to (configuration lives in an in-app UI, an internal database, or hosted state). For each, the manual workaround remains available to users on supported platforms — generate `MCPServerObject["Wolfram"]["JSONConfiguration"]` (or the relevant server) and add it through the client's own UI.
+
+### [Dify](https://dify.ai/)
+
+Web-based LLM-app platform. MCP servers are added entirely through the web UI (Tools → MCP → Add MCP Server (HTTP)), stored in Dify's backend, and only **HTTP** transport is supported (no stdio). There is no on-disk config file, and Dify runs as a hosted/self-hosted web service rather than a local app, so `InstallMCPServer` has nothing to target.
+
+- [x] Research how MCP servers are added to Dify
+- [x] Reject support for `InstallMCPServer["Dify", ...]` — web UI / backend storage, HTTP-only, no local config file
+
+### [RecurseChat](https://recurse.chat/)
+
+Mac App Store app, **Apple-Silicon-only** (macOS Ventura 13.5+, no Intel, no Windows/Linux). MCP servers are configured through the in-app UI ("New Model → New MCP Model → import MCP Server JSON Config"); there is no documented on-disk config file. Cannot be hands-on tested without an Apple Silicon Mac, and there is no config file to write to regardless.
+
+- [x] Research how MCP servers are added to RecurseChat and write a detailed report in [recurse-chat.md](../client-research/recurse-chat.md)
+- [x] Reject support for `InstallMCPServer["RecurseChat", ...]` — in-app UI only, no config file, Mac-only
+
+### [Msty Studio](https://msty.ai/)
+
+Cross-platform desktop app (Windows / macOS / Linux) with MCP support for both stdio and streamable-HTTP. However, MCP servers are configured through the in-app "Add New Tool" UI with inline per-tool JSON (not a `mcpServers`-keyed object), and there is no documented on-disk config file. Testable on Windows, but `InstallMCPServer` has no documented file to target. If a stable config file is later confirmed under `%APPDATA%\Msty`, this could be revisited.
+
+- [x] Research how MCP servers are added to Msty Studio and write a detailed report in [msty.md](../client-research/msty.md)
+- [x] Reject support for `InstallMCPServer["Msty", ...]` — in-app UI only, no documented config file (revisit if one is found)
+
+### [5ire](https://5ire.app/)
+
+Open-source desktop AI assistant / MCP client. Supports both stdio and remote MCP servers, but stores configuration in an internal **pglite** database (migrated from SQLite + LanceDB), managed through the in-app UI — there is no external config file. Additionally, the latest release ships only macOS and Linux binaries (no Windows installer), so it is not hands-on testable on Windows without building from source. Same blocker as Cherry Studio.
+
+- [x] Research how MCP servers are added to 5ire and write a detailed report in [5ire.md](../client-research/5ire.md)
+- [x] Reject support for `InstallMCPServer["5ire", ...]` — internal pglite database, no external config file

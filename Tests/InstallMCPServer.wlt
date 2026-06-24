@@ -3318,6 +3318,234 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*LM Studio Support*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Install Location for LM Studio*)
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "LMStudio", "Windows" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-LMStudio-Windows"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "LMStudio", "MacOSX" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-LMStudio-MacOSX"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`installLocation[ "LMStudio", "Unix" ],
+    _File,
+    SameTest -> MatchQ,
+    TestID   -> "InstallLocation-LMStudio-Unix"
+]
+
+(* LM Studio's path is .lmstudio/mcp.json under $HomeDirectory on every OS *)
+VerificationTest[
+    Module[ { file, split },
+        file = Wolfram`AgentTools`Common`installLocation[ "LMStudio", $OperatingSystem ];
+        split = FileNameSplit @ First @ file;
+        Take[ split, -2 ]
+    ],
+    { ".lmstudio", "mcp.json" },
+    SameTest -> Equal,
+    TestID   -> "InstallLocation-LMStudio-PathShape"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Name Normalization*)
+VerificationTest[
+    Wolfram`AgentTools`Common`toInstallName[ "LMStudio" ],
+    "LMStudio",
+    SameTest -> Equal,
+    TestID   -> "ToInstallName-LMStudio"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "LMStudio" ],
+    "LM Studio",
+    SameTest -> Equal,
+    TestID   -> "InstallDisplayName-LMStudio"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*LM Studio Install and Uninstall*)
+VerificationTest[
+    lmStudioConfigFile = testConfigFile[];
+    installResult = InstallMCPServer[ lmStudioConfigFile, "WolframLanguage", "VerifyLLMKit" -> False, "ApplicationName" -> "LMStudio" ],
+    _Success,
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-LMStudio-Basic"
+]
+
+VerificationTest[
+    FileExistsQ[ lmStudioConfigFile ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-LMStudio-FileExists"
+]
+
+VerificationTest[
+    Module[ { content },
+        content = Import[ lmStudioConfigFile, "RawJSON" ];
+        KeyExistsQ[ content, "mcpServers" ] && KeyExistsQ[ content[ "mcpServers" ], "Wolfram" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-LMStudio-VerifyContent"
+]
+
+(* LM Studio uses the standard mcpServers format (Cursor notation): no Cline-style
+   disabled/autoApprove fields, no Copilot-style tools field, no OpenCode-style top-level "mcp" key *)
+VerificationTest[
+    Module[ { content, server },
+        content = Import[ lmStudioConfigFile, "RawJSON" ];
+        server = content[ "mcpServers", "Wolfram" ];
+        AssociationQ @ server &&
+        KeyExistsQ[ server, "command" ] &&
+        ! KeyExistsQ[ server, "disabled" ] &&
+        ! KeyExistsQ[ server, "autoApprove" ] &&
+        ! KeyExistsQ[ server, "tools" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-LMStudio-StandardFormat"
+]
+
+VerificationTest[
+    uninstallResult = UninstallMCPServer[ lmStudioConfigFile, "WolframLanguage", "ApplicationName" -> "LMStudio" ],
+    _Success,
+    SameTest -> MatchQ,
+    TestID   -> "UninstallMCPServer-LMStudio-Basic"
+]
+
+VerificationTest[
+    Module[ { content },
+        content = Import[ lmStudioConfigFile, "RawJSON" ];
+        KeyExistsQ[ content, "mcpServers" ] && ! KeyExistsQ[ content[ "mcpServers" ], "Wolfram" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "UninstallMCPServer-LMStudio-VerifyRemoval"
+]
+
+VerificationTest[
+    cleanupTestFiles[ lmStudioConfigFile ],
+    { Null },
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-LMStudio-Cleanup"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*LM Studio Preserves Existing Config*)
+
+(* The mcp.json may contain other servers and unrelated keys; install must preserve them *)
+VerificationTest[
+    lmStudioPreserveFile = testConfigFile[];
+    Export[ lmStudioPreserveFile, <| "mcpServers" -> <| "ExistingServer" -> <| "command" -> "foo" |> |> |>, "JSON" ];
+    InstallMCPServer[ lmStudioPreserveFile, "WolframLanguage", "VerifyLLMKit" -> False, "ApplicationName" -> "LMStudio" ];
+    Module[ { content },
+        content = Import[ lmStudioPreserveFile, "RawJSON" ];
+        KeyExistsQ[ content[ "mcpServers" ], "ExistingServer" ] &&
+        KeyExistsQ[ content[ "mcpServers" ], "Wolfram" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "InstallMCPServer-LMStudio-PreserveExisting"
+]
+
+VerificationTest[
+    cleanupTestFiles[ lmStudioPreserveFile ],
+    { Null },
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-LMStudio-PreserveExisting-Cleanup"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Auto-Detection from Path*)
+
+(* File at .lmstudio/mcp.json is auto-detected as LMStudio when installing without ApplicationName *)
+VerificationTest[
+    Module[ { dir, file, content },
+        dir = FileNameJoin @ { $TemporaryDirectory, "lmstudio_auto_" <> CreateUUID[], ".lmstudio" };
+        CreateDirectory[ dir, CreateIntermediateDirectories -> True ];
+        file = FileNameJoin @ { dir, "mcp.json" };
+        WithCleanup[
+            InstallMCPServer[ File @ file, "WolframLanguage", "VerifyLLMKit" -> False ];
+            content = Import[ file, "RawJSON" ],
+            Quiet @ DeleteDirectory[ DirectoryName @ dir, DeleteContents -> True ]
+        ];
+        AssociationQ @ content && KeyExistsQ[ content, "mcpServers" ] && KeyExistsQ[ content[ "mcpServers" ], "Wolfram" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "GuessClientName-LMStudio-PathMatch"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$SupportedMCPClients metadata for LM Studio*)
+VerificationTest[
+    $SupportedMCPClients[ "LMStudio", "DisplayName" ],
+    "LM Studio",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioDisplayName"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "LMStudio", "ConfigFormat" ],
+    "JSON",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioConfigFormat"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "LMStudio", "ConfigKey" ],
+    { "mcpServers" },
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioConfigKey"
+]
+
+VerificationTest[
+    $SupportedMCPClients[ "LMStudio", "ProjectSupport" ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioProjectSupport"
+]
+
+(* LM Studio is a chat-first client, so its default toolset is "Wolfram" (like Claude Desktop / Goose) *)
+VerificationTest[
+    $SupportedMCPClients[ "LMStudio", "DefaultToolset" ],
+    "Wolfram",
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioDefaultToolset"
+]
+
+VerificationTest[
+    StringStartsQ[ $SupportedMCPClients[ "LMStudio", "URL" ], "https://" ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "SupportedMCPClients-LMStudioURL"
+]
+
+(* Confirm the chat-client default flows through defaultToolsetForTarget *)
+VerificationTest[
+    Wolfram`AgentTools`Common`defaultToolsetForTarget[ "LMStudio" ],
+    "Wolfram",
+    SameTest -> Equal,
+    TestID   -> "DefaultToolsetForTarget-LMStudio"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Amazon Q Developer Support*)
 
 (* ::**************************************************************************************************************:: *)
@@ -3530,14 +3758,14 @@ VerificationTest[
 
 VerificationTest[
     Length @ $SupportedMCPClients,
-    19,
+    20,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-Has19Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
+    TestID   -> "SupportedMCPClients-Has20Clients@@Tests/InstallMCPServer.wlt:2991,1-2996,2"
 ]
 
 VerificationTest[
     Keys @ $SupportedMCPClients,
-    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "Continue", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
+    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "Continue", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "LMStudio", "OpenCode", "VisualStudioCode", "Windsurf", "Zed" },
     SameTest -> Equal,
     TestID   -> "SupportedMCPClients-KeysSorted@@Tests/InstallMCPServer.wlt:3074,1-3079,2"
 ]

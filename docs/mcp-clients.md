@@ -28,13 +28,14 @@ The following clients have built-in support for automatic configuration via `Ins
 | Antigravity (IDE, desktop + CLI) | `"Antigravity"` | `"GoogleAntigravity"`, `"AntigravityCLI"`, `"GoogleAntigravityCLI"` | JSON | Yes | `"WolframLanguage"` |
 | Junie (IDE + CLI) | `"Junie"` | `"JetBrainsJunie"` | JSON | Yes | `"WolframLanguage"` |
 | Kiro | `"Kiro"` | — | JSON | Yes | `"WolframLanguage"` |
+| LM Studio | `"LMStudio"` | — | JSON | No | `"Wolfram"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
 | OpenCode | `"OpenCode"` | — | JSON | Yes | `"WolframLanguage"` |
 | Visual Studio Code | `"VisualStudioCode"` | `"VSCode"` | JSON | Yes | `"WolframLanguage"` |
 | Windsurf | `"Windsurf"` | `"Codeium"` | JSON | No | `"WolframLanguage"` |
 | Zed | `"Zed"` | — | JSON | Yes | `"WolframLanguage"` |
 
-The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose) default to `"Wolfram"`.
+The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose, LM Studio) default to `"Wolfram"`.
 
 ## Usage
 
@@ -405,6 +406,21 @@ Junie is JetBrains' AI coding agent. **A single `InstallMCPServer["Junie", ...]`
 ```
 
 Note: Kiro uses the standard `mcpServers` format with optional `disabled` and `autoApprove` fields. `InstallMCPServer` automatically adds these defaults.
+
+### LM Studio
+
+| OS | Config Location |
+|----|----------------|
+| macOS | `~/.lmstudio/mcp.json` |
+| Windows | `%USERPROFILE%\.lmstudio\mcp.json` |
+| Linux | `~/.lmstudio/mcp.json` |
+
+**Format:** Same as Claude Desktop (`mcpServers` key). LM Studio "follows Cursor's `mcp.json` notation," so the standard `command`/`args`/`env` server entry works as-is — no client-specific fields are added.
+
+Notes:
+- LM Studio is a cross-platform (macOS/Windows/Linux) desktop app for running local LLMs that also acts as an MCP client. The same `mcp.json` is used on every OS, under `~/.lmstudio/`. The in-app editor (Program tab → Install → Edit `mcp.json`) opens this same file.
+- It supports both local stdio and remote MCP servers; `InstallMCPServer` writes the stdio form. There is no project-level MCP configuration.
+- **macOS quirk:** there is a [known LM Studio bug](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/1371) where a stray *copy* of `mcp.json` may also appear at `~/.cache/lm-studio/mcp.json`. The primary, correct file is `~/.lmstudio/mcp.json` (what `InstallMCPServer` writes); ignore the cache copy.
 
 ### Codex CLI
 

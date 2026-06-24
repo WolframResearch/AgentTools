@@ -39,10 +39,12 @@ Replace `<ClientName>` with one of the supported clients:
 | Claude Desktop | `"ClaudeDesktop"` |
 | Cline | `"Cline"` |
 | Codex CLI | `"Codex"` |
+| Continue | `"Continue"` |
 | Copilot CLI | `"CopilotCLI"` |
 | Cursor | `"Cursor"` |
 | Gemini CLI | `"GeminiCLI"` |
 | Junie | `"Junie"` |
+| LM Studio | `"LMStudio"` |
 | OpenCode | `"OpenCode"` |
 | VS Code | `"VisualStudioCode"` |
 | Windsurf | `"Windsurf"` |

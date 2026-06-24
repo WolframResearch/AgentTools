@@ -625,6 +625,7 @@ guessClientName[ file_? fileQ ] := Enclose[
             { __, ".junie", "mcp", "mcp.json" }, Throw[ "Junie" ],
             { __, ".continue", "config.yaml" }, Throw[ "Continue" ],
             { __, ".continue", "mcpservers", _ }, Throw[ "Continue" ],
+            { __, ".lmstudio", "mcp.json" }, Throw[ "LMStudio" ],
             { __, "augment.vscode-augment", "augment-global-state", "mcpservers.json" }, Throw[ "AugmentCodeIDE" ]
         ];
 

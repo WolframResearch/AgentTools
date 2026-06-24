@@ -192,6 +192,15 @@ $supportedMCPClients = <|
         "ProjectPath"     -> { ".kiro", "settings", "mcp.json" },
         "InstallLocation" :> { $HomeDirectory, ".kiro", "settings", "mcp.json" }
     |>,
+    "LMStudio" -> <|
+        "DisplayName"     -> "LM Studio",
+        "DefaultToolset"  -> "Wolfram",
+        "Aliases"         -> { },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://lmstudio.ai",
+        "InstallLocation" :> { $HomeDirectory, ".lmstudio", "mcp.json" }
+    |>,
     "OpenCode" -> <|
         "DisplayName"     -> "OpenCode",
         "DefaultToolset"  -> "WolframLanguage",

@@ -130,6 +130,7 @@ AgentTools can be installed into the following MCP client applications:
 | [Goose](https://block.github.io/goose/) | `"Goose"` | No |
 | [Google Antigravity](https://antigravity.google) | `"Antigravity"` | No |
 | [Junie](https://www.jetbrains.com/junie/) (JetBrains IDE plugin + CLI) | `"Junie"` | Yes |
+| [LM Studio](https://lmstudio.ai) | `"LMStudio"` | No |
 | [OpenAI Codex](https://openai.com/codex) | `"Codex"` | Yes |
 | [OpenCode](https://opencode.ai) | `"OpenCode"` | Yes |
 | [Visual Studio Code](https://code.visualstudio.com) | `"VisualStudioCode"` | Yes |
