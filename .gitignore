@@ -16,6 +16,7 @@ bash.exe.stackdump
 build/
 *.mx
 paclet.zip
+*StackHistory.wxf
 
 # OS metadata
 .DS_Store

@@ -60,10 +60,9 @@ Cherry Studio stores MCP configurations in Redux state with localStorage persist
 - [x] Research how MCP servers are added to Junie and write a detailed report in [junie.md](../client-research/junie.md)
 - [x] Implement support for `InstallMCPServer["Junie", ...]` (covers both the JetBrains IDE plugin and the Junie CLI — they share `~/.junie/mcp/mcp.json`)
 
-## On Hold
-
 ### [Continue](https://www.continue.dev/)
 
-Requires a more complicated implementation due to the use of YAML files.
+Continue uses a YAML config file (`~/.continue/config.yaml`) with `mcpServers` as an **array of entries** (each carrying its own `name` field), and a project-scope directory of standalone YAML/JSON block files at `<project>/.continue/mcpServers/`. The two infrastructure pieces this needs — YAML round-trip (`Kernel/YAML.wl`, used by Goose) and array-shaped MCP entries with name-based upsert (used by `AugmentCodeIDE`) — are both in place, so the original "more complicated implementation" rationale no longer applies. See [continue.md](../client-research/continue.md) §Implementation Assessment for the current plan.
 
-- [x] Research how MCP servers are added to Continue and write a detailed report in [continue.md](../client-research/continue.md)
+- [x] Research how MCP servers are added to Continue and write a detailed report in [continue.md](../client-research/continue.md) (revised May 2026 to use native YAML)
+- [x] Implement support for `InstallMCPServer["Continue", ...]` — writes into `~/.continue/config.yaml` (global) and `.continue/mcpServers/wolfram.yaml` (project), reusing the Goose YAML pattern and the AugmentCodeIDE name-based upsert pattern. Covers all three Continue distributions — VS Code extension, JetBrains plugin, and the `cn` CLI (`npm i -g @continuedev/cli`) — because they all read the same config files.

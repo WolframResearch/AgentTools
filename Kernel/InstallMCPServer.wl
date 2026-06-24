@@ -198,6 +198,84 @@ installMCPServer[ target0_File, obj_MCPServerObject, env_Association, verifyLLMK
     throwInternalFailure
 ];
 
+(* Continue: YAML config where `mcpServers` is an *array* of entries, each carrying
+   an inline `name` field. Two scopes share this overload, distinguished by the
+   target path:
+     - Global  ~/.continue/config.yaml          -> merge into an existing config that
+                                                   may have unrelated top-level keys
+                                                   (models:, slashCommands:, rules:, etc.)
+     - Project <dir>/.continue/mcpServers/<*.yaml> -> standalone block file with
+                                                      required top-level metadata
+                                                      `name`, `version`, `schema`
+   In both cases, the upsert is by the entry's `name` field. *)
+installMCPServer[ target0_File, obj_MCPServerObject, env_Association, verifyLLMKit_, devMode_ ] /; $installClientName === "Continue" := Enclose[
+    Module[ { target, name, configName, json, data, server, convert, existing, entries, idx, projectScopeQ },
+
+        If[ verifyLLMKit, ConfirmMatch[ checkLLMKitRequirements @ obj, _String|None, "LLMKitCheck" ] ];
+        initializeTools @ obj;
+        Confirm[ validatePacletServerDefinitions @ obj, "ValidatePacletServerDefinitions" ];
+
+        target     = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
+        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
+        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
+        json       = ConfirmBy[ obj[ "JSONConfiguration" ], StringQ, "JSONConfiguration" ];
+        data       = ConfirmBy[ Developer`ReadRawJSONString @ json, AssociationQ, "JSONConfiguration" ];
+        server     = ConfirmBy[ addEnvironmentVariables[ data[ "mcpServers", name ], env ], AssociationQ, "Server" ];
+        If[ devMode =!= False,
+            server[ "args" ] = ConfirmMatch[ makeDevelopmentArgs @ devMode, { __String }, "DevelopmentArgs" ]
+        ];
+
+        (* Convert to the Continue per-entry shape and prepend the inline name field. *)
+        convert = serverConverter @ $installClientName;
+        server  = ConfirmBy[ convert @ server, AssociationQ, "ContinueServer" ];
+        server  = Prepend[ server, "name" -> configName ];
+
+        (* Read existing YAML (empty mapping if missing) and locate the mcpServers array. *)
+        existing = ConfirmBy[ readExistingContinueConfig @ target, AssociationQ, "Existing" ];
+        entries  = Replace[ Lookup[ existing, "mcpServers", { } ], Except[ _List ] -> { } ];
+
+        (* Upsert by name *)
+        idx = FirstPosition[ entries, KeyValuePattern @ { "name" -> configName }, Missing[ "NotFound" ] ];
+        entries = If[ MatchQ[ idx, _Missing ],
+            Append[ entries, server ],
+            ReplacePart[ entries, First @ idx -> server ]
+        ];
+        existing[ "mcpServers" ] = entries;
+
+        (* Continue requires `name`, `version`, and `schema` at the top level of EVERY
+           config.yaml (and every standalone block file under .continue/mcpServers/) -
+           not just project-scope files. A file missing any of them fails schema
+           validation and is silently ignored by Continue's CLI / IDE plugin, falling
+           back to "Default Config" with no MCP servers visible. Only set defaults when
+           the user hasn't already provided them; never overwrite a user-chosen value.
+           The `name` default differs between scopes: project-scope block files in
+           .continue/mcpServers/ are server-specific blocks, so the natural name is the
+           server's display name; the global config.yaml is the user's main config and
+           gets a neutral "Local Config" placeholder. *)
+        projectScopeQ = MatchQ[
+            ToLowerCase /@ FileNameSplit @ target,
+            { ___, ".continue", "mcpservers", __ }
+        ];
+        If[ ! StringQ @ Lookup[ existing, "name", None ],
+            existing[ "name" ] = If[ projectScopeQ, "Wolfram", "Local Config" ]
+        ];
+        If[ ! StringQ @ Lookup[ existing, "version", None ],
+            existing[ "version" ] = "1.0.0"
+        ];
+        If[ ! StringQ @ Lookup[ existing, "schema", None ],
+            existing[ "schema" ] = "v1"
+        ];
+
+        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
+
+        clearStaleBuiltInRecords[ target, configName, obj ];
+        ConfirmBy[ recordMCPInstallation[ target, obj ], FileExistsQ, "Record" ];
+
+        installSuccess[ name, target, obj ]
+    ],
+    throwInternalFailure
+];
+
 (* Augment Code VS Code extension: mcpServers.json is a flat JSON array at the root,
    not an object with an "mcpServers" key. Each entry has its own "name" field. *)
 installMCPServer[ target0_File, obj_MCPServerObject, env_Association, verifyLLMKit_, devMode_ ] /; $installClientName === "AugmentCodeIDE" := Enclose[
@@ -545,6 +623,8 @@ guessClientName[ file_? fileQ ] := Enclose[
             { __, ".amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".aws", "amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".junie", "mcp", "mcp.json" }, Throw[ "Junie" ],
+            { __, ".continue", "config.yaml" }, Throw[ "Continue" ],
+            { __, ".continue", "mcpservers", _ }, Throw[ "Continue" ],
             { __, "augment.vscode-augment", "augment-global-state", "mcpservers.json" }, Throw[ "AugmentCodeIDE" ]
         ];
 
@@ -1035,6 +1115,35 @@ readExistingGooseConfig[ file_ ] := Enclose[
 readExistingGooseConfig // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*readExistingContinueConfig*)
+(* YAML reader for Continue, sharing the same shape contract as readExistingGooseConfig.
+   Returns an empty mapping on missing/empty file, the parsed Association on success,
+   and surfaces InvalidMCPConfiguration on any parse failure or non-mapping root so
+   we never silently overwrite a user-edited file. *)
+readExistingContinueConfig // beginDefinition;
+
+readExistingContinueConfig[ file_ ] := Enclose[
+    Catch @ Module[ { data },
+        If[ ! FileExistsQ @ file, Throw @ <| |> ];
+
+        data = Quiet @ catchAlways @ importYAML @ file;
+
+        Which[
+            (* Empty file or empty mapping -- treat as empty config *)
+            data === <| |>, <| |>,
+            (* Valid mapping -- pass through *)
+            AssociationQ @ data, data,
+            (* Anything else (parse failure, top-level list, etc.) -- refuse to overwrite *)
+            True, throwFailure[ "InvalidMCPConfiguration", file ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+readExistingContinueConfig // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*UninstallMCPServer*)
 UninstallMCPServer // beginDefinition;
@@ -1162,6 +1271,39 @@ uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName ==
 
         ConfirmBy[ writeRawJSONFile[ target, filtered ], FileExistsQ, "Export" ];
         ConfirmAssert[ readRawJSONFile @ target === filtered, "ExportCheck" ];
+        ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
+
+        uninstallSuccess[ name, target, obj ]
+    ],
+    throwInternalFailure
+];
+
+(* Continue: filter the `mcpServers` array by entry's `name` field. *)
+uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName === "Continue" := Enclose[
+    Catch @ Module[ { target, name, configName, existing, entries, filtered },
+
+        target = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
+        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
+
+        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
+        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
+
+        existing = ConfirmBy[ readExistingContinueConfig @ target, AssociationQ, "Existing" ];
+        entries  = Lookup[ existing, "mcpServers", { } ];
+
+        If[ ! ListQ @ entries,
+            Throw @ Missing[ "NotInstalled", target ]
+        ];
+
+        filtered = DeleteCases[ entries, KeyValuePattern @ { "name" -> configName } ];
+
+        If[ Length @ filtered === Length @ entries,
+            Throw @ Missing[ "NotInstalled", target ]
+        ];
+
+        existing[ "mcpServers" ] = filtered;
+
+        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
         ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
 
         uninstallSuccess[ name, target, obj ]

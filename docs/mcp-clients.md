@@ -20,6 +20,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Claude Code | `"ClaudeCode"` | — | JSON | Yes | `"WolframLanguage"` |
 | Claude Desktop | `"ClaudeDesktop"` | `"Claude"` | JSON | No | `"Wolfram"` |
 | Cline | `"Cline"` | — | JSON | No | `"WolframLanguage"` |
+| Continue | `"Continue"` | — | YAML | Yes | `"WolframLanguage"` |
 | Copilot CLI | `"CopilotCLI"` | `"Copilot"` | JSON | No | `"WolframLanguage"` |
 | Cursor | `"Cursor"` | — | JSON | No | `"WolframLanguage"` |
 | Gemini CLI | `"GeminiCLI"` | `"Gemini"` | JSON | No | `"WolframLanguage"` |
@@ -158,6 +159,65 @@ Cline stores its configuration in VS Code's extension global storage.
 ```
 
 Note: Cline uses the standard `mcpServers` format with additional `disabled` and `autoApprove` fields. `InstallMCPServer` automatically adds these defaults.
+
+### Continue
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.continue/config.yaml` |
+| Project | `<project>/.continue/mcpServers/wolfram.yaml` |
+
+**Format (global `config.yaml` — YAML with `mcpServers` as an array, alongside the user's other top-level Continue config; the `name` / `version` / `schema` fields are required by Continue at the top level of every config.yaml):**
+```yaml
+name: Local Config
+version: 1.0.0
+schema: v1
+mcpServers:
+  - name: WolframLanguage
+    command: wolfram
+    args:
+      - "-run"
+      - 'PacletSymbol["Wolfram/AgentTools","Wolfram`AgentTools`StartMCPServer"][]'
+      - "-noinit"
+      - "-noprompt"
+    env:
+      MCP_SERVER_NAME: WolframLanguage
+```
+
+**Format (project `.continue/mcpServers/wolfram.yaml` — standalone block file with required top-level metadata):**
+```yaml
+name: Wolfram
+version: 1.0.0
+schema: v1
+mcpServers:
+  - name: WolframLanguage
+    command: wolfram
+    args: ["-run", "...", "-noinit", "-noprompt"]
+    env:
+      MCP_SERVER_NAME: WolframLanguage
+```
+
+Notes:
+- Continue stores MCP servers as a **JSON/YAML array** under the top-level `mcpServers` key (not as a keyed object like Claude Desktop). Each entry carries its own `name` field, which `InstallMCPServer` uses as the upsert/delete key.
+- Continue requires `name`, `version`, and `schema` at the top level of **every** `config.yaml` (and every standalone block file in `.continue/mcpServers/`). `InstallMCPServer` adds these fields with sensible defaults (`name: "Local Config"` for the global file, `name: "Wolfram"` for the project block file; `version: "1.0.0"`; `schema: "v1"`) when they aren't already present, and **never overwrites a user-chosen `name`**. Without these fields Continue's CLI and IDE plugin silently reject the file and fall back to "Default Config" with no MCP servers visible.
+- Global scope writes into the user's single `config.yaml` and **preserves any unrelated top-level keys** (`models:`, `slashCommands:`, `rules:`, etc.) — only the `mcpServers` array (and missing metadata) is modified.
+- Project scope writes a dedicated standalone block file at `<project>/.continue/mcpServers/wolfram.yaml`. Continue auto-discovers any `.yaml` or `.json` file in that directory.
+- Continue supports `stdio`, `sse`, and `streamable-http` transports. `InstallMCPServer` writes the stdio form. MCP is only active in Continue's **agent mode**.
+- A single `InstallMCPServer["Continue", ...]` covers all three distributions of Continue — the VS Code extension, the JetBrains plugin, and the standalone [`cn` CLI](https://www.npmjs.com/package/@continuedev/cli) (`npm i -g @continuedev/cli`) — because they all read the same `~/.continue/config.yaml` and `<project>/.continue/mcpServers/<*>.yaml` files.
+
+**Troubleshooting `cn` ("MCP Servers: No servers configured" after a successful install):** The `cn` CLI defaults to a Continue-Hub-hosted config (typically labeled `Default Config` in `cn`'s header), **not** your local `~/.continue/config.yaml`. The IDE extensions read the local file by default, but the CLI does not. To point `cn` at the local file:
+
+- **Windows:** `cn --config "$env:USERPROFILE\.continue\config.yaml"`
+- **macOS / Linux:** `cn --config ~/.continue/config.yaml`
+- Or, inside a running `cn` session, use the `/config` slash command and pick the entry that matches your local file's `name:` field (e.g. `Local Config`).
+
+When `cn` is correctly reading the local file, its header changes from `Config: Default Config` to `Config: <name from your config.yaml>`, and the Wolfram MCP server appears under **MCP Servers** with status `connected`.
+
+**Project scope is supported by Continue's IDE extensions only.** Continue's VS Code extension and JetBrains plugin auto-discover MCP server block files in `<workspace>/.continue/mcpServers/`, but as of `cn` v1.5.47 the standalone CLI does **not** auto-discover them — even when launched from inside the project directory. `cn` only reads the global `~/.continue/config.yaml` by default. Verified by writing a uniquely-named project-scope server (`InstallMCPServer[{"Continue", dir}, "WolframLanguage", "MCPServerName" -> "WolframProjectTest"]`) and observing that `cn` launched from `dir` shows the global Wolfram entry but not the project-scope `WolframProjectTest` entry. If you're a CLI-only user and want a per-project Wolfram server, either:
+
+- Install at global scope (`InstallMCPServer["Continue", "WolframLanguage"]`) and rely on `cn`'s existing config, or
+- Point `cn` explicitly at the project block file: `cn --config "C:\path\to\project\.continue\mcpServers\wolfram.yaml"` (Windows) / `cn --config ./.continue/mcpServers/wolfram.yaml` (macOS / Linux), or
+- Use the `/config` slash command inside `cn` to switch to the project file at runtime.
 
 ### Copilot CLI
 
