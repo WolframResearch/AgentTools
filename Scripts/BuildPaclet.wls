@@ -6,21 +6,23 @@ BeginPackage[ "Wolfram`MCPServerScripts`" ];
 (* ::Section::Closed:: *)
 (*Initialization*)
 If[ ! TrueQ @ $loadedDefinitions, Get @ FileNameJoin @ { DirectoryName @ $InputFileName, "Common.wl" } ];
-If[ ! StringQ @ Environment[ "GITHUB_ACTIONS" ], System`$PublisherID = "Wolfram" ];
+If[ ! $inCICD, System`$PublisherID = "Wolfram" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Arguments*)
-$check   = getBooleanArgument[ { "c", "check"    }, True  ];
-$install = getBooleanArgument[ { "i", "install"  }, False ];
-$mx      = getBooleanArgument[ { "m", "mx"       }, True  ];
-$keepMX  = getBooleanArgument[ { "k", "keep-mx"  }, StringQ @ Environment[ "GITHUB_ACTIONS" ] ];
+$check    = getBooleanArgument[ { "c", "check"    }, True  ];
+$install  = getBooleanArgument[ { "i", "install"  }, False ];
+$mx       = getBooleanArgument[ { "m", "mx"       }, True  ];
+$unformat = getBooleanArgument[ { "u", "unformat" }, $inCICD ];
+$keepMX   = getBooleanArgument[ { "k", "keep-mx"  }, $inCICD ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Optional Dependencies*)
-If[ $mx   , Get @ cFile @ FileNameJoin @ { $scriptDir, "BuildMX.wls" } ];
-If[ $check, Get @ cFile @ FileNameJoin @ { $scriptDir, "Resources", "CodeInspectorRules.wl" } ];
+If[ $unformat, Get @ cFile @ FileNameJoin @ { $scriptDir, "UnformatFiles.wls" } ];
+If[ $mx      , Get @ cFile @ FileNameJoin @ { $scriptDir, "BuildMX.wls" } ];
+If[ $check   , Get @ cFile @ FileNameJoin @ { $scriptDir, "Resources", "CodeInspectorRules.wl" } ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
