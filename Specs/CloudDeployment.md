@@ -15,7 +15,10 @@ directory** that contains the live MCP endpoint, a landing page, and an owner-on
 lower-level function, `CloudDeployMCPServer`, deploys *only* the MCP endpoint with caller-controlled
 path and permissions. The endpoint itself is served by a new `RunRemoteMCPServer` handler that
 speaks a stateless subset of the **Streamable HTTP** transport of MCP protocol revision
-**2025-11-25**.
+**2025-11-25**. Although each request is a self-contained evaluation with no server-side session
+store, the endpoint still supports **MCP-Apps** UI: it round-trips the client's UI capability through
+a *self-describing* `Mcp-Session-Id` (see
+[Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)).
 
 The local (`StartMCPServer`, stdio) and remote (cloud, HTTP) server implementations share a large
 amount of request-handling logic. As part of this work that logic is refactored into a new
@@ -54,8 +57,12 @@ failure (e.g. from `initializeServerState`) into a `500`.
   header **or** a `?_key=` URL parameter — both proven against OpenAI/Anthropic in the prototype).
 - Ship a dynamic landing page (client-configuration help) and an owner-only admin page (API key
   create/revoke).
-- Keep the cloud endpoint **stateless** — each HTTP request is a self-contained evaluation, matching
-  the Wolfram Cloud `APIFunction`/`Delayed` execution model.
+- Keep the cloud endpoint **stateless** — each HTTP request is a self-contained evaluation with no
+  server-side session store, matching the Wolfram Cloud `APIFunction`/`Delayed` execution model. Any
+  client capability that must survive across requests travels in a self-describing `Mcp-Session-Id`,
+  not in server memory.
+- Support **MCP-Apps** UI in the cloud despite statelessness, by propagating the client's
+  `io.modelcontextprotocol/ui` capability across requests through that session ID.
 - Keep the deployment self-managing: the returned `CloudObject` and its admin page are the source of
   truth — no new local registry.
 
@@ -68,7 +75,10 @@ Explicitly out of scope for the initial implementation (see [Future Work](#futur
   notebooks, evaluator images) continue to use the existing **global** cloud locations written today
   by `deployCloudNotebookForMCPApp` (``AgentTools/Notebooks``, `Kernel/UIResources.wl:23`) and the
   Wolfram Language evaluator (``AgentTools/Images``, `Kernel/Tools/WolframLanguageEvaluator.wl:19`),
-  independent of any deployment.
+  independent of any deployment. MCP-Apps UI *itself* **is** in scope for v1 (see
+  [Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)); only
+  the per-deployment `/files/` area is deferred, so those artifacts land in the global locations for
+  now.
 - **Usage monitoring** and an **enable/disable** toggle on the admin page.
 - **Tool filtering / safety gating.** A deployed server exposes exactly the tools in its server
   object, including code-execution tools such as `WolframLanguageEvaluator`. Access control is the
@@ -87,7 +97,8 @@ At a glance (decisions resolved for v1):
 | Decision | Choice |
 |---|---|
 | Phase 1 deliverables | `/mcp`, `/index.html`, `/api/info`, `/admin/index.html`, `/api/admin`, + 3 symbols. `/files/`, `/logs/` deferred. |
-| `/mcp` transport | Stateless request/response (one POST → one JSON or single SSE frame). No sessions, no streaming, no server→client channel. |
+| `/mcp` transport | Stateless request/response (one POST → one JSON or single SSE frame). No server-side session store, no streaming, no server→client channel — but a **self-describing `Mcp-Session-Id`** carries client capabilities across requests. |
+| MCP-Apps UI | **Supported in v1.** The client's UI capability is encoded into the session ID at `initialize` and decoded on later requests, re-establishing `$clientSupportsUI` per request. |
 | Default target (no explicit path) | **Anonymous** `CloudObject[Permissions -> perms]` (server-assigned path). |
 | `/mcp` permissions | Inherit the `Permissions` passed to `CloudDeploy` (same as `/index.html`); the admin page then adds/removes `PermissionsKey`s. |
 | Landing page | **Dynamic**: static shell fetches live server metadata from a public `/api/info` at view time. |
@@ -101,12 +112,18 @@ At a glance (decisions resolved for v1):
 Rationale for the less-obvious choices:
 
 - **Stateless transport.** The endpoint implements a simplified MCP HTTP transport: one JSON-RPC
-  request per POST, one response. No `Mcp-Session-Id`, no SSE streaming, no server→client `GET`
-  channel. This matches Wolfram Cloud's request/response model and is already proven against
-  OpenAI/Anthropic remote MCP (`Notes/cloud-deployed-mcp-servers.md`). A consequence, examined in
-  [Statelessness](#statelessness-and-per-request-state), is that state set during `initialize`
-  (client name, UI support) does not persist to later requests — which is exactly why UI/resources
-  degrade cleanly in the cloud.
+  request per POST, one response. No SSE streaming and no server→client `GET` channel, and — crucially
+  — **no server-side session store**. It does, however, use the `Mcp-Session-Id` header the way the
+  spec intends: the server issues one at `initialize` and the client echoes it on later requests. The
+  twist is that the ID is *self-describing* — it encodes the client's negotiated capabilities
+  directly, the way a signed token carries claims, so the server reconstructs them per request without
+  storing anything (see
+  [Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)). This
+  matches Wolfram Cloud's request/response model and is already proven against OpenAI/Anthropic remote
+  MCP (`Notes/cloud-deployed-mcp-servers.md`). The consequence examined in
+  [Statelessness](#statelessness-and-per-request-state) is that state set during `initialize` beyond
+  what the session ID carries does not persist; `initializeServerState[obj]` rebuilds the rest per
+  request from `obj` alone.
 - **`/mcp` inherits the user's `Permissions`.** Whatever `Permissions` the user passes to
   `CloudDeploy` apply to both `/index.html` and the starting state of `/mcp`. The admin page then
   mints/revokes `PermissionsKey`s on `/mcp` without redeploying. (Deploying `Permissions -> "Public"`
@@ -232,20 +249,144 @@ The cloud endpoint is stateless: `initialize`, `tools/list`, and `tools/call` ea
 explicit, because the shared `handleMethod` was written for a long-lived stdio process:
 
 - `handleMethod["initialize", …]` sets session globals `$clientName`, `$clientSupportsUI`,
-  `$clientSupportsRoots` (`StartMCPServer.wl:542–548`). In the cloud these **do not persist** to the
-  following `tools/list` request.
+  `$clientSupportsRoots` (`StartMCPServer.wl:542–548`). In the cloud these do not survive as *kernel*
+  state to the following `tools/list` request — but the ones the client needs downstream are not lost:
+  they are re-derived from the **session ID** the client echoes on each request (see
+  [Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)).
 - `tools/list` renders `withToolUIMetadata @ $toolList`, gated on `$clientSupportsUI`
-  (`StartMCPServer.wl:555`). Because `$clientSupportsUI` defaults to `False` and is never set within
-  a standalone `tools/list` request, MCP-Apps UI metadata is simply omitted in the cloud — the
-  desired degradation, since remote LLM providers do not advertise the
-  `io.modelcontextprotocol/ui` extension anyway.
+  (`StartMCPServer.wl:555`). In the cloud, `RunRemoteMCPServer` `Block`s `$clientSupportsUI` to the
+  value decoded from the request's `Mcp-Session-Id`, so a client that advertised
+  `io.modelcontextprotocol/ui` at `initialize` **still receives** UI metadata here — MCP-Apps UI works
+  rather than silently degrading. A client that advertised no UI support gets a session ID encoding no
+  features, and `withToolUIMetadata` is a no-op exactly as on the local server.
 
-No code change is required to get this behavior — it falls out of the stateless model — but the
-handler must not *assume* `initialize` ran first. `initializeServerState[obj]` rebuilds the tool and
-prompt tables on every request from `obj` alone, independent of any prior `initialize`.
+This *does* require code — the session-ID encode/decode described below — but no change to the shared
+handlers: they keep reading `$clientSupportsUI`, and the cloud transport binds it correctly per
+request. The handler must also not *assume* `initialize` ran first: `initializeServerState[obj]`
+rebuilds the tool and prompt tables on every request from `obj` alone, and the capability globals come
+from the session ID, not from any retained `initialize` call.
 
 The MCP **roots** handshake is likewise a no-op in the cloud (no local working directory), so the
-server simply does not issue it.
+server simply does not issue it — even though `"Roots"` appears in the tracked-feature list below.
+That list only *records* whether the client supports a capability; acting on roots would need the
+server→client channel the stateless transport does not provide (see
+[Reserved and future features](#reserved-and-future-features)).
+
+---
+
+## Client Capability Propagation (Self-Describing Session IDs)
+
+MCP-Apps UI hinges on a single boolean, `$clientSupportsUI`: `initResponse` advertises the
+`io.modelcontextprotocol/ui` extension under it (`StartMCPServer.wl:1028–1035`), `tools/list` attaches
+`_meta.ui` under it (`withToolUIMetadata`, `UIResources.wl:289,306`), `resources/list` enumerates the
+UI registry under it (`UIResources.wl:240`), and the built-in tools deploy their app notebooks under it
+(`WolframAlpha.wl:63`, `WolframLanguageEvaluator.wl:119`). Locally that boolean is set once at
+`initialize` and stays set for the life of the process. In the stateless cloud, `initialize` and
+`tools/list` are *different requests* — so the boolean would be back to `False` by the time it matters,
+and MCP-Apps would never light up.
+
+Rather than add a server-side session store, v1 makes the **session ID itself carry the answer**. This
+is the `Mcp-Session-Id` mechanism the Streamable HTTP transport already defines — the server issues an
+ID at `initialize` and the client echoes it on every subsequent request — but the ID is
+*self-describing*: it encodes the client's negotiated capabilities directly, the way a signed token
+carries claims. The server reconstructs `$clientSupportsUI` from the ID on each request and stores
+nothing.
+
+### Tracked features and the session-ID format
+
+A small, ordered list of tracked capability flags is packed into a bit vector, base-36 encoded, and
+embedded in a versioned, colon-delimited session ID (file-scoped in `Cloud.wl`):
+
+```wl
+$trackedFeatureList = { "MCPApps", "Roots", "FormElicitation", "URLElicitation" };
+$idVersion          = "1";
+$trackedFeatureIDs  = First /@ PositionIndex[ $trackedFeatureList ] - 1;
+(* <| "MCPApps" -> 0, "Roots" -> 1, "FormElicitation" -> 2, "URLElicitation" -> 3 |> *)
+
+(* encode: feature list -> "version:base36bitfield:uuid" *)
+makeSessionIDFromFeatureList[ clientFeatures_List ] :=
+    StringRiffle[
+        {
+            $idVersion,
+            IntegerString[
+                Total[ 2 ^ Lookup[ $trackedFeatureIDs, Intersection[ clientFeatures, $trackedFeatureList ] ] ],
+                36
+            ],
+            CreateUUID[ ]
+        },
+        ":"
+    ];
+
+(* decode: session ID -> feature list (unknown version / malformed -> {}) *)
+getFeaturesFromSessionID[ sessionID_String ] := getFeaturesFromSessionID @ StringSplit[ sessionID, ":" ];
+
+getFeaturesFromSessionID[ { "1", featureString_String, _String } ] :=
+    Pick[
+        $trackedFeatureList,
+        Reverse @ IntegerDigits[ FromDigits[ featureString, 36 ], 2, Length @ $trackedFeatureList ],
+        1
+    ];
+
+getFeaturesFromSessionID[ _ ] := { };
+```
+
+For example, `makeSessionIDFromFeatureList[{"MCPApps"}]` → `"1:1:880837da-…"` and
+`makeSessionIDFromFeatureList[{"MCPApps","FormElicitation","URLElicitation"}]` → `"1:d:e67f90f2-…"`;
+`getFeaturesFromSessionID` inverts each. An empty feature set encodes as `"1:0:…"`.
+
+Three properties make this safe:
+
+- **`Intersection` guard.** Encoding intersects with `$trackedFeatureList` first, so an untracked
+  feature never reaches `Lookup`/`2^…`. The empty set totals to `0` (`"1:0:…"`).
+- **Versioned, fail-closed decode.** Only the `"1"` shape decodes to features; any other version or a
+  malformed ID falls through to `{ }`. So a client replaying a session ID minted by an *older*
+  deployment — after the feature list changed and `$idVersion` was bumped — simply gets no features,
+  turning MCP-Apps **off** rather than misfiring. `$idVersion` must be bumped whenever
+  `$trackedFeatureList` changes in a way that shifts bit positions.
+- **Opaque and unique.** The trailing `CreateUUID[ ]` keeps every ID unique and unguessable, so the
+  string remains a valid session identifier, not merely a capability blob.
+
+### v1 wiring
+
+Only `"MCPApps"` is *acted on* in v1; it maps to the one boolean that gates all UI behavior:
+
+| Tracked feature | Encoded when | Decoded state (v1) |
+|---|---|---|
+| `MCPApps` | client sent `io.modelcontextprotocol/ui` **and** `mcpAppsEnabledQ[]` | `$clientSupportsUI = True` |
+| `Roots`, `FormElicitation`, `URLElicitation` | client capability present | *recorded only* — reserved, not acted on (see below) |
+
+The two directions:
+
+- **At `initialize`** (no incoming session ID): the shared `handleMethod["initialize", …]` sets
+  `$clientSupportsUI` / `$clientSupportsRoots` from the client message exactly as today
+  (`StartMCPServer.wl:542–548`, reusing `clientSupportsUIQ` / `mcpAppsEnabledQ`). `RunRemoteMCPServer`
+  then reads those flags, builds the tracked-feature list, calls `makeSessionIDFromFeatureList`, and
+  returns the result in the **`Mcp-Session-Id` response header**.
+- **On every later request**: `RunRemoteMCPServer` reads the `Mcp-Session-Id` request header
+  (case-insensitively), calls `getFeaturesFromSessionID`, and `Block`s
+  `$clientSupportsUI = MemberQ[ features, "MCPApps" ]` (and, in future, the other globals) around
+  dispatch. The shared handlers are unchanged — they still just read `$clientSupportsUI`.
+
+### Reserved and future features
+
+`Roots`, `FormElicitation`, and `URLElicitation` are included to exercise the multi-flag encoding and
+to reserve stable bit positions, but they are **inert in v1**. MCP-Apps is special precisely because it
+is satisfiable *within a single request*: the server only has to format its own response (attach
+metadata, serve a resource). Roots and elicitation instead require the server to *call back to the
+client* (`roots/list`, an elicitation request), which needs the server→client channel the stateless
+transport does not provide. Their flags can be *recorded* today but only become actionable alongside a
+fuller transport (see [Future Work](#future-work)).
+
+### Compatibility
+
+This rests on one assumption: that the client honors the spec's rule that a returned `Mcp-Session-Id`
+is echoed on every subsequent request. Spec-compliant clients must, but the stateless prototype in the
+notes never issued a session ID, so whether the **OpenAI and Anthropic** remote-MCP clients actually
+round-trip it is unconfirmed and is called out explicitly in [verification](#verification). The design
+fails safe either way: if a client does *not* echo it, every request decodes to no features and
+MCP-Apps simply stays off — a clean degradation with no correctness impact, identical to the
+pre-session behavior. (Only MCP-Apps-capable clients that also honor session IDs light up the UI; no
+client is worse off than before.)
 
 ---
 
@@ -373,15 +514,21 @@ state from `obj` via the shared `initializeServerState[obj]`.
 
 Grounded in the
 [transport spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports). The
-handler runs inside `Block[{ $currentMCPServer = obj, $mcpEvaluation = True, <state from
-initializeServerState[obj]> }, … ]` so tools format their output for MCP exactly as they do locally.
-Unlike the stdio path there is no `stdout` to protect, so `superQuiet` is not used (messages are
-still suppressed from the response body).
+handler runs inside `Block[{ $currentMCPServer = obj, $mcpEvaluation = True, $clientSupportsUI = <decoded>,
+<state from initializeServerState[obj]> }, … ]` so tools format their output for MCP exactly as they
+do locally. `$clientSupportsUI` (and any other capability global) is bound to the value decoded from
+the request's `Mcp-Session-Id` header (see
+[Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)); for the
+`initialize` request itself there is no incoming session ID, so `handleMethod["initialize", …]` sets
+it from the message as usual. Unlike the stdio path there is no `stdout` to protect, so `superQuiet`
+is not used (messages are still suppressed from the response body).
 
 **Transport-level checks (produce HTTP status codes):**
 
 1. **Method.** The endpoint handles `POST`. `GET` (the optional server→client SSE stream) and
-   `DELETE` (session teardown) are unsupported by a stateless server ⇒ **`405 Method Not Allowed`**.
+   `DELETE` (session teardown) return **`405 Method Not Allowed`** — there is no server-side session
+   state to stream from or tear down, so both are no-ops the spec permits a server to decline. (The
+   self-describing session ID needs no explicit teardown: it lives only in the client's copy.)
 2. **Origin validation.** If an `Origin` header is present and not allowed ⇒ **`403 Forbidden`**
    (DNS-rebinding protection). Absent `Origin` (typical for server-to-server LLM providers) is
    allowed.
@@ -401,6 +548,15 @@ through the shared `handleMethod`:
   error: unknown method ⇒ error `-32601`; internal/tool failure ⇒ error `-32603` (still HTTP `200`).
 - **Notification / Response / `id -> Null`** (no reply owed) ⇒ **`202 Accepted`** with an empty body.
 
+**Session ID (client-capability round-trip).** Before dispatch, the handler reads the `Mcp-Session-Id`
+request header (case-insensitively) and decodes it via `getFeaturesFromSessionID` into the capability
+set that parameterizes the `Block` above. For an `initialize` request there is no incoming session ID;
+after `handleMethod` runs (setting `$clientSupportsUI` / `$clientSupportsRoots` from the client's
+declared capabilities), the handler encodes those into a fresh session ID with
+`makeSessionIDFromFeatureList` and returns it as the `Mcp-Session-Id` **response** header, per the
+Streamable HTTP spec. Full mechanism, encoding, and robustness in
+[Client Capability Propagation](#client-capability-propagation-self-describing-session-ids).
+
 `responseContentType` and `makeResponseString` (which emits compact JSON for `application/json`, or a
 single `data: <json>\n\n` frame for `text/event-stream`) are new helpers adapted from the prototype;
 neither, nor any of `Delayed`/`APIFunction`/`HTTPResponse`/`HTTPRequestData`/`SetPermissions`/
@@ -409,10 +565,17 @@ negotiated type (the prototype hardcoded `application/json` even for the SSE bra
 
 ### Capabilities in the cloud
 
-`initialize` advertises `tools` and `prompts` as the local server does. `resources`/MCP-Apps UI
-degrade naturally (see [Statelessness](#statelessness-and-per-request-state)). `logging` is **not**
-advertised — log notifications require a server→client streaming channel, which the stateless
-transport does not provide.
+`initialize` advertises `tools` and `prompts` as the local server does, and — when the client's
+`initialize` declares the `io.modelcontextprotocol/ui` extension — advertises that extension too,
+exactly as `initResponse` already does under `$clientSupportsUI` (`StartMCPServer.wl:1028–1035`).
+Because that same capability is re-established on every later request from the session ID, **MCP-Apps
+UI is fully supported**: `tools/list` attaches `_meta.ui` (`withToolUIMetadata`), `resources/list`
+enumerates the UI registry, and `resources/read` serves the app HTML — all gated on the decoded
+`$clientSupportsUI`. UI artifacts (Wolfram|Alpha notebooks, evaluator images) deploy through the
+existing `deployCloudNotebookForMCPApp` path to the global cloud locations (per-deployment `/files/` is
+still deferred; see [Non-Goals](#non-goals-v1)). `logging` is still **not** advertised — log
+notifications require a server→client streaming channel, which the stateless transport does not
+provide.
 
 ---
 
@@ -662,7 +825,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/Server/Server.wl` | **New.** Entry point loading `Shared.wl`, `Local.wl`, `Cloud.wl`. |
 | `Kernel/Server/Shared.wl` | **New.** Transport-agnostic core moved from `StartMCPServer.wl` (dispatch, tool/prompt resolution, `evaluateTool`, result formatting, `initResponse`, bootstrapping, logging helpers) + `initializeServerState` + protocol-version negotiation. |
 | `Kernel/Server/Local.wl` | **New.** `StartMCPServer`, stdio read loop, `superQuiet`, log-file plumbing, `toolWarmup`. |
-| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
+| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
 | `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
 | `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunRemoteMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
 | `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |
@@ -697,6 +860,9 @@ Deferred from v1, in rough priority order:
   consume a deployed endpoint directly (new `url`+`headers` converter shapes in `SupportedClients.wl`
   + `InstallMCPServer.wl`).
 - **Full Streamable HTTP transport** — sessions, SSE streaming, logging notifications, if needed.
+- **Wire the reserved capability flags** — `Roots`, `FormElicitation`, `URLElicitation` are already
+  carried in the self-describing session ID but are inert in v1, because acting on them needs a
+  server→client channel; enable them alongside the fuller transport above.
 - **Tool-safety options** — optional allowlisting / sandboxing of code-execution tools for public
   deployments.
 
@@ -746,3 +912,17 @@ Deferred from v1, in rough priority order:
     new requested versions.
 17. Run `CodeInspector` on all new/changed `Kernel/Server/*.wl` files.
 18. Run `Tests/CloudDeployment.wlt` and the existing server test suites.
+
+### MCP-Apps (client capability propagation)
+
+19. `POST` `initialize` with `capabilities.extensions."io.modelcontextprotocol/ui"` present; confirm
+    the response advertises the same extension **and** carries an `Mcp-Session-Id` header whose feature
+    bitfield decodes to `{"MCPApps"}`. Repeat without the extension; confirm the session ID decodes to
+    `{ }`.
+20. Using the session ID from the UI-enabled `initialize`, `POST` `tools/list`; confirm UI-bearing
+    tools carry `_meta.ui`. Repeat with the no-feature session ID and with no `Mcp-Session-Id` header
+    at all; confirm `_meta.ui` is absent in both.
+21. With the UI-enabled session ID, `POST` `resources/list` and `resources/read` for a UI resource;
+    confirm the registry lists it and the app HTML is returned. Confirm a malformed or wrong-version
+    session ID decodes to no features (UI safely off), and that the OpenAI and Anthropic clients echo
+    `Mcp-Session-Id` on follow-up requests (else UI stays off with no error).
