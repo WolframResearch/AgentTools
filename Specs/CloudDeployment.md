@@ -30,9 +30,16 @@ Three new public symbols are introduced:
 | `RunRemoteMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
 | `CloudDeploy` (UpValue) | (existing `System` symbol) | `MCPServerObject /: CloudDeploy[obj, args___]` deploys the full directory. |
 
-Both new symbols follow the standard export pattern: declared in `Kernel/Main.wl` (exported name
-list + `$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`), defined with
-`beginDefinition` / `endExportedDefinition`, and bodies wrapped in `catchMine`.
+Both new symbols are declared identically — in `Kernel/Main.wl` (exported name list +
+`$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`) — and defined with
+`beginDefinition` / `endExportedDefinition`. Their top-level error handling differs by role,
+however: `CloudDeployMCPServer` wraps its body in `catchMine` (surfacing a `Failure[...]` on error).
+`RunRemoteMCPServer` is an HTTP handler that must **always return an `HTTPResponse`**, so it does
+*not* rely on `catchMine` to surface a raw `Failure`; its wrapper converts failures into responses
+instead — transport-level problems into HTTP status codes, dispatch/tool failures into an in-band
+JSON-RPC `-32603` error within a `200` (mirroring the local `processRequest`'s
+`If[ FailureQ @ response, … -32603 … ]` at `StartMCPServer.wl:528–531`), and any other unexpected
+failure (e.g. from `initializeServerState`) into a `500`.
 
 ---
 
