@@ -1,0 +1,741 @@
+# Cloud Deployment of MCP Servers — Design Specification
+
+## Overview
+
+This feature lets a user deploy an `MCPServerObject` as a remote MCP server running in the
+Wolfram Cloud, reachable over HTTP by any MCP-capable client — including the OpenAI Responses API
+and the Anthropic Messages API remote-MCP features — without a local kernel:
+
+```wl
+CloudDeploy[ MCPServerObject[ ... ], ... ]
+```
+
+`CloudDeploy` of an `MCPServerObject` produces a `CloudObject` corresponding to a **deployment
+directory** that contains the live MCP endpoint, a landing page, and an owner-only admin page. A
+lower-level function, `CloudDeployMCPServer`, deploys *only* the MCP endpoint with caller-controlled
+path and permissions. The endpoint itself is served by a new `RunRemoteMCPServer` handler that
+speaks a stateless subset of the **Streamable HTTP** transport of MCP protocol revision
+**2025-11-25**.
+
+The local (`StartMCPServer`, stdio) and remote (cloud, HTTP) server implementations share a large
+amount of request-handling logic. As part of this work that logic is refactored into a new
+`Kernel/Server/` directory so both transports call into a common core (`handleMethod`, tool/prompt
+resolution, result formatting, capability negotiation).
+
+Three new public symbols are introduced:
+
+| Symbol | Context | Purpose |
+|---|---|---|
+| `CloudDeployMCPServer` | ``Wolfram`AgentTools` `` | Deploy just the `/mcp` endpoint for a server object. |
+| `RunRemoteMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
+| `CloudDeploy` (UpValue) | (existing `System` symbol) | `MCPServerObject /: CloudDeploy[obj, args___]` deploys the full directory. |
+
+Both new symbols follow the standard export pattern: declared in `Kernel/Main.wl` (exported name
+list + `$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`), defined with
+`beginDefinition` / `endExportedDefinition`, and bodies wrapped in `catchMine`.
+
+---
+
+## Goals
+
+- Support `CloudDeploy[MCPServerObject[...], ...]` returning a `CloudObject` directory bundle.
+- Provide `CloudDeployMCPServer` for deploying only the endpoint, with arbitrary path/permissions.
+- Provide `RunRemoteMCPServer[obj]` implementing the remote MCP transport from a server object.
+- Reuse the local server's method dispatch / tool evaluation / serialization unchanged, by factoring
+  the transport-agnostic core into a shared file.
+- Reuse Wolfram Cloud's native `PermissionsKey` mechanism for API authentication (as a bearer token
+  header **or** a `?_key=` URL parameter — both proven against OpenAI/Anthropic in the prototype).
+- Ship a dynamic landing page (client-configuration help) and an owner-only admin page (API key
+  create/revoke).
+- Keep the cloud endpoint **stateless** — each HTTP request is a self-contained evaluation, matching
+  the Wolfram Cloud `APIFunction`/`Delayed` execution model.
+- Keep the deployment self-managing: the returned `CloudObject` and its admin page are the source of
+  truth — no new local registry.
+
+## Non-Goals (v1)
+
+Explicitly out of scope for the initial implementation (see [Future Work](#future-work)):
+
+- **`/logs/`** — server log storage.
+- **`/files/`** — per-deployment artifact area. MCP-App artifacts (e.g. Wolfram|Alpha cloud
+  notebooks, evaluator images) continue to use the existing **global** cloud locations written today
+  by `deployCloudNotebookForMCPApp` (``AgentTools/Notebooks``, `Kernel/UIResources.wl:23`) and the
+  Wolfram Language evaluator (``AgentTools/Images``, `Kernel/Tools/WolframLanguageEvaluator.wl:19`),
+  independent of any deployment.
+- **Usage monitoring** and an **enable/disable** toggle on the admin page.
+- **Tool filtering / safety gating.** A deployed server exposes exactly the tools in its server
+  object, including code-execution tools such as `WolframLanguageEvaluator`. Access control is the
+  owner's responsibility, mediated entirely by API keys.
+- **Caching / persistent kernels.** Each request is a fresh, stateless evaluation
+  (see [Evaluation Model](#evaluation-model)).
+- **Local consumption.** Making the deployed remote endpoint installable into local MCP clients
+  (a URL-based `InstallMCPServer`) is a separate future effort.
+
+---
+
+## Design Decisions
+
+At a glance (decisions resolved for v1):
+
+| Decision | Choice |
+|---|---|
+| Phase 1 deliverables | `/mcp`, `/index.html`, `/api/info`, `/admin/index.html`, `/api/admin`, + 3 symbols. `/files/`, `/logs/` deferred. |
+| `/mcp` transport | Stateless request/response (one POST → one JSON or single SSE frame). No sessions, no streaming, no server→client channel. |
+| Default target (no explicit path) | **Anonymous** `CloudObject[Permissions -> perms]` (server-assigned path). |
+| `/mcp` permissions | Inherit the `Permissions` passed to `CloudDeploy` (same as `/index.html`); the admin page then adds/removes `PermissionsKey`s. |
+| Landing page | **Dynamic**: static shell fetches live server metadata from a public `/api/info` at view time. |
+| Protocol version | **Negotiate**: echo the client's requested version when supported, else return the preferred **2025-11-25**. Shared by local + cloud. |
+| Cloud tool definitions | Runtime paclet presence (`Wolfram/AgentTools` + `Wolfram/Chatbook`) for built-in machinery; NOENTRY-aware capture of custom tool functions; **plus** a `Language`$InternalContexts`` dev-bundling bridge (removed once a cloud-native paclet exists). |
+| Admin auth | Wolfram Cloud owner session (both admin artifacts `Private`; no embedded secret). |
+| Local management | `CloudDeploy` returns the `CloudObject` directory; no local registry / wrapper object. |
+| Client setup | Landing-page click-to-copy config snippets only; no auto-install into local clients. |
+| Enable/disable | Dropped for v1. Admin page = API-key management only. |
+
+Rationale for the less-obvious choices:
+
+- **Stateless transport.** The endpoint implements a simplified MCP HTTP transport: one JSON-RPC
+  request per POST, one response. No `Mcp-Session-Id`, no SSE streaming, no server→client `GET`
+  channel. This matches Wolfram Cloud's request/response model and is already proven against
+  OpenAI/Anthropic remote MCP (`Notes/cloud-deployed-mcp-servers.md`). A consequence, examined in
+  [Statelessness](#statelessness-and-per-request-state), is that state set during `initialize`
+  (client name, UI support) does not persist to later requests — which is exactly why UI/resources
+  degrade cleanly in the cloud.
+- **`/mcp` inherits the user's `Permissions`.** Whatever `Permissions` the user passes to
+  `CloudDeploy` apply to both `/index.html` and the starting state of `/mcp`. The admin page then
+  mints/revokes `PermissionsKey`s on `/mcp` without redeploying. (Deploying `Permissions -> "Public"`
+  makes `/mcp` open; the recommended pattern is to deploy private and mint keys.)
+- **No local registry.** `CloudDeploy` returns the directory `CloudObject`; the cloud objects and
+  their permissions are the source of truth. Teardown is `DeleteObject` on the directory (and
+  revoking any `PermissionsKey`s). A richer local deployment object/registry analogous to
+  `AgentToolsDeployment` (`Kernel/DeployAgentTools.wl`, entirely local-disk today) is intentionally
+  deferred.
+
+---
+
+## Architecture: `Kernel/Server/` Refactor
+
+`StartMCPServer.wl` currently mixes transport-agnostic request handling with stdio-specific
+plumbing. The shared portions are needed verbatim by the cloud handler, so the implementation is
+reorganized into a `Server/` subdirectory.
+
+| File | Context | Contents |
+|---|---|---|
+| `Kernel/Server/Server.wl` | ``…`Server` `` | Entry point that `Get`s the other three files. Added to `$AgentToolsContexts` in `Main.wl`. |
+| `Kernel/Server/Shared.wl` | ``…`Server`Shared` `` | Transport-agnostic core (see below). |
+| `Kernel/Server/Local.wl` | ``…`Server`Local` `` | `StartMCPServer` and stdio-specific logic. |
+| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
+
+> **Symbol sharing.** Symbols consumed across the three `Server` files (or reached from
+> `MCPServerObject.wl` and existing callers) are declared paclet-wide in `Kernel/CommonSymbols.wl`
+> (context ``Wolfram`AgentTools`Common` ``), following the precedent for subcontext-shared symbols
+> there (e.g. `exportMarkdownString`). Symbols shared *only* among the `Server` files may instead be
+> forward-declared in `Server.wl`'s package header, following the `Kernel/Tools/Tools.wl` precedent.
+> At minimum `handleMethod`, `initializeServerState`, `$preferredProtocolVersion`,
+> `$supportedProtocolVersions`, and the deployment-path helpers are declared in `CommonSymbols.wl`.
+
+### What moves to `Shared.wl`
+
+Moved out of `StartMCPServer.wl` essentially unchanged (modulo context):
+
+- **Dispatch:** `handleMethod` and every method handler (`initialize`, `ping`, `tools/list`,
+  `tools/call`, `prompts/list`, `prompts/get`, `resources/list`, `resources/read`, notification
+  dispatch, `id -> Null` and unknown-method fallbacks); `handleResourceRead`, `resourceReadError`,
+  `resourceReadErrorMessage`.
+- **Tool list construction:** `disambiguateToolNames`, `createMCPToolData`, `toolSchema`.
+- **Prompt construction:** `makePromptData`, `makePromptData0`, `makePromptLookup`,
+  `normalizeArguments`, `normalizeArgument`, `getPrompt`, `makePromptContent`,
+  `consolidateTextContent`, `catchPromptFunction`, `formatPromptError`.
+- **Tool evaluation & result formatting:** `evaluateTool`, `resultToContent`,
+  `graphicsToImageContent`, `makeImageContent`, `extractWolframAlphaImages`, `extractImageContent`,
+  `safeString`, `convertPUACharacters`, `toPrintableASCII`.
+- **Capability / init:** `initResponse`, `makeInstructions` (with the negotiation change below).
+- **Server/tool bootstrapping** reused by both transports: `ensurePacletsForStart`,
+  `ensureDependenciesForStart`, `runServerInitialization`, `runToolInitialization`, plus
+  `parseToolOptions` / `parseToolOptions0`.
+- **State variables** the handlers read: `$currentMCPServer`, `$mcpEvaluation`, `$clientName`,
+  `$clientSupportsUI`, `$clientSupportsRoots`, `$toolList`, `$llmTools`, `$promptList`,
+  `$promptLookup`, `$toolOptions`.
+- **Logging helpers** `writeLog`, `writeError`, `debugPrint`, `debugEcho`, `stderrEnabledQ`,
+  `sequenceString`, `$logTimeStamp`. These already no-op safely off-stdio (`writeLog` requires
+  `$logFile` to be a `File[...]`, which is unset in the cloud; `writeError`/`debugPrint` gate on
+  `stderrEnabledQ[]`, which is `False` when `$clientName` is `None`). No sink abstraction is needed —
+  they degrade to no-ops in the cloud. `superQuiet` (stdout/`$Output` redirection) is the one
+  stdio-only piece and stays in `Local.wl`.
+
+### New in `Shared.wl`: `initializeServerState`
+
+The local server builds `$toolList` / `$llmTools` / `$promptList` / `$promptLookup` / `$toolOptions`
+once at startup and `Block`s them for the life of the read loop
+(`StartMCPServer.wl:102–143`). Extract that build into a transport-agnostic
+
+```wl
+initializeServerState[ obj_MCPServerObject ]
+```
+
+which runs the shared bootstrapping (`ensurePacletsForStart`, `runServerInitialization`,
+`runToolInitialization`, `disambiguateToolNames`, `createMCPToolData`, `makePromptData`,
+`makePromptLookup`, `parseToolOptions`) and returns the computed state bundle. Each transport binds
+it with `Block`:
+
+- **Local** calls it **once** at startup and `Block`s the values around the read loop.
+- **Cloud** calls it **per request** inside `RunRemoteMCPServer`'s `Block` (see
+  [Evaluation Model](#evaluation-model)). *(Optional later optimization: memoize on `obj` within a
+  warm cloud kernel.)*
+
+`ensurePacletsForStart` / `ensureDependenciesForStart` are the runtime paclet-install hook that makes
+paclet-backed and built-in tools resolvable in a fresh cloud kernel; they are fast no-ops once the
+relevant paclets are present.
+
+### What stays in `Local.wl`
+
+- `StartMCPServer` (exported entry), `stealthCatchTop`, and the stdio read loop (`startMCPServer`,
+  `processRequest`, `stdinShutdownQ`).
+- `superQuiet`, the log-file plumbing (`$logFile`, `cleanupOldOutputLogs`, `outputLogFile`,
+  `mcpServerLogFile` — some already in `Files.wl`), and the `While[True]` loop with its
+  orphan-process check.
+- Tool warmup (`toolWarmup`, `preinstallVectorDatabases`, `initializeVectorDatabases`,
+  `$warmupTools`, `$warmupTask`) — a long-lived-process optimization that does not apply to
+  stateless cloud requests.
+
+### Protocol version negotiation (shared)
+
+Today `$protocolVersion = "2024-11-05"` is a hardcoded constant (`StartMCPServer.wl:15`) that
+`initResponse` echoes verbatim; the current `initResponse` accepts the client message but **ignores
+its requested `protocolVersion`** (`StartMCPServer.wl:1012–1039`). The shared layer replaces this
+with explicit negotiation:
+
+```wl
+$supportedProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" };
+$preferredProtocolVersion  = "2025-11-25";
+```
+
+`initResponse` reads `msg[["params","protocolVersion"]]`: if it is a member of
+`$supportedProtocolVersions`, echo it back; otherwise return `$preferredProtocolVersion`. This
+follows the [lifecycle rules](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)
+and is used by **both** transports, so bumping the local stdio server's advertised version comes for
+free and remains backward compatible. The exact `$preferredProtocolVersion` should be re-confirmed
+against the versions OpenAI/Anthropic actually send during [verification](#verification).
+
+---
+
+## Statelessness and Per-Request State
+
+The cloud endpoint is stateless: `initialize`, `tools/list`, and `tools/call` each arrive as
+*separate* HTTP requests, each a fresh kernel evaluation. This has a design consequence worth making
+explicit, because the shared `handleMethod` was written for a long-lived stdio process:
+
+- `handleMethod["initialize", …]` sets session globals `$clientName`, `$clientSupportsUI`,
+  `$clientSupportsRoots` (`StartMCPServer.wl:542–548`). In the cloud these **do not persist** to the
+  following `tools/list` request.
+- `tools/list` renders `withToolUIMetadata @ $toolList`, gated on `$clientSupportsUI`
+  (`StartMCPServer.wl:555`). Because `$clientSupportsUI` defaults to `False` and is never set within
+  a standalone `tools/list` request, MCP-Apps UI metadata is simply omitted in the cloud — the
+  desired degradation, since remote LLM providers do not advertise the
+  `io.modelcontextprotocol/ui` extension anyway.
+
+No code change is required to get this behavior — it falls out of the stateless model — but the
+handler must not *assume* `initialize` ran first. `initializeServerState[obj]` rebuilds the tool and
+prompt tables on every request from `obj` alone, independent of any prior `initialize`.
+
+The MCP **roots** handshake is likewise a no-op in the cloud (no local working directory), so the
+server simply does not issue it.
+
+---
+
+## `CloudDeploy` (UpValue on `MCPServerObject`)
+
+Deploys the full directory bundle. Defined as an UpValue, mirroring the existing `MCPServerObject`
+upvalues `DeleteObject` and `LLMConfiguration` (`MCPServerObject.wl:732–740`).
+
+### Definition
+
+```wl
+MCPServerObject /: CloudDeploy[ obj_MCPServerObject, args___ ] :=
+    catchTop[ cloudDeployDirectory[ obj, args ], MCPServerObject ];
+```
+
+> **Naming.** The internal `cloudDeployDirectory` (full directory) is distinct from the exported
+> `CloudDeployMCPServer` / internal `cloudDeployEndpoint` (endpoint only). The directory builder
+> reuses the endpoint primitive for `/mcp`.
+
+### Arguments and options
+
+| Argument | Type | Description |
+|---|---|---|
+| `obj` | `MCPServerObject` | The server to deploy. |
+| target (optional) | `String` or `CloudObject` | Deployment directory prefix. Omitted ⇒ anonymous `CloudObject[Permissions -> perms]`. |
+
+Options follow `CloudDeploy`'s grammar and are forwarded to the underlying `CloudDeploy`/`CloudObject`
+calls where meaningful (mirroring the `FilterRules`-by-`Options` pass-through pattern in
+`DeployAgentTools.wl:254–259,373`). `Permissions` (default the ambient `$Permissions`) sets the
+resolved permissions used for `/index.html`, `/api/info`, and the initial `/mcp` state; `/admin/*` and
+`/api/admin` are forced to `"Private"` regardless.
+
+### Behavior
+
+Given resolved permissions `perms`:
+
+1. Validate the server object (`ensureMCPServerExists`) and require a cloud session
+   (`$CloudConnected`, else `throwFailure["NotCloudConnected"]`). *(Note: there is no existing
+   abort-on-disconnect pattern in the codebase — current cloud code silently falls back — so this is
+   a new, deliberate guard.)*
+2. Resolve the directory `CloudObject` (explicit target, or anonymous `CloudObject[Permissions ->
+   perms]`) and sub-object paths by joining onto the directory, mirroring `UIResources.wl`
+   (`FileNameJoin[{dir, "mcp"}]`, etc.).
+3. Deploy `/mcp` via the endpoint primitive (see [`CloudDeployMCPServer`](#clouddeploymcpserver)),
+   carrying the server's definitions (see [Embedding the Server](#embedding-the-server)), at `perms`.
+4. Deploy `/index.html`, `/assets/*`, and `/api/info` at `perms`.
+5. Deploy `/admin/index.html` and `/api/admin` as `"Private"`.
+6. Return the directory `CloudObject`.
+
+### Example
+
+```wl
+server = MCPServerObject[ "WolframLanguage" ];
+dir    = CloudDeploy[ server ]
+(* CloudObject["https://www.wolframcloud.com/obj/<user>/<server-assigned-uuid>"] *)
+```
+
+---
+
+## `CloudDeployMCPServer`
+
+Deploys *only* the MCP endpoint, with caller-controlled path and permissions. This is the primitive
+that the `CloudDeploy` UpValue uses for the `/mcp` object, and is also useful directly when the
+landing/admin pages are not wanted.
+
+### Signature
+
+```wl
+CloudDeployMCPServer[ obj ]
+CloudDeployMCPServer[ obj, target ]
+CloudDeployMCPServer[ obj, target, opts ]
+```
+
+| Argument | Type | Description |
+|---|---|---|
+| `obj` | `MCPServerObject`, `String`, or association | The server to deploy. Strings/associations resolve through `MCPServerObject` first. |
+| `target` | `String` or `CloudObject` | Endpoint location. Omitted ⇒ anonymous `CloudObject[Permissions -> perms]`. |
+
+```wl
+CloudDeployMCPServer // beginDefinition;
+CloudDeployMCPServer[ obj_, args___ ] := catchMine @ cloudDeployEndpoint[ obj, args ];
+CloudDeployMCPServer // endExportedDefinition;
+```
+
+Options are forwarded to `CloudDeploy`; `Permissions` defaults to `$Permissions`.
+
+### Behavior
+
+1. Resolve `obj` to a validated `MCPServerObject`.
+2. Build the deployable, definition-bearing expression for `Delayed[RunRemoteMCPServer[obj]]`
+   (see [Embedding the Server](#embedding-the-server)).
+3. `CloudDeploy` it to `target` with the resolved permissions.
+4. Return the resulting `/mcp` `CloudObject`.
+
+### Example
+
+```wl
+key = CreateUUID[ ];
+mcp = CloudDeployMCPServer[
+    MCPServerObject[ "WolframLanguage" ],
+    "MCPTest/mcp",
+    Permissions -> { PermissionsKey[ key ] -> "Execute" }
+]
+(* CloudObject["https://www.wolframcloud.com/obj/<user>/MCPTest/mcp"] *)
+```
+
+---
+
+## `RunRemoteMCPServer`
+
+The handler deployed (via `Delayed`) at `/mcp`. It is the cloud analog of the local
+`processRequest`/read-loop, but handles exactly one HTTP request and returns an `HTTPResponse`. It is
+exported so the serialized `Delayed[RunRemoteMCPServer[obj]]` payload references a real symbol.
+
+### Signature
+
+```wl
+RunRemoteMCPServer[ obj_MCPServerObject ]   (* handles the current HTTPRequestData[] *)
+```
+
+The notes' prototype hardcodes `$toolList`/`$llmTools`; the real implementation derives all server
+state from `obj` via the shared `initializeServerState[obj]`.
+
+### Request handling (stateless Streamable HTTP, 2025-11-25)
+
+Grounded in the
+[transport spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports). The
+handler runs inside `Block[{ $currentMCPServer = obj, $mcpEvaluation = True, <state from
+initializeServerState[obj]> }, … ]` so tools format their output for MCP exactly as they do locally.
+Unlike the stdio path there is no `stdout` to protect, so `superQuiet` is not used (messages are
+still suppressed from the response body).
+
+**Transport-level checks (produce HTTP status codes):**
+
+1. **Method.** The endpoint handles `POST`. `GET` (the optional server→client SSE stream) and
+   `DELETE` (session teardown) are unsupported by a stateless server ⇒ **`405 Method Not Allowed`**.
+2. **Origin validation.** If an `Origin` header is present and not allowed ⇒ **`403 Forbidden`**
+   (DNS-rebinding protection). Absent `Origin` (typical for server-to-server LLM providers) is
+   allowed.
+3. **Protocol version header.** For non-`initialize` requests, read `MCP-Protocol-Version`. If
+   present but unsupported ⇒ **`400 Bad Request`**. If absent, assume `2025-03-26` per spec.
+4. **Accept negotiation.** Choose the response content type from the `Accept` header via
+   `responseContentType`, preferring `application/json`, falling back to `text/event-stream`. If
+   neither is acceptable ⇒ **`406 Not Acceptable`**. *(The prototype returned `405` here;
+   `406` is the correct code.)*
+5. **Malformed body** (non-JSON, or not a JSON object) ⇒ **`400 Bad Request`**.
+
+**Message dispatch (JSON-RPC, HTTP `200`/`202`):** the single JSON-RPC message in the body is routed
+through the shared `handleMethod`:
+
+- **Request** (has `id` + `method`) ⇒ dispatch; return the JSON-RPC result as the negotiated content
+  type with **`200`**. A handler-level problem is reported *in the JSON-RPC body*, not as an HTTP
+  error: unknown method ⇒ error `-32601`; internal/tool failure ⇒ error `-32603` (still HTTP `200`).
+- **Notification / Response / `id -> Null`** (no reply owed) ⇒ **`202 Accepted`** with an empty body.
+
+`responseContentType` and `makeResponseString` (which emits compact JSON for `application/json`, or a
+single `data: <json>\n\n` frame for `text/event-stream`) are new helpers adapted from the prototype;
+neither, nor any of `Delayed`/`APIFunction`/`HTTPResponse`/`HTTPRequestData`/`SetPermissions`/
+`PermissionsKey`, exists in the codebase today. The `HTTPResponse` `ContentType` must reflect the
+negotiated type (the prototype hardcoded `application/json` even for the SSE branch — a bug to avoid).
+
+### Capabilities in the cloud
+
+`initialize` advertises `tools` and `prompts` as the local server does. `resources`/MCP-Apps UI
+degrade naturally (see [Statelessness](#statelessness-and-per-request-state)). `logging` is **not**
+advertised — log notifications require a server→client streaming channel, which the stateless
+transport does not provide.
+
+---
+
+## Embedding the Server
+
+The deployed `/mcp` endpoint must reconstruct the server — including any **custom, anonymous tool
+functions** — at request time, in a cloud kernel that lacks the user's local definitions. This is the
+most technically delicate part of the design. Two independent stripping mechanisms must be overcome,
+both confirmed empirically in a live kernel:
+
+1. **Context-based stripping.** Both ``Wolfram`AgentTools`*`` and ``Wolfram`Chatbook`*`` are members
+   of `Language`$InternalContexts``, so their definitions are stripped from serialized expressions
+   (and from `CloudDeploy`) by default. Removing ``Wolfram`AgentTools`*`` from that list causes the
+   AgentTools definitions reachable from `RunRemoteMCPServer[obj]` to be captured — but the payload
+   grows from ~0.4 KB to **~5 MB**, and Chatbook remains stripped.
+2. **Flag-based blocking.** `LLMTool` carries the `NOENTRY` flag, so standard `ExtendedFullDefinition`
+   (and therefore `CloudDeploy`'s own definition capture) **cannot see the user-defined functions
+   inside a tool**. The paclet already solves this for local serialization: `CreateMCPServer` uses
+   `binarySerializeWithDefinitions` (`Kernel/Utilities.wl:16–46`), whose `extendedFullDefinition`
+   recursively unpacks `NOENTRY` subexpressions (`Utilities.wl:51–103`) so tool functions are
+   captured.
+
+### v1 mechanism (dev-bundling bridge + custom-function capture)
+
+A single deploy helper builds the definition-bearing payload for `/mcp`, combining both fixes:
+
+- Run inside `Block[{ Language`$InternalContexts = DeleteCases[ Language`$InternalContexts, _?(StringStartsQ[#, "Wolfram`AgentTools`"]&) ] }, … ]` so AgentTools's own definitions
+  (`RunRemoteMCPServer`, `handleMethod`, tool/prompt resolution, result formatting) are captured
+  rather than stripped. This makes the endpoint self-contained without a published paclet — the point
+  of the dev bridge.
+- Gather definitions with the paclet's **NOENTRY-aware** `extendedFullDefinition` so custom tool
+  functions inside the server object's `LLMTool`s are included, and inject them into the deployed
+  expression using the same `Language`ExtendedFullDefinition[ ] = defs; expr` strategy that
+  `binarySerializeWithDefinitions` already implements. (Do **not** rely on `CloudDeploy`'s built-in
+  capture for these — it is NOENTRY-blocked.)
+
+Chatbook is deliberately *not* serialized (it stays internal, and bundling it is neither necessary nor
+practical). Built-in tools (e.g. `WolframLanguageEvaluator`, `WolframAlpha`) call into Chatbook, so a
+deployed built-in server additionally **requires `Wolfram/Chatbook` to be present in the cloud
+kernel** — ensured at cold start by the shared bootstrapping (`ensureDependenciesForStart`, and
+`PacletInstall` for paclet-qualified names). A fully **self-contained custom server** (pure-function
+tools, no built-in/Chatbook dependencies) works with no paclet present.
+
+> The `Language`$InternalContexts`` block is isolated in this one deploy helper so it can be removed
+> cleanly. If inline injection proves awkward for a given server, an equivalent fallback is to write
+> the payload's bytes (as produced by `binarySerializeWithDefinitions`) to a `"Private"` object in the
+> deployment directory and have the handler `BinaryDeserialize` it on cold start; the two approaches
+> are interchangeable.
+
+### End state (future)
+
+Once a cloud-native `Wolfram/AgentTools` paclet is available by default in the Wolfram Cloud, drop the
+`Language`$InternalContexts`` block: `RunRemoteMCPServer` and the built-in tools resolve from the
+installed paclet, and only the user's custom tool functions are carried in the payload (still via the
+NOENTRY-aware serializer). See [Future Work](#future-work).
+
+### Evaluation Model
+
+Each request is a **fresh, stateless** evaluation (`Delayed`/`APIFunction`-style); there is no
+persistent kernel between calls in v1. Consequences, accepted for v1 and documented for users:
+
+- Per-request **cold-start cost**: paclet loading and any tool initialization (e.g. vector-database
+  installation for the `*Context` search tools) recur on every call. Context/search tools therefore
+  carry a substantial latency penalty in the cloud and additionally require cloud connectivity and an
+  LLMKit subscription on the deploying account.
+- No cross-request state, sessions, or warmup. The stdio-only `toolWarmup` path is not used.
+
+Caching / persistent kernels are [future work](#future-work).
+
+---
+
+## Deployed Directory Layout & Permissions
+
+`CloudDeploy[obj]` populates a deployment directory (a `CloudObject` path prefix) by joining
+sub-objects onto the directory object, mirroring `UIResources.wl`.
+
+| Path | Purpose | Permissions | v1 |
+|---|---|---|---|
+| `/mcp` | Live MCP endpoint (`Delayed[RunRemoteMCPServer[obj]]`). | Resolved `Permissions`; admin page adds/removes `PermissionsKey`s. | ✅ |
+| `/index.html` | Landing page (client-configuration help). | Resolved `Permissions`. | ✅ |
+| `/api/info` | Public server metadata consumed by the landing page. | Resolved `Permissions` (readable by anyone who can view the page). | ✅ |
+| `/assets/*` | CSS/JS for the two pages. | Resolved `Permissions`. | ✅ |
+| `/admin/index.html` | Owner-only admin page (API key create/revoke). | **Always `"Private"`.** | ✅ |
+| `/api/admin` | Owner-only API backing the admin page. | **Always `"Private"`.** | ✅ |
+| `/files/` | Per-deployment artifact area. | — | Deferred |
+| `/logs/` | Server log storage. | — | Deferred |
+
+### Default location
+
+When the caller supplies no explicit target, the directory is an **anonymous** cloud object:
+
+```wl
+dir = CloudObject[ Permissions -> perms ]   (* anonymous, server-assigned path *)
+```
+
+An explicit second argument (`"MyServer"` or a `CloudObject[...]`) overrides this. Because there is no
+local registry, the returned `CloudObject` (and, for anonymous deploys, its URL) is the only handle to
+the deployment — callers should retain it.
+
+### Return values
+
+`CloudDeploy[obj, ...]` returns the **directory** `CloudObject`. `CloudDeployMCPServer[...]` returns
+the **`/mcp`** `CloudObject`.
+
+### Authentication
+
+Authentication is delegated entirely to Wolfram Cloud's native `PermissionsKey` mechanism; the handler
+performs **no** key validation — an unauthorized caller never reaches `RunRemoteMCPServer`.
+
+- **`/mcp`** — callers authenticate with a `PermissionsKey`, accepted by Wolfram Cloud either as the
+  bearer token in an `Authorization: Bearer <key>` header (OpenAI's MCP client) or as a `?_key=<key>`
+  URL parameter (Anthropic's MCP client). Both were validated against the prototype
+  (`Notes/cloud-deployed-mcp-servers.md:258–332`). Missing/invalid key ⇒ Wolfram Cloud returns a
+  `401`/permission error before the handler runs.
+- **`/admin/index.html` and `/api/admin`** — `"Private"`, reached through the owner's authenticated
+  Wolfram Cloud session; the admin page's same-origin `fetch` calls carry the owner's credentials, and
+  `/api/admin` executes server-side as the owner (so it may `SetPermissions` on the sibling `/mcp`).
+  No secret is embedded in any page.
+
+### Managing API keys
+
+The admin API manipulates the `/mcp` object's permissions with the standard cloud primitives, as
+prototyped (`Notes/cloud-deployed-mcp-servers.md:64–108`):
+
+```wl
+key = CreateUUID[ ];                                  (* create *)
+SetPermissions[ mcp, PermissionsKey[ key ] -> "Execute" ];
+
+Information[ mcp, "Permissions" ];                    (* list   *)
+
+DeleteObject[ PermissionsKey[ key ] ];                (* revoke *)
+```
+
+Because `PermissionsKey` UUIDs are opaque, the admin API *may* persist optional human-readable
+**labels** in a small `"Private"` object inside the deployment (e.g. `/admin/keys.wxf`). This is a
+convenience only; the authoritative list of valid keys is always the object's live permissions. No
+usage statistics are recorded in v1.
+
+---
+
+## Landing Page (`/index.html` + `/api/info`)
+
+The landing page is **dynamic**: a static HTML/JS shell deployed at `/index.html` that fetches live
+server metadata from `/api/info` at view time and renders it client-side.
+
+### `/api/info`
+
+A read-only API (permissions matching `/index.html`) returning JSON describing the server:
+
+- Server name and version.
+- Tool list (names, titles, descriptions) — derived from the same shared tool-list construction used
+  by `tools/list`.
+- The endpoint URL (`/mcp`).
+
+It does **not** expose API keys, permissions, or usage data.
+
+### Page contents
+
+Rendered from `/api/info`:
+
+- Basic server information (name, version, available tools).
+- **Click-to-copy** configuration snippets to ease client setup. Note that the notebook helper
+  `clickToCopy` (`Formatting.wl:263–270`) emits *notebook boxes*, not HTML, so the page implements
+  copy-to-clipboard in JavaScript; only the JSON-config *shape* from `makeJSONConfiguration`
+  (`MCPServerObject.wl:649–659`) is reused, adapted to the remote `url`+`headers` form. At minimum:
+  - the raw endpoint URL;
+  - a generic remote-MCP JSON snippet
+    (`{"type":"http","url":"…/mcp","headers":{"Authorization":"Bearer <YOUR_KEY>"}}`);
+  - provider-specific examples (OpenAI `server_url` + bearer header; Anthropic `url?_key=` form),
+    matching the working examples in the notes;
+  - the API key shown as a `<YOUR_KEY>` placeholder — keys are minted on the admin page, not here.
+- Basic usage instructions (how to obtain a key, how to authenticate).
+- A link to the admin page (`/admin/index.html`).
+
+---
+
+## Admin Page (`/admin/index.html` + `/api/admin`)
+
+Owner-only (`"Private"`). v1 scope is **API-key create/revoke** only.
+
+### `/api/admin`
+
+A `"Private"` API that performs key-management actions against the `/mcp` object's permissions,
+resolving the sibling `/mcp` object from the captured deployment base. Actions:
+
+| Action | Effect | Returns |
+|---|---|---|
+| `listKeys` | `Information[mcp, "Permissions"]`, joined with any stored labels. | Current `PermissionsKey` entries. |
+| `createKey` | `key = CreateUUID[]`; `SetPermissions[mcp, PermissionsKey[key] -> "Execute"]`; optionally store a label. | The new key (shown once) + updated list. |
+| `revokeKey` | `DeleteObject[PermissionsKey[key]]`; drop any stored label. | Updated key list. |
+
+The created key is returned to the page once on creation so the owner can copy it (the cloud does not
+let you read a key back later).
+
+### `/admin/index.html`
+
+A static shell that calls `/api/admin` (over the owner session) to list keys, mint a new key
+(displaying it once with a copy button), and revoke keys. No usage charts, no enable/disable toggle in
+v1.
+
+---
+
+## Static Assets
+
+HTML/CSS/JS for the landing and admin pages are bundled as paclet assets under `Assets/Cloud/`
+(alongside the existing `Assets/Apps/`), e.g. `Assets/Cloud/index.html`, `Assets/Cloud/admin.html`,
+`Assets/Cloud/assets/…`. The deploy code reads them via
+`PacletObject["Wolfram/AgentTools"]["AssetLocation", "Cloud"]`, mirroring `initializeUIResources`
+(`UIResources.wl:186–190`), and pushes them with `CopyFile` (static admin assets) or renders the shell
+before writing (the dynamic landing page needs no deploy-time templating, since it fetches
+`/api/info`):
+
+```wl
+CopyFile[
+    localPath,
+    CloudObject[ targetPath, Permissions -> perms ],
+    OverwriteTarget -> True
+]
+```
+
+`PacletInfo.wl`'s `"Asset"` extension (`PacletInfo.wl:59–66`) gains a `{ "Cloud", "Assets/Cloud" }`
+row.
+
+---
+
+## Messages
+
+New tags for `Kernel/Messages.wl`, under a `(* Cloud deployment messages *)` banner (final wording
+during implementation), registered on `AgentTools` and resolved onto the wrapping symbol by
+`throwFailure`:
+
+```wl
+AgentTools::CloudDeployFailed  = "Failed to deploy MCP server to the cloud: `1`.";
+AgentTools::NotCloudConnected  = "A cloud connection is required to deploy an MCP server. Use CloudConnect to sign in.";
+AgentTools::InvalidCloudTarget = "Invalid cloud deployment target: `1`.";
+```
+
+Any tag used with `throwFailure` must be declared here. Reuse existing tags (`InvalidArguments`,
+`DeletedMCPServerObject`, …) where applicable.
+
+---
+
+## Implementation Touchpoints
+
+| File | Change |
+|---|---|
+| `Kernel/Server/Server.wl` | **New.** Entry point loading `Shared.wl`, `Local.wl`, `Cloud.wl`. |
+| `Kernel/Server/Shared.wl` | **New.** Transport-agnostic core moved from `StartMCPServer.wl` (dispatch, tool/prompt resolution, `evaluateTool`, result formatting, `initResponse`, bootstrapping, logging helpers) + `initializeServerState` + protocol-version negotiation. |
+| `Kernel/Server/Local.wl` | **New.** `StartMCPServer`, stdio read loop, `superQuiet`, log-file plumbing, `toolWarmup`. |
+| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
+| `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
+| `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunRemoteMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
+| `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |
+| `Kernel/MCPServerObject.wl` | No data-model change required. The `CloudDeploy` UpValue lives in `Cloud.wl`; `$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired. |
+| `Kernel/Files.wl` | Add cloud-path helpers if needed (e.g. for the optional key-label store). |
+| `PacletInfo.wl` | Add the two symbols to `"Symbols"` (`:22–50`); add `{ "Cloud", "Assets/Cloud" }` to the `"Asset"` extension (`:59–66`). |
+| `Assets/Cloud/` | **New.** Landing/admin HTML, CSS, JS. |
+| `Kernel/Messages.wl` | Add the new message tags. |
+| `Tests/CloudDeployment.wlt` | **New.** Tests (see [Verification](#verification)). |
+| `docs/cloud-deployment.md` | **New.** User-facing documentation. |
+| `Documentation/English/ReferencePages/Symbols/` | Reference pages for `CloudDeployMCPServer` and `RunRemoteMCPServer`. |
+
+> **MCP-server caution.** Because this paclet *is* the running MCP server providing the development
+> tools, the `Server/` refactor must preserve `StartMCPServer` behavior exactly. Validate the local
+> stdio server still starts and serves after the move before relying on the tools.
+
+---
+
+## Future Work
+
+Deferred from v1, in rough priority order:
+
+- **Cloud-native AgentTools paclet** → drop the `Language`$InternalContexts`` dev-bundling block;
+  resolve `RunRemoteMCPServer` and built-in tools from the installed paclet.
+- **`/logs/`** — capture per-request logs to a deployment log area, surfaced on the admin page.
+- **`/files/`** — per-deployment artifact area; route MCP-App notebooks/images here instead of the
+  global `AgentTools/Notebooks` / `AgentTools/Images` locations.
+- **Usage monitoring** — request/usage counts per key on the admin page (likely requires logging).
+- **Enable/disable toggle** — temporarily disable `/mcp` without deleting it.
+- **Caching / persistent kernels** — reduce per-request cold-start latency for heavyweight tools.
+- **Local consumption** — a URL-based `InstallMCPServer` so local clients (Claude Desktop, etc.) can
+  consume a deployed endpoint directly (new `url`+`headers` converter shapes in `SupportedClients.wl`
+  + `InstallMCPServer.wl`).
+- **Full Streamable HTTP transport** — sessions, SSE streaming, logging notifications, if needed.
+- **Tool-safety options** — optional allowlisting / sandboxing of code-execution tools for public
+  deployments.
+
+---
+
+## Verification
+
+### `CloudDeployMCPServer` / `RunRemoteMCPServer`
+
+1. Deploy a built-in server (e.g. `"WolframLanguage"`) with a single `PermissionsKey`; confirm the
+   returned object is the `/mcp` `CloudObject`.
+2. `POST` an `initialize` request; confirm a `200` `application/json` response whose result
+   `protocolVersion` echoes a supported requested version, and falls back to `2025-11-25` for an
+   unknown one.
+3. `POST` `tools/list`; confirm the tool list matches the server object's tools.
+4. `POST` `tools/call` for a simple tool (the notes' `PrimeFinder`, or `WolframAlpha`); confirm the
+   result content.
+5. `POST` a notification (e.g. `notifications/initialized`); confirm **`202`** with no body.
+6. `GET` and `DELETE` the endpoint; confirm **`405`**.
+7. Send an unsupported `MCP-Protocol-Version`; confirm **`400`**. Send a disallowed `Origin`; confirm
+   **`403`**. Send a malformed body; confirm **`400`**. Send an unacceptable `Accept`; confirm
+   **`406`**.
+8. Authenticate via `Authorization: Bearer <key>` (OpenAI form) and via `?_key=<key>` (Anthropic
+   form); confirm both succeed and that a request with no/invalid key is rejected by the cloud.
+9. Deploy a **custom self-contained** server with an anonymous pure-function tool; confirm it works in
+   the cloud with no relevant paclet pre-installed (custom-function capture + dev bundling).
+10. Reproduce the OpenAI and Anthropic end-to-end remote-MCP examples from
+    `Notes/cloud-deployed-mcp-servers.md:258–332` against the deployed endpoint.
+
+### `CloudDeploy` (full directory)
+
+11. `CloudDeploy[server]` (anonymous) and `CloudDeploy[server, "Name"]`; confirm the directory
+    `CloudObject` is returned and that `/mcp`, `/index.html`, `/api/info`, `/admin/index.html`,
+    `/api/admin` all exist.
+12. Confirm `/index.html`, `/api/info`, and `/mcp` carry the resolved `Permissions` (default
+    `$Permissions`), while `/admin/index.html` and `/api/admin` are `"Private"`.
+13. Load `/index.html`; confirm it fetches `/api/info` and renders server name, tools, URL, and
+    click-to-copy snippets with a `<YOUR_KEY>` placeholder.
+14. Through `/api/admin`: create a key (confirm it appears in `Information[mcp, "Permissions"]` and is
+    usable against `/mcp`), list keys, revoke it (confirm removed and no longer works).
+15. Confirm `/api/admin` is unreachable without owner credentials.
+
+### Refactor integrity
+
+16. Confirm the local stdio `StartMCPServer` still initializes and serves `tools/list` / `tools/call`
+    after the `Server/` refactor (no regression), including protocol-version negotiation for old and
+    new requested versions.
+17. Run `CodeInspector` on all new/changed `Kernel/Server/*.wl` files.
+18. Run `Tests/CloudDeployment.wlt` and the existing server test suites.
