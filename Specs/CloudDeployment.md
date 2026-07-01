@@ -417,7 +417,7 @@ most technically delicate part of the design. Two independent stripping mechanis
 both confirmed empirically in a live kernel:
 
 1. **Context-based stripping.** Both ``Wolfram`AgentTools`*`` and ``Wolfram`Chatbook`*`` are members
-   of `Language`$InternalContexts``, so their definitions are stripped from serialized expressions
+   of ``Language`$InternalContexts``, so their definitions are stripped from serialized expressions
    (and from `CloudDeploy`) by default. Removing ``Wolfram`AgentTools`*`` from that list causes the
    AgentTools definitions reachable from `RunRemoteMCPServer[obj]` to be captured — but the payload
    grows from ~0.4 KB to **~5 MB**, and Chatbook remains stripped.
@@ -432,13 +432,13 @@ both confirmed empirically in a live kernel:
 
 A single deploy helper builds the definition-bearing payload for `/mcp`, combining both fixes:
 
-- Run inside `Block[{ Language`$InternalContexts = DeleteCases[ Language`$InternalContexts, _?(StringStartsQ[#, "Wolfram`AgentTools`"]&) ] }, … ]` so AgentTools's own definitions
+- Run inside ``Block[{ Language`$InternalContexts = DeleteCases[ Language`$InternalContexts, _?(StringStartsQ[#, "Wolfram`AgentTools`"]&) ] }, … ]`` so AgentTools's own definitions
   (`RunRemoteMCPServer`, `handleMethod`, tool/prompt resolution, result formatting) are captured
   rather than stripped. This makes the endpoint self-contained without a published paclet — the point
   of the dev bridge.
 - Gather definitions with the paclet's **NOENTRY-aware** `extendedFullDefinition` so custom tool
   functions inside the server object's `LLMTool`s are included, and inject them into the deployed
-  expression using the same `Language`ExtendedFullDefinition[ ] = defs; expr` strategy that
+  expression using the same ``Language`ExtendedFullDefinition[ ] = defs; expr`` strategy that
   `binarySerializeWithDefinitions` already implements. (Do **not** rely on `CloudDeploy`'s built-in
   capture for these — it is NOENTRY-blocked.)
 
@@ -449,7 +449,7 @@ kernel** — ensured at cold start by the shared bootstrapping (`ensureDependenc
 `PacletInstall` for paclet-qualified names). A fully **self-contained custom server** (pure-function
 tools, no built-in/Chatbook dependencies) works with no paclet present.
 
-> The `Language`$InternalContexts`` block is isolated in this one deploy helper so it can be removed
+> The ``Language`$InternalContexts`` block is isolated in this one deploy helper so it can be removed
 > cleanly. If inline injection proves awkward for a given server, an equivalent fallback is to write
 > the payload's bytes (as produced by `binarySerializeWithDefinitions`) to a `"Private"` object in the
 > deployment directory and have the handler `BinaryDeserialize` it on cold start; the two approaches
@@ -458,7 +458,7 @@ tools, no built-in/Chatbook dependencies) works with no paclet present.
 ### End state (future)
 
 Once a cloud-native `Wolfram/AgentTools` paclet is available by default in the Wolfram Cloud, drop the
-`Language`$InternalContexts`` block: `RunRemoteMCPServer` and the built-in tools resolve from the
+``Language`$InternalContexts`` block: `RunRemoteMCPServer` and the built-in tools resolve from the
 installed paclet, and only the user's custom tool functions are carried in the payload (still via the
 NOENTRY-aware serializer). See [Future Work](#future-work).
 
@@ -678,7 +678,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 
 Deferred from v1, in rough priority order:
 
-- **Cloud-native AgentTools paclet** → drop the `Language`$InternalContexts`` dev-bundling block;
+- **Cloud-native AgentTools paclet** → drop the ``Language`$InternalContexts`` dev-bundling block;
   resolve `RunRemoteMCPServer` and built-in tools from the installed paclet.
 - **`/logs/`** — capture per-request logs to a deployment log area, surfaced on the admin page.
 - **`/files/`** — per-deployment artifact area; route MCP-App notebooks/images here instead of the
