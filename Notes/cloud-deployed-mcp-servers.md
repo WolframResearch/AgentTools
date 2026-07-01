@@ -220,8 +220,8 @@ makeResponseString[ "text/event-stream", result_ ] := "data: " <> Developer`Writ
 ";
 
 
-RunRemoteMCPServer // ClearAll;
-RunRemoteMCPServer[ ] :=
+RunCloudMCPServer // ClearAll;
+RunCloudMCPServer[ ] :=
     Catch @ Module[ { req, accept, message, method, id, result, resp },
         req = HTTPRequestData[ ];
         accept = responseContentType @ req;
@@ -236,7 +236,7 @@ RunRemoteMCPServer[ ] :=
     ];
 ```
 
-A ``RunRemoteMCPServer`` should also be exported in the AgentTools context. The actual implementation should accept an ``MCPServerObject`` as the argument and set things like ``$toolList`` appropriately.
+A ``RunCloudMCPServer`` should also be exported in the AgentTools context. The actual implementation should accept an ``MCPServerObject`` as the argument and set things like ``$toolList`` appropriately.
 
 ### Deploy
 
@@ -245,7 +245,7 @@ In[105]:= $dummyAPIKey = CreateUUID[ ];
 
 In[107]:=
 obj = CloudDeploy[
-    Delayed @ RunRemoteMCPServer[ (* actual deployment implementation would have an MCPServerObject here *) ],
+    Delayed @ RunCloudMCPServer[ (* actual deployment implementation would have an MCPServerObject here *) ],
     "MCPTest/mcp",
     Permissions -> { PermissionsKey[ $dummyAPIKey ] -> "Execute" }
 ]

@@ -13,7 +13,7 @@ CloudDeploy[ MCPServerObject[ ... ], ... ]
 `CloudDeploy` of an `MCPServerObject` produces a `CloudObject` corresponding to a **deployment
 directory** that contains the live MCP endpoint, a landing page, and an owner-only admin page. A
 lower-level function, `CloudDeployMCPServer`, deploys *only* the MCP endpoint with caller-controlled
-path and permissions. The endpoint itself is served by a new `RunRemoteMCPServer` handler that
+path and permissions. The endpoint itself is served by a new `RunCloudMCPServer` handler that
 speaks a stateless subset of the **Streamable HTTP** transport of MCP protocol revision
 **2025-11-25**. Although each request is a self-contained evaluation with no server-side session
 store, the endpoint still supports **MCP-Apps** UI: it round-trips the client's UI capability through
@@ -30,14 +30,14 @@ Three new public symbols are introduced:
 | Symbol | Context | Purpose |
 |---|---|---|
 | `CloudDeployMCPServer` | ``Wolfram`AgentTools` `` | Deploy just the `/mcp` endpoint for a server object. |
-| `RunRemoteMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
+| `RunCloudMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
 | `CloudDeploy` (UpValue) | (existing `System` symbol) | `MCPServerObject /: CloudDeploy[obj, args___]` deploys the full directory. |
 
 Both new symbols are declared identically — in `Kernel/Main.wl` (exported name list +
 `$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`) — and defined with
 `beginDefinition` / `endExportedDefinition`. Their top-level error handling differs by role,
 however: `CloudDeployMCPServer` wraps its body in `catchMine` (surfacing a `Failure[...]` on error).
-`RunRemoteMCPServer` is an HTTP handler that must **always return an `HTTPResponse`**, so it does
+`RunCloudMCPServer` is an HTTP handler that must **always return an `HTTPResponse`**, so it does
 *not* rely on `catchMine` to surface a raw `Failure`; its wrapper converts failures into responses
 instead — transport-level problems into HTTP status codes, dispatch/tool failures into an in-band
 JSON-RPC `-32603` error within a `200` (mirroring the local `processRequest`'s
@@ -50,7 +50,7 @@ failure (e.g. from `initializeServerState`) into a `500`.
 
 - Support `CloudDeploy[MCPServerObject[...], ...]` returning a `CloudObject` directory bundle.
 - Provide `CloudDeployMCPServer` for deploying only the endpoint, with arbitrary path/permissions.
-- Provide `RunRemoteMCPServer[obj]` implementing the remote MCP transport from a server object.
+- Provide `RunCloudMCPServer[obj]` implementing the remote MCP transport from a server object.
 - Reuse the local server's method dispatch / tool evaluation / serialization unchanged, by factoring
   the transport-agnostic core into a shared file.
 - Reuse Wolfram Cloud's native `PermissionsKey` mechanism for API authentication (as a bearer token
@@ -147,7 +147,7 @@ reorganized into a `Server/` subdirectory.
 | `Kernel/Server/Server.wl` | ``…`Server` `` | Entry point that `Get`s the other three files. Added to `$AgentToolsContexts` in `Main.wl`. |
 | `Kernel/Server/Shared.wl` | ``…`Server`Shared` `` | Transport-agnostic core (see below). |
 | `Kernel/Server/Local.wl` | ``…`Server`Local` `` | `StartMCPServer` and stdio-specific logic. |
-| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
+| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunCloudMCPServer`, the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
 
 > **Symbol sharing.** Symbols consumed across the three `Server` files (or reached from
 > `MCPServerObject.wl` and existing callers) are declared paclet-wide in `Kernel/CommonSymbols.wl`
@@ -202,7 +202,7 @@ which runs the shared bootstrapping (`ensurePacletsForStart`, `runServerInitiali
 bundle. Each transport binds it with `Block`:
 
 - **Local** calls it **once** at startup and `Block`s the values around the read loop.
-- **Cloud** calls it **per request** inside `RunRemoteMCPServer`'s `Block` (see
+- **Cloud** calls it **per request** inside `RunCloudMCPServer`'s `Block` (see
   [Evaluation Model](#evaluation-model)). *(Optional later optimization: memoize on `obj` within a
   warm cloud kernel.)*
 
@@ -277,7 +277,7 @@ explicit, because the shared `handleMethod` was written for a long-lived stdio p
   they are re-derived from the **session ID** the client echoes on each request (see
   [Client Capability Propagation](#client-capability-propagation-self-describing-session-ids)).
 - `tools/list` renders `withToolUIMetadata @ $toolList`, gated on `$clientSupportsUI`
-  (`StartMCPServer.wl:555`). In the cloud, `RunRemoteMCPServer` `Block`s `$clientSupportsUI` to the
+  (`StartMCPServer.wl:555`). In the cloud, `RunCloudMCPServer` `Block`s `$clientSupportsUI` to the
   value decoded from the request's `Mcp-Session-Id`, so a client that advertised
   `io.modelcontextprotocol/ui` at `initialize` **still receives** UI metadata here — MCP-Apps UI works
   rather than silently degrading. A client that advertised no UI support gets a session ID encoding no
@@ -382,10 +382,10 @@ The two directions:
 
 - **At `initialize`** (no incoming session ID): the shared `handleMethod["initialize", …]` sets
   `$clientSupportsUI` / `$clientSupportsRoots` from the client message exactly as today
-  (`StartMCPServer.wl:542–548`, reusing `clientSupportsUIQ` / `mcpAppsEnabledQ`). `RunRemoteMCPServer`
+  (`StartMCPServer.wl:542–548`, reusing `clientSupportsUIQ` / `mcpAppsEnabledQ`). `RunCloudMCPServer`
   then reads those flags, builds the tracked-feature list, calls `makeSessionIDFromFeatureList`, and
   returns the result in the **`Mcp-Session-Id` response header**.
-- **On every later request**: `RunRemoteMCPServer` reads the `Mcp-Session-Id` request header
+- **On every later request**: `RunCloudMCPServer` reads the `Mcp-Session-Id` request header
   (case-insensitively), calls `getFeaturesFromSessionID`, and `Block`s
   `$clientSupportsUI = MemberQ[ features, "MCPApps" ]` (and, in future, the other globals) around
   dispatch. The shared handlers are unchanged — they still just read `$clientSupportsUI`.
@@ -499,7 +499,7 @@ Options are forwarded to `CloudDeploy`; `Permissions` defaults to `$Permissions`
 ### Behavior
 
 1. Resolve `obj` to a validated `MCPServerObject`.
-2. Build the deployable, definition-bearing expression for `Delayed[RunRemoteMCPServer[obj]]`
+2. Build the deployable, definition-bearing expression for `Delayed[RunCloudMCPServer[obj]]`
    (see [Embedding the Server](#embedding-the-server)).
 3. `CloudDeploy` it to `target` with the resolved permissions.
 4. Return the resulting `/mcp` `CloudObject`.
@@ -518,16 +518,16 @@ mcp = CloudDeployMCPServer[
 
 ---
 
-## `RunRemoteMCPServer`
+## `RunCloudMCPServer`
 
 The handler deployed (via `Delayed`) at `/mcp`. It is the cloud analog of the local
 `processRequest`/read-loop, but handles exactly one HTTP request and returns an `HTTPResponse`. It is
-exported so the serialized `Delayed[RunRemoteMCPServer[obj]]` payload references a real symbol.
+exported so the serialized `Delayed[RunCloudMCPServer[obj]]` payload references a real symbol.
 
 ### Signature
 
 ```wl
-RunRemoteMCPServer[ obj_MCPServerObject ]   (* handles the current HTTPRequestData[] *)
+RunCloudMCPServer[ obj_MCPServerObject ]   (* handles the current HTTPRequestData[] *)
 ```
 
 The notes' prototype hardcodes `$toolList`/`$llmTools`; the real implementation derives all server
@@ -612,7 +612,7 @@ both confirmed empirically in a live kernel:
 1. **Context-based stripping.** Both ``Wolfram`AgentTools`*`` and ``Wolfram`Chatbook`*`` are members
    of ``Language`$InternalContexts``, so their definitions are stripped from serialized expressions
    (and from `CloudDeploy`) by default. Removing ``Wolfram`AgentTools`*`` from that list causes the
-   AgentTools definitions reachable from `RunRemoteMCPServer[obj]` to be captured — but the payload
+   AgentTools definitions reachable from `RunCloudMCPServer[obj]` to be captured — but the payload
    grows from ~0.4 KB to **~5 MB**, and Chatbook remains stripped.
 2. **Flag-based blocking.** `LLMTool` carries the `NOENTRY` flag, so standard `ExtendedFullDefinition`
    (and therefore `CloudDeploy`'s own definition capture) **cannot see the user-defined functions
@@ -626,7 +626,7 @@ both confirmed empirically in a live kernel:
 A single deploy helper builds the definition-bearing payload for `/mcp`, combining both fixes:
 
 - Run inside ``Block[{ Language`$InternalContexts = DeleteCases[ Language`$InternalContexts, _?(StringStartsQ[#, "Wolfram`AgentTools`"]&) ] }, … ]`` so AgentTools's own definitions
-  (`RunRemoteMCPServer`, `handleMethod`, tool/prompt resolution, result formatting) are captured
+  (`RunCloudMCPServer`, `handleMethod`, tool/prompt resolution, result formatting) are captured
   rather than stripped. This makes the endpoint self-contained without a published paclet — the point
   of the dev bridge.
 - Gather definitions with the paclet's **NOENTRY-aware** `extendedFullDefinition` so custom tool
@@ -651,7 +651,7 @@ tools, no built-in/Chatbook dependencies) works with no paclet present.
 ### End state (future)
 
 Once a cloud-native `Wolfram/AgentTools` paclet is available by default in the Wolfram Cloud, drop the
-``Language`$InternalContexts`` block: `RunRemoteMCPServer` and the built-in tools resolve from the
+``Language`$InternalContexts`` block: `RunCloudMCPServer` and the built-in tools resolve from the
 installed paclet, and only the user's custom tool functions are carried in the payload (still via the
 NOENTRY-aware serializer). See [Future Work](#future-work).
 
@@ -677,7 +677,7 @@ sub-objects onto the directory object, mirroring `UIResources.wl`.
 
 | Path | Purpose | Permissions | v1 |
 |---|---|---|---|
-| `/mcp` | Live MCP endpoint (`Delayed[RunRemoteMCPServer[obj]]`). | Resolved `Permissions`; admin page adds/removes `PermissionsKey`s. | ✅ |
+| `/mcp` | Live MCP endpoint (`Delayed[RunCloudMCPServer[obj]]`). | Resolved `Permissions`; admin page adds/removes `PermissionsKey`s. | ✅ |
 | `/index.html` | Landing page (client-configuration help). | Resolved `Permissions`. | ✅ |
 | `/api/info` | Public server metadata consumed by the landing page. | Resolved `Permissions` (readable by anyone who can view the page). | ✅ |
 | `/assets/*` | CSS/JS for the two pages. | Resolved `Permissions`. | ✅ |
@@ -706,7 +706,7 @@ the **`/mcp`** `CloudObject`.
 ### Authentication
 
 Authentication is delegated entirely to Wolfram Cloud's native `PermissionsKey` mechanism; the handler
-performs **no** key validation — an unauthorized caller never reaches `RunRemoteMCPServer`.
+performs **no** key validation — an unauthorized caller never reaches `RunCloudMCPServer`.
 
 - **`/mcp`** — callers authenticate with a `PermissionsKey`, accepted by Wolfram Cloud either as the
   bearer token in an `Authorization: Bearer <key>` header (OpenAI's MCP client) or as a `?_key=<key>`
@@ -848,9 +848,9 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/Server/Server.wl` | **New.** Entry point loading `Shared.wl`, `Local.wl`, `Cloud.wl`. |
 | `Kernel/Server/Shared.wl` | **New.** Transport-agnostic core moved from `StartMCPServer.wl` (dispatch, tool/prompt resolution, `evaluateTool`, result formatting, `initResponse`, bootstrapping, logging helpers) + `initializeServerState` + protocol-version negotiation. |
 | `Kernel/Server/Local.wl` | **New.** `StartMCPServer`, stdio read loop, `superQuiet`, log-file plumbing, `toolWarmup`. |
-| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunRemoteMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
+| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunCloudMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
 | `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
-| `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunRemoteMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
+| `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunCloudMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
 | `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |
 | `Kernel/MCPServerObject.wl` | No data-model change required. The `CloudDeploy` UpValue lives in `Cloud.wl`; `$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired. |
 | `Kernel/Files.wl` | Add cloud-path helpers if needed (e.g. for the optional key-label store). |
@@ -859,7 +859,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/Messages.wl` | Add the new message tags. |
 | `Tests/CloudDeployment.wlt` | **New.** Tests (see [Verification](#verification)). |
 | `docs/cloud-deployment.md` | **New.** User-facing documentation. |
-| `Documentation/English/ReferencePages/Symbols/` | Reference pages for `CloudDeployMCPServer` and `RunRemoteMCPServer`. |
+| `Documentation/English/ReferencePages/Symbols/` | Reference pages for `CloudDeployMCPServer` and `RunCloudMCPServer`. |
 
 > **MCP-server caution.** Because this paclet *is* the running MCP server providing the development
 > tools, the `Server/` refactor must preserve `StartMCPServer` behavior exactly. Validate the local
@@ -872,7 +872,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 Deferred from v1, in rough priority order:
 
 - **Cloud-native AgentTools paclet** → drop the ``Language`$InternalContexts`` dev-bundling block;
-  resolve `RunRemoteMCPServer` and built-in tools from the installed paclet.
+  resolve `RunCloudMCPServer` and built-in tools from the installed paclet.
 - **`/logs/`** — capture per-request logs to a deployment log area, surfaced on the admin page.
 - **`/files/`** — per-deployment artifact area; route MCP-App notebooks/images here instead of the
   global `AgentTools/Notebooks` / `AgentTools/Images` locations.
@@ -893,7 +893,7 @@ Deferred from v1, in rough priority order:
 
 ## Verification
 
-### `CloudDeployMCPServer` / `RunRemoteMCPServer`
+### `CloudDeployMCPServer` / `RunCloudMCPServer`
 
 1. Deploy a built-in server (e.g. `"WolframLanguage"`) with a single `PermissionsKey`; confirm the
    returned object is the `/mcp` `CloudObject`.
