@@ -287,7 +287,7 @@ VerificationTest[
 (*safeString Integration*)
 
 VerificationTest[
-    result = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+    result = Wolfram`AgentTools`Server`Shared`Private`safeString[
         Failure[ "AgentTools::Internal", <| |> ]
     ];
     StringQ @ result,
@@ -297,7 +297,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    result = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+    result = Wolfram`AgentTools`Server`Shared`Private`safeString[
         Failure[ "AgentTools::Internal", <| |> ]
     ];
     StringContainsQ[ result, "[Error]" ],
@@ -307,7 +307,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    result = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+    result = Wolfram`AgentTools`Server`Shared`Private`safeString[
         Failure[ "AgentTools::Internal", <| |> ]
     ];
     And[
@@ -321,7 +321,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    result = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+    result = Wolfram`AgentTools`Server`Shared`Private`safeString[
         Failure[ "General::ChatbookInternal", <| |> ]
     ];
     StringContainsQ[ result, "Chatbook::Internal" ],
@@ -333,7 +333,7 @@ VerificationTest[
 VerificationTest[
     (* Regular failures use the Failure's formatted Message property, which returns
        "A failure of type 'tag' occurred." for failures without a MessageTemplate *)
-    result = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+    result = Wolfram`AgentTools`Server`Shared`Private`safeString[
         Failure[ "SomeRegularError", <| "Message" -> "Something went wrong" |> ]
     ];
     And[

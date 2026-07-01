@@ -114,6 +114,10 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `writeError;
 `writeLog;
 
+(* MCP server dispatch (shared by the local and cloud transports): *)
+`handleMethod;
+`initializeServerState;
+
 (* MCP client requests / server-to-client traffic: *)
 `$mcpClientRequests;
 `handleClientResponse;

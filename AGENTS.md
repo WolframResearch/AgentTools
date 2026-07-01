@@ -54,7 +54,10 @@ See [building.md](docs/building.md) for detailed instructions.
   - `Messages.wl`: Definitions for error messages
   - `PacletExtension.wl`: Paclet discovery, name resolution, and definition loading for the [paclet extension](docs/paclet-extensions.md) system
   - `PreferencesContent.wl`: Implementation of `CreatePreferencesContent`, which builds the toolset configuration UI for the system preferences dialog (see [preferences-content.md](docs/preferences-content.md))
-  - `StartMCPServer.wl`: Implementation for starting MCP servers
+  - `Server/`: MCP server implementation, split by transport so the local (stdio) and cloud (HTTP) servers share a common core
+    - `Server.wl`: Aggregator that declares the server-session state shared across the subcontexts and loads the children below
+    - `Shared.wl`: Transport-agnostic core — method dispatch (`handleMethod`), tool/prompt resolution, tool evaluation and result formatting, capability negotiation (`initResponse`), server-state build (`initializeServerState`), and logging helpers
+    - `Local.wl`: Local stdio transport — `StartMCPServer`, the read loop (`processRequest`), tool warmup, and stdout-protecting output suppression (`superQuiet`)
   - `SupportedClients.wl`: Registry of supported MCP clients (`$SupportedMCPClients`) and relevant utility functions
   - `ValidateAgentToolsPacletExtension.wl`: Validation of `"AgentTools"` [paclet extensions](docs/paclet-extensions.md)
   - `UIResources.wl`: [MCP Apps](docs/mcp-apps.md) UI resource registry, client capability detection, and shared notebook delivery helpers (cloud deployment and experimental inline embedding)
@@ -101,7 +104,7 @@ See [building.md](docs/building.md) for detailed instructions.
 
 ### MCP Documentation
 
-Use the official MCP documentation when working on the server implementation (`Kernel/StartMCPServer.wl`).
+Use the official MCP documentation when working on the server implementation (`Kernel/Server/`).
 
 - [Overview](https://modelcontextprotocol.io/specification/2025-11-25/basic/index.md)
 - [Lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle.md)

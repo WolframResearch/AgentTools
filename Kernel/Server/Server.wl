@@ -1,0 +1,53 @@
+(* ::Section::Closed:: *)
+(*Package Header*)
+BeginPackage[ "Wolfram`AgentTools`Server`" ];
+
+(* Server session state shared among the Server subcontexts (Shared / Local / Cloud).
+   These are read by the transport-agnostic handlers in Shared.wl and bound (via Block)
+   by each transport. They are not read elsewhere in the paclet, so they live here rather
+   than in CommonSymbols.wl. `handleMethod` and `initializeServerState` are declared in
+   CommonSymbols.wl instead, since they are needed paclet-wide. *)
+`$currentMCPServer;
+`$llmTools;
+`$logFile;
+`$promptList;
+`$promptLookup;
+`$toolList;
+`$warmupTask;
+
+(* Shared catch wrapper: defined in Local.wl but also used by evaluateTool in Shared.wl,
+   so it is declared here where both subcontexts can bind it. *)
+`stealthCatchTop;
+
+Begin[ "`Private`" ];
+
+Needs[ "Wolfram`AgentTools`"        ];
+Needs[ "Wolfram`AgentTools`Common`" ];
+
+(* Default when not inside a request; each transport Blocks this per session/request. *)
+$currentMCPServer = None;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Load Subcontexts*)
+$subcontexts = {
+    (* Transport-agnostic core: dispatch, tool/prompt resolution, result formatting, init *)
+    "Wolfram`AgentTools`Server`Shared`",
+
+    (* Local stdio transport: StartMCPServer, the read loop, warmup, superQuiet *)
+    "Wolfram`AgentTools`Server`Local`"
+};
+
+Scan[ Needs[ # -> None ] &, $subcontexts ];
+
+$AgentToolsContexts = Union[ $AgentToolsContexts, $subcontexts ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Package Footer*)
+addToMXInitialization[
+    Null
+];
+
+End[ ];
+EndPackage[ ];

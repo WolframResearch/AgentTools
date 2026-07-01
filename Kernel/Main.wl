@@ -75,7 +75,7 @@ $AgentToolsContexts = {
     "Wolfram`AgentTools`PacletExtension`",
     "Wolfram`AgentTools`PreferencesContent`",
     "Wolfram`AgentTools`Prompts`",
-    "Wolfram`AgentTools`StartMCPServer`",
+    "Wolfram`AgentTools`Server`",
     "Wolfram`AgentTools`SupportedClients`",
     "Wolfram`AgentTools`TOML`",
     "Wolfram`AgentTools`Tools`",

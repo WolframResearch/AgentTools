@@ -158,35 +158,35 @@ VerificationTest[
 (* ::Section::Closed:: *)
 (*parseToolOptions*)
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ $Failed ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association? AssociationQ,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-Failed@@Tests/ToolOptions.wlt:160,1-165,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ $Failed ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-FailedReturnsAssociation@@Tests/ToolOptions.wlt:167,1-172,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ "" ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "" ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-EmptyString@@Tests/ToolOptions.wlt:174,1-179,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ "invalid json" ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "invalid json" ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-InvalidJSON@@Tests/ToolOptions.wlt:181,1-186,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":{\"Method\":\"Local\"}}"
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
@@ -195,7 +195,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":{\"ImageExportMethod\":\"None\",\"Method\":\"Automatic\"}}"
     ],
     KeyValuePattern[
@@ -206,7 +206,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":123,\"WolframAlphaContext\":{\"MaxItems\":3}}"
     ],
     <| "WolframAlphaContext" -> <| "MaxItems" -> 3 |> |>,
@@ -221,7 +221,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
         ]
@@ -234,7 +234,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
         ]
@@ -247,7 +247,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageContext", "MaxItems" ]
         ]
@@ -263,7 +263,7 @@ VerificationTest[
             "WolframLanguageContext"   -> <| "MaxItems" -> 20 |>
         |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             {
                 Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ],

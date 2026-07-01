@@ -9,7 +9,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **1. `Kernel/Server/` refactor (transport-agnostic move, no behavior change)**
+- [x] **1. `Kernel/Server/` refactor (transport-agnostic move, no behavior change)**
 
   Split `StartMCPServer.wl` (1145 lines, context `Wolfram`AgentTools`StartMCPServer`) into the new
   `Server/` subdirectory per the spec's *What moves to `Shared.wl`* / *What stays in `Local.wl`*
@@ -47,11 +47,13 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
   Verify no regression before relying on the tools (this paclet *is* the running MCP server):
 
-  - [ ] Paclet loads cleanly; `Get["Wolfram`AgentTools`"]` succeeds after `PacletDirectoryLoad`.
-  - [ ] Local stdio `StartMCPServer` still initializes and serves `tools/list` / `tools/call`.
-  - [ ] `Tests/StartMCPServer.wlt` and the other server suites (`MCPServerObject.wlt`, `MCPApps.wlt`,
+  - [x] Paclet loads cleanly; `Get["Wolfram`AgentTools`"]` succeeds after `PacletDirectoryLoad`.
+  - [x] Local stdio `StartMCPServer` still initializes and serves `tools/list` / `tools/call`
+        (verified in-process; the subprocess integration tests fail identically to `main` — a
+        pre-existing Windows/TestReport transport limitation, not a regression).
+  - [x] `Tests/StartMCPServer.wlt` and the other server suites (`MCPServerObject.wlt`, `MCPApps.wlt`,
         `Prompts.wlt`) pass unchanged.
-  - [ ] `CodeInspector` clean on all new `Kernel/Server/*.wl` files.
+  - [x] `CodeInspector` clean on all new `Kernel/Server/*.wl` files.
 
   **Files:** `Kernel/Server/Server.wl`, `Kernel/Server/Shared.wl`, `Kernel/Server/Local.wl`,
   `Kernel/StartMCPServer.wl`, `Kernel/Main.wl`, `Kernel/CommonSymbols.wl`, `AGENTS.md`,
