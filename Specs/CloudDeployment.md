@@ -198,8 +198,8 @@ initializeServerState[ obj_MCPServerObject ]
 
 which runs the shared bootstrapping (`ensurePacletsForStart`, `runServerInitialization`,
 `runToolInitialization`, `disambiguateToolNames`, `createMCPToolData`, `makePromptData`,
-`makePromptLookup`, `parseToolOptions`) and returns the computed state bundle. Each transport binds
-it with `Block`:
+`makePromptLookup`, `parseToolOptions`, `initializeUIResources`) and returns the computed state
+bundle. Each transport binds it with `Block`:
 
 - **Local** calls it **once** at startup and `Block`s the values around the read loop.
 - **Cloud** calls it **per request** inside `RunRemoteMCPServer`'s `Block` (see
@@ -209,6 +209,18 @@ it with `Block`:
 `ensurePacletsForStart` / `ensureDependenciesForStart` are the runtime paclet-install hook that makes
 paclet-backed and built-in tools resolvable in a fresh cloud kernel; they are fast no-ops once the
 relevant paclets are present.
+
+`initializeUIResources[]` is included because it is what populates the `$uiResourceRegistry` global that
+`resources/list` (`listUIResources`, `UIResources.wl:240,250`) and `resources/read` (`readUIResource`,
+`UIResources.wl:265`) read. Today the **local** server calls it once, outside the state-build `Block`
+(`StartMCPServer.wl:132`), so the global persists for the life of the process. In the **stateless cloud**
+that global is empty on every fresh request, so unless `initializeServerState` re-runs
+`initializeUIResources[]` per request the UI registry is empty — and a UI-capable client that was told (via
+`tools/list` `_meta.ui`, which derives from the load-time `$toolUIAssociations` and *does* work) to fetch a
+resource would get an empty `resources/list` and a `-32602 UIResourceNotFound` from `resources/read`. Folding
+the call into `initializeServerState` is what keeps MCP-Apps `resources/*` working in the cloud rather than
+silently half-lit. (`initializeUIResources` degrades gracefully to `$uiResourceRegistry = <||>` if the app
+assets are missing, so it is always safe to call.)
 
 ### What stays in `Local.wl`
 
@@ -220,6 +232,17 @@ relevant paclets are present.
 - Tool warmup (`toolWarmup`, `preinstallVectorDatabases`, `initializeVectorDatabases`,
   `$warmupTools`, `$warmupTask`) — a long-lived-process optimization that does not apply to
   stateless cloud requests.
+
+> **Shared-declaration caveat.** A symbol can only "stay in `Local.wl`" as a *file-private* if nothing
+> moved to `Shared.wl` reads it. Two do not qualify and must be **declared in a shared context**
+> (`Server.wl`'s header or `CommonSymbols.wl`) even though only the local read loop ever assigns them —
+> because the functions that read them are moving to `Shared.wl`: `$logFile` (read by `writeLog`,
+> `StartMCPServer.wl:1078`) and `$warmupTask` (read by `evaluateTool`, `StartMCPServer.wl:882`). Both are
+> currently pure file-privates of `StartMCPServer.wl` (no `CommonSymbols.wl` declaration). If they are left
+> private to `Local.wl`, the `Shared.wl` readers resolve a *different*, always-unset symbol, silently
+> disabling local file logging and warmup cancellation — precisely the `StartMCPServer` regression the
+> refactor is cautioned to avoid. Only `$warmupTools` (assigned in `processRequest` and read in
+> `startMCPServer`, both staying in `Local.wl`) is genuinely file-local.
 
 ### Protocol version negotiation (shared)
 
