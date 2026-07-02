@@ -30,6 +30,7 @@ $sessionStatus    = None;
 (*Tool Option Configuration*)
 $evaluatorMethod   := toolOptionValue[ "WolframLanguageEvaluator", "Method" ];
 $imageExportMethod := toolOptionValue[ "WolframLanguageEvaluator", "ImageExportMethod" ];
+$maxCharacterCount := toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacterCount" ];
 $maxSessionCount   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionCount" ];
 $maxSessionBytes   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionBytes" ];
 $maxSessionAge     := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionAge"   ];
@@ -96,6 +97,7 @@ $defaultToolOptions[ "WolframLanguageEvaluator" ] = <|
     "Method"            -> "Session",
     "ImageExportMethod" -> None,
     "TimeConstraint"    -> 60,
+    "MaxCharacterCount" -> 10000,
     "MaxSessionCount"   -> 100,
     "MaxSessionBytes"   -> 1073741824, (* 1 GB *)
     "MaxSessionAge"     -> Quantity[ 1, "Months" ]
@@ -149,7 +151,7 @@ evaluateWolframLanguage0[ code_String, timeConstraint_Integer ] :=
             code,
             "String",
             "Line"                  -> $line++,
-            "MaxCharacterCount"     -> 10000,
+            "MaxCharacterCount"     -> $maxCharacterCount,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
             "Method"                -> $evaluatorMethod,
@@ -293,7 +295,7 @@ evaluateWolframLanguageForUI[ code_String, timeConstraint_Integer ] :=
             code,
             { "String", "Result" },
             "Line"                  -> $line++,
-            "MaxCharacterCount"     -> 10000,
+            "MaxCharacterCount"     -> $maxCharacterCount,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
             "Method"                -> $evaluatorMethod,

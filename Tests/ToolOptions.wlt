@@ -40,7 +40,8 @@ VerificationTest[
     KeyValuePattern @ {
         "Method"            -> "Session",
         "ImageExportMethod" -> None,
-        "TimeConstraint"    -> 60
+        "TimeConstraint"    -> 60,
+        "MaxCharacterCount" -> 10000
     },
     SameTest -> MatchQ,
     TestID   -> "DefaultToolOptions-WolframLanguageEvaluator@@Tests/ToolOptions.wlt:38,1-47,2"
@@ -90,6 +91,23 @@ VerificationTest[
     ],
     60,
     TestID -> "ToolOptionValue-FallbackToDefault-TimeConstraint@@Tests/ToolOptions.wlt:87,1-93,2"
+]
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$toolOptions = <| |> },
+        Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacterCount" ]
+    ],
+    10000,
+    TestID -> "ToolOptionValue-FallbackToDefault-MaxCharacterCount"
+]
+
+VerificationTest[
+    Block[
+        { Wolfram`AgentTools`Common`$toolOptions = <| "WolframLanguageEvaluator" -> <| "MaxCharacterCount" -> 100000 |> |> },
+        Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacterCount" ]
+    ],
+    100000,
+    TestID -> "ToolOptionValue-UserOverride-MaxCharacterCount"
 ]
 
 VerificationTest[
