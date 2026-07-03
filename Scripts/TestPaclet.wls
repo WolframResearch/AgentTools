@@ -86,7 +86,7 @@ $testFiles = Flatten[ If[ DirectoryQ[ # ], FileNames[ "*.wlt", # ], { # } ] & /@
 (*Run Tests*)
 (* When running tests in a GitHub Actions workflow, use the `TestPaclet` tool to generate proper GitHub annotations *)
 runTests[ ___ ] /; StringQ @ Environment[ "GITHUB_ACTIONS" ] :=
-    UsingFrontEnd @ checkResult @ cicd`TestPaclet @ FileNameJoin @ { $pacletDir, "Tests" };
+    checkResult @ cicd`TestPaclet @ FileNameJoin @ { $pacletDir, "Tests" };
 
 (* Use the `TestReportToolFunction` to generate nice readable markdown when running tests locally *)
 runTests[ testFiles_List ] :=
