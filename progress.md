@@ -102,7 +102,7 @@ carved out of the Task 1 refactor.
 **Symbol-context note:** like `$mcpEvaluation`/`$clientSupportsUI`, the two new symbols are *declared*
 in `Wolfram`AgentTools`Common`` but *assigned* their default values at the top of `Shared.wl`'s
 Private section — the bare names resolve to the Common context via `Needs`. Tests reference them as
-`Wolfram`AgentTools`Common`$supportedProtocolVersions` etc.
+``Wolfram`AgentTools`Common`$supportedProtocolVersions`` etc.
 
 **Tests — new `Tests/CloudDeployment.wlt` (19 tests, all in-process, 100% pass):** bootstraps the
 file Tasks 3–8 will extend. Covers: config symbol values + the invariant that preferred ∈ supported;

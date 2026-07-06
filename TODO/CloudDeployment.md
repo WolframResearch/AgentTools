@@ -132,10 +132,10 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
   The most delicate part: make `/mcp` reconstruct the server (including anonymous custom tool
   functions) in a bare cloud kernel. Build the definition-bearing `Delayed[RunCloudMCPServer[obj]]`
-  payload in a single deploy helper that combines both fixes — (a) `Block[{Language`$InternalContexts =
-  DeleteCases[…, Wolfram`AgentTools`*]}, …]` dev-bundling bridge so AgentTools's own definitions are
+  payload in a single deploy helper that combines both fixes — (a)
+  ``Block[{Language`$InternalContexts = Select[Language`$InternalContexts, Not@*StringStartsQ["Wolfram`AgentTools`"]]}, …]`` dev-bundling bridge so AgentTools's own definitions are
   captured, and (b) the paclet's existing NOENTRY-aware `extendedFullDefinition` /
-  `Language`ExtendedFullDefinition[]=defs; expr` injection (`Utilities.wl:16–103`, reused as-is) so
+  ``Language`ExtendedFullDefinition[]=defs; expr`` injection (`Utilities.wl:16–103`, reused as-is) so
   custom tool functions inside `LLMTool`s are captured (do **not** rely on `CloudDeploy`'s own capture —
   it is NOENTRY-blocked). Implement exported `CloudDeployMCPServer` (`catchMine @ cloudDeployEndpoint`)
   + declarations (`Main.wl` list + protected names, `PacletInfo.wl` `"Symbols"`). Add the
