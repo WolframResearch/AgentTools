@@ -282,7 +282,7 @@ VerificationTest[
 (*InstallMCPServer with ToolOptions*)
 VerificationTest[
     Module[ { configFile, name, server, result, data, env },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts_", CreateUUID[] ];
         server = CreateMCPServer[
             name,
@@ -304,7 +304,7 @@ VerificationTest[
 
 VerificationTest[
     Module[ { configFile, name, server, result, data, env, toolOpts },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts2_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts2_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts2_", CreateUUID[] ];
         server = CreateMCPServer[
             name,
@@ -328,7 +328,7 @@ VerificationTest[
 
 VerificationTest[
     Module[ { configFile, name, server, result, data, env },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts3_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts3_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts3_", CreateUUID[] ];
         server = CreateMCPServer[
             name,
