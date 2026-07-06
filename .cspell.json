@@ -106,6 +106,9 @@
         "xdigit",
         "zoomable"
     ],
+    "ignorePaths": [
+        "*.nb"
+    ],
     "ignoreRegExpList": [
         "\\:\\:[a-z]+", // message names
         "\\\\:[0-9a-fA-F]+", // unicode characters
