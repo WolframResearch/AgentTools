@@ -128,7 +128,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **5. Server embedding + `CloudDeployMCPServer`**
+- [x] **5. Server embedding + `CloudDeployMCPServer`**
 
   The most delicate part: make `/mcp` reconstruct the server (including anonymous custom tool
   functions) in a bare cloud kernel. Build the definition-bearing `Delayed[RunCloudMCPServer[obj]]`
@@ -142,12 +142,17 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
   `CloudDeployFailed` message tag to `Messages.wl`. Built-in servers additionally require
   `Wolfram/Chatbook` in the cloud kernel (ensured by the shared bootstrapping already moved in Task 1).
 
-  - [ ] Deploy a built-in server (e.g. `"WolframLanguage"`) with a `PermissionsKey`; returned object is
-        the `/mcp` `CloudObject`; `initialize`/`tools/list`/`tools/call` work against it.
-  - [ ] Deploy a **custom self-contained** server (anonymous pure-function tool) and confirm it works
-        with no relevant paclet pre-installed (custom-function capture + dev bundling).
-  - [ ] Both `Authorization: Bearer <key>` and `?_key=<key>` auth forms succeed; no/invalid key rejected
-        by the cloud before the handler runs.
+  - [x] Deploy a built-in server (e.g. `"WolframLanguage"`) with a `PermissionsKey`; returned object is
+        the `/mcp` `CloudObject`; `initialize`/`tools/list`/`tools/call` work against it. (Verified live:
+        `tools/list` returned all 7 built-in tools; `WolframLanguageEvaluator` `2+2` → `Out[1]= 4` — the
+        Chatbook cold-start bootstrapping resolves in the cloud kernel.)
+  - [x] Deploy a **custom self-contained** server (anonymous pure-function tool) and confirm it works
+        with no relevant paclet pre-installed (custom-function capture + dev bundling). (Automated
+        `CloudDeploy-Endpoint-EndToEnd` test deploys via `CloudDeployMCPServer` and a NOENTRY-hidden
+        helper returns `Prime[5]+1000 = 1011` from a bare cloud kernel.)
+  - [x] Both `Authorization: Bearer <key>` and `?_key=<key>` auth forms succeed; no/invalid key rejected
+        by the cloud before the handler runs. (Verified live: Bearer & `?_key=` both → `1011`; no key and
+        wrong key both → `401` from the cloud before the handler runs.)
 
   (Requires cloud connectivity; gate or mark cloud-dependent tests accordingly.)
 

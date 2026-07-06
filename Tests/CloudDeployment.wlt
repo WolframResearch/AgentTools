@@ -901,4 +901,201 @@ VerificationTest[
     TestID   -> "CloudHandler-ToolFailure-32603In200"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*CloudDeployMCPServer (server embedding & deployment)*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Export & message wiring*)
+
+VerificationTest[
+    MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`CloudDeployMCPServer" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Export-Protected"
+]
+
+VerificationTest[
+    MatchQ[ DownValues @ Wolfram`AgentTools`CloudDeployMCPServer, { __ } ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Export-HasDefinition"
+]
+
+(* The CloudDeployFailed message tag is registered (throwFailure requires it to exist). *)
+VerificationTest[
+    StringQ @ MessageName[ Wolfram`AgentTools`AgentTools, "CloudDeployFailed" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Message-CloudDeployFailedExists"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fixtures*)
+
+(* A helper referenced INSIDE the tool function, i.e. hidden behind LLMTool's NOENTRY flag. Its definition
+   is only reconstructible in a bare cloud kernel if the NOENTRY-aware capture picks it up. *)
+cloudEmbedHelper[ n_ ] := Prime[ n ] + 1000;
+
+(* A fully self-contained custom server: an anonymous pure-function tool closing over cloudEmbedHelper,
+   with no built-in/paclet/Chatbook dependency. *)
+cloudEmbedServer = Wolfram`AgentTools`MCPServerObject[ <|
+    "Location"     -> "BuiltIn",
+    "LLMEvaluator" -> <| "Tools" -> {
+        LLMTool[ "PrimePlus", { "n" -> "Integer" }, cloudEmbedHelper[ #n ] & ]
+    } |>
+|> ];
+
+(* The definition-bearing Delayed[...] payload the deploy helper produces. Building it runs the full
+   NOENTRY-aware / internal-contexts capture over the RunCloudMCPServer dependency tree. *)
+cloudEmbedPayload = Wolfram`AgentTools`Server`Cloud`Private`cloudMCPServerPayload @ cloudEmbedServer;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*deAgentToolsInternalContexts (dev-bundling bridge)*)
+
+(* Removes every Wolfram`AgentTools`* entry so those definitions can be captured rather than stripped. *)
+VerificationTest[
+    FreeQ[
+        Wolfram`AgentTools`Server`Cloud`Private`deAgentToolsInternalContexts[ ],
+        _String? (StringStartsQ[ "Wolfram`AgentTools`" ])
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "DeAgentToolsInternalContexts-RemovesAgentTools"
+]
+
+(* Leaves the other internal contexts (e.g. Wolfram`Chatbook`*, which stays internal and is installed at
+   cold start rather than bundled) intact -- only the AgentTools entries are dropped. *)
+VerificationTest[
+    With[
+        {
+            stripped  = Wolfram`AgentTools`Server`Cloud`Private`deAgentToolsInternalContexts[ ],
+            agentToolEntries = Select[ Language`$InternalContexts, StringQ[ # ] && StringStartsQ[ #, "Wolfram`AgentTools`" ] & ]
+        },
+        {
+            Complement[ Language`$InternalContexts, stripped ] === agentToolEntries,
+            SubsetQ[ Language`$InternalContexts, stripped ]
+        }
+    ],
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "DeAgentToolsInternalContexts-KeepsOthers"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudMCPServerPayload (definition-bearing payload)*)
+
+(* The payload is a held Delayed[...] -- the handler is NOT evaluated at build time. *)
+VerificationTest[
+    Head @ cloudEmbedPayload,
+    Delayed,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerPayload-IsDelayed"
+]
+
+(* The NOENTRY-hidden helper's definition is captured (flag-based blocking overcome). *)
+VerificationTest[
+    ! FreeQ[ cloudEmbedPayload, cloudEmbedHelper ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerPayload-CapturesNoEntryHelper"
+]
+
+(* The AgentTools handler tree is captured (context-based stripping overcome by the dev bridge). *)
+VerificationTest[
+    ! FreeQ[ cloudEmbedPayload, Wolfram`AgentTools`Server`Cloud`Private`runCloudMCPServer ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerPayload-CapturesHandler"
+]
+
+(* The gathered definitions are injected via Language`ExtendedFullDefinition[ ] = defs, so the cloud
+   kernel restores them on each request. *)
+VerificationTest[
+    ! FreeQ[ cloudEmbedPayload, HoldPattern[ Language`ExtendedFullDefinition[ ] = _ ] ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerPayload-HasEFDInjection"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*injectServerDefinitions*)
+
+(* An empty DefinitionList needs no injection: just the held handler call, no EFD assignment. *)
+VerificationTest[
+    With[
+        { payload = Wolfram`AgentTools`Server`Cloud`Private`injectServerDefinitions[
+            Language`DefinitionList[ ], cloudEmbedServer ] },
+        { Head @ payload, FreeQ[ payload, Language`ExtendedFullDefinition ] }
+    ],
+    { Delayed, True },
+    SameTest -> MatchQ,
+    TestID   -> "InjectServerDefinitions-EmptyNoInjection"
+]
+
+(* A non-empty DefinitionList is injected ahead of the held handler call. *)
+VerificationTest[
+    With[
+        { payload = Wolfram`AgentTools`Server`Cloud`Private`injectServerDefinitions[
+            Language`DefinitionList[ HoldForm[ Global`someSym ] -> { } ], cloudEmbedServer ] },
+        { Head @ payload, ! FreeQ[ payload, HoldPattern[ Language`ExtendedFullDefinition[ ] = _ ] ] }
+    ],
+    { Delayed, True },
+    SameTest -> MatchQ,
+    TestID   -> "InjectServerDefinitions-NonEmptyInjects"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*End-to-end deployment (cloud-gated)*)
+
+(* Deploy the self-contained custom server to the real cloud and exercise it. Gated on $CloudConnected:
+   when there is no cloud session (the usual CI case) the probe returns "no-cloud" and the test passes
+   trivially; when connected it deploys via CloudDeployMCPServer, authenticates with a PermissionsKey via
+   the ?_key= URL form, calls the NOENTRY-hidden tool (Prime[5] + 1000 = 1011), and cleans up. This
+   confirms both capture mechanisms end to end -- the custom tool function and the AgentTools dev bundle
+   -- with no relevant paclet pre-installed. *)
+cloudDeployEndToEndProbe[ ] := If[ ! TrueQ @ $CloudConnected,
+    "no-cloud",
+    Module[ { key, obj, content },
+        key = CreateUUID[ ];
+        obj = Wolfram`AgentTools`CloudDeployMCPServer[
+            cloudEmbedServer,
+            "Claude/agenttools-cloud-test",
+            Permissions -> { PermissionsKey[ key ] -> "Execute" }
+        ];
+        content = If[ MatchQ[ obj, _CloudObject ],
+            Module[ { resp },
+                resp = URLRead @ HTTPRequest[
+                    First[ obj ] <> "?_key=" <> key,
+                    <|
+                        "Method"  -> "POST",
+                        "Headers" -> <| "Content-Type" -> "application/json", "Accept" -> "application/json" |>,
+                        "Body"    -> Developer`WriteRawJSONString @ <|
+                            "jsonrpc" -> "2.0", "id" -> 1, "method" -> "tools/call",
+                            "params"  -> <| "name" -> "PrimePlus", "arguments" -> <| "n" -> 5 |> |>
+                        |>
+                    |>
+                ];
+                Quiet @ Developer`ReadRawJSONString[ resp[ "Body" ] ][ "result", "content" ]
+            ],
+            obj
+        ];
+        Quiet[ DeleteObject @ obj; DeleteObject @ PermissionsKey @ key ];
+        content
+    ]
+];
+
+VerificationTest[
+    cloudDeployEndToEndProbe[ ],
+    "no-cloud" | { KeyValuePattern[ { "type" -> "text", "text" -> "1011" } ] },
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Endpoint-EndToEnd"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

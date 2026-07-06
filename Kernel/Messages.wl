@@ -97,4 +97,7 @@ AgentTools::UnrecognizedToolOption         = "Warning: Unrecognized tool name in
 AgentTools::UnrecognizedToolOptionName     = "Warning: Unrecognized option \"`1`\" for tool \"`2`\" in ToolOptions.";
 AgentTools::InvalidToolOptionValue         = "Warning: Invalid value for tool \"`1`\" in ToolOptions: `2`. Expected an Association. This entry will be ignored.";
 
+(* Cloud deployment messages *)
+AgentTools::CloudDeployFailed              = "Failed to deploy MCP server to the cloud: `1`.";
+
 EndPackage[ ];

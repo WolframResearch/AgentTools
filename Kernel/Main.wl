@@ -20,6 +20,7 @@ System`DeployAgentTools;
 `$LastAgentToolsFailureText;
 `$SupportedMCPClients;
 `AgentTools;
+`CloudDeployMCPServer;
 `CodeInspectorToolFunction;
 `CreateMCPServer;
 `CreatePreferencesContent;
@@ -108,6 +109,7 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "$LastAgentToolsFailureText",
     "$SupportedMCPClients",
     "AgentTools",
+    "CloudDeployMCPServer",
     "CodeInspectorToolFunction",
     "CreateMCPServer",
     "CreatePreferencesContent",

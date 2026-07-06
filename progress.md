@@ -289,3 +289,93 @@ serialize as `Delayed[RunCloudMCPServer[obj]]`. It resolves all state from `obj`
 definitions captured (the `Language`$InternalContexts` bridge + NOENTRY-aware `extendedFullDefinition`).
 The `HTTPRequestData[]`/real-cloud body path (simulation returns `None` for the body under
 `GenerateHTTPResponse`) is first exercised for real when Task 5 deploys an endpoint.
+
+## Session 6
+
+**Completed Task 5: Server embedding + `CloudDeployMCPServer`.** The delicate part — making `/mcp`
+reconstruct the server (incl. anonymous custom tool functions) in a bare cloud kernel — plus the
+exported endpoint-only deploy function. All new code lives in `Kernel/Server/Cloud.wl`.
+
+**Proven end-to-end against the REAL cloud before writing a line of committed code.** This kernel
+(`$CloudConnected` is True; the WolframLanguageEvaluator session has the paclet loaded) let me
+prototype the embedding inline with the loaded internals and deploy to `/Claude/...`. That de-risked
+the one-way-door question — *does `CloudDeploy` preserve the literal `DefinitionList` or re-strip
+internal-context defs from it?* Answer: **it preserves it** (no re-strip), so the primary
+inline-injection approach works; the spec's WXF-to-Private-object fallback is not needed.
+
+**Source (`Cloud.wl`), all file-private except the exported symbol:**
+- `CloudDeployMCPServer[obj_, args___] := catchMine @ cloudDeployEndpoint[obj, args]` (exported;
+  declared in `Main.wl` list + `$AgentToolsProtectedNames`, and `PacletInfo.wl` `"Symbols"`).
+- `cloudDeployEndpoint` — 2 forms: `[obj_, opts:OptionsPattern[]] -> [obj, Automatic, opts]` and
+  `[obj_, target:$$cloudDeployTarget, opts:OptionsPattern[]]`. Resolves the server
+  (`ensureMCPServerExists @ MCPServerObject @ obj`, idempotent on an MCPServerObject), builds the
+  payload, deploys, validates. `Options = {Permissions :> $Permissions}` (ambient default is
+  `"Private"`).
+- `cloudMCPServerPayload[server_MCPServerObject]` — **the delicate builder.** Runs
+  `extendedFullDefinition[Delayed @ RunCloudMCPServer @ server]` inside
+  `Block[{Language`$InternalContexts = deAgentToolsInternalContexts[]}, …]`, then
+  `injectServerDefinitions`. Returns a held `Delayed[Language`ExtendedFullDefinition[]=defs;
+  RunCloudMCPServer[server]]`.
+- `deAgentToolsInternalContexts[]` — `DeleteCases[Language`$InternalContexts,
+  _String?(StringStartsQ["Wolfram`AgentTools`"])]` (the dev bridge — removes only AgentTools;
+  Chatbook/DiffTools stay internal). The `_String?` guard matters: a bare `_?` trips
+  `StringStartsQ::strse` on non-string subexpressions when used under `FreeQ` (though `DeleteCases`
+  at level 1 wouldn't).
+- `injectServerDefinitions`, `deployMCPEndpoint` (anonymous vs String/CloudObject target),
+  `filteredCloudDeployOptions` (drops Permissions to avoid a dup), `cloudDeployResult` (CloudObject →
+  itself; else `throwFailure["CloudDeployFailed", …]`). New `CloudDeployFailed` tag in `Messages.wl`.
+
+**CRITICAL hold/pattern insight (get this wrong and nothing is captured):** `extendedFullDefinition`
+is `HoldFirst`, but **pattern-variable substitution beats HoldFirst** — so with
+`cloudMCPServerPayload[server_MCPServerObject]`, the `server` VALUE (the MCPServerObject, with its
+NOENTRY-flagged `LLMTool`s) is substituted *lexically* into the held argument before the hold takes
+effect. That lexical presence is exactly what lets `unpackNoEntry` reach the tools and capture
+functions hidden behind `NOENTRY`. A prototype using a *global variable* instead of a pattern var
+must force the value in with `With[{srv = theVar}, …]` — else `server` stays a symbol, the LLMTool
+sits behind its OwnValue, and the custom function is NOT captured. The real code needs no `With`
+because the pattern var already does it. `RunCloudMCPServer` is never evaluated at build time (stays
+held inside `Delayed`, `HoldFirst`).
+
+**GOTCHA that the cloud-connected test caught (not CodeInspector):** `$$cloudDeployTarget` must be
+assigned **before** `cloudDeployEndpoint`'s definitions load — a `target:$$cloudDeployTarget` pattern
+set while `$$cloudDeployTarget` is still an undefined symbol stores an unmatchable pattern → every
+real call falls through to `endDefinition`'s `UnhandledDownValues`. I'd first placed it in a
+subsubsection *after* `endDefinition`; moved it above `beginDefinition`. Lesson: pattern-alias `$$`
+vars are evaluated at definition time — define them upstream.
+
+**Verification (all green):**
+- `Tests/CloudDeployment.wlt`: **88/88** (was 76; +12 Task-5 tests: export/message wiring,
+  `deAgentToolsInternalContexts`, `cloudMCPServerPayload` structure incl. NOENTRY-helper +
+  dev-bridge-handler capture + EFD-injection + not-evaluated, `injectServerDefinitions`, and a
+  cloud-gated end-to-end).
+- **The cloud-gated `CloudDeploy-Endpoint-EndToEnd` test RAN FOR REAL** — the fresh TestReport kernel
+  turned out to be `$CloudConnected`, so it deployed a custom self-contained server via the actual
+  `CloudDeployMCPServer` path and got `1011` back (`Prime[5]+1000`), then cleaned up. (~40s of the 46s
+  file time.) It's gated `If[!TrueQ@$CloudConnected, "no-cloud", …]` with the expected value
+  `"no-cloud" | {…"1011"…}`, so it's a fast no-op pass in a disconnected CI kernel.
+- **Built-in server verified live** (evaluator, `MCPServerObject["WolframLanguage"]`): deploy →
+  initialize/tools/list (all 7 real tools) / `tools/call` `WolframLanguageEvaluator["2 + 2"]` →
+  `Out[1]= 4`. Confirms the built-in + Chatbook cold-start path in the cloud.
+- **Auth (live):** `Authorization: Bearer <key>` (OpenAI) and `?_key=<key>` (Anthropic) both → `1011`;
+  no key / wrong key → `401` (cloud rejects before the handler runs).
+- Regression: `MCPApps.wlt` 83/83, `MCPServerObject.wlt` 71/71. CodeInspector clean on `Cloud.wl`
+  (incl. Scoping).
+- All test cloud objects + keys deleted; `CloudObjects["Claude"]` shows no `mcp-*`/`agenttools-*`
+  strays.
+
+**Env notes for later sessions:**
+- **The WolframLanguageEvaluator kernel (and, surprisingly, the fresh TestReport kernel) are
+  `$CloudConnected` here** — Session 2's "no subprocess tests" caveat still holds, but cloud deploys
+  DO work from both. A real `CloudDeploy` of the endpoint is ~12 MB and cold-start takes tens of
+  seconds; keep cloud-gated tests to one round-trip.
+- To end-to-end test cloud code *without* reloading the paclet in the live server, prototype inline in
+  the evaluator using the already-loaded `Wolfram`AgentTools`…` symbols (never `Get` the paclet
+  there). Deploy under `/Claude/` (per user's global CLAUDE.md) and always `DeleteObject` the object
+  after; deleting the object also removes its `PermissionsKey` (so `DeleteObject[PermissionsKey[…]]`
+  then returns `$Failed`/`keynf` — harmless).
+- `extendedFullDefinition` and other `Wolfram`AgentTools`Common`` internals show `0` from
+  `DownValues[…]` in the evaluator because they're `ReadProtected` — use `SymbolDefinition` to inspect.
+- **For Task 8** (`CloudDeploy` UpValue + directory bundle): reuse `cloudDeployEndpoint`/
+  `cloudMCPServerPayload` for `/mcp`; add the `$CloudConnected` guard + `NotCloudConnected`/
+  `InvalidCloudTarget` tags there (deliberately NOT in Task 5). `deployMCPEndpoint` already handles
+  String/CloudObject/Automatic targets and forwards options.

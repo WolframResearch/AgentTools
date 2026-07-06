@@ -443,6 +443,171 @@ emptyResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*CloudDeployMCPServer*)
+(* Deploy just the /mcp endpoint for a server object, with caller-controlled path and permissions. This
+   is the primitive that the CloudDeploy UpValue (Task 8) reuses for the /mcp object, and is also useful
+   directly when the landing/admin pages are not wanted. Unlike RunCloudMCPServer (an HTTP handler that
+   must always return a response), this is an ordinary exported function: it wraps its body in catchMine
+   so an error surfaces as a Failure[...]. *)
+
+CloudDeployMCPServer // beginDefinition;
+CloudDeployMCPServer[ obj_, args___ ] := catchMine @ cloudDeployEndpoint[ obj, args ];
+CloudDeployMCPServer // endExportedDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudDeployEndpoint*)
+(* Resolve the server object, build the definition-bearing Delayed[RunCloudMCPServer[obj]] payload, and
+   CloudDeploy it. An omitted target deploys anonymously (server-assigned path); an explicit String or
+   CloudObject target overrides that. Permissions default to the ambient $Permissions and are applied to
+   the deployed object; any other CloudDeploy options are forwarded. *)
+
+(* A deployment target is a cloud path string, an explicit CloudObject, or Automatic (anonymous). Defined
+   before the definitions below so the pattern resolves when they are set. *)
+$$cloudDeployTarget = _String | _CloudObject | Automatic;
+
+cloudDeployEndpoint // beginDefinition;
+cloudDeployEndpoint // Options = { Permissions :> $Permissions };
+
+(* An omitted target -> anonymous deployment. *)
+cloudDeployEndpoint[ obj_, opts: OptionsPattern[ ] ] :=
+    cloudDeployEndpoint[ obj, Automatic, opts ];
+
+cloudDeployEndpoint[ obj_, target: $$cloudDeployTarget, opts: OptionsPattern[ ] ] := Enclose[
+    Module[ { server, payload, perms, deployed },
+        server   = ConfirmBy[ ensureMCPServerExists @ MCPServerObject @ obj, MCPServerObjectQ, "Server" ];
+        payload  = ConfirmMatch[ cloudMCPServerPayload @ server, _Delayed, "Payload" ];
+        perms    = OptionValue[ Permissions ];
+        deployed = deployMCPEndpoint[ payload, target, perms, opts ];
+        cloudDeployResult @ deployed
+    ],
+    throwInternalFailure
+];
+
+cloudDeployEndpoint // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployMCPEndpoint*)
+(* CloudDeploy the (already definition-bearing, held) Delayed payload at the resolved permissions. An
+   Automatic target deploys anonymously; a String/CloudObject target deploys there. Permissions is passed
+   explicitly and dropped from the forwarded options to avoid a duplicate. *)
+deployMCPEndpoint // beginDefinition;
+
+deployMCPEndpoint[ payload_, Automatic, perms_, opts: OptionsPattern[ ] ] :=
+    CloudDeploy[ payload, Permissions -> perms, filteredCloudDeployOptions @ opts ];
+
+deployMCPEndpoint[ payload_, target: _String | _CloudObject, perms_, opts: OptionsPattern[ ] ] :=
+    CloudDeploy[ payload, target, Permissions -> perms, filteredCloudDeployOptions @ opts ];
+
+deployMCPEndpoint // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*filteredCloudDeployOptions*)
+(* Keep only valid CloudDeploy options, dropping Permissions (which is supplied explicitly). *)
+filteredCloudDeployOptions // beginDefinition;
+filteredCloudDeployOptions[ opts: OptionsPattern[ ] ] :=
+    Sequence @@ DeleteCases[
+        FilterRules[ { opts }, Options @ CloudDeploy ],
+        HoldPattern[ Permissions -> _ ]
+    ];
+filteredCloudDeployOptions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudDeployResult*)
+(* CloudDeploy returns a CloudObject on success; anything else (e.g. $Failed on a permission or
+   connectivity error) becomes a CloudDeployFailed failure. *)
+cloudDeployResult // beginDefinition;
+cloudDeployResult[ obj_CloudObject ] := obj;
+cloudDeployResult[ other_ ] := throwFailure[ "CloudDeployFailed", other ];
+cloudDeployResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Server Embedding*)
+(* The deployed /mcp endpoint must reconstruct the server -- including any custom, anonymous tool
+   functions -- at request time, in a cloud kernel that lacks the user's local definitions. Two
+   independent stripping mechanisms must be overcome:
+
+     1. Context-based stripping. Wolfram`AgentTools`* is a member of Language`$InternalContexts, so the
+        AgentTools definitions reachable from RunCloudMCPServer[obj] are stripped from serialized/deployed
+        expressions by default. Gathering them inside a Block that removes Wolfram`AgentTools`* from that
+        list captures them instead (a dev-bundling bridge, removed once a cloud-native paclet exists).
+
+     2. Flag-based blocking. LLMTool carries the NOENTRY flag, so ordinary ExtendedFullDefinition (and
+        CloudDeploy's own capture) cannot see the user-defined functions inside a tool. The paclet's
+        NOENTRY-aware extendedFullDefinition recursively unpacks NOENTRY subexpressions so those functions
+        are captured.
+
+   The gathered definitions are injected into the deployed expression with the same
+   `Language`ExtendedFullDefinition[ ] = defs; expr` strategy binarySerializeWithDefinitions uses, so the
+   cloud kernel restores them on each (stateless) request. Chatbook is deliberately not bundled: built-in
+   tools that call into it rely on Wolfram/Chatbook being installed at cold start (via the shared
+   bootstrapping in initializeServerState); a fully self-contained custom server needs no paclet present.
+   See Specs/CloudDeployment.md (Embedding the Server). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudMCPServerPayload*)
+(* Build the definition-bearing Delayed[RunCloudMCPServer[server]] expression to deploy at /mcp. server is
+   a pattern variable bound to the actual MCPServerObject, so its value is substituted into the held
+   argument of the HoldFirst extendedFullDefinition before the hold takes effect -- placing the server's
+   NOENTRY-flagged tools lexically inside the gathered expression so extendedFullDefinition can unpack
+   them. The gather runs inside the internal-contexts Block so AgentTools's own definitions are captured
+   too; RunCloudMCPServer is never evaluated here (it stays held inside Delayed). *)
+cloudMCPServerPayload // beginDefinition;
+
+cloudMCPServerPayload[ server_MCPServerObject ] := Enclose[
+    Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
+        Module[ { defs },
+            defs = ConfirmMatch[
+                extendedFullDefinition[ Delayed @ RunCloudMCPServer @ server ],
+                _Language`DefinitionList,
+                "Definitions"
+            ];
+            injectServerDefinitions[ defs, server ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+cloudMCPServerPayload // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*deAgentToolsInternalContexts*)
+(* Language`$InternalContexts with the Wolfram`AgentTools`* entry removed, so the dev-bundling bridge can
+   capture AgentTools's own definitions. Wolfram`Chatbook`* (and any other internal context) is left
+   intact -- Chatbook stays internal and is installed at cold start rather than bundled. *)
+deAgentToolsInternalContexts // beginDefinition;
+deAgentToolsInternalContexts[ ] :=
+    DeleteCases[ Language`$InternalContexts, _String? (StringStartsQ[ "Wolfram`AgentTools`" ]) ];
+deAgentToolsInternalContexts // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*injectServerDefinitions*)
+(* Wrap the handler call so the gathered definitions are restored before it runs. With injects the
+   DefinitionList and server value into the held Delayed body; Language`ExtendedFullDefinition[ ] = defs
+   re-establishes every captured definition in the (fresh, stateless) cloud kernel on each request, then
+   RunCloudMCPServer[server] handles it -- mirroring binarySerializeWithDefinitions. An empty
+   DefinitionList (no dependent definitions) needs no injection. *)
+injectServerDefinitions // beginDefinition;
+
+injectServerDefinitions[ Language`DefinitionList[ ], server_ ] :=
+    Delayed @ RunCloudMCPServer @ server;
+
+injectServerDefinitions[ defs_Language`DefinitionList, server_ ] :=
+    With[ { d = defs, o = server },
+        Delayed[ Language`ExtendedFullDefinition[ ] = d; RunCloudMCPServer[ o ] ]
+    ];
+
+injectServerDefinitions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
     Null
