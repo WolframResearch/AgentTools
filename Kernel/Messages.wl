@@ -99,5 +99,7 @@ AgentTools::InvalidToolOptionValue         = "Warning: Invalid value for tool \"
 
 (* Cloud deployment messages *)
 AgentTools::CloudDeployFailed              = "Failed to deploy MCP server to the cloud: `1`.";
+AgentTools::NotCloudConnected              = "A cloud connection is required to deploy an MCP server. Use CloudConnect to sign in.";
+AgentTools::InvalidCloudTarget             = "Invalid cloud deployment target: `1`.";
 
 EndPackage[ ];

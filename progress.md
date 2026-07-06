@@ -528,3 +528,89 @@ payload — no extra path plumbing for the admin API. The label store `<dir>/adm
 lazily on first `createKey` with a label (no need to pre-deploy it). Note `admin.html` uses `../index.html`
 and derives `/api/admin` from its own URL, so the directory must be served with the trailing-slash/
 index.html convention (same Task 11 browser check as the landing page).
+
+## Session 9
+
+**Completed Task 8: `CloudDeploy` UpValue + full directory bundle.** The headline integration —
+`CloudDeploy[MCPServerObject[…]]` now deploys the whole directory (`/mcp`, `/index.html`, `/assets/*`,
+`/api/info`, `/admin/index.html`, `/api/admin`) and returns the directory `CloudObject`, orchestrating
+the Task 5/6/7 primitives. All new code is in `Kernel/Server/Cloud.wl` (new "CloudDeploy (Full Directory
+Bundle)" section); `Kernel/Messages.wl` gains two tags. **Proven end-to-end against the real cloud in a
+fresh TestReport kernel** (which is `$CloudConnected` here), so the cloud-gated probe ran for real.
+
+**Source (`Cloud.wl`), all file-private except the UpValue:**
+- `MCPServerObject /: CloudDeploy[obj_MCPServerObject, args___] := catchTop[cloudDeployDirectory[obj,
+  args], MCPServerObject]` — mirrors the existing `DeleteObject`/`LLMConfiguration` upvalues. Lives in
+  `Cloud.wl`; `MCPServerObject` isn't protected yet when the `Server` context loads, so no unprotect
+  needed (Main.wl protects at its footer, after all files load).
+- `cloudDeployDirectory` — 3 overloads: `[obj, opts]`→`[obj, Automatic, opts]`; `[obj,
+  target:$$cloudDeployTarget, opts]` = the Enclose body (validate server → `$CloudConnected` guard →
+  resolve dir → `deployDirectoryBundle` → return dir); and an **InvalidCloudTarget fallback**
+  `[_, target:Except[$$cloudDeployTarget | _Rule | _RuleDelayed | {___Rule} | {___RuleDelayed}],
+  OptionsPattern[]]`. `Options = {Permissions :> $Permissions}`.
+- `resolveDeploymentDirectory[Automatic|_String|_CloudObject, perms]`, `deployDirectoryBundle`
+  (deploys /mcp first so its URL feeds /api/info; returns the flat list of all 7 deployed objects),
+  `deployEndpointObject`/`deployInfoObject`/`deployLandingAssets`/`deployAdminBundle`,
+  `cloudDeploymentSubObject`/`copyFileToCloud`/`cloudAssetDirectory`. Reuses Task 5's
+  `deployMCPEndpoint`/`cloudMCPServerPayload`/`cloudDeployResult`/`filteredCloudDeployOptions`, Task 6's
+  `cloudMCPServerInfo`, Task 7's `cloudAdminAPIPayload`.
+
+**Two deviations from the spec sketch — BOTH found by real-cloud probing, not CodeInspector or the
+in-process tests (they only surface when you actually deploy):**
+1. **Anonymous dir is `CloudObject[CreateUUID[], Permissions->perms]`, NOT `CloudObject[Permissions->
+   perms]`.** The bare form materializes a **leaf** at `/obj/<uuid>` (no username in the path); deploying
+   a child `<uuid>/mcp` under it fails with `CloudDeploy::cloudunknown`. A self-generated UUID *name*
+   gives a `/obj/<user>/<uuid>` prefix that nests correctly (same shape as the working Task-7 named-path
+   admin probe). Isolation-tested all three base forms to nail this down.
+2. **`cloudDeploymentSubObject` STRIPS the child's inherited `Permissions`** (`CloudObject[First @
+   FileNameJoin[…]]`). `FileNameJoin[{CloudObject[url, Permissions->perms], "api", "admin"}]` **propagates
+   perms to the child** (verified via `FullForm`), so the `/api/admin` deploy target carried the
+   directory's `PermissionsKey`, defeating its forced `Permissions->"Private"` → the admin API came back
+   NOT private. Stripping to the bare URL makes each deploy's explicit `Permissions` authoritative. The
+   admin *page* escaped this because `copyFileToCloud` already does `CloudObject[First @ target,
+   Permissions->…]` (First-strips). This was the one real bug the first E2E run caught (`adminAPIPrivate
+   -> False`); fixed + re-verified live (`{"Owner"->{…}}`, no key).
+
+Because the path helper is used only within `Cloud.wl`, it's **file-private** (matching Task 7's
+`adminMCPObject`/`adminKeyLabelStore`), so **`CommonSymbols.wl` needed no change** despite the spec's
+Files list — per the spec's own symbol-sharing rule (single-file → file-private), and this also sidesteps
+the `$deploymentsPath` collision the note worried about.
+
+**Pattern-dispatch confirmed safe (pre-verified before writing):** `$$cloudDeployTarget` is TYPED
+(`_String|_CloudObject|Automatic`), so a bare `Permissions->x` rule never matches the target overload —
+`CloudDeploy[server, Permissions->"Private"]` correctly routes to the anonymous form (tested:
+`CloudDeploy-Directory-OptionsNotTarget`). The `Except[…|_Rule|…]` fallback cleanly catches `42`
+(InvalidCloudTarget) while letting option-lists through.
+
+**Tests — `Tests/CloudDeployment.wlt` now 133 (was 125): +8 Task-8 tests**, all pass. New "CloudDeploy
+(Full Directory Bundle)" section: UpValue registered + message tags exist (2), sub-object path resolution
++ CloudObject passthrough (2), InvalidCloudTarget dispatch / NotCloudConnected guard / options-not-target
+routing (3, offline via `Quiet`+`Block[{$CloudConnected=False}]`), and the **cloud-gated
+`CloudDeploy-Directory-EndToEnd`** (1) that deploys via the real UpValue and asserts: dir is a
+`CloudObject`; all 5 sub-objects exist; /mcp,/index.html,/api/info carry the key; /admin/index.html and
+/api/admin are Private (no key); /mcp answers `PrimePlus[5]` → `1011`; then deletes everything.
+
+**Verification:** `CloudDeployment.wlt` **133/133** (the E2E probe ran for real; ~2.3 min file time is the
+three cloud round-trips: Task-5 endpoint + Task-7 admin + Task-8 directory). Regression: `MCPServerObject.wlt`
+**71/71** (the new UpValue doesn't disturb existing MCPServerObject behavior), `MCPApps.wlt` **83/83**
+(clean paclet load with the UpValue). CodeInspector **clean** (incl. Scoping) on `Cloud.wl`; the sole
+`CloudDeployment.wlt` warning is the pre-existing `Global`someSym` in Task 5's test. All probe cloud
+objects deleted; the two raw `/obj/<uuid>` anonymous leaves from the isolation probing confirmed 404.
+
+**Gotcha for the test author (cost me one E2E run):** Association multi-arg indexing `assoc["result",
+"content", 1, "text"]` does NOT navigate through a nested LIST — it stays unevaluated. Use Part
+`assoc[["result","content",1,"text"]]` for mixed key/integer paths.
+
+**Env note:** the fresh TestReport kernel is `$CloudConnected` here, so all three cloud-gated probes in
+`CloudDeployment.wlt` execute for real on every run. Keep prototyping inline in the live evaluator (loaded
+`Wolfram`AgentTools`Server`Cloud`Private`…` symbols; never `Get` the paclet there), deploy under `/Claude/`
+or anonymous UUIDs, and always `DeleteObject` after. `$CloudConnected` is `Block`-localizable
+(`Block[{$CloudConnected = False}, …]`) despite being a System symbol, which is how the disconnect guard is
+unit-tested offline.
+
+**For Task 9 (docs) / Task 10 (E2E):** the full bundle is live and correct. Task 9 documents
+`CloudDeploy[MCPServerObject[…]]` + `CloudDeployMCPServer`, the directory layout/permissions, bearer vs
+`?_key=` auth, the stateless/cold-start model, MCP-Apps, and admin key management. Task 10's browser check
+(#13) and OpenAI/Anthropic reproductions (#10) remain; note the anonymous dir URL is
+`…/obj/<user>/<uuid>/` and must be accessed with the trailing slash / `index.html` for the landing page's
+relative `assets/…` + `api/info` fetches to resolve.

@@ -1618,4 +1618,177 @@ VerificationTest[
     TestID   -> "Admin-KeyManagement-EndToEnd"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*CloudDeploy (Full Directory Bundle)*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fixtures*)
+
+(* A self-contained custom server (anonymous pure-function tool, no built-in/paclet dependency) used for the
+   directory-bundle tests. Prime[5] + 1000 = 1011 is the tool's answer, checked in the end-to-end probe. *)
+cloudDirServer = Wolfram`AgentTools`MCPServerObject[ <|
+    "Name"         -> "DirProbe",
+    "Location"     -> "BuiltIn",
+    "LLMEvaluator" -> <| "Tools" -> { LLMTool[ "PrimePlus", { "n" -> "Integer" }, Prime[ #n ] + 1000 & ] } |>
+|> ];
+
+(* A fake (undeployed) directory CloudObject. FileNameJoin resolves children purely by string manipulation,
+   so the sub-object path tests run fully in-process. *)
+cloudDirFakeDir = CloudObject[ "https://www.wolframcloud.com/obj/user/deploydir" ];
+
+cloudDirCallBody = Developer`WriteRawJSONString @ <|
+    "jsonrpc" -> "2.0", "id" -> 1, "method" -> "tools/call",
+    "params"  -> <| "name" -> "PrimePlus", "arguments" -> <| "n" -> 5 |> |>
+|>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*UpValue & message wiring*)
+
+(* CloudDeploy of an MCPServerObject is intercepted by an UpValue on MCPServerObject. *)
+VerificationTest[
+    ! FreeQ[ UpValues @ Wolfram`AgentTools`MCPServerObject, CloudDeploy ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-UpValueRegistered"
+]
+
+(* The NotCloudConnected and InvalidCloudTarget message tags are registered (throwFailure requires them). *)
+VerificationTest[
+    AllTrue[ { "NotCloudConnected", "InvalidCloudTarget" }, StringQ @ MessageName[ Wolfram`AgentTools`AgentTools, # ] & ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-MessageTagsExist"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Deployment path resolution (no cloud)*)
+
+(* Each deployment sub-object resolves as a child of the directory, joining the relative parts onto it. *)
+VerificationTest[
+    First /@ (
+        Wolfram`AgentTools`Server`Cloud`Private`cloudDeploymentSubObject[ cloudDirFakeDir, # ] & /@
+            { { "mcp" }, { "api", "info" }, { "index.html" }, { "admin", "index.html" }, { "api", "admin" } }
+    ),
+    {
+        "https://www.wolframcloud.com/obj/user/deploydir/mcp",
+        "https://www.wolframcloud.com/obj/user/deploydir/api/info",
+        "https://www.wolframcloud.com/obj/user/deploydir/index.html",
+        "https://www.wolframcloud.com/obj/user/deploydir/admin/index.html",
+        "https://www.wolframcloud.com/obj/user/deploydir/api/admin"
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-SubObjectPaths"
+]
+
+(* An explicit CloudObject target is used as the directory as given. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`resolveDeploymentDirectory[ cloudDirFakeDir, "Private" ],
+    cloudDirFakeDir,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-ResolveCloudObjectPassthrough"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Validation & dispatch (no cloud)*)
+
+(* A second argument that is neither a valid target nor an option -> InvalidCloudTarget (not an opaque
+   internal failure). *)
+VerificationTest[
+    Quiet @ CloudDeploy[ cloudDirServer, 42 ],
+    Failure[ tag_String /; StringEndsQ[ tag, "InvalidCloudTarget" ], _Association ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-InvalidTarget"
+]
+
+(* A disconnected session fails fast with NotCloudConnected rather than emitting an opaque cloud error. *)
+VerificationTest[
+    Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer ] ],
+    Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-NotCloudConnected"
+]
+
+(* A bare Permissions rule as the second argument is an option, not a target: it routes to the anonymous
+   form (and here hits the cloud guard), confirming it is NOT mistaken for an InvalidCloudTarget. *)
+VerificationTest[
+    Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer, Permissions -> "Private" ] ],
+    Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-OptionsNotTarget"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*End-to-end directory bundle (cloud-gated)*)
+
+(* Deploy the full directory bundle via the CloudDeploy UpValue and verify every spec requirement. Gated on
+   $CloudConnected: with no cloud session the probe returns "no-cloud" and the test passes trivially. When
+   connected it deploys with a PermissionsKey, then confirms: the returned object is a directory CloudObject;
+   /mcp, /index.html, /api/info, /admin/index.html, /api/admin all exist; /mcp, /index.html, /api/info carry
+   the resolved key permission while /admin/index.html and /api/admin are Private (no key); and /mcp answers
+   the tool call (Prime[5] + 1000 = 1011). Everything is deleted afterward. *)
+cloudDirProbeExercise[ dir_, key_ ] := Module[
+    { mcp, idx, info, adminPg, adminApi, css, js, permsOf, hasKey, isPrivate, call, obs },
+    mcp     = FileNameJoin @ { dir, "mcp" };
+    idx     = FileNameJoin @ { dir, "index.html" };
+    info    = FileNameJoin @ { dir, "api", "info" };
+    adminPg = FileNameJoin @ { dir, "admin", "index.html" };
+    adminApi = FileNameJoin @ { dir, "api", "admin" };
+    css     = FileNameJoin @ { dir, "assets", "landing.css" };
+    js      = FileNameJoin @ { dir, "assets", "landing.js" };
+    permsOf[ o_ ]   := Quiet @ Information[ o, "Permissions" ];
+    hasKey[ o_ ]    := MatchQ[ permsOf @ o, _List ] && ! FreeQ[ permsOf @ o, PermissionsKey[ key ] ];
+    isPrivate[ o_ ] := MatchQ[ permsOf @ o, _List ] && FreeQ[ permsOf @ o, _PermissionsKey ];
+    call = URLRead @ HTTPRequest[
+        First[ mcp ] <> "?_key=" <> key,
+        <| "Method" -> "POST", "Headers" -> <| "Content-Type" -> "application/json", "Accept" -> "application/json" |>, "Body" -> cloudDirCallBody |>
+    ];
+    obs = <|
+        "dirIsCloudObject" -> True,
+        "allExist"         -> AllTrue[ { mcp, idx, info, adminPg, adminApi }, MatchQ[ permsOf @ #, _List ] & ],
+        "mcpHasKey"        -> hasKey @ mcp,
+        "indexHasKey"      -> hasKey @ idx,
+        "infoHasKey"       -> hasKey @ info,
+        "adminPagePrivate" -> isPrivate @ adminPg,
+        "adminAPIPrivate"  -> isPrivate @ adminApi,
+        "mcpCall"          -> Quiet @ Developer`ReadRawJSONString[ call[ "Body" ] ][[ "result", "content", 1, "text" ]]
+    |>;
+    Quiet[ DeleteObject /@ { mcp, idx, info, adminPg, adminApi, css, js }; DeleteObject @ dir; DeleteObject @ PermissionsKey @ key ];
+    obs
+];
+
+cloudDirProbe[ ] := If[ ! TrueQ @ $CloudConnected,
+    "no-cloud",
+    Module[ { key, perms, dir },
+        key   = CreateUUID[ ];
+        perms = { PermissionsKey[ key ] -> { "Read", "Execute" } };
+        dir   = CloudDeploy[ cloudDirServer, Permissions -> perms ];
+        If[ ! MatchQ[ dir, _CloudObject ],
+            <| "dirIsCloudObject" -> False, "result" -> dir |>,
+            cloudDirProbeExercise[ dir, key ]
+        ]
+    ]
+];
+
+VerificationTest[
+    cloudDirProbe[ ],
+    "no-cloud" | KeyValuePattern @ {
+        "dirIsCloudObject" -> True,
+        "allExist"         -> True,
+        "mcpHasKey"        -> True,
+        "indexHasKey"      -> True,
+        "infoHasKey"       -> True,
+        "adminPagePrivate" -> True,
+        "adminAPIPrivate"  -> True,
+        "mcpCall"          -> "1011"
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-EndToEnd"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

@@ -225,7 +225,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **8. `CloudDeploy` UpValue + full directory bundle**
+- [x] **8. `CloudDeploy` UpValue + full directory bundle**
 
   The headline integration: `MCPServerObject /: CloudDeploy[obj, args___] := catchTop[
   cloudDeployDirectory[…], MCPServerObject]` (mirror the existing UpValues at
@@ -240,14 +240,31 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
   `FilterRules`-by-`Options` pattern (`DeployAgentTools.wl:254–259,373`). Add `NotCloudConnected` and
   `InvalidCloudTarget` message tags. Return the directory `CloudObject` (no local registry).
 
-  - [ ] `CloudDeploy[server]` (anonymous) and `CloudDeploy[server,"Name"]` return the directory object;
-        `/mcp`, `/index.html`, `/api/info`, `/admin/index.html`, `/api/admin` all exist.
-  - [ ] `/index.html`, `/api/info`, `/mcp` carry resolved `Permissions`; `/admin/*`, `/api/admin` are
-        `"Private"` and unreachable without owner credentials.
-  - [ ] Disconnected session → `NotCloudConnected` failure.
+  - [x] `CloudDeploy[server]` (anonymous) and `CloudDeploy[server,"Name"]` return the directory object;
+        `/mcp`, `/index.html`, `/api/info`, `/admin/index.html`, `/api/admin` all exist. (Cloud-gated
+        `CloudDeploy-Directory-EndToEnd` deploys the anonymous form and asserts all five sub-objects
+        exist; the named form shares `deployDirectoryBundle` and is covered by the offline path/resolve
+        unit tests plus a live isolation probe confirming named prefixes nest.)
+  - [x] `/index.html`, `/api/info`, `/mcp` carry resolved `Permissions`; `/admin/*`, `/api/admin` are
+        `"Private"` and unreachable without owner credentials. (Same probe: the three public objects
+        carry the deploy `PermissionsKey`; `/admin/index.html` and `/api/admin` show only `Owner` perms,
+        and a live probe confirmed `?_key=<non-owner-key>` against `/api/admin` returns `401`.)
+  - [x] Disconnected session → `NotCloudConnected` failure. (`CloudDeploy-Directory-NotCloudConnected`
+        via `Block[{$CloudConnected = False}, …]`, runs offline.)
 
-  **Files:** `Kernel/Server/Cloud.wl`, `Kernel/CommonSymbols.wl`, `Kernel/Messages.wl`,
-  `Tests/CloudDeployment.wlt`
+  Deviations from the sketch, both validated against the real cloud: (a) the anonymous directory is
+  `CloudObject[CreateUUID[], Permissions->perms]`, **not** the bare `CloudObject[Permissions->perms]` —
+  the latter materializes a leaf at `/obj/<uuid>` that cannot hold children (child deploys fail with
+  `cloudunknown`); a named-UUID prefix under the user area nests correctly. (b) The deployment-path
+  helper (`cloudDeploymentSubObject`) is **file-private in `Cloud.wl`** (matching the Task-7
+  `adminMCPObject`/`adminKeyLabelStore` sibling-resolvers), not in `CommonSymbols.wl` — it is used only
+  within `Cloud.wl`, so per the spec's own symbol-sharing rule a shared declaration is unwarranted (and
+  file-private sidesteps the `$deploymentsPath` collision the note worried about). It also **strips the
+  inherited `Permissions`** from the joined child (`FileNameJoin` propagates the directory's key perm to
+  every child), so each deploy's explicit `Permissions` stays authoritative — without this the Private
+  admin objects leak the directory key. `CommonSymbols.wl` therefore needed no change.
+
+  **Files:** `Kernel/Server/Cloud.wl`, `Kernel/Messages.wl`, `Tests/CloudDeployment.wlt`
 
 ---
 

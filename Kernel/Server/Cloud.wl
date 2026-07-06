@@ -954,6 +954,224 @@ injectAdminDefinitions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*CloudDeploy (Full Directory Bundle)*)
+(* The headline integration: CloudDeploy of an MCPServerObject deploys a full directory bundle -- the live
+   /mcp endpoint, a public landing page (/index.html + /assets/* + /api/info), and an owner-only admin page
+   (/admin/index.html + /api/admin) -- and returns the directory CloudObject. It is defined as an UpValue on
+   MCPServerObject, mirroring the existing DeleteObject / LLMConfiguration upvalues (MCPServerObject.wl), and
+   orchestrates the primitives built by the earlier tasks: the endpoint payload (cloudMCPServerPayload) and
+   deploy helper (deployMCPEndpoint), the /api/info generator (cloudMCPServerInfo), and the admin payload
+   (cloudAdminAPIPayload). /mcp, /index.html, /assets/*, and /api/info carry the resolved Permissions;
+   /admin/index.html and /api/admin are always Private. See Specs/CloudDeployment.md (CloudDeploy UpValue,
+   Deployed Directory Layout). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*UpValue*)
+(* Mirrors the MCPServerObject upvalues in MCPServerObject.wl. Defined in Cloud.wl (where cloudDeployDirectory
+   lives); MCPServerObject is not yet protected when the Server context loads, so no unprotect is needed. *)
+MCPServerObject /: CloudDeploy[ obj_MCPServerObject, args___ ] :=
+    catchTop[ cloudDeployDirectory[ obj, args ], MCPServerObject ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudDeployDirectory*)
+(* Validate the server, require a cloud session, resolve the directory CloudObject, deploy the bundle, and
+   return the directory. Permissions defaults to the ambient $Permissions and applies to /mcp, /index.html,
+   /assets/*, and /api/info; the admin objects are forced Private inside deployDirectoryBundle. *)
+cloudDeployDirectory // beginDefinition;
+cloudDeployDirectory // Options = { Permissions :> $Permissions };
+
+(* An omitted target -> anonymous deployment (a server-assigned directory prefix). *)
+cloudDeployDirectory[ obj_, opts: OptionsPattern[ ] ] :=
+    cloudDeployDirectory[ obj, Automatic, opts ];
+
+cloudDeployDirectory[ obj_, target: $$cloudDeployTarget, opts: OptionsPattern[ ] ] := Enclose[
+    Module[ { server, perms, dir },
+        server = ConfirmBy[ ensureMCPServerExists @ MCPServerObject @ obj, MCPServerObjectQ, "Server" ];
+        (* A deliberate abort-on-disconnect guard. There is no prior precedent in the codebase (existing
+           cloud code silently falls back), so this is new behavior -- fail fast rather than emit an opaque
+           cloud error partway through the bundle. *)
+        If[ ! TrueQ @ $CloudConnected, throwFailure[ "NotCloudConnected" ] ];
+        perms = OptionValue[ Permissions ];
+        dir   = ConfirmMatch[ resolveDeploymentDirectory[ target, perms ], _CloudObject, "Directory" ];
+        ConfirmMatch[ deployDirectoryBundle[ server, dir, perms, opts ], { __CloudObject }, "Bundle" ];
+        dir
+    ],
+    throwInternalFailure
+];
+
+(* A second argument that is neither a valid target nor an option -> InvalidCloudTarget. Rules and rule lists
+   are excluded so the pure-options call CloudDeploy[obj, Permissions -> ...] still routes to the anonymous
+   form above (verified: $$cloudDeployTarget is typed, so a bare Permissions rule never matches the target
+   overload). *)
+cloudDeployDirectory[
+    _,
+    target: Except[ $$cloudDeployTarget | _Rule | _RuleDelayed | { ___Rule } | { ___RuleDelayed } ],
+    OptionsPattern[ ]
+] := throwFailure[ "InvalidCloudTarget", target ];
+
+cloudDeployDirectory // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*resolveDeploymentDirectory*)
+(* Resolve the deployment directory CloudObject. An omitted target deploys anonymously under a self-generated
+   UUID name -- a server-assigned path that acts as a directory prefix children can nest under. (The bare
+   CloudObject[Permissions -> perms] the spec sketches materializes a leaf at /obj/<uuid> that cannot hold
+   children, so a named UUID prefix is used instead.) An explicit string name resolves under the user's cloud
+   area; an explicit CloudObject is used as given. *)
+resolveDeploymentDirectory // beginDefinition;
+resolveDeploymentDirectory[ Automatic, perms_ ]      := CloudObject[ CreateUUID[ ], Permissions -> perms ];
+resolveDeploymentDirectory[ target_String, perms_ ]  := CloudObject[ target, Permissions -> perms ];
+resolveDeploymentDirectory[ target_CloudObject, _ ]  := target;
+resolveDeploymentDirectory // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*deployDirectoryBundle*)
+(* Deploy every object in the directory and return the flat list of deployed CloudObjects. Ordered so /mcp is
+   deployed first: its URL feeds the static /api/info payload. A failure of any step surfaces (as
+   CloudDeployFailed for a cloud write, or an internal failure for a local problem) rather than leaving a
+   partial bundle silently. *)
+deployDirectoryBundle // beginDefinition;
+
+deployDirectoryBundle[ server_MCPServerObject, dir_CloudObject, perms_, opts: OptionsPattern[ ] ] := Enclose[
+    Module[ { mcp, mcpURL, info, landing, admin },
+        mcp     = ConfirmMatch[ deployEndpointObject[ server, dir, perms, opts ], _CloudObject, "MCP" ];
+        mcpURL  = ConfirmBy[ First @ mcp, StringQ, "MCPURL" ];
+        info    = ConfirmMatch[ deployInfoObject[ server, dir, mcpURL, perms, opts ], _CloudObject, "Info" ];
+        landing = ConfirmMatch[ deployLandingAssets[ dir, perms ], { __CloudObject }, "Landing" ];
+        admin   = ConfirmMatch[ deployAdminBundle[ dir, opts ], { __CloudObject }, "Admin" ];
+        Flatten @ { mcp, info, landing, admin }
+    ],
+    throwInternalFailure
+];
+
+deployDirectoryBundle // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployEndpointObject*)
+(* Deploy /mcp via the endpoint primitive (cloudMCPServerPayload + deployMCPEndpoint), carrying the server's
+   definitions, at the resolved permissions. *)
+deployEndpointObject // beginDefinition;
+deployEndpointObject[ server_MCPServerObject, dir_CloudObject, perms_, opts: OptionsPattern[ ] ] :=
+    cloudDeployResult @ deployMCPEndpoint[
+        cloudMCPServerPayload @ server,
+        cloudDeploymentSubObject[ dir, { "mcp" } ],
+        perms,
+        opts
+    ];
+deployEndpointObject // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployInfoObject*)
+(* Deploy /api/info as static JSON (application/json). Its content is fixed for a given server object, so it
+   is generated once here rather than served by an embedded per-request handler. *)
+deployInfoObject // beginDefinition;
+deployInfoObject[ server_MCPServerObject, dir_CloudObject, mcpURL_String, perms_, opts: OptionsPattern[ ] ] :=
+    cloudDeployResult @ CloudDeploy[
+        ExportForm[ cloudMCPServerInfo[ server, mcpURL ], "RawJSON" ],
+        cloudDeploymentSubObject[ dir, { "api", "info" } ],
+        Permissions -> perms,
+        filteredCloudDeployOptions @ opts
+    ];
+deployInfoObject // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployLandingAssets*)
+(* Copy /index.html and every file under the local assets/ directory to /assets/* at the resolved permissions.
+   CopyFile preserves each file's content type from its extension (text/html, text/css, text/javascript). *)
+deployLandingAssets // beginDefinition;
+
+deployLandingAssets[ dir_CloudObject, perms_ ] := Enclose[
+    Module[ { assetsDir, index, assetFiles },
+        assetsDir  = ConfirmBy[ cloudAssetDirectory[ ], DirectoryQ, "AssetsDir" ];
+        index      = ConfirmBy[ FileNameJoin @ { assetsDir, "index.html" }, FileExistsQ, "Index" ];
+        assetFiles = FileNames[ "*", FileNameJoin @ { assetsDir, "assets" } ];
+        Join[
+            { ConfirmMatch[
+                copyFileToCloud[ index, cloudDeploymentSubObject[ dir, { "index.html" } ], perms ],
+                _CloudObject,
+                "IndexCopy"
+            ] },
+            Map[
+                ConfirmMatch[
+                    copyFileToCloud[ #, cloudDeploymentSubObject[ dir, { "assets", FileNameTake @ # } ], perms ],
+                    _CloudObject,
+                    "AssetCopy"
+                ] &,
+                assetFiles
+            ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+deployLandingAssets // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deployAdminBundle*)
+(* Deploy /admin/index.html (the self-contained admin page) and /api/admin (the key-management handler),
+   both forced Private regardless of the resolved permissions -- they are reached only through the owner's
+   authenticated cloud session. *)
+deployAdminBundle // beginDefinition;
+
+deployAdminBundle[ dir_CloudObject, opts: OptionsPattern[ ] ] := Enclose[
+    Module[ { assetsDir, adminHTML, page, api },
+        assetsDir = ConfirmBy[ cloudAssetDirectory[ ], DirectoryQ, "AssetsDir" ];
+        adminHTML = ConfirmBy[ FileNameJoin @ { assetsDir, "admin.html" }, FileExistsQ, "AdminHTML" ];
+        page = ConfirmMatch[
+            copyFileToCloud[ adminHTML, cloudDeploymentSubObject[ dir, { "admin", "index.html" } ], "Private" ],
+            _CloudObject,
+            "AdminPage"
+        ];
+        api = cloudDeployResult @ CloudDeploy[
+            cloudAdminAPIPayload @ dir,
+            cloudDeploymentSubObject[ dir, { "api", "admin" } ],
+            Permissions -> "Private",
+            filteredCloudDeployOptions @ opts
+        ];
+        { page, api }
+    ],
+    throwInternalFailure
+];
+
+deployAdminBundle // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Deployment paths & asset copy*)
+(* Resolve a deployment sub-object at the given relative path parts under the directory, mirroring the
+   FileNameJoin-on-CloudObject joining used elsewhere (UIResources.wl, the admin sibling resolution). These
+   are file-private helpers used only by the directory bundle, following the same convention as the admin
+   sibling resolvers (adminMCPObject / adminKeyLabelStore) above. The result is re-wrapped from the bare URL
+   so it carries NO Permissions: FileNameJoin propagates the directory's Permissions option to the child, so
+   stripping it here keeps each deploy's explicit Permissions authoritative (otherwise the directory's key
+   permission would leak into the Private admin objects). *)
+cloudDeploymentSubObject // beginDefinition;
+cloudDeploymentSubObject[ dir_CloudObject, rel_List ] :=
+    CloudObject[ First @ FileNameJoin @ Prepend[ rel, dir ] ];
+cloudDeploymentSubObject // endDefinition;
+
+(* Copy a local file to the given sub-object at the resolved permissions. Re-wrapping the target URL in
+   CloudObject[..., Permissions -> perms] is how CopyFile attaches permissions to the created object. *)
+copyFileToCloud // beginDefinition;
+copyFileToCloud[ localFile_String, target_CloudObject, perms_ ] :=
+    CopyFile[ localFile, CloudObject[ First @ target, Permissions -> perms ], OverwriteTarget -> True ];
+copyFileToCloud // endDefinition;
+
+(* The bundled Cloud asset directory (index.html, admin.html, assets/), mirroring initializeUIResources. *)
+cloudAssetDirectory // beginDefinition;
+cloudAssetDirectory[ ] := PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ];
+cloudAssetDirectory // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
     Null
