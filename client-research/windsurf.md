@@ -1,3 +1,5 @@
+<!-- cspell: ignore Natoma -->
+
 # Windsurf MCP Client Research
 
 ## Overview

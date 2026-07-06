@@ -298,8 +298,8 @@ skipIfScript @ VerificationTest[
 skipIfScript @ VerificationTest[
     $rootsTmpDir1 = CreateDirectory[ ];
     $rootsTmpDir2 = CreateDirectory[ ];
-    Export[ FileNameJoin @ { $rootsTmpDir1, "rootmarker1.txt" }, "marker1", "Text" ];
-    Export[ FileNameJoin @ { $rootsTmpDir2, "rootmarker2.txt" }, "marker2", "Text" ];
+    Export[ FileNameJoin @ { $rootsTmpDir1, "RootMarker1.txt" }, "marker1", "Text" ];
+    Export[ FileNameJoin @ { $rootsTmpDir2, "RootMarker2.txt" }, "marker2", "Text" ];
     $rootsTmpURI1 = "file:///" <> StringReplace[ $rootsTmpDir1, "\\" -> "/" ];
     $rootsTmpURI2 = "file:///" <> StringReplace[ $rootsTmpDir2, "\\" -> "/" ];
     AllTrue[ { $rootsTmpDir1, $rootsTmpDir2 }, DirectoryQ ],
@@ -348,7 +348,7 @@ skipIfScript @ VerificationTest[
     $rootsDirCheck = SendMCPRequest[
         "tools/call",
         <| "name"      -> "WolframLanguageEvaluator",
-           "arguments" -> <| "code" -> "FileExistsQ[\"rootmarker1.txt\"]" |> |>
+           "arguments" -> <| "code" -> "FileExistsQ[\"RootMarker1.txt\"]" |> |>
     ];
     StringContainsQ[ $rootsDirCheck[[ "result", "content", 1, "text" ]], "True" ],
     True,
@@ -390,9 +390,9 @@ skipIfScript @ VerificationTest[
     $rootsDirCheck2 = SendMCPRequest[
         "tools/call",
         <| "name"      -> "WolframLanguageEvaluator",
-           "arguments" -> <| "code" -> "{ FileExistsQ[\"rootmarker1.txt\"], FileExistsQ[\"rootmarker2.txt\"] }" |> |>
+           "arguments" -> <| "code" -> "{ FileExistsQ[\"RootMarker1.txt\"], FileExistsQ[\"RootMarker2.txt\"] }" |> |>
     ];
-    (* rootmarker1.txt is in the old root, rootmarker2.txt is in the new one;
+    (* RootMarker1.txt is in the old root, RootMarker2.txt is in the new one;
        only the new one should resolve. *)
     StringContainsQ[ $rootsDirCheck2[[ "result", "content", 1, "text" ]], "{False, True}" ],
     True,

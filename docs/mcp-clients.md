@@ -1,3 +1,5 @@
+<!-- cspell: ignore continuedev, asar -->
+
 # MCP Client Support in AgentTools
 
 This document explains how AgentTools supports different MCP client applications and how to install MCP servers into them.
@@ -546,6 +548,7 @@ Include these environment variables for proper operation:
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
 | `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |
+| `LLMKIT_ENABLED` | Set to `"false"` to make the context tools (`WolframContext`, etc.) behave as if the user has no LLMKit subscription, without emitting subscription warnings (optional) |
 | `MCP_TOOL_OPTIONS` | JSON string of tool option overrides, set automatically by `"ToolOptions"` (optional) |
 
 ### Getting the Configuration
@@ -593,6 +596,20 @@ By default, `InstallMCPServer` includes:
 - `WOLFRAM_BASE`
 - `WOLFRAM_USERBASE`
 - `APPDATA` (Windows only)
+
+### EnableLLMKit
+
+Controls whether the [LLMKit](https://www.wolfram.com/notebook-assistant-llm-kit)-backed features of the context tools (`WolframContext`, `WolframAlphaContext`, `WolframLanguageContext`) are enabled for the installed server:
+
+| Value | Behavior |
+|-------|----------|
+| `Automatic` (default) | Equivalent to `True` |
+| `True` | LLMKit features are enabled; the context tools use the LLMKit subscription when available |
+| `False` | LLMKit features are disabled; sets `LLMKIT_ENABLED=false` in the server environment. The context tools then behave as if the user has no LLMKit subscription, but no subscription warnings are shown, and the install-time subscription check is skipped |
+
+```wl
+InstallMCPServer["ClaudeDesktop", "EnableLLMKit" -> False]
+```
 
 ### EnableMCPApps
 

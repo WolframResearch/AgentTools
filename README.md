@@ -321,6 +321,7 @@ CreateMCPServer["My MCP Server", <|
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `"EnableLLMKit"` | `Automatic` | Enable or disable LLMKit features in the context tools; `False` sets `LLMKIT_ENABLED=false` so they behave as unsubscribed with no subscription warnings |
 | `"EnableMCPApps"` | `True` | Enable or disable [MCP Apps](docs/mcp-apps.md) UI resources |
 | `"DevelopmentMode"` | `False` | Use local source files instead of installed paclet |
 | `"MCPServerName"` | `Automatic` | Override the config file key for the server entry |

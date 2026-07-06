@@ -242,6 +242,12 @@ relatedWolframAlphaPrompt[ context_, "Error", True ] :=
 relatedWolframAlphaPrompt[ context_, level_, True ] :=
     relatedWolframAlphaResults[ context, level ];
 
+(* LLMKit disabled via "EnableLLMKit" -> False: behave as unsubscribed, but suppress the
+   "subscribe to LLMKit" warning entirely -- return an empty string so the combined WolframContext
+   tool simply omits the Wolfram|Alpha section instead of nagging about a subscription. *)
+relatedWolframAlphaPrompt[ context_, level_, False ] /; ! llmKitEnabledQ[ ] :=
+    "";
+
 relatedWolframAlphaPrompt[ context_, level_, False ] := Enclose[
     Module[ { info, url, connected, template },
         info      = ConfirmBy[ getLLMKitInfo[ ], AssociationQ, "LLMKitInfo" ];

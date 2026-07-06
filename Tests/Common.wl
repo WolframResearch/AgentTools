@@ -6,6 +6,7 @@ BeginPackage[ "Wolfram`AgentToolsTests`" ];
 `$BuiltPaclet;
 `$TestDefinitionsLoaded = True;
 `conditionalTest;
+`environmentBlock;
 `skipIfGitHubActions;
 `skipIfScript;
 
@@ -56,6 +57,21 @@ skipIfGitHubActions = conditionalTest @ Not @ StringQ @ Environment[ "GITHUB_ACT
 (*skipIfScript*)
 (* Skip tests when running as a wolframscript (subprocess I/O doesn't work reliably in that context) *)
 skipIfScript = conditionalTest @ Not @ MatchQ[ $ScriptCommandLine, { __String } ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*environmentBlock*)
+(* Temporarily set (or, with value None, unset) a process environment variable for the duration of
+   eval, restoring the previous value afterward -- including on abort/failure via WithCleanup.
+   Unlike Block[{Environment}, ...], this sets the real variable so every Environment[...] call under
+   eval behaves naturally. Usage: environmentBlock["LLMKIT_ENABLED" -> "false", someExpr]. *)
+environmentBlock // Attributes = { HoldRest };
+
+environmentBlock[ name_ -> value_, eval_ ] :=
+    With[ { previous = Replace[ Environment @ name, $Failed -> None ] },
+        SetEnvironment[ name -> value ];
+        WithCleanup[ eval, SetEnvironment[ name -> previous ] ]
+    ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

@@ -1,3 +1,5 @@
+<!-- cspell: ignore leveldb -->
+
 # Cherry Studio MCP Client Research
 
 ## Overview

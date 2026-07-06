@@ -109,11 +109,32 @@ unpackNoEntry // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*llmKitSubscribedQ*)
+(* The no-argument form additionally requires LLMKit to be enabled for this session
+   (see llmKitEnabledQ). When disabled via "EnableLLMKit" -> False, this returns False and
+   short-circuits before getLLMKitInfo[], so the context tools behave as though the user has
+   no subscription without any cloud lookup or subscription warning. *)
 llmKitSubscribedQ // beginDefinition;
-llmKitSubscribedQ[ ] := llmKitSubscribedQ @ getLLMKitInfo[ ];
+llmKitSubscribedQ[ ] := llmKitEnabledQ[ ] && llmKitSubscribedQ @ getLLMKitInfo[ ];
 llmKitSubscribedQ[ KeyValuePattern[ "userHasSubscription" -> bool: True|False ] ] := bool;
 llmKitSubscribedQ[ _ ] := False;
 llmKitSubscribedQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitEnabledQ*)
+
+(* Runtime check for the LLMKIT_ENABLED environment variable, which "EnableLLMKit" -> False sets to
+   "false" in the MCP config's env block. The value is interpreted as a Boolean: only a value that reads
+   as False (e.g. "false"/"no"/"0", case-insensitive) disables LLMKit; an unset variable, or any value
+   that does not interpret as False (including non-boolean strings like "maybe"), leaves it enabled. When
+   disabled, the context tools behave as if the user has no LLMKit subscription, but without emitting
+   subscription warnings. *)
+llmKitEnabledQ // beginDefinition;
+
+llmKitEnabledQ[ ] :=
+    Interpreter[ "Boolean" ][ Environment[ "LLMKIT_ENABLED" ] ] =!= False;
+
+llmKitEnabledQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

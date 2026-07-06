@@ -1,5 +1,7 @@
 (* ::Package:: *)
 
+(* cspell: disable *)
+
 <|
 "AgentToolsStrings" -> {
 

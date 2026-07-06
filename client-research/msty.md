@@ -1,3 +1,5 @@
+<!-- cspell: ignore Msty -->
+
 # Msty Studio MCP Client Research
 
 ## Overview

@@ -1,3 +1,5 @@
+<!-- cspell: ignore continuedev, Dify, Msty, pglite -->
+
 # More MCP Clients
 
 For each MCP client, we need to properly research how MCP servers are added to the client and then decide if we can implement support for `InstallMCPServer` or if we need to reject it. If it's not feasible to implement a client, add text to the relevant section below to explain why.

@@ -570,3 +570,127 @@ VerificationTest[
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*LLMKit Enablement*)
+
+(* llmKitEnabledQ reads the LLMKIT_ENABLED environment variable, which "EnableLLMKit" -> False sets
+   to "false" in the MCP config's env block. The value is interpreted as a Boolean: only a value that
+   reads as False (e.g. "false"/"no"/"0", case-insensitive) disables LLMKit; an unset variable, or any
+   value that does not interpret as False (including non-boolean strings), leaves it enabled. *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*environmentBlock (helper sanity check)*)
+
+(* Confirm the shared helper actually sets and restores the real process environment in this kernel,
+   so the LLMKit tests below exercise genuine Environment[...] reads. *)
+VerificationTest[
+    {
+        environmentBlock[ "AGENTTOOLS_ENV_PROBE" -> "set", Environment[ "AGENTTOOLS_ENV_PROBE" ] ],
+        Environment[ "AGENTTOOLS_ENV_PROBE" ]
+    },
+    { "set", $Failed },
+    SameTest -> SameQ,
+    TestID   -> "EnvironmentBlock-SetsAndRestores@@Tests/Utilities.wlt:474,1-482,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitEnabledQ*)
+
+(* Enabled when the variable is not set *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> None, Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-NotSet@@Tests/Utilities.wlt:489,1-494,2"
+]
+
+(* Disabled when the variable is "false" *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "false", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-FalseLowercase@@Tests/Utilities.wlt:497,1-502,2"
+]
+
+(* The check is case-insensitive *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "False", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-FalseMixedCase@@Tests/Utilities.wlt:505,1-510,2"
+]
+
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "FALSE", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-FalseUppercase@@Tests/Utilities.wlt:512,1-517,2"
+]
+
+(* Any other value leaves LLMKit enabled *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "true", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-TrueString@@Tests/Utilities.wlt:520,1-525,2"
+]
+
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "1", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-OneString@@Tests/Utilities.wlt:527,1-532,2"
+]
+
+(* A value that reads as boolean False also disables LLMKit *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "0", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-ZeroDisables@@Tests/Utilities.wlt:535,1-540,2"
+]
+
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "no", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    False,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-NoDisables@@Tests/Utilities.wlt:542,1-547,2"
+]
+
+(* A value that does not interpret as a Boolean leaves LLMKit enabled *)
+VerificationTest[
+    environmentBlock[ "LLMKIT_ENABLED" -> "maybe", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "LLMKitEnabledQ-NonBooleanEnabled@@Tests/Utilities.wlt:550,1-555,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitSubscribedQ Gating*)
+
+(* When LLMKit is disabled, llmKitSubscribedQ[] is False AND short-circuits before getLLMKitInfo[],
+   so the context tools behave as unsubscribed without any cloud lookup. The mocked getLLMKitInfo
+   would report a subscription if consulted -- proving both the forced-False result and that it is
+   never called. *)
+VerificationTest[
+    Module[ { called = False, result },
+        result = environmentBlock[ "LLMKIT_ENABLED" -> "false",
+            Block[
+                {
+                    Wolfram`AgentTools`Common`getLLMKitInfo =
+                        Function[ called = True; <| "userHasSubscription" -> True, "buyNowUrl" -> "x" |> ]
+                },
+                Wolfram`AgentTools`Common`llmKitSubscribedQ[ ]
+            ]
+        ];
+        { result, called }
+    ],
+    { False, False },
+    SameTest -> SameQ,
+    TestID   -> "LLMKitSubscribedQ-DisabledShortCircuits@@Tests/Utilities.wlt:565,1-581,2"
+]
