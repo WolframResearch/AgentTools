@@ -77,7 +77,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **3. Self-describing session-ID capability codec**
+- [x] **3. Self-describing session-ID capability codec**
 
   Create `Kernel/Server/Cloud.wl` (context `Wolfram`AgentTools`Server`Cloud`) and register it in
   `Server.wl`'s `$subcontexts`. Implement the file-scoped capability codec: `$trackedFeatureList`,
@@ -85,10 +85,10 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
   code in the spec). Pure and fully unit-testable in isolation, so do it before the handler that
   consumes it.
 
-  - [ ] Round-trip: `getFeaturesFromSessionID @ makeSessionIDFromFeatureList[f] === f` for each subset.
-  - [ ] Empty set encodes `"1:0:…"`; `Intersection` guard drops untracked features.
-  - [ ] Fail-closed decode: wrong version / malformed ID → `{}` (verifies the `$idVersion` bump story).
-  - [ ] Trailing `CreateUUID[]` present (IDs unique/opaque).
+  - [x] Round-trip: `getFeaturesFromSessionID @ makeSessionIDFromFeatureList[f] === f` for each subset.
+  - [x] Empty set encodes `"1:0:…"`; `Intersection` guard drops untracked features.
+  - [x] Fail-closed decode: wrong version / malformed ID → `{}` (verifies the `$idVersion` bump story).
+  - [x] Trailing `CreateUUID[]` present (IDs unique/opaque).
 
   **Files:** `Kernel/Server/Cloud.wl`, `Kernel/Server/Server.wl`, `Tests/CloudDeployment.wlt`
 

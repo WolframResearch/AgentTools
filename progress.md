@@ -134,3 +134,53 @@ TestReport stdin/stdout quirk — the `wolframscript` binary is simply absent at
 is a stable 51 here (Session 1's "57" was subprocess-spawn flakiness). Bottom line: **no subprocess
 integration test can run in this sandbox**; rely on in-process `.wlt` files (fresh `TestReport` kernel)
 for verification, as done here.
+
+## Session 3
+
+**Completed Task 3: Self-describing session-ID capability codec.** Pure, fully unit-testable — the
+foundation Task 4's `RunCloudMCPServer` will consume to round-trip client UI capability through the
+`Mcp-Session-Id` header in the stateless cloud transport.
+
+**Source changes:**
+- **New `Kernel/Server/Cloud.wl`** (context `Wolfram`AgentTools`Server`Cloud`): the first Cloud-transport
+  file. For now it holds only the file-scoped codec (config + two functions); Tasks 4–8 grow it.
+  - Config: `$trackedFeatureList = {"MCPApps","Roots","FormElicitation","URLElicitation"}`,
+    `$idVersion = "1"`, `$trackedFeatureIDs = First /@ PositionIndex[$trackedFeatureList] - 1`
+    (`<|MCPApps->0,Roots->1,FormElicitation->2,URLElicitation->3|>`).
+  - `makeSessionIDFromFeatureList[features]` → `"version:base36bitfield:uuid"` (encode).
+  - `getFeaturesFromSessionID[id]` → feature list; fail-closed to `{}` on wrong version / malformed.
+  - Header `Needs` mirror the sibling leaf files (`AgentTools`, `Common`, `Server`); footer is
+    `addToMXInitialization[Null]` like `Shared.wl`/`Local.wl`.
+- **`Kernel/Server/Server.wl`**: added `"Wolfram`AgentTools`Server`Cloud`"` to `$subcontexts` (the only
+  registration point — it's `Union`-ed into `$AgentToolsContexts`; nothing else enumerates subcontexts).
+
+**Key implementation decisions:**
+- **Followed repo convention over the spec's literal code.** The spec gives the codec as bare
+  `f[...] :=` definitions, but I wrapped both functions in `beginDefinition`/`endDefinition` to match
+  AGENTS.md and the directly-analogous `negotiateProtocolVersion` (Task 2), which uses the *exact same
+  shape* — a `_` catch-all returning a default (`getFeaturesFromSessionID[_] := {}` mirrors
+  `negotiateProtocolVersion[_] := $preferredProtocolVersion`). Verified the algorithm is byte-for-byte
+  the spec's; only the wrappers were added. CodeInspector clean, so the `_` fallback coexists fine with
+  `endDefinition`'s auto-added `___` fallthrough (the `_` is more specific, wins for all valid 1-arg
+  calls; `___` only catches wrong-arity).
+- **Codec is genuinely file-private** — no `CommonSymbols.wl` declaration needed (Task 4's handler is in
+  the same `Cloud.wl` file, so it reaches these directly).
+
+**Verification (all in-process, fresh `TestReport` kernels):**
+- Pre-validated the algorithm standalone (local symbols, paclet untouched) before writing: exact
+  round-trip for **all 16 subsets**, empty→`"1:0:…"`, Intersection guard drops untracked, fail-closed
+  `{}` for wrong-version/malformed/too-few-parts, unique UUIDs; spec examples reproduce (`{"MCPApps"}`→
+  `"1:1:…"`, three-feature→`"1:d:…"`).
+- **`Tests/CloudDeployment.wlt`: 37/37 pass** (19 protocol from Task 2 + **18 new codec tests**). Added a
+  `Session-ID Capability Codec` section: Configuration (3), makeSessionID (6), getFeatures (4),
+  Round-trip-all-subsets (1), Fail-closed (4). Tests reference the private symbols by full path
+  (`Wolfram`AgentTools`Server`Cloud`Private`…`); the file already disables the `PrivateContextSymbol`
+  rule. Association compared via `===` (order-deterministic) to sidestep MatchQ-on-assoc order questions.
+- **No regression:** `MCPApps.wlt` 83/83, `MCPServerObject.wlt` 71/71 — confirms the paclet still loads
+  cleanly with the new subcontext on the load path (the `CloudDeployment.wlt` `LoadContext` test also
+  passes). CodeInspector clean on `Cloud.wl`, `Server.wl`, and `CloudDeployment.wlt`.
+
+**Note for Task 4:** `RunCloudMCPServer` will (a) read the `Mcp-Session-Id` request header
+case-insensitively → `getFeaturesFromSessionID` → `Block` `$clientSupportsUI = MemberQ[features,"MCPApps"]`
+around dispatch; (b) on `initialize` (no incoming ID), after `handleMethod` sets the flags, encode via
+`makeSessionIDFromFeatureList` into the `Mcp-Session-Id` **response** header. Both functions are ready.

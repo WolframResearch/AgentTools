@@ -195,4 +195,201 @@ VerificationTest[
     TestID   -> "InitResponse-EmptyClientMessageUsesPreferred"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Session-ID Capability Codec*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Configuration*)
+
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureList,
+    { "MCPApps", "Roots", "FormElicitation", "URLElicitation" },
+    SameTest -> MatchQ,
+    TestID   -> "TrackedFeatureList-Value"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`$idVersion,
+    "1",
+    SameTest -> MatchQ,
+    TestID   -> "IdVersion-Value"
+]
+
+(* Each tracked feature maps to a distinct, zero-based bit position in list order. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureIDs ===
+        <| "MCPApps" -> 0, "Roots" -> 1, "FormElicitation" -> 2, "URLElicitation" -> 3 |>,
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "TrackedFeatureIDs-Value"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*makeSessionIDFromFeatureList*)
+
+(* A single tracked feature encodes to its bit: "MCPApps" (bit 0) -> "1:1:<uuid>". *)
+VerificationTest[
+    StringMatchQ[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[ { "MCPApps" } ],
+        "1:1:" ~~ __
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-SingleFeature"
+]
+
+(* Multiple features pack into one base-36 bitfield: bits 0 + 2 + 3 = 1 + 4 + 8 = 13 -> "d". *)
+VerificationTest[
+    StringMatchQ[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[
+            { "MCPApps", "FormElicitation", "URLElicitation" }
+        ],
+        "1:d:" ~~ __
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-MultipleFeatures"
+]
+
+(* The empty feature set totals to 0 and encodes as "1:0:<uuid>". *)
+VerificationTest[
+    StringMatchQ[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[ { } ],
+        "1:0:" ~~ __
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-EmptySet"
+]
+
+(* The Intersection guard drops an untracked feature before it can reach the bitfield, so a purely
+   untracked feature set encodes identically to the empty set (bitfield 0). *)
+VerificationTest[
+    StringMatchQ[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[ { "NotATrackedFeature" } ],
+        "1:0:" ~~ __
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-IntersectionGuardDropsUntracked"
+]
+
+(* The trailing component looks like a UUID (hexadecimal characters and hyphens). *)
+VerificationTest[
+    StringMatchQ[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[ { "MCPApps" } ],
+        "1:1:" ~~ Repeated[ HexadecimalCharacter | "-" ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-TrailingUUID"
+]
+
+(* The trailing UUID is fresh each call, so two encodings of the same feature set are not identical. *)
+VerificationTest[
+    SameQ @@ Table[
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[ { "MCPApps" } ],
+        2
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "MakeSessionID-UUIDMakesIDsUnique"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*getFeaturesFromSessionID*)
+
+(* Decoding inverts encoding for a single feature. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:1:" <> CreateUUID[ ] ],
+    { "MCPApps" },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-SingleFeature"
+]
+
+(* Decoding recovers the full multi-feature set in canonical (tracked-list) order. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:d:" <> CreateUUID[ ] ],
+    { "MCPApps", "FormElicitation", "URLElicitation" },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-MultipleFeatures"
+]
+
+(* Bitfield 0 decodes to no features. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:0:" <> CreateUUID[ ] ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-EmptySet"
+]
+
+(* The Intersection guard drops only the untracked feature, keeping the tracked one. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID @
+        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[
+            { "MCPApps", "NotATrackedFeature" }
+        ],
+    { "MCPApps" },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-IntersectionGuardKeepsTracked"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Round-trip*)
+
+(* getFeaturesFromSessionID @ makeSessionIDFromFeatureList[f] === f for EVERY subset of the tracked
+   feature list (Select returns the subsets that fail to round-trip exactly; expect none). *)
+VerificationTest[
+    Select[
+        Subsets @ Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureList,
+        Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID @
+            Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList @ # =!= # &
+    ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "SessionID-RoundTripAllSubsets"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fail-closed decode*)
+
+(* A future/unknown version decodes to no features (the $idVersion bump story): an ID minted by an
+   older deployment with a different bit layout must not misfire, even with a valid-looking bitfield. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "2:1:" <> CreateUUID[ ] ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-WrongVersionFailsClosed"
+]
+
+(* A malformed ID with no colon delimiters decodes to no features. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "garbage" ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-MalformedFailsClosed"
+]
+
+(* An ID with too few colon-separated parts decodes to no features. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:1" ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-TooFewPartsFailsClosed"
+]
+
+(* The empty string decodes to no features. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "" ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-EmptyStringFailsClosed"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)
