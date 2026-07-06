@@ -214,3 +214,78 @@ around dispatch; (b) on `initialize` (no incoming ID), after `handleMethod` sets
 behavior for `{"MCPApps"}`/`{}` is byte-identical to Session 3 — `MCPApps` is bit 0, so dropping the
 higher-bit features doesn't shift it; `$idVersion` stays `"1"` since the 4-feature layout never
 shipped.)
+
+## Session 5
+
+**Completed Task 4: `RunCloudMCPServer` — stateless Streamable HTTP handler.** The cloud analog of the
+local `processRequest`: handles one `HTTPRequestData[]`, always returns an `HTTPResponse`. All of
+`Kernel/Server/Cloud.wl`; exported symbol `RunCloudMCPServer` wired into `Main.wl` + `PacletInfo.wl`.
+
+**Handler structure (`Cloud.wl`):**
+- `RunCloudMCPServer[obj_MCPServerObject] := runCloudMCPServer[obj, HTTPRequestData[]]` (exported, no
+  `catchMine` — the internal handler converts every failure to a response). Tests call the internal
+  `runCloudMCPServer[obj, mockRequest]` directly, so `HTTPRequestData[]` is only invoked in the real
+  cloud (exercised end-to-end in Task 11).
+- `runCloudMCPServer[obj, req]` is the error boundary: `catchAlways @ Catch[runCloudMCPServer0[…],
+  $cloudResponseTag]`; if the result isn't an `_HTTPResponse` → `emptyResponse[500]`. The two-layer
+  catch is deliberate — transport short-circuits `Throw` an `HTTPResponse` to the file-local
+  `$cloudResponseTag` (caught by the inner `Catch`), while an internal-failure `Throw` from
+  `initializeServerState` uses `$catchTopTag` (NOT caught by the inner `Catch`) → bubbles to
+  `catchAlways` → `Failure` → 500. So: transport → status code; **dispatch/tool failure → −32603 in a
+  200** (inner `catchAlways` in `dispatchCloudMethod`); **pre-dispatch/unexpected → 500** (outer).
+- `runCloudMCPServer0` does the 6 transport checks in order (method→origin→accept→body→protocol→
+  session-ID), then `Block[{$currentMCPServer, $mcpEvaluation=True, $clientSupportsUI=<decoded>,
+  $clientSupportsRoots=False}, state=initializeServerState[obj]; Block[{$toolList,$llmTools,$promptList,
+  $promptLookup,$toolOptions}, dispatchCloudMethod[…]]]` — mirrors `startMCPServer` exactly, plus the
+  two capability binds. **No shared handler change needed** — `tools/list` reads the Block-bound
+  `$clientSupportsUI` and lights up `_meta.ui` per request.
+- `dispatchCloudMethod`: `replyOwedQ[method,id]` (= method + non-null id + not `notifications/`) →
+  200 with result (or −32603 if the handler `Failure`s), else dispatch-for-side-effects + `202` empty.
+  `initialize` responses attach a fresh `Mcp-Session-Id` via `sessionIDResponseHeaders` /
+  `currentTrackedFeatures` (reads the post-`handleMethod` `$clientSupportsUI`).
+
+**Key design decisions / gotchas (important for Tasks 5–8, 11):**
+- **`responseContentType` is lenient**: absent `Accept` → `application/json` (HTTP `*/*` semantics);
+  handles `;q=` params and `*/*`/`application/*` wildcards; present-but-unmatchable → `None` → 406. The
+  prototype's `None`-on-absent (→ its buggy 405) is replaced — absent must not 406 server-to-server.
+- **`CharacterEncoding -> "UTF-8"` on the 200 `HTTPResponse` is REQUIRED, not cosmetic.** Without it, a
+  `ByteArray` body + `"text/event-stream"` ContentType makes WL advertise `charset=iso-8859-1` while the
+  bytes are UTF-8 (verified: non-ASCII body then fails to round-trip). With it: `application/json` stays
+  **bare** (matches prototype; JSON is UTF-8 by spec) and SSE correctly says `charset=utf-8`.
+- **Origin policy** (`$allowedOriginSuffixes = {"wolframcloud.com","wolfram.com"}`): absent → allowed;
+  present → allowed only for exact host or true `.`-subdomain (so `evilwolframcloud.com` is a 403, tested);
+  unparseable present Origin → 403. It's belt-and-suspenders for a key-authed cloud endpoint but the spec
+  requires it; relax here if a browser-based client needs `/mcp` later.
+- **`$clientSupportsRoots = False` in the Block is load-bearing, not cosmetic**: `notifications/
+  initialized` → `handleNotification` → `onClientInitialized`, which only fires the `roots/list`
+  server→client callback `If[TrueQ@$clientSupportsRoots]`. Binding it False makes that a clean no-op
+  (there's no server→client channel in the stateless transport), so the notification just returns 202.
+- **`$clientName` can't be Block-bound from `Cloud.wl`** — it's a `Server`Shared`Private` file-private
+  (per Session 1), so a bare `$clientName` in `Cloud.wl` would be a *different* symbol. Not needed: its
+  Shared default is `None` → `stderrEnabledQ[]` False → `writeLog`/`writeError`/`debugPrint` are no-ops
+  in the cloud; `handleMethod["initialize"]` sets it, but nothing logs during init and the kernel is
+  stateless per request.
+- **Test fixtures use an in-memory `MCPServerObject[<|"Location"->"BuiltIn","LLMEvaluator"-><|"Tools"->
+  {…}|>|>]`** — `mcpServerExistsQ[_,"BuiltIn"]` is `True`, so NO disk persistence / no `CreateMCPServer`
+  / no cleanup. A tool literally named `"MCPAppsTest"` matches `$toolUIAssociations` →
+  `ui://wolfram/mcp-apps-test`, which is how the `_meta.ui` and `resources/read` round-trips are tested.
+  (A bad server with a string tool `{"NotARealPacletTool"}` does NOT construct — validation rejects it —
+  so it can't drive the 500 path in-process; I test the −32603-in-200 path deterministically instead via
+  a `tools/call` with no `"name"`, which makes `evaluateTool` throw.)
+
+**Tests — `Tests/CloudDeployment.wlt` now 76 (was 37): +39 `RunCloudMCPServer` tests**, all in-process,
+100% pass. Sections: Fixtures/Export, Transport (method/origin/accept/protocol/body), Dispatch
+(initialize-negotiate, tools/list, tools/call→"11", ping, unknown-method→−32601, notification→202,
+null-id→202), MCP-Apps round-trip (init±UI session-ID decode, tools/list _meta with UI/no-feature/
+no-header/malformed session IDs, resources/list±UI, resources/read HTML), and the −32603 error path.
+
+**Verification:** `CloudDeployment.wlt` **76/76**; regression `MCPApps.wlt` **83/83**,
+`MCPServerObject.wlt` **71/71** (paclet loads cleanly with the new handler + export). CodeInspector
+clean (incl. Scoping) on `Kernel/Server/Cloud.wl` and `Tests/CloudDeployment.wlt`.
+
+**For Task 5 (`CloudDeployMCPServer` + embedding):** `RunCloudMCPServer` is the endpoint primitive to
+serialize as `Delayed[RunCloudMCPServer[obj]]`. It resolves all state from `obj` via
+`initializeServerState` per request (nothing hardcoded), so the deploy payload just needs `obj`'s
+definitions captured (the `Language`$InternalContexts` bridge + NOENTRY-aware `extendedFullDefinition`).
+The `HTTPRequestData[]`/real-cloud body path (simulation returns `None` for the body under
+`GenerateHTTPResponse`) is first exercised for real when Task 5 deploys an endpoint.

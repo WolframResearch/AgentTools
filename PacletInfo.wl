@@ -43,6 +43,7 @@ PacletObject[ <|
                 "Wolfram`AgentTools`MCPServerObject",
                 "Wolfram`AgentTools`MCPServerObjectQ",
                 "Wolfram`AgentTools`MCPServerObjects",
+                "Wolfram`AgentTools`RunCloudMCPServer",
                 "Wolfram`AgentTools`StartMCPServer",
                 "Wolfram`AgentTools`TestReportToolFunction",
                 "Wolfram`AgentTools`UninstallMCPServer",

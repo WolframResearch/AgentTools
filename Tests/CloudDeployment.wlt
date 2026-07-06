@@ -407,4 +407,498 @@ VerificationTest[
     TestID   -> "GetFeatures-EmptyStringFailsClosed"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*RunCloudMCPServer (stateless HTTP handler)*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fixtures*)
+
+(* An in-memory server (no disk persistence -- Location "BuiltIn" satisfies mcpServerExistsQ) carrying a
+   plain tool (PrimeFinder) and a tool whose name matches a UI resource association (MCPAppsTest). *)
+cloudTestServer = Wolfram`AgentTools`MCPServerObject[ <|
+    "Location"     -> "BuiltIn",
+    "LLMEvaluator" -> <| "Tools" -> {
+        LLMTool[ "PrimeFinder", { "n" -> "Integer" }, Prime[ #n ] & ],
+        LLMTool[ "MCPAppsTest", { "x" -> "String" }, #x & ]
+    } |>
+|> ];
+
+(* A mock request shaped like HTTPRequestData[]: Method, lowercased Headers rules, UTF-8 BodyByteArray.
+   Providing a "Headers" key replaces the default Accept, so a header-less request can be simulated. *)
+cloudMockRequest[ opts_Association ] := <|
+    "Method"        -> Lookup[ opts, "Method", "POST" ],
+    "Headers"       -> Normal @ KeyMap[ ToLowerCase, Lookup[ opts, "Headers", <| "Accept" -> "application/json" |> ] ],
+    "BodyByteArray" -> Replace[ Lookup[ opts, "Body", Missing[ ] ], s_String :> StringToByteArray @ s ]
+|>;
+
+(* Drive the internal handler with a mock request and read back the HTTPResponse. *)
+cloudRun[ opts_Association ] := Wolfram`AgentTools`Server`Cloud`Private`runCloudMCPServer[
+    cloudTestServer,
+    cloudMockRequest @ opts
+];
+
+cloudStatus[ opts_Association ]  := cloudRun[ opts ][ "StatusCode" ];
+cloudSessionID[ resp_ ]          := Lookup[ KeyMap[ ToLowerCase, Association @ resp[ "Headers" ] ], "mcp-session-id", Missing[ "Absent" ] ];
+cloudBodyJSON[ resp_ ]           := Quiet @ Developer`ReadRawJSONString @ resp[ "Body" ];
+cloudDecode[ id_ ]               := Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID @ id;
+
+(* Build a JSON-RPC message body; omit id (None) for notifications, pass Null for an explicit null id. *)
+cloudBody[ method_, id_: None, params_: <| |> ] := Developer`WriteRawJSONString @ Association[
+    "jsonrpc" -> "2.0",
+    If[ id === None, Nothing, "id" -> id ],
+    "method"  -> method,
+    "params"  -> params
+];
+
+cloudInitBodyUI = cloudBody[ "initialize", 0, <|
+    "protocolVersion" -> "2025-06-18",
+    "capabilities"    -> <| "extensions" -> <| "io.modelcontextprotocol/ui" -> <| "mimeTypes" -> { "text/html;profile=mcp-app" } |> |> |>,
+    "clientInfo"      -> <| "name" -> "test-client" |>
+|> ];
+
+cloudInitBodyNoUI = cloudBody[ "initialize", 0, <|
+    "protocolVersion" -> "2025-06-18",
+    "capabilities"    -> <| |>,
+    "clientInfo"      -> <| "name" -> "test-client" |>
+|> ];
+
+(* Fixture sanity check: the in-memory server is valid without touching disk. *)
+VerificationTest[
+    Wolfram`AgentTools`MCPServerObjectQ @ cloudTestServer,
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Fixture-ServerValid"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Export*)
+
+VerificationTest[
+    MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`RunCloudMCPServer" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Export-Protected"
+]
+
+VerificationTest[
+    MatchQ[ DownValues @ Wolfram`AgentTools`RunCloudMCPServer, { __ } ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Export-HasDefinition"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport: HTTP method*)
+
+VerificationTest[
+    cloudStatus @ <| "Body" -> cloudInitBodyUI |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-POST-200"
+]
+
+VerificationTest[
+    cloudStatus @ <| "Method" -> "GET" |>,
+    405,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-GET-405"
+]
+
+VerificationTest[
+    cloudStatus @ <| "Method" -> "DELETE" |>,
+    405,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-DELETE-405"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport: Origin validation*)
+
+(* Absent Origin (typical for server-to-server LLM providers) is allowed. *)
+VerificationTest[
+    cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ] |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Origin-Absent-Allowed"
+]
+
+(* A trusted Wolfram Cloud Origin is allowed. *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "ping", 1 ],
+        "Headers" -> <| "Accept" -> "application/json", "Origin" -> "https://www.wolframcloud.com" |>
+    |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Origin-Trusted-Allowed"
+]
+
+(* A cross-site Origin is rejected (DNS-rebinding protection). *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "ping", 1 ],
+        "Headers" -> <| "Accept" -> "application/json", "Origin" -> "https://evil.example" |>
+    |>,
+    403,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Origin-CrossSite-403"
+]
+
+(* A look-alike host is not treated as a subdomain of the trusted suffix. *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "ping", 1 ],
+        "Headers" -> <| "Accept" -> "application/json", "Origin" -> "https://evilwolframcloud.com" |>
+    |>,
+    403,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Origin-LookAlike-403"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport: Accept negotiation*)
+
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "application/json" |> |> },
+        { resp[ "StatusCode" ], resp[ "ContentType" ] }
+    ],
+    { 200, "application/json" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Accept-JSON"
+]
+
+(* An absent Accept header defaults to application/json (client accepts anything). *)
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| |> |> },
+        { resp[ "StatusCode" ], resp[ "ContentType" ] }
+    ],
+    { 200, "application/json" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Accept-Absent-DefaultsJSON"
+]
+
+(* text/event-stream yields a single SSE data frame; the content type is text/event-stream (with a
+   charset parameter that must reflect the UTF-8 body). *)
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "text/event-stream" |> |> },
+        {
+            resp[ "StatusCode" ],
+            StringStartsQ[ resp[ "ContentType" ], "text/event-stream" ],
+            ! StringContainsQ[ resp[ "ContentType" ], "iso-8859-1" ],
+            StringStartsQ[ resp[ "Body" ], "data: " ] && StringEndsQ[ resp[ "Body" ], "\n\n" ]
+        }
+    ],
+    { 200, True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Accept-SSE"
+]
+
+(* An Accept listing neither supported type -> 406. *)
+VerificationTest[
+    cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "text/plain" |> |>,
+    406,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Accept-Unacceptable-406"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport: MCP-Protocol-Version header*)
+
+(* Absent header on a non-initialize request is allowed (assume 2025-03-26). *)
+VerificationTest[
+    cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "application/json" |> |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Protocol-Absent-Allowed"
+]
+
+(* A supported version is accepted. *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "ping", 1 ],
+        "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2025-06-18" |>
+    |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Protocol-Supported-Allowed"
+]
+
+(* An unsupported version on a non-initialize request -> 400. *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "ping", 1 ],
+        "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "1999-01-01" |>
+    |>,
+    400,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Protocol-Unsupported-400"
+]
+
+(* The initialize request itself is exempt from the header check (version is negotiated in the body). *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudInitBodyUI,
+        "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "1999-01-01" |>
+    |>,
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Protocol-InitializeExempt"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport: request body*)
+
+(* A non-JSON body -> 400. *)
+VerificationTest[
+    cloudStatus @ <| "Body" -> "this is not json" |>,
+    400,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Body-Malformed-400"
+]
+
+(* A well-formed but non-object JSON body (an array) -> 400. *)
+VerificationTest[
+    cloudStatus @ <| "Body" -> "[1,2,3]" |>,
+    400,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Body-NonObject-400"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Dispatch*)
+
+(* initialize echoes a supported requested protocol version and reports the server name. *)
+VerificationTest[
+    With[ { body = cloudBodyJSON @ cloudRun @ <| "Body" -> cloudBody[ "initialize", 0, <| "protocolVersion" -> "2024-11-05" |> ] |> },
+        { body[ "result", "protocolVersion" ], body[ "result", "serverInfo", "name" ] }
+    ],
+    { "2024-11-05", cloudTestServer[ "Name" ] },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Initialize-Negotiates"
+]
+
+(* An unknown requested version falls back to the preferred one. *)
+VerificationTest[
+    cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "initialize", 0, <| "protocolVersion" -> "1999-01-01" |> ] |> ][ "result", "protocolVersion" ],
+    "2025-11-25",
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Initialize-UnknownVersionFallsBack"
+]
+
+(* tools/list returns the server object's tools. *)
+VerificationTest[
+    Lookup[ cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "tools/list", 1 ] |> ][ "result", "tools" ], "name" ],
+    { "PrimeFinder", "MCPAppsTest" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsList-Tools"
+]
+
+(* tools/call evaluates a tool and returns its content. *)
+VerificationTest[
+    With[ { result = cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "tools/call", 2, <| "name" -> "PrimeFinder", "arguments" -> <| "n" -> 5 |> |> ] |> ][ "result" ] },
+        { result[ "content" ], result[ "isError" ] }
+    ],
+    { { KeyValuePattern[ { "type" -> "text", "text" -> "11" } ] }, False },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsCall-Result"
+]
+
+(* ping returns an empty result. *)
+VerificationTest[
+    cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "ping", 3 ] |> ][ "result" ],
+    <| |>,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Ping-Result"
+]
+
+(* An unknown method is reported in-band as JSON-RPC -32601 within a 200. *)
+VerificationTest[
+    With[ { resp = Quiet @ cloudRun @ <| "Body" -> cloudBody[ "no/suchMethod", 4 ] |> },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] }
+    ],
+    { 200, -32601 },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-UnknownMethod-32601"
+]
+
+(* A notification owes no reply: 202 with an empty body. *)
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "notifications/initialized" ] |> },
+        { resp[ "StatusCode" ], resp[ "Body" ] }
+    ],
+    { 202, "" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Notification-202"
+]
+
+(* A message with an explicit null id owes no reply: 202 with an empty body. *)
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "ping", Null ] |> },
+        { resp[ "StatusCode" ], resp[ "Body" ] }
+    ],
+    { 202, "" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-NullId-202"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*MCP-Apps capability round-trip*)
+
+(* initialize with the UI extension advertises the same extension back. *)
+VerificationTest[
+    cloudBodyJSON[ cloudRun @ <| "Body" -> cloudInitBodyUI |> ][ "result", "capabilities", "extensions" ],
+    KeyValuePattern[ "io.modelcontextprotocol/ui" -> _ ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-InitUI-AdvertisesExtension"
+]
+
+(* ...and returns an Mcp-Session-Id whose feature bitfield decodes to {"MCPApps"}. Captures the session
+   ID for the tools/resources tests below. *)
+VerificationTest[
+    uiInitResp  = cloudRun @ <| "Body" -> cloudInitBodyUI |>;
+    uiSessionID = cloudSessionID @ uiInitResp;
+    cloudDecode @ uiSessionID,
+    { "MCPApps" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-InitUI-SessionIDDecodesMCPApps"
+]
+
+(* initialize without the UI extension yields a session ID decoding to no features. *)
+VerificationTest[
+    noUiInitResp  = cloudRun @ <| "Body" -> cloudInitBodyNoUI |>;
+    noUiSessionID = cloudSessionID @ noUiInitResp;
+    cloudDecode @ noUiSessionID,
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-InitNoUI-SessionIDDecodesEmpty"
+]
+
+(* With the UI session ID, tools/list attaches _meta.ui to the UI-associated tool. *)
+VerificationTest[
+    SelectFirst[
+        cloudBodyJSON[
+            cloudRun @ <|
+                "Body"    -> cloudBody[ "tools/list", 1 ],
+                "Headers" -> <| "Accept" -> "application/json", "Mcp-Session-Id" -> uiSessionID |>
+            |>
+        ][ "result", "tools" ],
+        #[ "name" ] === "MCPAppsTest" &
+    ],
+    KeyValuePattern[ "_meta" -> KeyValuePattern[ "ui" -> KeyValuePattern[ "resourceUri" -> "ui://wolfram/mcp-apps-test" ] ] ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsList-UISessionHasMeta"
+]
+
+(* With the no-feature session ID, tools/list carries no _meta. *)
+VerificationTest[
+    KeyExistsQ[
+        SelectFirst[
+            cloudBodyJSON[
+                cloudRun @ <|
+                    "Body"    -> cloudBody[ "tools/list", 1 ],
+                    "Headers" -> <| "Accept" -> "application/json", "Mcp-Session-Id" -> noUiSessionID |>
+                |>
+            ][ "result", "tools" ],
+            #[ "name" ] === "MCPAppsTest" &
+        ],
+        "_meta"
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsList-NoFeatureSessionNoMeta"
+]
+
+(* With no Mcp-Session-Id header at all, UI is off (no _meta). *)
+VerificationTest[
+    KeyExistsQ[
+        SelectFirst[
+            cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "tools/list", 1 ] |> ][ "result", "tools" ],
+            #[ "name" ] === "MCPAppsTest" &
+        ],
+        "_meta"
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsList-NoSessionNoMeta"
+]
+
+(* A malformed / wrong-version session ID fails closed: UI stays off. *)
+VerificationTest[
+    KeyExistsQ[
+        SelectFirst[
+            cloudBodyJSON[
+                cloudRun @ <|
+                    "Body"    -> cloudBody[ "tools/list", 1 ],
+                    "Headers" -> <| "Accept" -> "application/json", "Mcp-Session-Id" -> "2:1:whatever" |>
+                |>
+            ][ "result", "tools" ],
+            #[ "name" ] === "MCPAppsTest" &
+        ],
+        "_meta"
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolsList-MalformedSessionUIOff"
+]
+
+(* With the UI session ID, resources/list enumerates the UI registry. *)
+VerificationTest[
+    cloudBodyJSON[
+        cloudRun @ <|
+            "Body"    -> cloudBody[ "resources/list", 2 ],
+            "Headers" -> <| "Accept" -> "application/json", "Mcp-Session-Id" -> uiSessionID |>
+        |>
+    ][ "result", "resources" ],
+    { __Association },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ResourcesList-UISessionEnumerates"
+]
+
+(* Without UI, resources/list is empty. *)
+VerificationTest[
+    cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "resources/list", 2 ] |> ][ "result", "resources" ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ResourcesList-NoSessionEmpty"
+]
+
+(* With the UI session ID, resources/read returns the app HTML for a registered URI. *)
+VerificationTest[
+    cloudBodyJSON[
+        cloudRun @ <|
+            "Body"    -> cloudBody[ "resources/read", 3, <| "uri" -> "ui://wolfram/mcp-apps-test" |> ],
+            "Headers" -> <| "Accept" -> "application/json", "Mcp-Session-Id" -> uiSessionID |>
+        |>
+    ][ "result", "contents" ],
+    { KeyValuePattern[ { "uri" -> "ui://wolfram/mcp-apps-test", "text" -> _String } ] },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ResourcesRead-UISessionReturnsHTML"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Error handling*)
+
+(* A dispatch/tool failure is reported in-band as JSON-RPC -32603 within a 200 (not a raw Failure and
+   not a 500). A tools/call with no tool name makes evaluateTool throw an internal failure, which the
+   inner catchAlways converts to the -32603 response. *)
+VerificationTest[
+    With[ { resp = Quiet @ cloudRun @ <| "Body" -> cloudBody[ "tools/call", 5, <| "arguments" -> <| |> |> ] |> },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] }
+    ],
+    { 200, -32603 },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-ToolFailure-32603In200"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

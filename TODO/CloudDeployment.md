@@ -94,7 +94,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **4. `RunCloudMCPServer` — stateless Streamable HTTP handler**
+- [x] **4. `RunCloudMCPServer` — stateless Streamable HTTP handler**
 
   The cloud analog of `processRequest`: handle one `HTTPRequestData[]`, always return an `HTTPResponse`.
   Runs the shared dispatch inside `Block[{$currentMCPServer=obj, $mcpEvaluation=True,
@@ -109,19 +109,19 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
   Transport-level checks (status codes):
 
-  - [ ] `POST` dispatch works; `GET`/`DELETE` → `405`.
-  - [ ] Disallowed `Origin` → `403`; absent `Origin` allowed.
-  - [ ] Unsupported `MCP-Protocol-Version` (non-`initialize`) → `400`; absent assumes `2025-03-26`.
-  - [ ] Unacceptable `Accept` → `406` (prototype wrongly returned `405`).
-  - [ ] Malformed / non-object body → `400`.
-  - [ ] Request → `200` with negotiated content type; notification/`id->Null` → `202`, empty body.
+  - [x] `POST` dispatch works; `GET`/`DELETE` → `405`.
+  - [x] Disallowed `Origin` → `403`; absent `Origin` allowed.
+  - [x] Unsupported `MCP-Protocol-Version` (non-`initialize`) → `400`; absent assumes `2025-03-26`.
+  - [x] Unacceptable `Accept` → `406` (prototype wrongly returned `405`).
+  - [x] Malformed / non-object body → `400`.
+  - [x] Request → `200` with negotiated content type; notification/`id->Null` → `202`, empty body.
 
   MCP-Apps capability round-trip (spec Verification #19–21):
 
-  - [ ] `initialize` with the `io.modelcontextprotocol/ui` extension → response advertises it **and**
+  - [x] `initialize` with the `io.modelcontextprotocol/ui` extension → response advertises it **and**
         returns an `Mcp-Session-Id` header decoding to `{"MCPApps"}`; without it, decodes to `{}`.
-  - [ ] With the UI session ID, `tools/list` carries `_meta.ui`; with no-feature ID or no header, absent.
-  - [ ] With the UI session ID, `resources/list` enumerates the registry and `resources/read` returns
+  - [x] With the UI session ID, `tools/list` carries `_meta.ui`; with no-feature ID or no header, absent.
+  - [x] With the UI session ID, `resources/list` enumerates the registry and `resources/read` returns
         the app HTML; malformed/wrong-version ID → UI safely off.
 
   **Files:** `Kernel/Server/Cloud.wl`, `Kernel/Main.wl`, `PacletInfo.wl`, `Tests/CloudDeployment.wlt`
