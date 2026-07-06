@@ -669,7 +669,16 @@ resolve to existing files. No code/tests touched, so no `TestReport`/`CodeInspec
 browser render of `/index.html`, the full `Tests/CloudDeployment.wlt` + server suites, and `CodeInspector`
 across `Kernel/Server/*.wl` — all needing cloud connectivity and (for the reproductions) provider API keys.
 
-**Known stale reference (NOT fixed — out of Task 9 scope):** `docs/mcp-apps.md` Architecture "Key Files"
-table still lists `Kernel/StartMCPServer.wl` (deleted in Task 1; protocol handling now lives in
-`Kernel/Server/Shared.wl`). Left untouched to keep this commit docs-scoped to cloud deployment; worth a
-follow-up cleanup.
+**Follow-up (user-requested, committed separately after Task 9):** two doc-accuracy fixes.
+1. **Spec context clarified.** `Specs/CloudDeployment.md`'s symbol table was already correct (both new
+   symbols in ``Wolfram`AgentTools` ``); my Task-9 *summary* mis-stated it as "System". Added a prose
+   sentence making the ``Wolfram`AgentTools` `` context explicit (only `CloudDeploy` is the `System`
+   symbol, via UpValue) so it can't be misread — no table change.
+2. **Systemic stale `Kernel/StartMCPServer.wl` refs fixed** (the file was deleted in Task 1, but 7 doc
+   sites still referenced it — the `mcp-apps.md` one I'd flagged was not isolated). Corrected to real
+   current locations, verified by grepping the definitions: `mcp-apps.md`/`mcp-prompts.md`/`tools.md`/
+   `paclet-extensions.md` → `Kernel/Server/Shared.wl`; `mcp-roots.md` split into `Server/Shared.wl`
+   (`handleMethod`/`initialize`/notifications) + `Server/Local.wl` (read-loop client-response routing,
+   `Local.wl:169`); `getting-started.md` dir-tree line → `Server/`; `mcp-clients.md` historical note →
+   `Kernel/Server/Local.wl` (`stdinShutdownQ`). Left `Scripts/StartMCPServer.wls` + `Tests/StartMCPServer.wlt`
+   (those files exist) and AGENTS.md's `StartMCPServer` *symbol* mention untouched.

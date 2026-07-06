@@ -246,7 +246,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | File | Description |
 |------|-------------|
 | `Kernel/UIResources.wl` | UI resource registry, capability detection, tool-UI metadata |
-| `Kernel/StartMCPServer.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
+| `Kernel/Server/Shared.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
 | `Kernel/CommonSymbols.wl` | Shared symbols for MCP Apps (`$clientSupportsUI`, `$uiResourceRegistry`, etc.) |
 | `Kernel/InstallMCPServer.wl` | `"EnableMCPApps"` option and `MCP_APPS_ENABLED` environment variable |
 | `Kernel/Messages.wl` | Error messages for UI resources |

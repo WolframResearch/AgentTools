@@ -124,7 +124,8 @@ Calls that already use a deliberate, explicit `ProcessDirectory` for another pur
 |------|-------------|
 | `Kernel/MCPClientRequests.wl` | Server-to-client request registry, response correlation, and notification dispatch |
 | `Kernel/MCPRoots.wl` | Roots-specific handlers: `onClientInitialized`, `onRootsListChanged`, `handleRootsListResponse`, `pickFirstValidRoot`, `rootURIToPath`, `normalizeFileURI`, `applyMCPRoot` |
-| `Kernel/StartMCPServer.wl` | `initialize` capability detection, `notifications/*` dispatch via `handleNotification`, and routing of UUID-keyed responses to `handleClientResponse` |
+| `Kernel/Server/Shared.wl` | Method dispatch (`handleMethod`): `initialize` capability detection and `notifications/*` dispatch to `handleNotification` |
+| `Kernel/Server/Local.wl` | stdio read loop: routes UUID-keyed client responses to `handleClientResponse` |
 | `Kernel/CommonSymbols.wl` | Shared declarations (`$clientSupportsRoots`, `$mcpRoot`, `$mcpClientRequests`, `sendClientRequest`, `handleClientResponse`, `handleNotification`, `useEvaluatorKernel`, etc.) |
 | `Kernel/Tools/TestReport.wl` | First tool to honor `$mcpRoot` via `ProcessDirectory` on `RunProcess` |
 | `Tests/MCPClientRequests.wlt` | Unit tests for the request registry and dispatch |

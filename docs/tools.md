@@ -536,7 +536,7 @@ InstallMCPServer[
 - `Kernel/Tools/PacletTools/` - Paclet check/build/submit tools
 - `Kernel/UIResources.wl` - UI resource registry for MCP Apps
 - `Kernel/MCPServerObject.wl` - Tool validation and normalization
-- `Kernel/StartMCPServer.wl` - Protocol handling for `tools/list` and `tools/call` (including `toolSchema`, which sanitizes tool schema `"pattern"` fields for JSON Schema consumers)
+- `Kernel/Server/Shared.wl` - Protocol handling for `tools/list` and `tools/call` (including `toolSchema`, which sanitizes tool schema `"pattern"` fields for JSON Schema consumers)
 - `Kernel/Utilities.wl` - `toJSRegex`, the ICU/PCRE → ECMA 262 regex conversion used by `toolSchema`
 - `Kernel/DefaultServers.wl` - Server configurations with `"Tools"` settings
 - `Assets/Apps/` - HTML and JSON files for MCP Apps UI resources

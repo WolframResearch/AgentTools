@@ -33,9 +33,11 @@ Three new public symbols are introduced:
 | `RunCloudMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
 | `CloudDeploy` (UpValue) | (existing `System` symbol) | `MCPServerObject /: CloudDeploy[obj, args___]` deploys the full directory. |
 
-Both new symbols are declared identically — in `Kernel/Main.wl` (exported name list +
-`$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`) — and defined with
-`beginDefinition` / `endExportedDefinition`. Their top-level error handling differs by role,
+Both new symbols live in the ``Wolfram`AgentTools` `` context — **not** `System` (only `CloudDeploy`
+itself is a `System` symbol, extended here by an `MCPServerObject` UpValue). They are declared
+identically — in `Kernel/Main.wl` (exported name list under the ``Wolfram`AgentTools` `` context, i.e.
+`` `CloudDeployMCPServer ``, plus `$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`) — and
+defined with `beginDefinition` / `endExportedDefinition`. Their top-level error handling differs by role,
 however: `CloudDeployMCPServer` wraps its body in `catchMine` (surfacing a `Failure[...]` on error).
 `RunCloudMCPServer` is an HTTP handler that must **always return an `HTTPResponse`**, so it does
 *not* rely on `catchMine` to surface a raw `Failure`; its wrapper converts failures into responses
