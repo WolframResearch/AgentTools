@@ -620,3 +620,56 @@ unit-tested offline.
 (#13) and OpenAI/Anthropic reproductions (#10) remain; note the anonymous dir URL is
 `…/obj/<user>/<uuid>/` and must be accessed with the trailing slash / `index.html` for the landing page's
 relative `assets/…` + `api/info` fetches to resolve.
+
+## Session 10
+
+**Completed Task 9: User documentation.** Wrote `docs/cloud-deployment.md` — the user-facing reference
+for cloud-deploying an `MCPServerObject`. Docs-only session (no `Kernel/` or test changes).
+
+**What's in `docs/cloud-deployment.md`** (modeled on `servers.md`/`deploy-agent-tools.md`/`mcp-apps.md`
+structure: `# Title` → `## Overview` → sections with tables/code → `## Related Files`/`## Related
+Documentation`):
+- Overview (two entry points table; the built-in `System` `CloudDeploy` UpValue vs the paclet-exported
+  `CloudDeployMCPServer`/`RunCloudMCPServer`) + a **security callout** (deployed servers expose
+  code-execution tools; access control is entirely via API keys; deploy Private + mint keys).
+- Quick Start; `CloudDeploy` reference (signatures/args/options/behavior/example); `CloudDeployMCPServer`
+  reference; Deployed Directory Layout & Permissions table + anonymous-deploy note (share
+  `<dir>/index.html`, not the owner-only bare `<dir>/`); Authentication (Bearer vs `?_key=`, admin owner
+  session); Client Configuration (landing page, `/api/info`, the three provider snippets); Admin Key
+  Management (`listKeys`/`createKey`/`revokeKey` + labels + teardown + raw-kernel equivalents); Stateless
+  Evaluation Model (per-request cold start, `*Context` vector-DB latency/LLMKit); MCP-Apps via
+  self-describing `Mcp-Session-Id`; Endpoint Behavior HTTP-status table + protocol negotiation;
+  Requirements & Limitations.
+
+**Every claim cross-checked against the real code** (`Kernel/Server/Cloud.wl`) and the landing JS
+(`Assets/Cloud/assets/landing.js`) rather than the spec alone — the status-code table, the `-32601`
+(unknown method) vs `-32603` (internal/tool) in-band-in-200 distinction, `Accept`→406, `Origin`→403,
+anonymous dir via `CreateDirectory`, admin actions, and the exact snippet shapes all match shipped
+behavior.
+
+**One spec/reality mismatch found and corrected in the doc (not the code):** the spec's symbol table
+lists `CloudDeployMCPServer`/`RunCloudMCPServer` in ``Wolfram`AgentTools` ``, but I initially wrote
+"System context" (copying `deploy-agent-tools.md`, whose symbols genuinely *are* `System`-declared).
+Checked `Kernel/Main.wl`: `DeployAgentTools` etc. are `System`…`; the two cloud symbols are backtick-
+prefixed (``Wolfram`AgentTools` ``). Only `CloudDeploy` is a `System` symbol. Doc now says so.
+
+**Cross-linking:** added `cloud-deployment.md` to the `AGENTS.md` `docs/` list and the `docs/README.md`
+Core-Concepts index; added a "Deploying a Server to the Cloud" section + Related-Documentation bullet to
+`servers.md`; added a cloud-support blockquote (in Capability Negotiation) + Related-Documentation bullet
+to `mcp-apps.md`.
+
+**Markdown gotcha:** a code span that *ends* in a backtick (e.g. a context name ``Wolfram`AgentTools` ``)
+is fragile in inline text — reworded to avoid it rather than fight the delimiter length.
+
+**Verification:** internal anchors checked (`#requirements-and-limitations`, `#overview`,
+`#stateless-evaluation-model`, `#mcp-apps-support`, `servers.md#llmkit-requirements`); all inter-doc links
+resolve to existing files. No code/tests touched, so no `TestReport`/`CodeInspector` run needed.
+
+**Left for Task 10 (the only remaining task):** OpenAI/Anthropic remote-MCP E2E reproductions, a live
+browser render of `/index.html`, the full `Tests/CloudDeployment.wlt` + server suites, and `CodeInspector`
+across `Kernel/Server/*.wl` — all needing cloud connectivity and (for the reproductions) provider API keys.
+
+**Known stale reference (NOT fixed — out of Task 9 scope):** `docs/mcp-apps.md` Architecture "Key Files"
+table still lists `Kernel/StartMCPServer.wl` (deleted in Task 1; protocol handling now lives in
+`Kernel/Server/Shared.wl`). Left untouched to keep this commit docs-scoped to cloud deployment; worth a
+follow-up cleanup.

@@ -100,6 +100,7 @@ See [building.md](docs/building.md) for detailed instructions.
   - `code-inspector-rules.md`: Adding custom CodeInspector rules
   - `agent-skills.md`: Agent skills system, build process, and how to add new skills
   - `deploy-agent-tools.md`: Deployment management for agent tools
+  - `cloud-deployment.md`: Deploying an `MCPServerObject` as a remote HTTP MCP server in the Wolfram Cloud (`CloudDeploy`/`CloudDeployMCPServer`, directory layout, authentication, statelessness, admin key management)
   - `mcp-roots.md`: MCP roots handshake, working-directory propagation, and guidance for tools that resolve relative paths
   - `paclet-extensions.md`: Third-party paclet extension system for contributing tools, prompts, and servers
   - `preferences-content.md`: System preferences UI for managing deployed Wolfram toolsets

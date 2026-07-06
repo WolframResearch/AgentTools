@@ -29,6 +29,8 @@ The server checks two conditions before enabling MCP Apps:
 - The client must advertise `io.modelcontextprotocol/ui` in `capabilities.extensions`
 - The `MCP_APPS_ENABLED` environment variable must not be set to `"false"`
 
+> **Cloud deployments.** MCP Apps are also supported by [cloud-deployed servers](cloud-deployment.md), whose stateless HTTP transport has no session store to hold `$clientSupportsUI` between requests. There, the negotiated capability is carried in a self-describing `Mcp-Session-Id` header that the client echoes on each request, re-establishing the same flag per request. If a client does not echo the session ID, MCP Apps simply stays off (fail-safe).
+
 ### UI Resources
 
 UI resources are HTML apps served via the MCP `resources/read` endpoint. Each resource is identified by a `ui://` URI (e.g., `ui://wolfram/wolframalpha-viewer`).
@@ -245,4 +247,5 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 - [MCP Apps specification](https://modelcontextprotocol.io/docs/extensions/apps) - Official MCP Apps documentation
 - [tools.md](tools.md) - MCP tools system and how to add new tools
 - [servers.md](servers.md) - Predefined server configurations
+- [cloud-deployment.md](cloud-deployment.md) - Cloud deployment and MCP Apps over the stateless HTTP transport
 - [mcp-clients.md](mcp-clients.md) - Client support and `EnableMCPApps` option

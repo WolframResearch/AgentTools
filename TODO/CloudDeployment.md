@@ -269,14 +269,26 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **9. User documentation**
+- [x] **9. User documentation**
 
   Write `docs/cloud-deployment.md` covering `CloudDeploy[MCPServerObject[…]]`, `CloudDeployMCPServer`,
   the directory layout & permissions, authentication (bearer vs `?_key=`), the stateless evaluation
   model and its cold-start/latency consequences, MCP-Apps support, and admin key management. Add its
   entry to the `AGENTS.md` `docs/` list and cross-link from related docs (`servers.md`, `mcp-apps.md`).
 
-  **Files:** `docs/cloud-deployment.md`, `AGENTS.md`
+  Done: `docs/cloud-deployment.md` written (Overview + security note, Quick Start, `CloudDeploy` and
+  `CloudDeployMCPServer` reference, directory layout/permissions, anonymous-deploy note, authentication,
+  client-configuration snippets, admin key management + teardown, stateless model, MCP-Apps via
+  self-describing session IDs, endpoint HTTP-status table + protocol negotiation, requirements/limits).
+  Every claim was cross-checked against `Kernel/Server/Cloud.wl` and the landing-page JS. Indexed in
+  `AGENTS.md` `docs/` list and `docs/README.md`; cross-linked from `servers.md` (new
+  "Deploying a Server to the Cloud" section + Related Documentation) and `mcp-apps.md` (cloud-support
+  note + Related Documentation). Corrected one spec/reality mismatch: `CloudDeployMCPServer` /
+  `RunCloudMCPServer` live in ``Wolfram`AgentTools` `` (per `Main.wl`), not `System` — only `CloudDeploy`
+  is the `System` symbol.
+
+  **Files:** `docs/cloud-deployment.md`, `AGENTS.md`, `docs/README.md`, `docs/servers.md`,
+  `docs/mcp-apps.md`
 
 ---
 
