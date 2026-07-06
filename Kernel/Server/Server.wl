@@ -19,6 +19,10 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
    so it is declared here where both subcontexts can bind it. *)
 `stealthCatchTop;
 
+(* Tool-list construction shared by the transports: defined in Shared.wl and also read by the cloud
+   transport (Cloud.wl) to describe a server for the /api/info landing-page endpoint. *)
+`serverToolListData;
+
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`AgentTools`"        ];

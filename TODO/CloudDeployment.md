@@ -161,7 +161,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **6. Landing page + `/api/info`**
+- [x] **6. Landing page + `/api/info`**
 
   Static dynamic shell + the public metadata API it consumes. Create `Assets/Cloud/index.html` and
   `Assets/Cloud/assets/*` (CSS/JS): fetch `/api/info` at view time; render name/version/tools/URL;
@@ -174,8 +174,26 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
   `{ "Cloud", "Assets/Cloud" }` to `PacletInfo.wl`'s `"Asset"` extension (read via
   `PacletObject[…]["AssetLocation","Cloud"]`).
 
+  Design/handoff notes for Task 8:
+  - `/api/info` content is **fixed per deployment**, so it is generated once at deploy time and shipped
+    as **static JSON** (no server-embedding, no per-view cold start). `cloudMCPServerInfo[obj, mcpURL]`
+    (`Cloud.wl`) builds the plain-data association `<|"name","version","url","tools"|>`; Task 8 resolves
+    the real `/mcp` URL, passes it in, and deploys e.g.
+    `CloudDeploy[ExportForm[cloudMCPServerInfo[obj, mcpURL], "RawJSON"], <dir>/api/info, Permissions->perms]`.
+  - The tool list reuses a new **side-effect-free** shared helper `serverToolListData[obj]`
+    (`Shared.wl`, declared in the `Server.wl` header) = `KeyValueMap[createMCPToolData,
+    disambiguateToolNames[obj["Tools"]]]` — the *same* construction `tools/list` uses via
+    `initializeServerState`, but WITHOUT its paclet-install / tool-init / UI-setup side effects (so
+    building info never triggers e.g. vector-DB installs). `cloudInfoTool` projects each entry down to
+    `name`/`title`/`description` (drops `inputSchema`/`annotations`).
+  - The landing page (`index.html` + `assets/landing.{css,js}`) references its assets and `/api/info`
+    with **relative** paths (`assets/…`, `api/info`), so it works at whatever cloud path it lands on.
+    The JS prefers `info.url` for the endpoint, falling back to `new URL("mcp", location.href)`. Task 11
+    should confirm in a browser that the directory is served such that relative resolution holds (i.e.
+    accessed as `…/<dir>/` or `…/<dir>/index.html`, not a bare `…/<dir>`).
+
   **Files:** `Assets/Cloud/index.html`, `Assets/Cloud/assets/` (CSS/JS), `Kernel/Server/Cloud.wl`,
-  `PacletInfo.wl`, `Tests/CloudDeployment.wlt`
+  `Kernel/Server/Shared.wl`, `Kernel/Server/Server.wl`, `PacletInfo.wl`, `Tests/CloudDeployment.wlt`
 
 ---
 

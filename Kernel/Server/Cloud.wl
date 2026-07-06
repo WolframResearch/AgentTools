@@ -608,6 +608,50 @@ injectServerDefinitions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Landing Page & Server Info API*)
+(* /api/info is the public metadata endpoint the landing page (a static HTML/JS shell) fetches at view
+   time to render the server name, version, tool list, and endpoint URL, plus its click-to-copy client
+   configuration snippets. Its content is fixed for a given server object, so it is generated once at
+   deploy time and deployed as static JSON (Task 8), rather than recomputed per request -- a page view
+   needs no server embedding or cold start. cloudMCPServerInfo builds the plain-data association: the
+   deployer resolves the /mcp endpoint URL and passes it in. It deliberately exposes no keys, permissions,
+   or usage data. See Specs/CloudDeployment.md (Landing Page). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudMCPServerInfo*)
+cloudMCPServerInfo // beginDefinition;
+
+cloudMCPServerInfo[ obj_MCPServerObject, url_String ] := Enclose[
+    <|
+        "name"    -> ConfirmBy[ obj[ "Name" ], StringQ, "Name" ],
+        "version" -> ConfirmBy[ obj[ "ServerVersion" ], StringQ, "Version" ],
+        "url"     -> url,
+        "tools"   -> ConfirmMatch[ cloudInfoTool /@ serverToolListData @ obj, { ___Association }, "Tools" ]
+    |>,
+    throwInternalFailure
+];
+
+cloudMCPServerInfo // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudInfoTool*)
+(* Project a $toolList entry down to the public fields the landing page shows: name, optional title
+   (the tool's DisplayName), and description. inputSchema and annotations are intentionally dropped --
+   the landing page only lists what a tool is, not its call schema. *)
+cloudInfoTool // beginDefinition;
+
+cloudInfoTool[ data_Association ] := DeleteMissing @ <|
+    "name"        -> data[ "name" ],
+    "title"       -> Lookup[ data, "title", Missing[ ] ],
+    "description" -> Lookup[ data, "description", "" ]
+|>;
+
+cloudInfoTool // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
     Null

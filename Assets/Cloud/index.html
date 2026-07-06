@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server</title>
+    <link rel="stylesheet" href="assets/landing.css">
+</head>
+<body>
+    <div class="wrap">
+
+        <!-- Loading state (replaced once /api/info resolves) -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <span>Loading server information…</span>
+        </div>
+
+        <!-- Error state -->
+        <div id="error" role="alert"></div>
+
+        <!-- Main content (revealed after /api/info loads) -->
+        <div id="content" hidden>
+
+            <header>
+                <div class="eyebrow">Remote MCP Server</div>
+                <h1 id="server-name">MCP Server</h1>
+                <span class="version" id="server-version"></span>
+            </header>
+
+            <section aria-labelledby="endpoint-heading">
+                <h2 id="endpoint-heading">Endpoint</h2>
+                <p class="section-hint">The URL where this MCP server is reachable over HTTP.</p>
+                <div class="copy-block">
+                    <button class="copy-btn" type="button" data-copy-target="endpoint-url">Copy</button>
+                    <pre class="url-line" id="endpoint-url"></pre>
+                </div>
+            </section>
+
+            <section aria-labelledby="connect-heading">
+                <h2 id="connect-heading">Connect a client</h2>
+                <p class="section-hint">
+                    Add this server to an MCP-capable client. Replace
+                    <span class="placeholder">&lt;YOUR_KEY&gt;</span> with an API key minted on the admin page.
+                </p>
+
+                <div class="copy-block">
+                    <span class="label">Generic remote MCP server</span>
+                    <button class="copy-btn" type="button" data-copy-target="snippet-generic">Copy</button>
+                    <pre id="snippet-generic"></pre>
+                </div>
+
+                <div class="copy-block">
+                    <span class="label">OpenAI (Responses API) — bearer header</span>
+                    <button class="copy-btn" type="button" data-copy-target="snippet-openai">Copy</button>
+                    <pre id="snippet-openai"></pre>
+                </div>
+
+                <div class="copy-block">
+                    <span class="label">Anthropic (Messages API) — key in URL</span>
+                    <button class="copy-btn" type="button" data-copy-target="snippet-anthropic">Copy</button>
+                    <pre id="snippet-anthropic"></pre>
+                </div>
+            </section>
+
+            <section aria-labelledby="auth-heading">
+                <h2 id="auth-heading">Authentication</h2>
+                <div class="instructions">
+                    <ol>
+                        <li>Open the <a id="admin-link" href="admin/index.html">admin page</a> (owner only) and
+                            create an API key.</li>
+                        <li>Authenticate with that key either as an
+                            <span class="inline-code">Authorization: Bearer &lt;YOUR_KEY&gt;</span> header, or by
+                            appending <span class="inline-code">?_key=&lt;YOUR_KEY&gt;</span> to the endpoint URL.</li>
+                        <li>Requests without a valid key are rejected before reaching the server.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section aria-labelledby="tools-heading">
+                <h2 id="tools-heading">Tools <span class="tool-count" id="tool-count"></span></h2>
+                <p class="section-hint">Capabilities this server exposes to connected clients.</p>
+                <div id="tools"></div>
+            </section>
+
+            <footer>
+                Powered by Wolfram Language &middot; <a id="admin-link-footer" href="admin/index.html">Admin</a>
+            </footer>
+
+        </div>
+    </div>
+
+    <script src="assets/landing.js"></script>
+</body>
+</html>

@@ -58,6 +58,7 @@ See [building.md](docs/building.md) for detailed instructions.
     - `Server.wl`: Aggregator that declares the server-session state shared across the subcontexts and loads the children below
     - `Shared.wl`: Transport-agnostic core — method dispatch (`handleMethod`), tool/prompt resolution, tool evaluation and result formatting, capability negotiation (`initResponse`), server-state build (`initializeServerState`), and logging helpers
     - `Local.wl`: Local stdio transport — `StartMCPServer`, the read loop (`processRequest`), tool warmup, and stdout-protecting output suppression (`superQuiet`)
+    - `Cloud.wl`: Cloud HTTP transport — `RunCloudMCPServer` (stateless Streamable HTTP handler), `CloudDeployMCPServer`, the self-describing session-ID capability codec, server-embedding deploy helpers, and the landing-page `/api/info` metadata generator (see [Cloud Deployment spec](Specs/CloudDeployment.md))
   - `SupportedClients.wl`: Registry of supported MCP clients (`$SupportedMCPClients`) and relevant utility functions
   - `ValidateAgentToolsPacletExtension.wl`: Validation of `"AgentTools"` [paclet extensions](docs/paclet-extensions.md)
   - `UIResources.wl`: [MCP Apps](docs/mcp-apps.md) UI resource registry, client capability detection, and shared notebook delivery helpers (cloud deployment and experimental inline embedding)
@@ -67,6 +68,7 @@ See [building.md](docs/building.md) for detailed instructions.
   - `Prompts/`: Contains files defining predefined [MCP prompts](docs/mcp-prompts.md) used by default servers
 - `Assets/`: Static assets bundled with the paclet
   - `Apps/`: HTML and JSON files for [MCP Apps](docs/mcp-apps.md) UI resources
+  - `Cloud/`: Landing-page HTML/CSS/JS for [cloud-deployed MCP servers](Specs/CloudDeployment.md) (`index.html` + `assets/`), read via `PacletObject[…]["AssetLocation","Cloud"]` and deployed alongside the `/api/info` endpoint it fetches
 - `FrontEnd/`: FrontEnd extension resources loaded by the notebook front end
   - `Assets/AgentTools.wl`: Localized strings (`AgentToolsStrings`) and graphics (`AgentToolsExpressions`) used by `CreatePreferencesContent` (see [preferences-content.md](docs/preferences-content.md))
 - `Scripts/`: Contains utility scripts for building, testing, and running the paclet

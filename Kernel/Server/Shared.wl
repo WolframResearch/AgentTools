@@ -290,6 +290,20 @@ createMCPToolData // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*serverToolListData*)
+(* The tool-list data for a server object, in the same shape tools/list returns (the $toolList that
+   initializeServerState builds): each tool disambiguated, then passed through createMCPToolData. Unlike
+   initializeServerState this runs no paclet install / server or tool initialization / UI setup -- it only
+   reads tool metadata -- so it is safe to call purely to describe a server, e.g. for the cloud /api/info
+   landing-page endpoint. Declared in the Server` context (Server.wl) so the cloud transport can reach it. *)
+serverToolListData // beginDefinition;
+serverToolListData[ obj_MCPServerObject ] := serverToolListData @ obj[ "Tools" ];
+serverToolListData[ tools: { ___LLMTool } ] := KeyValueMap[ createMCPToolData, disambiguateToolNames @ tools ];
+serverToolListData[ _ ] := { };
+serverToolListData // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*toolSchema*)
 toolSchema // beginDefinition;
 

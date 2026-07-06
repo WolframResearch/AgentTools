@@ -61,6 +61,7 @@ PacletObject[ <|
         { "Asset",
             "Assets" -> {
                 { "Apps"               , "Assets/Apps"                    },
+                { "Cloud"              , "Assets/Cloud"                   },
                 { "SymbolPageTemplate" , "Assets/Templates/SymbolPage.wl" },
                 { "TestReportScript"   , "Assets/TestReport.wls"          },
                 { "AGENTS.md"          , "AGENTS.md"                      }

@@ -1098,4 +1098,209 @@ VerificationTest[
     TestID   -> "CloudDeploy-Endpoint-EndToEnd"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Landing Page & Server Info (/api/info)*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fixtures*)
+
+(* A tool with an explicit DisplayName and Description, so the info projection's title/description fields
+   are exercised (the plain 3-argument LLMTool below has neither). *)
+cloudInfoGammaTool = LLMTool[ <|
+    "Name"        -> "Gamma",
+    "DisplayName" -> "Gamma Tool",
+    "Description" -> "Computes a gamma value.",
+    "Parameters"  -> { "n" -> <| "Interpreter" -> "Integer", "Help" -> "an integer", "Required" -> True |> },
+    "Function"    -> Function[ Gamma[ #n ] ]
+|> ];
+
+(* An in-memory server (no disk persistence) with an explicit name and two tools -- one rich, one plain. *)
+cloudInfoServer = Wolfram`AgentTools`MCPServerObject[ <|
+    "Name"         -> "InfoRich",
+    "Location"     -> "BuiltIn",
+    "LLMEvaluator" -> <| "Tools" -> { cloudInfoGammaTool, LLMTool[ "Plain", { "x" -> "String" }, #x & ] } |>
+|> ];
+
+cloudInfoURL    = "https://www.wolframcloud.com/obj/user/dir/mcp";
+cloudInfoResult = Wolfram`AgentTools`Server`Cloud`Private`cloudMCPServerInfo[ cloudInfoServer, cloudInfoURL ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*serverToolListData (shared tool-list construction)*)
+
+(* An empty tool list yields no data (no side effects). *)
+VerificationTest[
+    Wolfram`AgentTools`Server`serverToolListData[ { } ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "ServerToolListData-Empty"
+]
+
+(* Builds the same disambiguated name set tools/list produces, from the server object directly. *)
+VerificationTest[
+    #[ "name" ] & /@ Wolfram`AgentTools`Server`serverToolListData[ cloudInfoServer ],
+    { "Gamma", "Plain" },
+    SameTest -> MatchQ,
+    TestID   -> "ServerToolListData-Names"
+]
+
+(* Each entry is the full $toolList-shape association (carries inputSchema), i.e. the same construction
+   tools/list uses -- not the trimmed public projection. *)
+VerificationTest[
+    With[ { data = Wolfram`AgentTools`Server`serverToolListData[ cloudInfoServer ] },
+        MatchQ[ data, { __Association } ] && AllTrue[ data, KeyExistsQ[ #, "inputSchema" ] & ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "ServerToolListData-HasInputSchema"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudInfoTool (public tool projection)*)
+
+(* Projects a $toolList entry down to name/title/description, dropping inputSchema and annotations. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`cloudInfoTool[
+        <| "name" -> "X", "title" -> "T", "description" -> "D", "inputSchema" -> <| |>, "annotations" -> <| |> |>
+    ],
+    <| "name" -> "X", "title" -> "T", "description" -> "D" |>,
+    SameTest -> MatchQ,
+    TestID   -> "CloudInfoTool-Projects"
+]
+
+(* A tool with no title (DisplayName) omits the title field entirely. *)
+VerificationTest[
+    KeyExistsQ[
+        Wolfram`AgentTools`Server`Cloud`Private`cloudInfoTool[
+            <| "name" -> "X", "description" -> "D", "inputSchema" -> <| |> |>
+        ],
+        "title"
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudInfoTool-NoTitle"
+]
+
+(* A missing description defaults to the empty string (never Missing in the JSON). *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`cloudInfoTool[ <| "name" -> "X" |> ],
+    <| "name" -> "X", "description" -> "" |>,
+    SameTest -> MatchQ,
+    TestID   -> "CloudInfoTool-DescriptionDefault"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudMCPServerInfo (/api/info payload)*)
+
+(* The payload carries exactly name/version/url/tools -- no keys, permissions, or usage data leak. *)
+VerificationTest[
+    Sort @ Keys @ cloudInfoResult,
+    { "name", "tools", "url", "version" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-Keys"
+]
+
+(* Name, version, and the deployer-supplied endpoint URL are carried through. *)
+VerificationTest[
+    { cloudInfoResult[ "name" ], cloudInfoResult[ "version" ], cloudInfoResult[ "url" ] },
+    { "InfoRich", "1.0.0", cloudInfoURL },
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-NameVersionURL"
+]
+
+(* The tools list is the projected shape: the rich tool carries title + description, the plain tool
+   carries only name + description. *)
+VerificationTest[
+    MatchQ[
+        cloudInfoResult[ "tools" ],
+        {
+            KeyValuePattern[ { "name" -> "Gamma", "title" -> "Gamma Tool", "description" -> "Computes a gamma value." } ],
+            KeyValuePattern[ { "name" -> "Plain" } ]
+        }
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-Tools"
+]
+
+(* The plain tool has no title field. *)
+VerificationTest[
+    KeyExistsQ[ cloudInfoResult[ "tools" ][[ 2 ]], "title" ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-PlainToolNoTitle"
+]
+
+(* The public tool projection drops inputSchema -- /api/info advertises what tools are, not their schema. *)
+VerificationTest[
+    AnyTrue[ cloudInfoResult[ "tools" ], KeyExistsQ[ #, "inputSchema" ] & ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-NoInputSchema"
+]
+
+(* The whole payload is JSON-serializable (it is plain-data: strings, associations, and lists). *)
+VerificationTest[
+    StringQ @ Developer`WriteRawJSONString @ cloudInfoResult,
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudMCPServerInfo-JSONSerializable"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cloud assets (PacletInfo extension + landing page)*)
+
+(* The Cloud asset directory is registered in PacletInfo.wl and resolves to a real directory. *)
+VerificationTest[
+    DirectoryQ @ PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudAssets-AssetLocationResolves"
+]
+
+(* The landing-page shell and its CSS/JS are all present under the asset directory. *)
+VerificationTest[
+    With[ { dir = PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ] },
+        AllTrue[
+            { "index.html", FileNameJoin @ { "assets", "landing.css" }, FileNameJoin @ { "assets", "landing.js" } },
+            FileExistsQ @ FileNameJoin @ { dir, # } &
+        ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudAssets-FilesExist"
+]
+
+(* index.html links its stylesheet/script and carries the containers the JS fills. *)
+VerificationTest[
+    With[ { html = Import[ FileNameJoin @ { PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ], "index.html" }, "Text" ] },
+        AllTrue[
+            { "assets/landing.css", "assets/landing.js", "endpoint-url", "snippet-openai", "snippet-anthropic", "tools" },
+            StringContainsQ[ html, # ] &
+        ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudAssets-IndexHTML-Content"
+]
+
+(* landing.js fetches /api/info, uses the <YOUR_KEY> placeholder, and builds the generic/OpenAI/Anthropic
+   config shapes (bearer header, server_url, and the ?_key= URL form). *)
+VerificationTest[
+    With[ { js = Import[ FileNameJoin @ { PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ], "assets", "landing.js" }, "Text" ] },
+        AllTrue[
+            { "api/info", "<YOUR_KEY>", "Bearer ", "server_url", "?_key=" },
+            StringContainsQ[ js, # ] &
+        ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudAssets-LandingJS-Content"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

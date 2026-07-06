@@ -379,3 +379,73 @@ vars are evaluated at definition time — define them upstream.
   `cloudMCPServerPayload` for `/mcp`; add the `$CloudConnected` guard + `NotCloudConnected`/
   `InvalidCloudTarget` tags there (deliberately NOT in Task 5). `deployMCPEndpoint` already handles
   String/CloudObject/Automatic targets and forwards options.
+
+## Session 7
+
+**Completed Task 6: Landing page + `/api/info`.** The public metadata endpoint and the static
+HTML/JS landing page that consumes it. All WL logic is in place and unit-tested; the *deployment*
+wiring (pushing `/index.html`, `/assets/*`, `/api/info` into the directory) belongs to Task 8.
+
+**Key design decision — `/api/info` is STATIC JSON, generated at deploy time, not a per-request API.**
+The info content (name, version, tools, `/mcp` URL) is fixed for a given server object, so there is no
+reason to embed the server + pay a cold start on every page view. Task 8 will deploy the precomputed
+JSON (e.g. `CloudDeploy[ExportForm[cloudMCPServerInfo[obj, mcpURL], "RawJSON"], <dir>/api/info, ...]`).
+This is why Task 6 provides a *generator function* rather than a deployed handler. (Confirmed via the
+WolframLanguageContext tool: `CloudDeploy[ExportForm[assoc,"RawJSON"], path]` serves `application/json`;
+same-origin `fetch` from the landing page needs no CORS.)
+
+**Source changes:**
+- **`Kernel/Server/Shared.wl`** — new **side-effect-free** shared helper `serverToolListData[obj]` =
+  `KeyValueMap[createMCPToolData, disambiguateToolNames[obj["Tools"]]]` (placed right after
+  `createMCPToolData`). This is the *same* tool-list construction `tools/list` uses via
+  `initializeServerState`, but WITHOUT the paclet-install / `runServerInitialization` /
+  `runToolInitialization` / `initializeUIResources` side effects — critical so that merely *describing*
+  a server for `/api/info` never triggers e.g. a vector-DB install. Handles `{}`/non-tool inputs → `{}`.
+- **`Kernel/Server/Server.wl`** — forward-declared `` `serverToolListData `` in the package header (it is
+  defined in `Shared.wl` and read by `Cloud.wl`, both under the `Server`` context; only used within the
+  Server files, so the header — not `CommonSymbols.wl` — is the right home, matching `stealthCatchTop`).
+  I did **not** move `disambiguateToolNames`/`createMCPToolData` out of `Server`Shared`Private` —
+  `Tests/StartMCPServer.wlt` references ~15 of them by that private path, so moving them would break it.
+  The new helper wraps them in `Shared.wl` where they are in scope and exposes only itself.
+- **`Kernel/Server/Cloud.wl`** — new "Landing Page & Server Info API" section:
+  `cloudMCPServerInfo[obj_MCPServerObject, url_String]` (Enclose, `ConfirmBy` name/version are strings) →
+  `<|"name","version","url","tools"|>`; `cloudInfoTool` projects each `$toolList` entry down to
+  `name`/`title`(opt)/`description`(default `""`), dropping `inputSchema`/`annotations`. Both file-private
+  (Task 8's deploy code is in the same file). No keys/permissions/usage are ever included.
+- **`PacletInfo.wl`** — added `{ "Cloud", "Assets/Cloud" }` to the `"Asset"` extension. Verified a fresh
+  TestReport kernel (source paclet, `PacletDataRebuild`) resolves
+  `PacletObject["Wolfram/AgentTools"]["AssetLocation","Cloud"]` to the real dir.
+
+**Assets (`Assets/Cloud/`):**
+- `index.html` — static shell: header (name + version badge), Endpoint, Connect-a-client (3 snippet
+  blocks), Authentication instructions, Tools list, footer/admin link. Loading + error states. References
+  `assets/landing.{css,js}` and fetches `api/info` with **relative** paths so it works at any cloud path.
+- `assets/landing.css` — self-contained (no external fonts/CDNs — the Wolfram Cloud CSP would block
+  them), light/dark via `prefers-color-scheme`, responsive, Wolfram-red accent.
+- `assets/landing.js` — fetches `/api/info` (`new URL("api/info", location.href)`), renders name/version/
+  tools/URL, builds the click-to-copy snippets, and does clipboard copy in JS (async Clipboard API +
+  `execCommand` fallback). Snippet shapes match the notes' proven examples exactly: generic
+  `{"type":"http","url","headers":{Authorization:"Bearer <YOUR_KEY>"}}`, OpenAI
+  `{type:mcp,server_label,server_url,require_approval:never,headers}`, Anthropic
+  `{type:url,url:"…?_key=<YOUR_KEY>",name}`. `<YOUR_KEY>` placeholder everywhere (keys minted on admin
+  page). `safeLabel` sanitizes the server name to `[A-Za-z0-9_-]` for provider labels.
+
+**Tests — `Tests/CloudDeployment.wlt` now 104 (was 88): +16 Task-6 tests**, all in-process, 100% pass:
+`serverToolListData` (empty, names, full-shape-with-inputSchema); `cloudInfoTool` (projection, no-title,
+description-default); `cloudMCPServerInfo` (exact key set = no leak, name/version/url passthrough, tool
+projection, plain-tool-no-title, no-inputSchema, JSON-serializable); Cloud assets (AssetLocation
+resolves, files exist, index.html links + containers, landing.js content contract: `api/info`/
+`<YOUR_KEY>`/`Bearer`/`server_url`/`?_key=`).
+
+**Verification:** `CloudDeployment.wlt` **104/104**; regression `MCPApps.wlt` **83/83**,
+`MCPServerObject.wlt` **71/71**; CodeInspector **clean** on `Cloud.wl`, `Shared.wl`, `Server.wl`.
+HTML well-formed (all JS-referenced IDs present); snippet JSON shapes cross-checked against the notes.
+No JS runtime in the sandbox, so a live browser render of the page (spec Verification #13) stays with
+Task 11; the JS logic + JSON shapes are validated statically here.
+
+**For Task 8:** call `cloudMCPServerInfo[obj, mcpURL]` after `/mcp` is deployed (so the URL is known),
+serialize with `ExportForm[…, "RawJSON"]`, and `CloudDeploy` it to `<dir>/api/info` at `perms`; push the
+`Assets/Cloud/` files (`index.html`→`<dir>/index.html`, `assets/*`→`<dir>/assets/*`) with `CopyFile`
+(read the dir via `PacletObject["Wolfram/AgentTools"]["AssetLocation","Cloud"]`, mirroring
+`initializeUIResources`). Watch the trailing-slash access question (see the Task 6 TODO note) during the
+Task 11 browser check.
