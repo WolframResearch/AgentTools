@@ -73,3 +73,64 @@ InternalFailureFormatting/Prompts/ToolOptions/StartMCPServer `.wlt`; special cas
   reloads the in-progress paclet into the live MCP server.
 - `Scripts/StartMCPServer.wls` and other file references point at the `.wls` script (unchanged); only
   `ResourceDefinition.nb` referenced the deleted `.wl` file (auto-regenerated, ignore).
+
+## Session 2
+
+**Completed Task 2: Protocol-version negotiation (shared).** The one deliberate behavior change
+carved out of the Task 1 refactor.
+
+**Source changes:**
+- `Kernel/Server/Shared.wl`: replaced the hardcoded file-private `$protocolVersion = "2024-11-05"`
+  (Configuration block) with `$supportedProtocolVersions = {"2025-11-25","2025-06-18","2025-03-26",
+  "2024-11-05"}` (newest first) and `$preferredProtocolVersion = "2025-11-25"`. Added the internal
+  `negotiateProtocolVersion` helper (new subsubsection right after `initResponse`) and changed
+  `initResponse`'s `"protocolVersion"` field from `$protocolVersion` to
+  `negotiateProtocolVersion @ clientMsg`.
+- `Kernel/CommonSymbols.wl`: declared `$preferredProtocolVersion` and `$supportedProtocolVersions`
+  in the "MCP server dispatch" section so both transports (and Task 4's `Cloud.wl`) can reach them.
+
+**How negotiation resolves (important for later tasks):**
+- `negotiateProtocolVersion[clientMsg_Association]` reads `clientMsg["params","protocolVersion"]`
+  and recurses; `negotiateProtocolVersion[version_String] /; MemberQ[$supportedProtocolVersions, …]`
+  echoes a supported version; the `_` fallback returns `$preferredProtocolVersion`. So missing params,
+  missing/absent protocolVersion, non-string junk, and unsupported versions ALL fall back to preferred
+  — fail-safe, no errors.
+- `initResponse`'s two entry paths both feed the 5-arg overload: `initResponse[obj, msg]` (from
+  `handleMethod["initialize"]`) passes the real client message; `initResponse[obj]` / the 4-arg form
+  route through `<||>`, which negotiates to preferred. No caller change needed.
+
+**Symbol-context note:** like `$mcpEvaluation`/`$clientSupportsUI`, the two new symbols are *declared*
+in `Wolfram`AgentTools`Common`` but *assigned* their default values at the top of `Shared.wl`'s
+Private section — the bare names resolve to the Common context via `Needs`. Tests reference them as
+`Wolfram`AgentTools`Common`$supportedProtocolVersions` etc.
+
+**Tests — new `Tests/CloudDeployment.wlt` (19 tests, all in-process, 100% pass):** bootstraps the
+file Tasks 3–8 will extend. Covers: config symbol values + the invariant that preferred ∈ supported;
+`negotiateProtocolVersion` string form (echo old/new/intermediate, unknown→preferred, non-string→
+preferred); client-message form (supported/unknown/missing-version/empty); and end-to-end via
+`initResponse` (echo supported 2024-11-05 & 2025-11-25, unknown→preferred, 4-arg & empty-msg→preferred).
+These call the *exact* shared `initResponse`/`negotiateProtocolVersion` code the local stdio server
+runs, so they directly verify "the local stdio server negotiates correctly for old/new/unknown."
+
+**Decision — did NOT modify `Tests/StartMCPServer.wlt`** (listed in the task's Files but left
+untouched deliberately): its existing assertions expect `protocolVersion == "2024-11-05"` when
+`MCPInitialize` sends its default `2024-11-05`; under negotiation a supported version is echoed, so
+those stay correct. Adding subprocess-level negotiation tests there would be unverifiable in this
+sandbox (see env note) and redundant with the in-process coverage.
+
+**Verification:**
+- `Tests/CloudDeployment.wlt`: **19/19 pass**.
+- `Tests/MCPApps.wlt`: **83/83 pass** — its direct `initResponse` tests (empty `<||>` clientMsg) still
+  pass since they only assert key existence, not the version value.
+- CodeInspector: **clean** on `Kernel/Server/Shared.wl` and `Kernel/CommonSymbols.wl`.
+- `Tests/StartMCPServer.wlt`: 51/85 pass, 34 fail — **verified identical to the git-stash baseline**
+  (changes reverted), so **zero regression**. See env note below for why the 34 fail.
+
+**Environment note (updates Session 1's diagnosis):** the 34 `StartMCPServer.wlt` failures are NOT a
+TestReport stdin/stdout quirk — the `wolframscript` binary is simply absent at
+`/usr/local/Wolfram/WolframEngine/14.3/Executables/wolframscript`, so `StartMCPTestServer` fails with
+`StartProcess::pnfd` and every downstream subprocess test cascades (`MCPTestServerNotRunning` →
+`Missing["KeyAbsent","result"]`). None reference protocol versions or the new symbols. The pass count
+is a stable 51 here (Session 1's "57" was subprocess-spawn flakiness). Bottom line: **no subprocess
+integration test can run in this sandbox**; rely on in-process `.wlt` files (fresh `TestReport` kernel)
+for verification, as done here.

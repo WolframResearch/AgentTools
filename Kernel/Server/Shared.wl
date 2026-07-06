@@ -13,11 +13,14 @@ Needs[ "Wolfram`Chatbook`" -> "cb`" ];
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
-$protocolVersion     = "2024-11-05";
-$waImageFetchTimeout = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
-$clientName          = None;
-$clientSupportsUI    = False;
-$mcpEvaluation       = False;
+(* Supported MCP protocol revisions, newest first; the preferred version is returned when the
+   client requests an unsupported one (see negotiateProtocolVersion). Shared by both transports. *)
+$supportedProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" };
+$preferredProtocolVersion  = "2025-11-25";
+$waImageFetchTimeout       = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
+$clientName                = None;
+$clientSupportsUI          = False;
+$mcpEvaluation             = False;
 
 $logTimeStamp := DateString[
     {
@@ -839,7 +842,7 @@ initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, cli
         tools = If[ Length @ tools0 > 0, <| "listChanged" -> True |>, <| |> ];
         instructions = ConfirmMatch[ makeInstructions @ prompts, _Missing | _String, "Instructions" ];
         DeleteMissing @ <|
-            "protocolVersion" -> $protocolVersion,
+            "protocolVersion" -> negotiateProtocolVersion @ clientMsg,
             "instructions"    -> instructions,
             "capabilities" -> <|
                 "prompts" -> <| |>,
@@ -860,6 +863,24 @@ initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, cli
 ];
 
 initResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*negotiateProtocolVersion*)
+(* Echo the client's requested protocol version when we support it, otherwise fall back to the
+   preferred version. A missing/malformed request also yields the preferred version. Per the MCP
+   lifecycle rules: https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle *)
+negotiateProtocolVersion // beginDefinition;
+
+negotiateProtocolVersion[ clientMsg_Association ] :=
+    negotiateProtocolVersion @ clientMsg[ "params", "protocolVersion" ];
+
+negotiateProtocolVersion[ version_String ] /; MemberQ[ $supportedProtocolVersions, version ] :=
+    version;
+
+negotiateProtocolVersion[ _ ] := $preferredProtocolVersion;
+
+negotiateProtocolVersion // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

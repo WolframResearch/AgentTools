@@ -61,7 +61,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **2. Protocol-version negotiation (shared)**
+- [x] **2. Protocol-version negotiation (shared)**
 
   The one deliberate behavior change extracted from the refactor. Replace the hardcoded
   `$protocolVersion = "2024-11-05"` / client-ignoring `initResponse` (was `StartMCPServer.wl:15`,

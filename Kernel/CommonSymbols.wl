@@ -118,6 +118,8 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 (* MCP server dispatch (shared by the local and cloud transports): *)
 `handleMethod;
 `initializeServerState;
+`$preferredProtocolVersion;
+`$supportedProtocolVersions;
 
 (* MCP client requests / server-to-client traffic: *)
 `$mcpClientRequests;
