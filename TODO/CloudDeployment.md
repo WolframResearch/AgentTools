@@ -252,19 +252,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **10. Reference pages**
-
-  Author English symbol reference pages for `CloudDeployMCPServer` and `RunCloudMCPServer`
-  (`Documentation/English/ReferencePages/Symbols/`), following the existing pages
-  (e.g. `CreateMCPServer.nb`) and the `SymbolPage` template. Use the `WriteNotebook` / `ReadNotebook`
-  tools. (Japanese pages exist for other symbols by convention but are not required by the spec.)
-
-  **Files:** `Documentation/English/ReferencePages/Symbols/CloudDeployMCPServer.nb`,
-  `Documentation/English/ReferencePages/Symbols/RunCloudMCPServer.nb`
-
----
-
-- [ ] **11. End-to-end verification & cross-cutting checks**
+- [ ] **10. End-to-end verification & cross-cutting checks**
 
   Spanning verification not owned by a single task above. Requires cloud connectivity and OpenAI /
   Anthropic API keys.
