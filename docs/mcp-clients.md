@@ -1,3 +1,5 @@
+<!-- cspell: ignore continuedev, asar -->
+
 # MCP Client Support in AgentTools
 
 This document explains how AgentTools supports different MCP client applications and how to install MCP servers into them.

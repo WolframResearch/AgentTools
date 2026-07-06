@@ -1,3 +1,5 @@
+<!-- cspell: ignore AAIF, direnv -->
+
 # Goose MCP Client Research
 
 ## Overview

@@ -681,6 +681,7 @@ VerificationTest[
 
 (* Regression guard: a genuinely unsubscribed user (LLMKit still enabled) DOES get the subscription
    warning with the buy-now URL, so disabling must not be conflated with lacking a subscription. *)
+(* cspell: ignore subscri *)
 VerificationTest[
     Module[ { result },
         result = environmentBlock[ "LLMKIT_ENABLED" -> None,
@@ -702,7 +703,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframContext-UnsubscribedStillWarns@@Tests/Tools.wlt:684,1-706,2"
+    TestID   -> "RelatedWolframContext-UnsubscribedStillWarns@@Tests/Tools.wlt:685,1-707,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -720,14 +721,14 @@ VerificationTest[
     $testReportTool = $DefaultMCPTools[ "TestReport" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-GetTool@@Tests/Tools.wlt:719,1-724,2"
+    TestID   -> "TestReport-GetTool@@Tests/Tools.wlt:720,1-725,2"
 ]
 
 VerificationTest[
     $testResourceDirectory = FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "TestResources" },
     _String? DirectoryQ,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-TestResourceDirectory@@Tests/Tools.wlt:726,1-731,2"
+    TestID   -> "TestReport-TestResourceDirectory@@Tests/Tools.wlt:727,1-732,2"
 ]
 
 VerificationTest[
@@ -737,7 +738,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-SingleFile@@Tests/Tools.wlt:733,1-741,2"
+    TestID   -> "TestReport-SingleFile@@Tests/Tools.wlt:734,1-742,2"
 ]
 
 VerificationTest[
@@ -751,7 +752,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt"~~__~~"TestFile2.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-MultipleFiles@@Tests/Tools.wlt:743,1-755,2"
+    TestID   -> "TestReport-MultipleFiles@@Tests/Tools.wlt:744,1-756,2"
 ]
 
 VerificationTest[
@@ -761,7 +762,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt"~~__~~"TestFile2.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-Directory@@Tests/Tools.wlt:757,1-765,2"
+    TestID   -> "TestReport-Directory@@Tests/Tools.wlt:758,1-766,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -797,7 +798,7 @@ skipIfGitHubActions @ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-McpRootRelativePath@@Tests/Tools.wlt:774,23-801,2"
+    TestID   -> "TestReport-McpRootRelativePath@@Tests/Tools.wlt:775,23-802,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -810,7 +811,7 @@ VerificationTest[
     Failure[ "AgentTools::TestFileNotFound", _Association ],
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-NonexistentFile-GH#65@@Tests/Tools.wlt:808,1-814,2"
+    TestID   -> "TestReport-NonexistentFile-GH#65@@Tests/Tools.wlt:809,1-815,2"
 ]
 
 VerificationTest[
@@ -818,7 +819,7 @@ VerificationTest[
     _? (FreeQ[ "AgentTools::Internal" ]),
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-NoInternalFailure-GH#65@@Tests/Tools.wlt:816,1-822,2"
+    TestID   -> "TestReport-NoInternalFailure-GH#65@@Tests/Tools.wlt:817,1-823,2"
 ]
 
 VerificationTest[
@@ -831,7 +832,7 @@ VerificationTest[
     _? (FreeQ[ "AgentTools::Internal" ]),
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-MixedValidInvalidPaths-GH#65@@Tests/Tools.wlt:824,1-835,2"
+    TestID   -> "TestReport-MixedValidInvalidPaths-GH#65@@Tests/Tools.wlt:825,1-836,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -848,7 +849,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveNames@@Tests/Tools.wlt:844,1-852,2"
+    TestID   -> "ToolProperties-AllHaveNames@@Tests/Tools.wlt:845,1-853,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -861,7 +862,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveDescriptions@@Tests/Tools.wlt:857,1-865,2"
+    TestID   -> "ToolProperties-AllHaveDescriptions@@Tests/Tools.wlt:858,1-866,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -874,5 +875,5 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveParameters@@Tests/Tools.wlt:870,1-878,2"
+    TestID   -> "ToolProperties-AllHaveParameters@@Tests/Tools.wlt:871,1-879,2"
 ]

@@ -1,3 +1,5 @@
+<!-- cspell: ignore nanbingxyz, pglite -->
+
 # 5ire MCP Client Research
 
 ## Overview

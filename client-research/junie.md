@@ -1,3 +1,5 @@
+<!-- cspell: ignore heise, Özkan, Pakdil, intellectronica, Vaadin -->
+
 # Junie MCP Client Research
 
 ## Overview

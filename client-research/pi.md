@@ -1,3 +1,5 @@
+<!-- cspell: ignore Zechner, badlogic, mariozechner, nicobailon, Mintlify -->
+
 # Pi MCP Client Research
 
 ## Overview

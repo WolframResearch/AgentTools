@@ -1,3 +1,5 @@
+<!-- cspell: ignore continuedev -->
+
 # Continue MCP Client Research
 
 ## Overview
