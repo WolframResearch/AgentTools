@@ -253,9 +253,10 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
         via `Block[{$CloudConnected = False}, …]`, runs offline.)
 
   Deviations from the sketch, both validated against the real cloud: (a) the anonymous directory is
-  `CloudObject[CreateUUID[], Permissions->perms]`, **not** the bare `CloudObject[Permissions->perms]` —
-  the latter materializes a leaf at `/obj/<uuid>` that cannot hold children (child deploys fail with
-  `cloudunknown`); a named-UUID prefix under the user area nests correctly. (b) The deployment-path
+  `CreateDirectory @ CloudObject[Permissions->perms]`, **not** the bare `CloudObject[Permissions->perms]`
+  — the latter materializes a leaf at `/obj/<uuid>` that cannot hold children (child deploys fail with
+  `cloudunknown`); `CreateDirectory` makes a real anonymous directory object children nest under. (b) The
+  deployment-path
   helper (`cloudDeploymentSubObject`) is **file-private in `Cloud.wl`** (matching the Task-7
   `adminMCPObject`/`adminKeyLabelStore` sibling-resolvers), not in `CommonSymbols.wl` — it is used only
   within `Cloud.wl`, so per the spec's own symbol-sharing rule a shared declaration is unwarranted (and

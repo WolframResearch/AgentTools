@@ -557,11 +557,17 @@ fresh TestReport kernel** (which is `$CloudConnected` here), so the cloud-gated 
 
 **Two deviations from the spec sketch — BOTH found by real-cloud probing, not CodeInspector or the
 in-process tests (they only surface when you actually deploy):**
-1. **Anonymous dir is `CloudObject[CreateUUID[], Permissions->perms]`, NOT `CloudObject[Permissions->
-   perms]`.** The bare form materializes a **leaf** at `/obj/<uuid>` (no username in the path); deploying
-   a child `<uuid>/mcp` under it fails with `CloudDeploy::cloudunknown`. A self-generated UUID *name*
-   gives a `/obj/<user>/<uuid>` prefix that nests correctly (same shape as the working Task-7 named-path
-   admin probe). Isolation-tested all three base forms to nail this down.
+1. **Anonymous dir is `CreateDirectory @ CloudObject[Permissions->perms]`, NOT bare
+   `CloudObject[Permissions->perms]`.** The bare form materializes a **leaf** at `/obj/<uuid>`; deploying
+   a child `<uuid>/mcp` under it fails with `CloudDeploy::cloudunknown`. `CreateDirectory` makes a real
+   anonymous directory object (truly server-assigned `/obj/<uuid>`, no username) that children nest under.
+   (Initially used `CloudObject[CreateUUID[], Permissions->perms]` — a UUID *name* prefix — but switched to
+   the cleaner `CreateDirectory` form per review; both are functionally identical, verified head-to-head.)
+   Findings from the live comparison: `CreateDirectory` returns an **Owner-only** directory regardless of
+   the requested perms (that only governs the bare directory URL, not the children, which deploy at their
+   own explicit perms); and for **both** forms the landing page is served at `<dir>/index.html` (200) while
+   `<dir>/` and `<dir>` are 401 for a key holder — so the shareable landing URL is `<dir>/index.html`
+   (relative `assets/…` + `api/info` resolve correctly from there), a Task 9/11 documentation point.
 2. **`cloudDeploymentSubObject` STRIPS the child's inherited `Permissions`** (`CloudObject[First @
    FileNameJoin[…]]`). `FileNameJoin[{CloudObject[url, Permissions->perms], "api", "admin"}]` **propagates
    perms to the child** (verified via `FullForm`), so the `/api/admin` deploy target carried the

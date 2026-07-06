@@ -1016,13 +1016,16 @@ cloudDeployDirectory // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*resolveDeploymentDirectory*)
-(* Resolve the deployment directory CloudObject. An omitted target deploys anonymously under a self-generated
-   UUID name -- a server-assigned path that acts as a directory prefix children can nest under. (The bare
-   CloudObject[Permissions -> perms] the spec sketches materializes a leaf at /obj/<uuid> that cannot hold
-   children, so a named UUID prefix is used instead.) An explicit string name resolves under the user's cloud
+(* Resolve the deployment directory CloudObject. An omitted target creates an anonymous cloud directory with
+   CreateDirectory: the bare CloudObject[Permissions -> perms] the spec sketches materializes a leaf at
+   /obj/<uuid> that cannot hold children (a child deploy fails with CloudDeploy::cloudunknown), whereas
+   CreateDirectory yields an actual directory object at an anonymous server-assigned path that children nest
+   under. (CreateDirectory returns an Owner-only directory regardless of the requested perms; that governs
+   only the bare directory URL -- each child object is deployed at its own explicit permissions, and the
+   landing page is reached at <dir>/index.html.) An explicit string name resolves under the user's cloud
    area; an explicit CloudObject is used as given. *)
 resolveDeploymentDirectory // beginDefinition;
-resolveDeploymentDirectory[ Automatic, perms_ ]      := CloudObject[ CreateUUID[ ], Permissions -> perms ];
+resolveDeploymentDirectory[ Automatic, perms_ ]      := CreateDirectory @ CloudObject[ Permissions -> perms ];
 resolveDeploymentDirectory[ target_String, perms_ ]  := CloudObject[ target, Permissions -> perms ];
 resolveDeploymentDirectory[ target_CloudObject, _ ]  := target;
 resolveDeploymentDirectory // endDefinition;
