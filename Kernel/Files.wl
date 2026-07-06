@@ -263,6 +263,41 @@ writeRawJSONFile // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Cloud Object Files*)
+(* WXF read/write for a CloudObject, used by the cloud-deployment admin API's optional key-label store.
+   These are the cloud analogs of readWXFFile / writeWXFFile above. *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*readCloudWXF*)
+(* Read a WXF-encoded association/list from a CloudObject, degrading to Missing[ "NotAvailable" ] when the
+   object does not exist or does not hold valid data (a missing object makes CloudImport issue a message
+   and return $Failed, which is quieted here). Never throws, so a best-effort label read is safe. *)
+readCloudWXF // beginDefinition;
+
+readCloudWXF[ obj_ ] :=
+    Replace[
+        Quiet @ CloudImport[ obj, "WXF" ],
+        Except[ _Association | _List ] -> Missing[ "NotAvailable" ]
+    ];
+
+readCloudWXF // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*writeCloudWXF*)
+(* Write data as WXF to a CloudObject. Defaults to Private permissions (the label store is owner-only);
+   returns the CloudObject on success or $Failed on failure. *)
+writeCloudWXF // beginDefinition;
+writeCloudWXF // Options = { Permissions -> "Private" };
+
+writeCloudWXF[ obj_, data_, opts: OptionsPattern[ ] ] :=
+    CloudExport[ data, "WXF", obj, Permissions -> OptionValue[ Permissions ] ];
+
+writeCloudWXF // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
     Null

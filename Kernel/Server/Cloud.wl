@@ -652,6 +652,308 @@ cloudInfoTool // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Admin Page & Key Management API*)
+(* /api/admin is the owner-only (Private) API backing the admin page. It manages the sibling /mcp object's
+   Wolfram Cloud PermissionsKeys -- listing, minting, and revoking API keys -- using the standard cloud
+   primitives (Information[mcp,"Permissions"], SetPermissions, DeleteObject[PermissionsKey[...]]). It is
+   deployed (Task 8) as Delayed[runCloudAdminAPI[base]] forced Private, capturing the deployment directory
+   (base) so it can resolve its siblings <base>/mcp (the endpoint whose keys it manages) and
+   <base>/admin/keys.wxf (an optional human-readable label store). Because the object is Private and reached
+   only over the owner's authenticated Wolfram Cloud session, no secret is embedded and the handler does no
+   auth of its own -- an unauthorized caller never reaches it. The authoritative list of valid keys is
+   always /mcp's live permissions; the label store is a best-effort convenience. See
+   Specs/CloudDeployment.md (Admin Page). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*runCloudAdminAPI*)
+(* The handler deployed (via Delayed) at /api/admin. Like RunCloudMCPServer it always returns an
+   HTTPResponse: a well-formed action yields a 200 JSON result, a client error (bad method / body /
+   action / key) yields a 4xx JSON error, and any unexpected internal failure yields a 500. It is not
+   exported -- the deployed Delayed[runCloudAdminAPI[base]] payload carries its definition via the same
+   dev-bundling capture used for /mcp. *)
+runCloudAdminAPI // beginDefinition;
+
+runCloudAdminAPI[ base_CloudObject ] := runCloudAdminAPI[
+    base,
+    <|
+        "Method"        -> HTTPRequestData[ "Method" ],
+        "BodyByteArray" -> HTTPRequestData[ "BodyByteArray" ]
+    |>
+];
+
+runCloudAdminAPI[ base_CloudObject, request_ ] :=
+    Module[ { result },
+        result = catchAlways @ runCloudAdminAPI0[ base, request ];
+        If[ MatchQ[ result, _HTTPResponse ],
+            result,
+            adminJSONResponse[ <| "ok" -> False, "error" -> "Internal error." |>, 500 ]
+        ]
+    ];
+
+runCloudAdminAPI // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*runCloudAdminAPI0*)
+(* Transport validation (POST + a JSON object body) followed by action dispatch. The admin page always
+   POSTs a JSON body { "action", "key"?, "label"? }; a non-POST method or a malformed body short-circuits
+   to a 4xx before any cloud operation runs. *)
+runCloudAdminAPI0 // beginDefinition;
+
+runCloudAdminAPI0[ base_CloudObject, request_ ] :=
+    If[ ToUpperCase @ requestMethod @ request =!= "POST",
+        adminJSONResponse[ <| "ok" -> False, "error" -> "Method not allowed." |>, 405 ],
+        Module[ { message },
+            message = parseRequestBody @ request;
+            If[ ! AssociationQ @ message,
+                adminJSONResponse[ <| "ok" -> False, "error" -> "Malformed request body." |>, 400 ],
+                adminActionResponse @ cloudAdminAction[ base, Lookup[ message, "action", None ], message ]
+            ]
+        ]
+    ];
+
+runCloudAdminAPI0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*adminActionResponse*)
+(* Map an action's plain-data result to an HTTP response: a successful action (ok -> True) is a 200; a
+   client-side error (ok -> False: unknown action, missing/invalid key, key not found) is a 400. *)
+adminActionResponse // beginDefinition;
+adminActionResponse[ result_Association ] := adminJSONResponse[ result, If[ TrueQ @ result[ "ok" ], 200, 400 ] ];
+adminActionResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*adminJSONResponse*)
+(* A JSON HTTPResponse. CharacterEncoding -> "UTF-8" keeps the advertised charset consistent with the
+   UTF-8 body, mirroring the /mcp jsonResponse. *)
+adminJSONResponse // beginDefinition;
+adminJSONResponse[ data_, code_Integer ] :=
+    HTTPResponse[
+        StringToByteArray @ Developer`WriteRawJSONString[ data, "Compact" -> True ],
+        <| "StatusCode" -> code, "ContentType" -> "application/json" |>,
+        CharacterEncoding -> "UTF-8"
+    ];
+adminJSONResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudAdminAction*)
+(* Dispatch a single admin action against the deployment. Each branch returns a plain-data association
+   serialized to JSON by adminJSONResponse. An unrecognized action fails closed with ok -> False. *)
+cloudAdminAction // beginDefinition;
+
+cloudAdminAction[ base_CloudObject, "listKeys", _Association ] :=
+    <| "ok" -> True, "keys" -> adminKeyList @ base |>;
+
+cloudAdminAction[ base_CloudObject, "createKey", params_Association ] :=
+    adminCreateKey[ base, Lookup[ params, "label", Null ] ];
+
+cloudAdminAction[ base_CloudObject, "revokeKey", params_Association ] :=
+    adminRevokeKey[ base, Lookup[ params, "key", Null ] ];
+
+cloudAdminAction[ _CloudObject, action_, _ ] :=
+    <| "ok" -> False, "error" -> "Unknown action: " <> Replace[ action, Except[ _String ] -> "(none)" ] |>;
+
+cloudAdminAction // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*adminCreateKey*)
+(* Mint a new PermissionsKey with Execute rights on /mcp (the authoritative step) and, if a label was
+   given, record it in the best-effort label store. Returns the new key once (the owner copies it now)
+   plus the refreshed key list. A cloud failure of the SetPermissions step surfaces as a 500 via the
+   Enclose boundary; a label-store failure is quietly ignored. *)
+adminCreateKey // beginDefinition;
+
+adminCreateKey[ base_CloudObject, label_ ] := Enclose[
+    Module[ { mcp, key, labeled },
+        mcp     = adminMCPObject @ base;
+        key     = CreateUUID[ ];
+        labeled = StringQ[ label ] && label =!= "";
+        ConfirmMatch[ SetPermissions[ mcp, PermissionsKey[ key ] -> "Execute" ], _List, "SetPermissions" ];
+        If[ labeled, Quiet @ adminSetLabel[ base, key, label ] ];
+        <|
+            "ok"      -> True,
+            "created" -> <| "key" -> key, "label" -> If[ labeled, label, Null ] |>,
+            "keys"    -> adminKeyList @ base
+        |>
+    ],
+    throwInternalFailure
+];
+
+adminCreateKey // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*adminRevokeKey*)
+(* Revoke a key by deleting its PermissionsKey (and dropping any stored label). The key must be a
+   well-formed UUID that currently grants access to this /mcp, guarding DeleteObject against an arbitrary
+   or cross-deployment key. Returns the refreshed key list. *)
+adminRevokeKey // beginDefinition;
+
+adminRevokeKey[ base_CloudObject, key_ ] := Enclose[
+    If[ ! validKeyStringQ @ key,
+        <| "ok" -> False, "error" -> "Missing or invalid key." |>,
+        Module[ { mcp, current },
+            mcp     = adminMCPObject @ base;
+            current = ConfirmMatch[ adminPermissionKeyStrings @ mcp, { ___String }, "Current" ];
+            If[ ! MemberQ[ current, key ],
+                <| "ok" -> False, "error" -> "Key not found." |>,
+                Quiet @ DeleteObject @ PermissionsKey @ key;
+                Quiet @ adminDropLabel[ base, key ];
+                <| "ok" -> True, "keys" -> adminKeyList @ base |>
+            ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+adminRevokeKey // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*adminKeyList*)
+(* The authoritative key list from /mcp's live permissions, each annotated with its stored human-readable
+   label (Null when none). *)
+adminKeyList // beginDefinition;
+
+adminKeyList[ base_CloudObject ] := Enclose[
+    Module[ { mcp, entries, labels },
+        mcp     = adminMCPObject @ base;
+        entries = ConfirmMatch[ adminPermissionEntries @ mcp, { ___Association }, "Entries" ];
+        labels  = adminReadLabels @ base;
+        Map[ Append[ #, "label" -> Lookup[ labels, #[ "key" ], Null ] ] &, entries ]
+    ],
+    throwInternalFailure
+];
+
+adminKeyList // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*adminPermissionEntries*)
+(* Extract the PermissionsKey rules from Information[mcp,"Permissions"] as { <|"key","permissions"|>, ... },
+   dropping the non-key "Owner" entry. Permission levels are coerced to strings for JSON. *)
+adminPermissionEntries // beginDefinition;
+
+adminPermissionEntries[ mcp_CloudObject ] := Enclose[
+    Module[ { perms },
+        perms = ConfirmMatch[ Information[ mcp, "Permissions" ], _List, "Permissions" ];
+        Cases[
+            perms,
+            HoldPattern[ PermissionsKey[ uuid_String ] -> levels_ ] :>
+                <| "key" -> uuid, "permissions" -> (ToString /@ Flatten @ { levels }) |>
+        ]
+    ],
+    throwInternalFailure
+];
+
+adminPermissionEntries // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*adminPermissionKeyStrings*)
+adminPermissionKeyStrings // beginDefinition;
+adminPermissionKeyStrings[ mcp_CloudObject ] := #[ "key" ] & /@ adminPermissionEntries @ mcp;
+adminPermissionKeyStrings // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Deployment siblings*)
+(* Resolve the /mcp endpoint and the label store as siblings of the captured deployment base, mirroring the
+   FileNameJoin-on-CloudObject joining used elsewhere (e.g. UIResources.wl deployCloudNotebookForMCPApp). *)
+adminMCPObject // beginDefinition;
+adminMCPObject[ base_CloudObject ] := FileNameJoin @ { base, "mcp" };
+adminMCPObject // endDefinition;
+
+adminKeyLabelStore // beginDefinition;
+adminKeyLabelStore[ base_CloudObject ] := FileNameJoin @ { base, "admin", "keys.wxf" };
+adminKeyLabelStore // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Key labels (best-effort)*)
+(* Optional human-readable labels persisted as a Private WXF association (uuid -> label) in the deployment's
+   /admin/keys.wxf. The authoritative key list is always the live permissions, so every label operation is
+   best-effort: a read miss yields no labels, and a write is only attempted alongside a successful key
+   change (and quieted by the caller). *)
+adminReadLabels // beginDefinition;
+adminReadLabels[ base_CloudObject ] :=
+    Replace[ readCloudWXF @ adminKeyLabelStore @ base, Except[ _Association ] -> <| |> ];
+adminReadLabels // endDefinition;
+
+adminSetLabel // beginDefinition;
+adminSetLabel[ base_CloudObject, key_String, label_String ] :=
+    writeCloudWXF[ adminKeyLabelStore @ base, Append[ adminReadLabels @ base, key -> label ] ];
+adminSetLabel // endDefinition;
+
+adminDropLabel // beginDefinition;
+adminDropLabel[ base_CloudObject, key_String ] :=
+    With[ { labels = adminReadLabels @ base },
+        If[ KeyExistsQ[ labels, key ], writeCloudWXF[ adminKeyLabelStore @ base, KeyDrop[ labels, key ] ] ]
+    ];
+adminDropLabel // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*validKeyStringQ*)
+(* A revocable key must be a well-formed UUID (as minted by CreateUUID), guarding DeleteObject against an
+   arbitrary PermissionsKey argument. *)
+$uuidPattern = RegularExpression[ "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" ];
+
+validKeyStringQ // beginDefinition;
+validKeyStringQ[ key_String ] := StringMatchQ[ key, $uuidPattern ];
+validKeyStringQ[ _ ] := False;
+validKeyStringQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudAdminAPIPayload*)
+(* Build the definition-bearing Delayed[runCloudAdminAPI[base]] expression to deploy at /api/admin (Task 8,
+   forced Private). base is a pattern variable bound to the deployment directory CloudObject, so its value
+   is substituted into the gathered expression. As with cloudMCPServerPayload, the gather runs inside the
+   internal-contexts Block so AgentTools's own definitions (runCloudAdminAPI and its dependency closure) are
+   captured rather than stripped, then injected so the cloud kernel restores them on each request. *)
+cloudAdminAPIPayload // beginDefinition;
+
+cloudAdminAPIPayload[ base_CloudObject ] := Enclose[
+    Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
+        Module[ { defs },
+            defs = ConfirmMatch[
+                extendedFullDefinition[ Delayed @ runCloudAdminAPI @ base ],
+                _Language`DefinitionList,
+                "Definitions"
+            ];
+            injectAdminDefinitions[ defs, base ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+cloudAdminAPIPayload // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*injectAdminDefinitions*)
+(* Wrap the handler call so the gathered definitions are restored before it runs in the cloud kernel,
+   mirroring injectServerDefinitions. An empty DefinitionList needs no injection. *)
+injectAdminDefinitions // beginDefinition;
+
+injectAdminDefinitions[ Language`DefinitionList[ ], base_ ] :=
+    Delayed @ runCloudAdminAPI @ base;
+
+injectAdminDefinitions[ defs_Language`DefinitionList, base_ ] :=
+    With[ { d = defs, o = base },
+        Delayed[ Language`ExtendedFullDefinition[ ] = d; runCloudAdminAPI[ o ] ]
+    ];
+
+injectAdminDefinitions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
     Null

@@ -197,7 +197,7 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
 
 ---
 
-- [ ] **7. Admin page + `/api/admin`**
+- [x] **7. Admin page + `/api/admin`**
 
   Owner-only (`"Private"`) key management. Create `Assets/Cloud/admin.html` (static shell calling
   `/api/admin` over the owner session). Implement `/api/admin` actions against the sibling `/mcp`
@@ -207,11 +207,21 @@ Nothing is implemented yet: `Kernel/Server/`, `Assets/Cloud/`, `Tests/CloudDeplo
   `/admin/keys.wxf` (authoritative list is always the live permissions) — add a cloud-path helper to
   `Files.wl` if needed. No embedded secret; the API executes server-side as the owner.
 
-  - [ ] `createKey` → key appears in `Information[mcp,"Permissions"]` and is usable against `/mcp`.
-  - [ ] `listKeys` reflects current keys (+ labels); `revokeKey` removes it and it stops working.
+  - [x] `createKey` → key appears in `Information[mcp,"Permissions"]` and is usable against `/mcp`.
+        (Cloud-gated `Admin-KeyManagement-EndToEnd` test: `createKey` returns the key, it appears in
+        `Information[mcp,"Permissions"]`, and `?_key=<key>` against the deployed `/mcp` returns `200`.)
+  - [x] `listKeys` reflects current keys (+ labels); `revokeKey` removes it and it stops working.
+        (Same probe: `listKeys` returns the key with its stored label; after `revokeKey` the key is gone
+        from the permissions and `?_key=<key>` returns `401`.)
+
+  Implemented as `runCloudAdminAPI[base]` (deployed via `cloudAdminAPIPayload`, forced `"Private"` by
+  Task 8), reusing the `/mcp` HTTP helpers; it resolves siblings `<base>/mcp` and `<base>/admin/keys.wxf`
+  via `FileNameJoin`. Generic `readCloudWXF`/`writeCloudWXF` added to `Files.wl` (declared in
+  `CommonSymbols.wl`). `admin.html` is a self-contained single file (inline CSS/JS, no `/assets/*`
+  dependency) that derives `/api/admin` robustly from its own URL.
 
   **Files:** `Assets/Cloud/admin.html`, `Kernel/Server/Cloud.wl`, `Kernel/Files.wl`,
-  `Tests/CloudDeployment.wlt`
+  `Kernel/CommonSymbols.wl`, `AGENTS.md`, `Tests/CloudDeployment.wlt`
 
 ---
 

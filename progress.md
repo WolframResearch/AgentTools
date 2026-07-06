@@ -449,3 +449,82 @@ serialize with `ExportForm[…, "RawJSON"]`, and `CloudDeploy` it to `<dir>/api/
 (read the dir via `PacletObject["Wolfram/AgentTools"]["AssetLocation","Cloud"]`, mirroring
 `initializeUIResources`). Watch the trailing-slash access question (see the Task 6 TODO note) during the
 Task 11 browser check.
+
+## Session 8
+
+**Completed Task 7: Admin page + `/api/admin`.** Owner-only API-key management for the deployed `/mcp`
+object. All WL logic is in place, unit-tested, and verified end-to-end against the real cloud; the
+*deployment* of `/api/admin` + `/admin/index.html` into the directory bundle (forced `"Private"`) belongs
+to Task 8, exactly like Task 6 left `/api/info` deployment to Task 8.
+
+**Design decision — `/api/admin` = `Delayed[runCloudAdminAPI[base]]` (an HTTPResponse handler), NOT an
+APIFunction.** It reuses the `/mcp` request helpers (`requestMethod`, `parseRequestBody`, the mock-request
+test shape) and the same dev-bundling capture, so it is maximally parallel to `RunCloudMCPServer` and
+testable with mock requests. The handler captures the **deployment directory** (`base`, per the spec's
+"captured deployment base") and resolves its siblings at request time: `<base>/mcp` (whose permissions it
+manages) and `<base>/admin/keys.wxf` (label store), both via `FileNameJoin` on the CloudObject (works
+offline — pure URL string join; empirically confirmed).
+
+**Source changes:**
+- **`Kernel/Server/Cloud.wl`** — new "Admin Page & Key Management API" section:
+  - `runCloudAdminAPI[base]` / `[base, request]` — always returns an `HTTPResponse` (200 ok / 4xx client
+    error / 500 internal, via a `catchAlways` boundary). Not exported (internal); the deployed
+    `Delayed[runCloudAdminAPI[base]]` carries its definition via the dev bridge, same as the /mcp payload.
+  - `cloudAdminAction[base, action, params]` dispatch → `adminListKeys`/`adminCreateKey`/`adminRevokeKey`;
+    unknown action fails closed (`ok->False`). `createKey` mints `CreateUUID[]` +
+    `SetPermissions[mcp, PermissionsKey[key]->"Execute"]` (authoritative step) then best-effort stores the
+    label; returns the key once + refreshed list. `revokeKey` validates a UUID **and** checks membership
+    in the live permissions before `DeleteObject[PermissionsKey[key]]` (guards against arbitrary/cross-
+    deployment key deletion). `listKeys` = `Cases[Information[mcp,"Permissions"], PermissionsKey[u]->lv]`
+    annotated with labels.
+  - `cloudAdminAPIPayload[base]` + `injectAdminDefinitions` — mirror `cloudMCPServerPayload`/
+    `injectServerDefinitions` exactly (parallel, not shared, to avoid touching the proven /mcp payload).
+- **`Kernel/Files.wl`** — generic `readCloudWXF[obj]` (→ Association/List or `Missing["NotAvailable"]`,
+  quieted; a missing object → `$Failed` from `CloudImport`) and `writeCloudWXF[obj, data, opts]`
+  (`CloudExport[…,"WXF",…]`, defaults `Permissions->"Private"`). Declared in **`CommonSymbols.wl`** (Files
+  section) so `Cloud.wl` reaches them.
+- **`Assets/Cloud/admin.html`** — **self-contained single file** (inline CSS + JS; the task lists only
+  `admin.html`, no separate admin assets). Chosen over separate `/assets/*` files specifically to avoid
+  the `../assets/` trailing-slash fragility (admin lives one level deep at `<dir>/admin/`). Derives
+  `/api/admin` robustly by stripping the `/admin…` tail from `location.href` (works for `/admin`,
+  `/admin/`, `/admin/index.html`). Lists keys (masked UUID + copy full), create-with-optional-label (shows
+  new key once), revoke-with-confirm. `credentials: "same-origin"` carries the owner session; 401/403 →
+  "owner-only" message. Links back to `../index.html`.
+
+**Key empirical confirmations (raw cloud primitives, no paclet load — safe in the live evaluator):**
+`FileNameJoin[{CloudObject[…], "mcp"}]` → sibling CloudObject (offline); `SetPermissions` /
+`Information[mcp,"Permissions"]` (→ `{PermissionsKey[uuid]->{Execute}, "Owner"->{…}}`) /
+`DeleteObject[PermissionsKey]` round-trip; `CloudExport[assoc,"WXF",obj]` / `CloudImport[obj,"WXF"]`
+round-trip (missing read → `$Failed`, needs `Quiet`); **`?_key=<key>` usability: with key → HTTP 200,
+without / after revoke → 401** (drives the E2E assertions).
+
+**Gotcha (fixed):** first draft asserted the admin payload EXCLUDES `runCloudMCPServer`
+(`Admin-Payload-ExcludesEndpointHandler`). It does **not** — `extendedFullDefinition`'s capture is broad
+(pulls in sibling `Server`Cloud`Private` handlers), so the admin payload is roughly as large as the /mcp
+one. This is harmless (extra unused defs) but the "lean payload" claim was false; removed that test and
+softened the code comment. **Do not assume the admin payload is small.**
+
+**Tests — `Tests/CloudDeployment.wlt` now 125 (was 104): +21 Task-7 tests**, all pass:
+sibling-resolution (2), `validKeyStringQ` (2), action dispatch no-cloud (3), response construction (2),
+transport via handler (3), cloud-file helpers defined (1), `cloudAdminAPIPayload` structure (5), admin
+assets (2), and the **cloud-gated `Admin-KeyManagement-EndToEnd`** probe (1) that deploys a private
+`Delayed[42]` `/mcp`, runs the real createKey/listKeys/revokeKey dispatch, and asserts perms membership +
+`?_key=` HTTP status (200 before, 401 after) + label round-trip, then cleans up. It ran **for real** in
+the fresh TestReport kernel (`$CloudConnected` here) — the ~50s file time is the two cloud round-trips
+(this probe + the Task-5 endpoint probe). Gated `If[!TrueQ@$CloudConnected, "no-cloud", …]` so it is a
+fast pass in a disconnected CI kernel.
+
+**Verification:** `CloudDeployment.wlt` **125/125**; regression `MCPApps.wlt` **83/83**,
+`MCPServerObject.wlt` **71/71**; CodeInspector **clean** (incl. Scoping) on `Cloud.wl`, `Files.wl`, and the
+new tests (the one `CloudDeployment.wlt` warning is the pre-existing `Global`someSym` in Task 5's
+`InjectServerDefinitions-NonEmptyInjects`). No cloud strays (probe cleans up; `CloudObjects["Claude"]`
+verified clean).
+
+**For Task 8** (`CloudDeploy` UpValue + directory bundle): deploy `/api/admin` =
+`cloudAdminAPIPayload[dir]` at `<dir>/api/admin` forced `"Private"`, and `admin.html` →
+`<dir>/admin/index.html` (via `CopyFile`, `"Private"`). `runCloudAdminAPI` resolves `<dir>/mcp` and
+`<dir>/admin/keys.wxf` itself, so Task 8 only needs to capture the directory `CloudObject` into the
+payload — no extra path plumbing for the admin API. The label store `<dir>/admin/keys.wxf` is created
+lazily on first `createKey` with a label (no need to pre-deploy it). Note `admin.html` uses `../index.html`
+and derives `/api/admin` from its own URL, so the directory must be served with the trailing-slash/
+index.html convention (same Task 11 browser check as the landing page).

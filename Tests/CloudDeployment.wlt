@@ -1303,4 +1303,319 @@ VerificationTest[
     TestID   -> "CloudAssets-LandingJS-Content"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Admin Page & Key Management (/api/admin)*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Fixtures*)
+
+(* A fake (undeployed) deployment directory. Constructing a CloudObject from a URL touches no network, and
+   FileNameJoin resolves siblings purely by string manipulation, so the sibling-resolution / dispatch /
+   transport tests below run fully in-process. Actions that hit the cloud (Information / SetPermissions /
+   DeleteObject) are exercised only by the cloud-gated end-to-end probe. *)
+adminFakeBase = CloudObject[ "https://www.wolframcloud.com/obj/user/dir" ];
+
+(* A mock request shaped like the association RunCloudAdminAPI reads: Method + UTF-8 BodyByteArray. *)
+adminMockRequest[ opts_Association ] := <|
+    "Method"        -> Lookup[ opts, "Method", "POST" ],
+    "BodyByteArray" -> Replace[ Lookup[ opts, "Body", Missing[ ] ], s_String :> StringToByteArray @ s ]
+|>;
+
+adminRun[ opts_Association ] :=
+    Wolfram`AgentTools`Server`Cloud`Private`runCloudAdminAPI[ adminFakeBase, adminMockRequest @ opts ];
+
+adminStatus[ opts_Association ] := adminRun[ opts ][ "StatusCode" ];
+adminBodyJSON[ resp_ ]          := Quiet @ Developer`ReadRawJSONString @ resp[ "Body" ];
+adminActionBody[ assoc_ ]       := Developer`WriteRawJSONString @ assoc;
+
+(* Directly dispatch an action against the fake base (only safe for actions that do not reach the cloud). *)
+adminAction[ action_, params_: <| |> ] :=
+    Wolfram`AgentTools`Server`Cloud`Private`cloudAdminAction[ adminFakeBase, action, params ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Deployment sibling resolution*)
+
+(* /mcp and the key-label store resolve as siblings of the captured deployment base. *)
+VerificationTest[
+    First @ Wolfram`AgentTools`Server`Cloud`Private`adminMCPObject @ adminFakeBase,
+    "https://www.wolframcloud.com/obj/user/dir/mcp",
+    SameTest -> MatchQ,
+    TestID   -> "Admin-MCPObject-Sibling"
+]
+
+VerificationTest[
+    First @ Wolfram`AgentTools`Server`Cloud`Private`adminKeyLabelStore @ adminFakeBase,
+    "https://www.wolframcloud.com/obj/user/dir/admin/keys.wxf",
+    SameTest -> MatchQ,
+    TestID   -> "Admin-KeyLabelStore-Sibling"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*validKeyStringQ*)
+
+(* A well-formed UUID (as CreateUUID mints) is a revocable key. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`validKeyStringQ @ CreateUUID[ ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-ValidKey-UUID"
+]
+
+(* A non-UUID string, a non-string, and a missing value are all rejected (guarding DeleteObject). *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`validKeyStringQ /@ { "not-a-uuid", "", 12345, Null },
+    { False, False, False, False },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-ValidKey-Rejects"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Action dispatch (no cloud)*)
+
+(* An unrecognized action fails closed with ok -> False. *)
+VerificationTest[
+    adminAction[ "bogus", <| |> ],
+    <| "ok" -> False, "error" -> "Unknown action: bogus" |>,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Action-Unknown"
+]
+
+(* A missing action (no "action" key) also fails closed. *)
+VerificationTest[
+    adminAction[ None, <| |> ],
+    <| "ok" -> False, "error" -> "Unknown action: (none)" |>,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Action-NoAction"
+]
+
+(* revokeKey validates its key before any cloud call: a missing or malformed key is rejected in-process. *)
+VerificationTest[
+    { adminAction[ "revokeKey", <| |> ], adminAction[ "revokeKey", <| "key" -> "not-a-uuid" |> ] },
+    { <| "ok" -> False, "error" -> "Missing or invalid key." |>, <| "ok" -> False, "error" -> "Missing or invalid key." |> },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Action-RevokeInvalidKey"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Response construction*)
+
+(* A successful action is a 200; a client-side (ok -> False) result is a 400. *)
+VerificationTest[
+    {
+        Wolfram`AgentTools`Server`Cloud`Private`adminActionResponse[ <| "ok" -> True, "keys" -> { } |> ][ "StatusCode" ],
+        Wolfram`AgentTools`Server`Cloud`Private`adminActionResponse[ <| "ok" -> False, "error" -> "x" |> ][ "StatusCode" ]
+    },
+    { 200, 400 },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-ActionResponse-StatusCodes"
+]
+
+(* The response is application/json and its body round-trips the data. *)
+VerificationTest[
+    With[ { resp = Wolfram`AgentTools`Server`Cloud`Private`adminJSONResponse[ <| "ok" -> True, "keys" -> { } |>, 200 ] },
+        { resp[ "StatusCode" ], resp[ "ContentType" ], adminBodyJSON @ resp }
+    ],
+    { 200, "application/json", <| "ok" -> True, "keys" -> { } |> },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-JSONResponse-Shape"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Transport (via the handler)*)
+
+(* Only POST is dispatched; GET and DELETE are 405. *)
+VerificationTest[
+    { adminStatus @ <| "Method" -> "GET" |>, adminStatus @ <| "Method" -> "DELETE" |> },
+    { 405, 405 },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Transport-MethodNotAllowed"
+]
+
+(* A non-JSON body is a 400. *)
+VerificationTest[
+    adminStatus @ <| "Body" -> "not json" |>,
+    400,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Transport-MalformedBody"
+]
+
+(* A well-formed POST with an unrecognized action dispatches to a 400 JSON error (no cloud call). *)
+VerificationTest[
+    With[ { resp = adminRun @ <| "Body" -> adminActionBody @ <| "action" -> "bogus" |> |> },
+        { resp[ "StatusCode" ], TrueQ @ adminBodyJSON[ resp ][ "ok" ] }
+    ],
+    { 400, False },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Transport-UnknownActionDispatch"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cloud-file helpers*)
+
+(* The generic cloud-WXF helpers are declared (Files.wl) and defined. *)
+VerificationTest[
+    {
+        MatchQ[ DownValues @ Wolfram`AgentTools`Common`readCloudWXF, { __ } ],
+        MatchQ[ DownValues @ Wolfram`AgentTools`Common`writeCloudWXF, { __ } ]
+    },
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-CloudWXFHelpers-Defined"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*cloudAdminAPIPayload (definition-bearing payload)*)
+
+adminPayload = Wolfram`AgentTools`Server`Cloud`Private`cloudAdminAPIPayload @ adminFakeBase;
+
+(* The payload is a held Delayed[...] -- the handler is NOT evaluated at build time. *)
+VerificationTest[
+    Head @ adminPayload,
+    Delayed,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Payload-IsDelayed"
+]
+
+(* The AgentTools handler tree is captured (context-based stripping overcome by the dev bridge). *)
+VerificationTest[
+    ! FreeQ[ adminPayload, Wolfram`AgentTools`Server`Cloud`Private`runCloudAdminAPI ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Payload-CapturesHandler"
+]
+
+(* The gathered definitions are injected via Language`ExtendedFullDefinition[ ] = defs. *)
+VerificationTest[
+    ! FreeQ[ adminPayload, HoldPattern[ Language`ExtendedFullDefinition[ ] = _ ] ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Payload-HasEFDInjection"
+]
+
+(* The captured deployment base is embedded, so the deployed handler resolves its own /mcp sibling. *)
+VerificationTest[
+    ! FreeQ[ adminPayload, "https://www.wolframcloud.com/obj/user/dir" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Payload-EmbedsBase"
+]
+
+(* An empty DefinitionList needs no injection: just the held handler call, no EFD assignment. *)
+VerificationTest[
+    With[
+        { payload = Wolfram`AgentTools`Server`Cloud`Private`injectAdminDefinitions[
+            Language`DefinitionList[ ], adminFakeBase ] },
+        { Head @ payload, FreeQ[ payload, Language`ExtendedFullDefinition ] }
+    ],
+    { Delayed, True },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-InjectDefinitions-EmptyNoInjection"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Admin assets (admin page)*)
+
+(* The self-contained admin page is present under the Cloud asset directory. *)
+VerificationTest[
+    FileExistsQ @ FileNameJoin @ { PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ], "admin.html" },
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Assets-FileExists"
+]
+
+(* admin.html is self-contained (inline style/script, no external /assets references), resolves the sibling
+   api/admin endpoint, and drives the three key-management actions. *)
+VerificationTest[
+    With[ { html = Import[ FileNameJoin @ { PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ], "admin.html" }, "Text" ] },
+        {
+            AllTrue[ { "api/admin", "listKeys", "createKey", "revokeKey", "<style>", "<script>" }, StringContainsQ[ html, # ] & ],
+            StringContainsQ[ html, "assets/landing" ]
+        }
+    ],
+    { True, False },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-Assets-Content"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*End-to-end key management (cloud-gated)*)
+
+(* Deploy a private /mcp placeholder in a deployment directory and exercise the full key lifecycle through
+   the real admin dispatch. Gated on $CloudConnected: with no cloud session the probe returns "no-cloud"
+   and the test passes trivially. When connected it verifies both Task-7 requirements: createKey mints a key
+   that appears in Information[mcp,"Permissions"] AND is usable against /mcp (HTTP 200 via ?_key=), listKeys
+   reflects it with its label, and revokeKey removes it from the permissions AND stops it working (HTTP 401). *)
+adminKeyMgmtProbe[ ] := If[ ! TrueQ @ $CloudConnected,
+    "no-cloud",
+    Module[
+        {
+            base, mcp, mcpURL, label, permKeys, created, key, listed,
+            inPermsAfterCreate, usableAfterCreate, revoked, inPermsAfterRevoke, usableAfterRevoke
+        },
+        label    = "probe-label";
+        base     = CloudObject[ "Claude/agenttools-admin-test", Permissions -> "Private" ];
+        mcp      = CloudDeploy[ Delayed[ 42 ], FileNameJoin @ { base, "mcp" }, Permissions -> "Private" ];
+        mcpURL   = First @ mcp;
+        permKeys = Cases[ Information[ mcp, "Permissions" ], HoldPattern[ PermissionsKey[ u_String ] -> _ ] :> u ] &;
+
+        created = Wolfram`AgentTools`Server`Cloud`Private`cloudAdminAction[ base, "createKey", <| "label" -> label |> ];
+        key     = created[ "created", "key" ];
+        If[ ! StringQ @ key, key = "" ];
+
+        inPermsAfterCreate = MemberQ[ permKeys[ ], key ];
+        usableAfterCreate  = URLRead[ mcpURL <> "?_key=" <> key ][ "StatusCode" ];
+
+        listed = Wolfram`AgentTools`Server`Cloud`Private`cloudAdminAction[ base, "listKeys", <| |> ];
+
+        revoked            = Wolfram`AgentTools`Server`Cloud`Private`cloudAdminAction[ base, "revokeKey", <| "key" -> key |> ];
+        inPermsAfterRevoke = MemberQ[ permKeys[ ], key ];
+        usableAfterRevoke  = URLRead[ mcpURL <> "?_key=" <> key ][ "StatusCode" ];
+
+        Quiet[
+            DeleteObject @ PermissionsKey @ key;
+            DeleteObject @ mcp;
+            DeleteObject @ FileNameJoin @ { base, "admin", "keys.wxf" };
+            DeleteObject @ base
+        ];
+
+        <|
+            "createdOk"          -> TrueQ @ created[ "ok" ],
+            "keyIsUUID"          -> Wolfram`AgentTools`Server`Cloud`Private`validKeyStringQ @ key,
+            "inPermsAfterCreate" -> inPermsAfterCreate,
+            "usableAfterCreate"  -> usableAfterCreate,
+            "listedWithLabel"    -> MemberQ[ listed[ "keys" ], KeyValuePattern @ { "key" -> key, "label" -> label } ],
+            "revokedOk"          -> TrueQ @ revoked[ "ok" ],
+            "inPermsAfterRevoke" -> inPermsAfterRevoke,
+            "usableAfterRevoke"  -> usableAfterRevoke
+        |>
+    ]
+];
+
+VerificationTest[
+    adminKeyMgmtProbe[ ],
+    "no-cloud" | KeyValuePattern @ {
+        "createdOk"          -> True,
+        "keyIsUUID"          -> True,
+        "inPermsAfterCreate" -> True,
+        "usableAfterCreate"  -> 200,
+        "listedWithLabel"    -> True,
+        "revokedOk"          -> True,
+        "inPermsAfterRevoke" -> False,
+        "usableAfterRevoke"  -> 401
+    },
+    SameTest -> MatchQ,
+    TestID   -> "Admin-KeyManagement-EndToEnd"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

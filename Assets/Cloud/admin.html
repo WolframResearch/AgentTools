@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server — Admin</title>
+    <!--
+      Owner-only admin page for a cloud-deployed Wolfram MCP server. Deployed at <dir>/admin/index.html
+      as a Private cloud object, so it is reachable only over the owner's authenticated Wolfram Cloud
+      session. It calls the sibling Private API <dir>/api/admin (same-origin, carrying the owner's
+      credentials) to list, create, and revoke the API keys (PermissionsKeys) that authorize /mcp. No
+      secret is embedded in this page: /api/admin executes server-side as the owner. This page is
+      self-contained (inline CSS/JS) so it does not depend on any /assets/* relative paths.
+    -->
+    <style>
+        :root {
+            --bg:          #f7f7f9;
+            --surface:     #ffffff;
+            --surface-alt: #f0f0f3;
+            --fg:          #1a1a2e;
+            --fg-muted:    #5b5b70;
+            --border:      #e0e0e6;
+            --accent:      #c8341a;
+            --accent-fg:   #ffffff;
+            --code-bg:     #f4f4f6;
+            --code-fg:     #1a1a2e;
+            --error-bg:    #fff5f5;
+            --error-fg:    #c53030;
+            --error-border:#feb2b2;
+            --ok:          #2f855a;
+            --ok-bg:       #f0fff4;
+            --ok-border:   #9ae6b4;
+            --warn-bg:     #fffbeb;
+            --warn-border: #fbd38d;
+            --warn-fg:     #975a16;
+            --shadow:      0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg:          #16161f;
+                --surface:     #1e1e2b;
+                --surface-alt: #262636;
+                --fg:          #e8e8ef;
+                --fg-muted:    #a0a0b4;
+                --border:      #34344a;
+                --accent:      #f0603f;
+                --accent-fg:   #1a1a2e;
+                --code-bg:     #12121a;
+                --code-fg:     #e8e8ef;
+                --error-bg:    #2d1b1b;
+                --error-fg:    #fc8181;
+                --error-border:#742a2a;
+                --ok:          #68d391;
+                --ok-bg:       #1a2e22;
+                --ok-border:   #2f855a;
+                --warn-bg:     #2b2416;
+                --warn-border: #7a5c1e;
+                --warn-fg:     #f6e05e;
+                --shadow:      0 1px 3px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.55;
+            background: var(--bg);
+            color: var(--fg);
+            padding: 32px 20px 64px;
+        }
+
+        .wrap { max-width: 820px; margin: 0 auto; }
+
+        header { margin-bottom: 28px; }
+        .eyebrow {
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+        }
+        h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.2; word-break: break-word; }
+        .subtitle { color: var(--fg-muted); margin-top: 4px; font-size: 0.95rem; }
+
+        section {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px 22px; margin-bottom: 18px; box-shadow: var(--shadow);
+        }
+        h2 { font-size: 1.05rem; font-weight: 650; margin-bottom: 4px; }
+        .section-hint { font-size: 0.85rem; color: var(--fg-muted); margin-bottom: 14px; }
+
+        /* ---- Create form ---- */
+        .create-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+        .create-form input[type="text"] {
+            flex: 1 1 240px; min-width: 0; padding: 9px 12px; font-size: 0.9rem; font-family: inherit;
+            color: var(--fg); background: var(--surface-alt);
+            border: 1px solid var(--border); border-radius: 8px;
+        }
+        .create-form input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+        button {
+            font-family: inherit; font-weight: 600; cursor: pointer;
+            border-radius: 8px; border: 1px solid transparent; transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+        }
+        button:disabled { opacity: 0.5; cursor: default; }
+        .btn-primary {
+            padding: 9px 16px; font-size: 0.9rem; color: var(--accent-fg); background: var(--accent); border-color: var(--accent);
+        }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+
+        /* ---- New-key banner (shown once) ---- */
+        .new-key {
+            margin-top: 16px; padding: 14px 16px; background: var(--warn-bg);
+            border: 1px solid var(--warn-border); border-radius: 10px;
+        }
+        .new-key .warn { color: var(--warn-fg); font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; }
+        .key-row-copy { position: relative; }
+
+        pre {
+            margin: 0; padding: 12px 44px 12px 14px; background: var(--code-bg); color: var(--code-fg);
+            border: 1px solid var(--border); border-radius: 8px; overflow-x: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.82rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all;
+        }
+        .copy-btn {
+            position: absolute; top: 6px; right: 6px; padding: 5px 9px; font-size: 0.72rem;
+            color: var(--fg-muted); background: var(--surface); border: 1px solid var(--border);
+        }
+        .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+
+        /* ---- Key list ---- */
+        .keys-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+        .refresh-btn {
+            padding: 5px 10px; font-size: 0.75rem; color: var(--fg-muted);
+            background: var(--surface); border: 1px solid var(--border);
+        }
+        .refresh-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+
+        .key {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 12px 0; border-top: 1px solid var(--border);
+        }
+        .key:first-of-type { border-top: none; }
+        .key-info { flex: 1 1 auto; min-width: 0; }
+        .key-label { font-weight: 600; font-size: 0.92rem; }
+        .key-label.unlabeled { color: var(--fg-muted); font-weight: 500; font-style: italic; }
+        .key-uuid {
+            margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.76rem; color: var(--fg-muted);
+        }
+        .key-perms {
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted);
+            background: var(--surface-alt); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+        }
+        .key-actions { display: flex; gap: 6px; }
+        .mini-btn { padding: 5px 10px; font-size: 0.75rem; background: var(--surface); border: 1px solid var(--border); color: var(--fg-muted); }
+        .mini-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+        .mini-btn.copied { color: var(--ok); border-color: var(--ok); }
+        .revoke-btn:hover:not(:disabled) { color: var(--error-fg); border-color: var(--error-border); }
+
+        .empty { color: var(--fg-muted); font-size: 0.9rem; padding: 8px 0; }
+
+        footer { margin-top: 26px; text-align: center; font-size: 0.82rem; color: var(--fg-muted); }
+        footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+        footer a:hover { text-decoration: underline; }
+
+        #error {
+            display: none; margin-bottom: 18px; padding: 14px 16px; background: var(--error-bg);
+            color: var(--error-fg); border: 1px solid var(--error-border); border-radius: 10px; font-size: 0.9rem;
+        }
+        .status-ok { color: var(--ok); font-size: 0.82rem; margin-left: 8px; }
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+
+        <header>
+            <div class="eyebrow">Remote MCP Server</div>
+            <h1>Admin</h1>
+            <div class="subtitle">Create and revoke the API keys that authorize this server's <code>/mcp</code> endpoint.</div>
+        </header>
+
+        <div id="error" role="alert"></div>
+
+        <section aria-labelledby="create-heading">
+            <h2 id="create-heading">Create an API key</h2>
+            <p class="section-hint">
+                Mint a new key with <code>Execute</code> permission on <code>/mcp</code>. The key is shown
+                once — copy it immediately; it cannot be retrieved later.
+            </p>
+            <form class="create-form" id="create-form">
+                <input type="text" id="label-input" placeholder="Optional label (e.g. “Claude Desktop”)" autocomplete="off" maxlength="120">
+                <button type="submit" class="btn-primary" id="create-btn">Create key</button>
+            </form>
+            <div class="new-key" id="new-key" hidden>
+                <div class="warn">⚠ Copy this key now — it will not be shown again.</div>
+                <div class="key-row-copy">
+                    <button class="copy-btn" type="button" id="new-key-copy">Copy</button>
+                    <pre id="new-key-value"></pre>
+                </div>
+            </div>
+        </section>
+
+        <section aria-labelledby="keys-heading">
+            <div class="keys-head">
+                <h2 id="keys-heading">API keys <span id="key-count"></span></h2>
+                <button class="refresh-btn" type="button" id="refresh-btn">Refresh</button>
+            </div>
+            <p class="section-hint">Every key below grants access to <code>/mcp</code>. Revoking one takes effect immediately.</p>
+            <div id="keys"><div class="empty">Loading…</div></div>
+        </section>
+
+        <footer>
+            <a href="../index.html">← Back to server page</a>
+        </footer>
+
+    </div>
+
+    <script>
+    (function () {
+        "use strict";
+
+        // ---- API endpoint resolution ----
+        // The admin page is served at <dir>/admin/ (index.html optional); the API is the sibling
+        // <dir>/api/admin. Deriving the deployment base by stripping the "/admin..." tail is robust to
+        // whether the page is accessed with or without a trailing slash or explicit index.html.
+        function adminAPIURL() {
+            var url = new URL(window.location.href);
+            var base = url.pathname.replace(/\/admin(\/.*)?$/, "");
+            return url.origin + base + "/api/admin";
+        }
+
+        // ---- DOM refs ----
+        var errorEl     = document.getElementById("error");
+        var keysEl      = document.getElementById("keys");
+        var countEl     = document.getElementById("key-count");
+        var formEl      = document.getElementById("create-form");
+        var labelInput  = document.getElementById("label-input");
+        var createBtn   = document.getElementById("create-btn");
+        var refreshBtn  = document.getElementById("refresh-btn");
+        var newKeyEl    = document.getElementById("new-key");
+        var newKeyValue = document.getElementById("new-key-value");
+        var newKeyCopy  = document.getElementById("new-key-copy");
+
+        // ---- Helpers ----
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.style.display = "block";
+        }
+        function clearError() { errorEl.style.display = "none"; }
+
+        // Mask a UUID for display (full value stays available via copy / data attribute).
+        function maskKey(key) {
+            if (!key || key.length < 12) { return key || ""; }
+            return key.slice(0, 8) + "…" + key.slice(-4);
+        }
+
+        function callAdmin(payload) {
+            return fetch(adminAPIURL(), {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify(payload),
+                credentials: "same-origin"
+            }).then(function (resp) {
+                return resp.json()
+                    .catch(function () { return {}; })
+                    .then(function (data) { return { status: resp.status, data: data }; });
+            });
+        }
+
+        function flashCopied(btn) {
+            var original = btn.getAttribute("data-label") || btn.textContent;
+            btn.setAttribute("data-label", original);
+            btn.textContent = "Copied";
+            btn.classList.add("copied");
+            window.setTimeout(function () {
+                btn.textContent = original;
+                btn.classList.remove("copied");
+            }, 1400);
+        }
+        function copyText(text, btn) {
+            var done = function () { flashCopied(btn); };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done, function () { legacyCopy(text, done); });
+            } else {
+                legacyCopy(text, done);
+            }
+        }
+        function legacyCopy(text, done) {
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            ta.setAttribute("readonly", "");
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+            document.body.removeChild(ta);
+            done();
+        }
+
+        // ---- Rendering ----
+        function renderKeys(keys) {
+            keysEl.textContent = "";
+            keys = keys || [];
+            countEl.textContent = keys.length ? "(" + keys.length + ")" : "";
+
+            if (!keys.length) {
+                var empty = document.createElement("div");
+                empty.className = "empty";
+                empty.textContent = "No API keys yet. Create one above to let a client connect.";
+                keysEl.appendChild(empty);
+                return;
+            }
+
+            keys.forEach(function (entry) {
+                var row = document.createElement("div");
+                row.className = "key";
+
+                var info = document.createElement("div");
+                info.className = "key-info";
+
+                var label = document.createElement("div");
+                if (entry.label) {
+                    label.className = "key-label";
+                    label.textContent = entry.label;
+                } else {
+                    label.className = "key-label unlabeled";
+                    label.textContent = "Unlabeled key";
+                }
+                info.appendChild(label);
+
+                var uuid = document.createElement("div");
+                uuid.className = "key-uuid";
+                uuid.textContent = maskKey(entry.key);
+                info.appendChild(uuid);
+                row.appendChild(info);
+
+                var perms = document.createElement("span");
+                perms.className = "key-perms";
+                perms.textContent = (entry.permissions && entry.permissions.length) ? entry.permissions.join(", ") : "Execute";
+                row.appendChild(perms);
+
+                var actions = document.createElement("div");
+                actions.className = "key-actions";
+
+                var copyBtn = document.createElement("button");
+                copyBtn.className = "mini-btn";
+                copyBtn.type = "button";
+                copyBtn.textContent = "Copy";
+                copyBtn.addEventListener("click", function () { copyText(entry.key, copyBtn); });
+                actions.appendChild(copyBtn);
+
+                var revokeBtn = document.createElement("button");
+                revokeBtn.className = "mini-btn revoke-btn";
+                revokeBtn.type = "button";
+                revokeBtn.textContent = "Revoke";
+                revokeBtn.addEventListener("click", function () { revokeKey(entry, revokeBtn); });
+                actions.appendChild(revokeBtn);
+
+                row.appendChild(actions);
+                keysEl.appendChild(row);
+            });
+        }
+
+        // ---- Actions ----
+        function loadKeys() {
+            refreshBtn.disabled = true;
+            return callAdmin({ action: "listKeys" }).then(function (r) {
+                if (r.status === 200 && r.data && r.data.ok) {
+                    clearError();
+                    renderKeys(r.data.keys);
+                } else {
+                    showError(errorMessage(r, "list API keys"));
+                }
+            }).catch(function (err) {
+                showError("Could not reach the admin API (" + err.message + "). You may not be signed in as the owner.");
+            }).then(function () {
+                refreshBtn.disabled = false;
+            });
+        }
+
+        function createKey(label) {
+            createBtn.disabled = true;
+            newKeyEl.hidden = true;
+            var payload = { action: "createKey" };
+            if (label) { payload.label = label; }
+            return callAdmin(payload).then(function (r) {
+                if (r.status === 200 && r.data && r.data.ok && r.data.created) {
+                    clearError();
+                    labelInput.value = "";
+                    newKeyValue.textContent = r.data.created.key;
+                    newKeyEl.hidden = false;
+                    renderKeys(r.data.keys);
+                } else {
+                    showError(errorMessage(r, "create an API key"));
+                }
+            }).catch(function (err) {
+                showError("Could not reach the admin API (" + err.message + ").");
+            }).then(function () {
+                createBtn.disabled = false;
+            });
+        }
+
+        function revokeKey(entry, btn) {
+            var name = entry.label ? '"' + entry.label + '"' : "this key";
+            if (!window.confirm("Revoke " + name + "? Any client using it will immediately lose access.")) { return; }
+            btn.disabled = true;
+            callAdmin({ action: "revokeKey", key: entry.key }).then(function (r) {
+                if (r.status === 200 && r.data && r.data.ok) {
+                    clearError();
+                    renderKeys(r.data.keys);
+                } else {
+                    btn.disabled = false;
+                    showError(errorMessage(r, "revoke the key"));
+                }
+            }).catch(function (err) {
+                btn.disabled = false;
+                showError("Could not reach the admin API (" + err.message + ").");
+            });
+        }
+
+        function errorMessage(r, verb) {
+            if (r.status === 403 || r.status === 401) {
+                return "Not authorized to " + verb + ". This page is owner-only — sign in to the Wolfram Cloud account that deployed the server.";
+            }
+            var detail = r.data && r.data.error ? r.data.error : ("HTTP " + r.status);
+            return "Failed to " + verb + ": " + detail;
+        }
+
+        // ---- Wiring ----
+        formEl.addEventListener("submit", function (e) {
+            e.preventDefault();
+            createKey(labelInput.value.trim());
+        });
+        refreshBtn.addEventListener("click", loadKeys);
+        newKeyCopy.addEventListener("click", function () { copyText(newKeyValue.textContent, newKeyCopy); });
+
+        loadKeys();
+    })();
+    </script>
+</body>
+</html>

@@ -45,7 +45,7 @@ See [building.md](docs/building.md) for detailed instructions.
   - `CreateMCPServer.wl`: Implementation for creating MCP servers
   - `DefaultServers.wl`: Defines several predefined named MCP servers
   - `DeployAgentTools.wl`: Implementation for deploying and managing agent tool deployments
-  - `Files.wl`: Helper functions for file operations
+  - `Files.wl`: Helper functions for file operations (local WXF/JSON I/O plus `readCloudWXF`/`writeCloudWXF` for cloud-object WXF, used by the cloud admin API's key-label store)
   - `Formatting.wl`: Definitions for formatting in notebooks
   - `InstallMCPServer.wl`: Implementation for installing MCP servers for use in some common MCP client applications
   - `MCPClientRequests.wl`: Server-to-client request infrastructure (request registry, response correlation, notification dispatch) used by [MCP roots](docs/mcp-roots.md) and other server-initiated requests
@@ -58,7 +58,7 @@ See [building.md](docs/building.md) for detailed instructions.
     - `Server.wl`: Aggregator that declares the server-session state shared across the subcontexts and loads the children below
     - `Shared.wl`: Transport-agnostic core — method dispatch (`handleMethod`), tool/prompt resolution, tool evaluation and result formatting, capability negotiation (`initResponse`), server-state build (`initializeServerState`), and logging helpers
     - `Local.wl`: Local stdio transport — `StartMCPServer`, the read loop (`processRequest`), tool warmup, and stdout-protecting output suppression (`superQuiet`)
-    - `Cloud.wl`: Cloud HTTP transport — `RunCloudMCPServer` (stateless Streamable HTTP handler), `CloudDeployMCPServer`, the self-describing session-ID capability codec, server-embedding deploy helpers, and the landing-page `/api/info` metadata generator (see [Cloud Deployment spec](Specs/CloudDeployment.md))
+    - `Cloud.wl`: Cloud HTTP transport — `RunCloudMCPServer` (stateless Streamable HTTP handler), `CloudDeployMCPServer`, the self-describing session-ID capability codec, server-embedding deploy helpers, the landing-page `/api/info` metadata generator, and the owner-only `/api/admin` key-management handler (`runCloudAdminAPI`: list/create/revoke `PermissionsKey`s) (see [Cloud Deployment spec](Specs/CloudDeployment.md))
   - `SupportedClients.wl`: Registry of supported MCP clients (`$SupportedMCPClients`) and relevant utility functions
   - `ValidateAgentToolsPacletExtension.wl`: Validation of `"AgentTools"` [paclet extensions](docs/paclet-extensions.md)
   - `UIResources.wl`: [MCP Apps](docs/mcp-apps.md) UI resource registry, client capability detection, and shared notebook delivery helpers (cloud deployment and experimental inline embedding)
@@ -68,7 +68,7 @@ See [building.md](docs/building.md) for detailed instructions.
   - `Prompts/`: Contains files defining predefined [MCP prompts](docs/mcp-prompts.md) used by default servers
 - `Assets/`: Static assets bundled with the paclet
   - `Apps/`: HTML and JSON files for [MCP Apps](docs/mcp-apps.md) UI resources
-  - `Cloud/`: Landing-page HTML/CSS/JS for [cloud-deployed MCP servers](Specs/CloudDeployment.md) (`index.html` + `assets/`), read via `PacletObject[…]["AssetLocation","Cloud"]` and deployed alongside the `/api/info` endpoint it fetches
+  - `Cloud/`: Landing- and admin-page HTML/CSS/JS for [cloud-deployed MCP servers](Specs/CloudDeployment.md) — the dynamic `index.html` + `assets/` (fetches `/api/info`) and the self-contained owner-only `admin.html` (calls `/api/admin`), read via `PacletObject[…]["AssetLocation","Cloud"]`
 - `FrontEnd/`: FrontEnd extension resources loaded by the notebook front end
   - `Assets/AgentTools.wl`: Localized strings (`AgentToolsStrings`) and graphics (`AgentToolsExpressions`) used by `CreatePreferencesContent` (see [preferences-content.md](docs/preferences-content.md))
 - `Scripts/`: Contains utility scripts for building, testing, and running the paclet

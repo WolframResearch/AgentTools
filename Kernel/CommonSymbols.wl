@@ -55,6 +55,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `messageFailure;
 `messagePrint;
 `mxInitialize;
+`readCloudWXF;
 `readRawJSONFile;
 `readWXFFile;
 `relatedDocumentation;
@@ -65,6 +66,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `throwTop;
 `toJSRegex;
 `validateMCPServerObjectData;
+`writeCloudWXF;
 `writeRawJSONFile;
 `writeWXFFile;
 
