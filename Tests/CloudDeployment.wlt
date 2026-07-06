@@ -205,7 +205,7 @@ VerificationTest[
 
 VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureList,
-    { "MCPApps", "Roots", "FormElicitation", "URLElicitation" },
+    { "MCPApps" },
     SameTest -> MatchQ,
     TestID   -> "TrackedFeatureList-Value"
 ]
@@ -217,10 +217,9 @@ VerificationTest[
     TestID   -> "IdVersion-Value"
 ]
 
-(* Each tracked feature maps to a distinct, zero-based bit position in list order. *)
+(* The single v1 tracked feature maps to bit position 0. *)
 VerificationTest[
-    Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureIDs ===
-        <| "MCPApps" -> 0, "Roots" -> 1, "FormElicitation" -> 2, "URLElicitation" -> 3 |>,
+    Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureIDs === <| "MCPApps" -> 0 |>,
     True,
     SameTest -> MatchQ,
     TestID   -> "TrackedFeatureIDs-Value"
@@ -239,19 +238,6 @@ VerificationTest[
     True,
     SameTest -> MatchQ,
     TestID   -> "MakeSessionID-SingleFeature"
-]
-
-(* Multiple features pack into one base-36 bitfield: bits 0 + 2 + 3 = 1 + 4 + 8 = 13 -> "d". *)
-VerificationTest[
-    StringMatchQ[
-        Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList[
-            { "MCPApps", "FormElicitation", "URLElicitation" }
-        ],
-        "1:d:" ~~ __
-    ],
-    True,
-    SameTest -> MatchQ,
-    TestID   -> "MakeSessionID-MultipleFeatures"
 ]
 
 (* The empty feature set totals to 0 and encodes as "1:0:<uuid>". *)
@@ -311,14 +297,6 @@ VerificationTest[
     TestID   -> "GetFeatures-SingleFeature"
 ]
 
-(* Decoding recovers the full multi-feature set in canonical (tracked-list) order. *)
-VerificationTest[
-    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:d:" <> CreateUUID[ ] ],
-    { "MCPApps", "FormElicitation", "URLElicitation" },
-    SameTest -> MatchQ,
-    TestID   -> "GetFeatures-MultipleFeatures"
-]
-
 (* Bitfield 0 decodes to no features. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:0:" <> CreateUUID[ ] ],
@@ -353,6 +331,43 @@ VerificationTest[
     { },
     SameTest -> MatchQ,
     TestID   -> "SessionID-RoundTripAllSubsets"
+]
+
+(* v1 tracks a single feature, but the codec is list-based so features can be appended later. These
+   two tests exercise that generality directly by Block-ing a HYPOTHETICAL multi-feature list (not the
+   real v1 list): every subset must still round-trip, and multi-bit packing must hold -- bits 0 + 2 + 3
+   = 1 + 4 + 8 = 13, which is "d" in base 36. *)
+VerificationTest[
+    Block[
+        {
+            Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureList = { "A", "B", "C", "D" },
+            Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureIDs  = <| "A" -> 0, "B" -> 1, "C" -> 2, "D" -> 3 |>
+        },
+        Select[
+            Subsets @ { "A", "B", "C", "D" },
+            Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID @
+                Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList @ # =!= # &
+        ]
+    ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "SessionID-GenericMultiBitRoundTrip"
+]
+
+VerificationTest[
+    Block[
+        {
+            Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureList = { "A", "B", "C", "D" },
+            Wolfram`AgentTools`Server`Cloud`Private`$trackedFeatureIDs  = <| "A" -> 0, "B" -> 1, "C" -> 2, "D" -> 3 |>
+        },
+        StringMatchQ[
+            Wolfram`AgentTools`Server`Cloud`Private`makeSessionIDFromFeatureList @ { "A", "C", "D" },
+            "1:d:" ~~ __
+        ]
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "SessionID-GenericMultiBitPacking"
 ]
 
 (* ::**************************************************************************************************************:: *)

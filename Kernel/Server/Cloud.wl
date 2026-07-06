@@ -24,18 +24,19 @@ Needs[ "Wolfram`AgentTools`Server`" ];
 (* ::Subsection::Closed:: *)
 (*Configuration*)
 
-(* Ordered list of tracked capability flags. Each flag maps to a fixed bit position, so this order
-   must not change without bumping $idVersion -- a shifted bit position would make a session ID
-   minted by an older deployment decode to the wrong features. Only "MCPApps" is acted on in v1; the
-   rest reserve stable bit positions for features that need a server->client channel to act on. *)
-$trackedFeatureList = { "MCPApps", "Roots", "FormElicitation", "URLElicitation" };
+(* Ordered list of tracked capability flags packed into the session-ID bitfield. Each flag maps to a
+   fixed bit position, so this order must not change without bumping $idVersion -- a shifted bit
+   position would make a session ID minted by an older deployment decode to the wrong features. In v1
+   the only tracked capability is MCP-Apps UI support; the codec stays list-based so further features
+   can be appended later (bumping $idVersion if any existing bit position would shift). *)
+$trackedFeatureList = { "MCPApps" };
 
 (* Session-ID format version. Bump whenever $trackedFeatureList changes in a way that shifts bit
    positions, so that IDs minted by an older deployment decode to no features (fail-closed) rather
    than misfiring on the new bit layout. *)
 $idVersion = "1";
 
-(* <| "MCPApps" -> 0, "Roots" -> 1, "FormElicitation" -> 2, "URLElicitation" -> 3 |> *)
+(* <| "MCPApps" -> 0 |> *)
 $trackedFeatureIDs = First /@ PositionIndex[ $trackedFeatureList ] - 1;
 
 (* ::**************************************************************************************************************:: *)

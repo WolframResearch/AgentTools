@@ -290,10 +290,9 @@ rebuilds the tool and prompt tables on every request from `obj` alone, and the c
 from the session ID, not from any retained `initialize` call.
 
 The MCP **roots** handshake is likewise a no-op in the cloud (no local working directory), so the
-server simply does not issue it — even though `"Roots"` appears in the tracked-feature list below.
-That list only *records* whether the client supports a capability; acting on roots would need the
-server→client channel the stateless transport does not provide (see
-[Reserved and future features](#reserved-and-future-features)).
+server simply does not issue it. Acting on roots would need the server→client channel the stateless
+transport does not provide, so it is deferred rather than tracked in v1 (see
+[Deferred capabilities](#deferred-capabilities)).
 
 ---
 
@@ -321,10 +320,10 @@ A small, ordered list of tracked capability flags is packed into a bit vector, b
 embedded in a versioned, colon-delimited session ID (file-scoped in `Cloud.wl`):
 
 ```wl
-$trackedFeatureList = { "MCPApps", "Roots", "FormElicitation", "URLElicitation" };
+$trackedFeatureList = { "MCPApps" };
 $idVersion          = "1";
 $trackedFeatureIDs  = First /@ PositionIndex[ $trackedFeatureList ] - 1;
-(* <| "MCPApps" -> 0, "Roots" -> 1, "FormElicitation" -> 2, "URLElicitation" -> 3 |> *)
+(* <| "MCPApps" -> 0 |> *)
 
 (* encode: feature list -> "version:base36bitfield:uuid" *)
 makeSessionIDFromFeatureList[ clientFeatures_List ] :=
@@ -354,8 +353,10 @@ getFeaturesFromSessionID[ _ ] := { };
 ```
 
 For example, `makeSessionIDFromFeatureList[{"MCPApps"}]` → `"1:1:880837da-…"` and
-`makeSessionIDFromFeatureList[{"MCPApps","FormElicitation","URLElicitation"}]` → `"1:d:e67f90f2-…"`;
-`getFeaturesFromSessionID` inverts each. An empty feature set encodes as `"1:0:…"`.
+`makeSessionIDFromFeatureList[{}]` → `"1:0:…"`; `getFeaturesFromSessionID` inverts each. The middle
+field is a genuine base-36 bit vector, so the format extends to more features without changing shape
+(a second flag at bit 1 would push the field to `"3"` when both are set) — but v1 tracks only
+`MCPApps`, so the field is always `"0"` or `"1"`.
 
 Three properties make this safe:
 
@@ -371,12 +372,12 @@ Three properties make this safe:
 
 ### v1 wiring
 
-Only `"MCPApps"` is *acted on* in v1; it maps to the one boolean that gates all UI behavior:
+In v1 `"MCPApps"` is the only tracked feature, and it maps to the one boolean that gates all UI
+behavior:
 
 | Tracked feature | Encoded when | Decoded state (v1) |
 |---|---|---|
 | `MCPApps` | client sent `io.modelcontextprotocol/ui` **and** `mcpAppsEnabledQ[]` | `$clientSupportsUI = True` |
-| `Roots`, `FormElicitation`, `URLElicitation` | client capability present | *recorded only* — reserved, not acted on (see below) |
 
 The two directions:
 
@@ -390,15 +391,16 @@ The two directions:
   `$clientSupportsUI = MemberQ[ features, "MCPApps" ]` (and, in future, the other globals) around
   dispatch. The shared handlers are unchanged — they still just read `$clientSupportsUI`.
 
-### Reserved and future features
+### Deferred capabilities
 
-`Roots`, `FormElicitation`, and `URLElicitation` are included to exercise the multi-flag encoding and
-to reserve stable bit positions, but they are **inert in v1**. MCP-Apps is special precisely because it
-is satisfiable *within a single request*: the server only has to format its own response (attach
-metadata, serve a resource). Roots and elicitation instead require the server to *call back to the
-client* (`roots/list`, an elicitation request), which needs the server→client channel the stateless
-transport does not provide. Their flags can be *recorded* today but only become actionable alongside a
-fuller transport (see [Future Work](#future-work)).
+MCP-Apps is the only capability the cloud transport tracks in v1 because it is special: it is
+satisfiable *within a single request* — the server only has to format its own response (attach
+metadata, serve a resource). Other capabilities such as **roots** and **elicitation** instead require
+the server to *call back to the client* (`roots/list`, an elicitation request), which needs the
+server→client channel the stateless transport does not provide. They are therefore left out of the
+tracked-feature list entirely in v1; when a fuller transport exists they can be added as new flags
+(appended to `$trackedFeatureList`, bumping `$idVersion` if any existing bit position would shift). See
+[Future Work](#future-work).
 
 ### Compatibility
 
@@ -883,9 +885,10 @@ Deferred from v1, in rough priority order:
   consume a deployed endpoint directly (new `url`+`headers` converter shapes in `SupportedClients.wl`
   + `InstallMCPServer.wl`).
 - **Full Streamable HTTP transport** — sessions, SSE streaming, logging notifications, if needed.
-- **Wire the reserved capability flags** — `Roots`, `FormElicitation`, `URLElicitation` are already
-  carried in the self-describing session ID but are inert in v1, because acting on them needs a
-  server→client channel; enable them alongside the fuller transport above.
+- **Track additional capability flags** — roots and elicitation are out of scope in v1 because acting
+  on them needs a server→client channel; add them to the self-describing session ID as new
+  `$trackedFeatureList` flags (bumping `$idVersion` if bit positions shift) alongside the fuller
+  transport above.
 - **Tool-safety options** — optional allowlisting / sandboxing of code-execution tools for public
   deployments.
 

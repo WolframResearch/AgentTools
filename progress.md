@@ -184,3 +184,33 @@ foundation Task 4's `RunCloudMCPServer` will consume to round-trip client UI cap
 case-insensitively → `getFeaturesFromSessionID` → `Block` `$clientSupportsUI = MemberQ[features,"MCPApps"]`
 around dispatch; (b) on `initialize` (no incoming ID), after `handleMethod` sets the flags, encode via
 `makeSessionIDFromFeatureList` into the `Mcp-Session-Id` **response** header. Both functions are ready.
+
+## Session 4
+
+**Scope trim (user request): v1 tracks only `"MCPApps"`.** Removed `"Roots"`, `"FormElicitation"`, and
+`"URLElicitation"` from the tracked-feature list in both the spec and the code. Supersedes Session 3's
+4-feature `$trackedFeatureList`/`$trackedFeatureIDs` values.
+
+- **`Kernel/Server/Cloud.wl`**: `$trackedFeatureList = { "MCPApps" }` (was 4 features); comment now
+  `<| "MCPApps" -> 0 |>`. Config comment reframed — the codec **stays list-based** so features can be
+  appended later (bump `$idVersion` only if an existing bit position would shift). Codec bodies
+  unchanged (they were already generic over the list).
+- **`Specs/CloudDeployment.md`**: shrank the config code block + examples (now `{"MCPApps"}`→`"1:1:…"`
+  and `{}`→`"1:0:…"`, keeping a one-line note that the base-36 field is a genuine bit vector that
+  extends to more flags); dropped the reserved-features table row; renamed the *Reserved and future
+  features* subsection to **Deferred capabilities** (roots/elicitation are simply not tracked in v1,
+  not "reserved bit positions carried in the ID") and fixed the two cross-links + the Future Work
+  bullet; updated the Statelessness paragraph that referenced `"Roots"` in the tracked list. Left the
+  unrelated `$clientSupportsRoots` state-variable mentions intact (that's the existing local-server
+  roots flag, not a tracked session-ID feature).
+- **`Tests/CloudDeployment.wlt`**: updated `TrackedFeatureList-Value` → `{"MCPApps"}` and
+  `TrackedFeatureIDs-Value` → `<|"MCPApps"->0|>`; **removed** the two real multi-feature tests
+  (`MakeSessionID-MultipleFeatures`, `GetFeatures-MultipleFeatures` — they named the removed features);
+  **added** two `SessionID-GenericMultiBit*` tests that `Block` a *hypothetical* `{"A","B","C","D"}`
+  list to keep multi-bit round-trip + `"1:d:"` packing under test (so the codec's documented generality
+  isn't silently uncovered when only one real feature remains). Net test count unchanged at 37.
+
+**Verification:** `Tests/CloudDeployment.wlt` **37/37**; CodeInspector clean on `Cloud.wl`. (Codec
+behavior for `{"MCPApps"}`/`{}` is byte-identical to Session 3 — `MCPApps` is bit 0, so dropping the
+higher-bit features doesn't shift it; `$idVersion` stays `"1"` since the 4-feature layout never
+shipped.)
