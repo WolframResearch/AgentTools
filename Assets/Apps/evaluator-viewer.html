@@ -190,6 +190,19 @@
             });
         }
 
+        // ---- Strip text intended only for the AI, not the user ----
+        // Some tool outputs carry hints meant purely for the model, which should
+        // never be surfaced in the widget:
+        //   * the Wolfram session-ID <system-reminder> appended to evaluator output
+        //   * the interactive-widget notice injected by the host (e.g. Claude Desktop)
+        function stripAgentOnlyText(text) {
+            if (!text) return "";
+            return text
+                .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, "")
+                .replace(/\[This tool call rendered an interactive widget[\s\S]*?\]/g, "")
+                .trim();
+        }
+
         // ---- Render tool result content (text+image fallback) ----
         function renderContent(content) {
             resultsEl.innerHTML = "";
@@ -204,9 +217,11 @@
                 if (item._meta && (!item.text || item.text === "")) continue;
 
                 if (item.type === "text" && item.text) {
+                    var text = stripAgentOnlyText(item.text);
+                    if (!text) continue;
                     var div = document.createElement("div");
                     div.className = "result-text";
-                    div.textContent = item.text;
+                    div.textContent = text;
                     resultsEl.appendChild(div);
                 } else if (item.type === "image" && item.data && item.mimeType) {
                     var imgDiv = document.createElement("div");
@@ -222,10 +237,11 @@
 
         function renderPlainText(text) {
             resultsEl.innerHTML = "";
-            if (!text) return;
+            var clean = stripAgentOnlyText(text);
+            if (!clean) return;
             var div = document.createElement("div");
             div.className = "result-text";
-            div.textContent = text;
+            div.textContent = clean;
             resultsEl.appendChild(div);
         }
 
