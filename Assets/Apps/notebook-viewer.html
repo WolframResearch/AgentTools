@@ -277,7 +277,7 @@
             });
         }
 
-        // ---- Find notebookUrl in structuredContent, top-level _meta, or content items ----
+        // ---- Find notebookUrl in structuredContent, _meta, content items, or content marker ----
         function findNotebookUrl(content, meta, structured) {
             if (structured && structured.notebookUrl) return structured.notebookUrl;
             if (meta && meta.notebookUrl) return meta.notebookUrl;
@@ -288,65 +288,35 @@
                     return item._meta.notebookUrl;
                 }
             }
-            return null;
+            return extractNotebookUrlMarker(content);
         }
 
-        // ---- Recover a notebook id from the opaque <nbid> content marker ----
-        // Workaround for hosts that drop _meta/structuredContent from tool results
-        // (ext-apps#696): a "<nbid>HEXID</nbid>" marker in the text content names the deployed
-        // notebook's base file name, which resolveNotebookUrl turns back into a full URL.
-        function findNotebookId(content) {
+        // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
+        // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
+        // wrapper text tells the model the notebook is already shown and the URL is not for it
+        // to use. (This viewer renders no text, so there is nothing to strip from the display.)
+        function extractNotebookUrlMarker(content) {
             if (!content || !Array.isArray(content)) return null;
             for (var i = 0; i < content.length; i++) {
                 var item = content[i];
                 if (item && item.type === "text" && typeof item.text === "string") {
-                    var m = item.text.match(/<nbid>([0-9a-fA-F]+)<\/nbid>/);
-                    if (m) return m[1];
+                    var m = item.text.match(/<internal>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/internal>/);
+                    if (m && m[1].trim()) return m[1].trim();
                 }
             }
             return null;
         }
 
-        // ---- Ask the server to resolve a notebook id to its full cloud URL ----
-        // resources/read is forwarded to the server by the host; the spec lets apps read any
-        // resource URI, and a resource's text payload is not stripped the way _meta is.
-        function resolveNotebookUrl(id) {
-            return sendRequest("resources/read", {
-                uri: "ui://wolfram/notebook-url/" + id
-            }).then(function(result) {
-                var contents = result && result.contents;
-                if (Array.isArray(contents)) {
-                    for (var i = 0; i < contents.length; i++) {
-                        var c = contents[i];
-                        if (c && typeof c.text === "string" && c.text) return c.text;
-                    }
-                }
-                return null;
-            });
-        }
-
         // ---- Recover and embed a notebook from a tool result ----
         // This viewer normally embeds from tool-input (arguments.url). As a fallback for hosts
-        // that deliver a result but not the input, recover a URL from the result: directly from
-        // _meta/structuredContent, or via the <nbid> workaround for hosts that drop those.
+        // that deliver a result but not the input, recover a URL from the result: from
+        // _meta/structuredContent, or from the content marker for hosts that drop those.
         function recoverNotebookFromResult(params) {
             if (!params) return;
             var url = findNotebookUrl(params.content, params._meta, params.structuredContent);
             if (url) {
                 embedRequested = true;
                 embedNotebook(url);
-                return;
-            }
-            var nbId = findNotebookId(params.content);
-            if (nbId) {
-                embedRequested = true;
-                log("recoverNotebookFromResult: resolving nbid", nbId, "via resources/read");
-                resolveNotebookUrl(nbId).then(function(u) {
-                    if (u) embedNotebook(u);
-                    else logError("recoverNotebookFromResult: resources/read returned no url for", nbId);
-                }).catch(function(err) {
-                    logError("recoverNotebookFromResult: resources/read failed for", nbId, "->", err);
-                });
             }
         }
 

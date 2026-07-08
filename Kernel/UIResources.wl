@@ -23,12 +23,6 @@ $includeAppearanceElements = False;
 $deployedNotebookRoot      = "AgentTools/Notebooks";
 $deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be connected to deploy notebooks *)
 
-(* Resource URI prefix used by the "dropped _meta" workaround: apps that never received a
-   notebookUrl (because the host stripped _meta/structuredContent) read
-   "ui://wolfram/notebook-url/<hexId>" to recover the full cloud URL. See makeNotebookUIResult
-   and readNotebookURLResource below, and the matching client code in the viewer apps. *)
-$notebookURLResourcePrefix = "ui://wolfram/notebook-url/";
-
 (* Inline notebooks are not yet the default since there are still some issues to work out.
    These can be enabled via the following environment variable: *)
 $mcpAppsNotebookMethod := $mcpAppsNotebookMethod = Environment[ "MCP_APPS_NOTEBOOK_METHOD" ];
@@ -90,14 +84,15 @@ deployCloudNotebookForMCPApp // endDefinition;
 (*makeNotebookUIResult*)
 (* Builds the UI-enhanced tool result for a deployed notebook. The notebookUrl is carried in
    _meta and structuredContent (per the MCP Apps spec) so it reaches the app without entering
-   model context. Because some hosts drop both (ext-apps#696), we also append an opaque
-   "<nbid>...</nbid>" marker to the content: the app extracts it and recovers the URL via
-   resources/read (see readNotebookURLResource). The marker text is intentionally cryptic so
-   the model ignores it, and each viewer strips it before rendering. *)
+   model context. Because some hosts drop both (ext-apps#696) and also do not forward
+   app-initiated resources/read, we additionally append the URL to the (non-dropped) text
+   content inside an <internal>...<url>...</url></internal> marker. The wrapper text tells the
+   model the notebook is already shown and the URL is not for it to use; each viewer extracts
+   the URL and strips the whole marker before rendering. *)
 makeNotebookUIResult // beginDefinition;
 
 makeNotebookUIResult[ textContent_List, deployed_String ] := <|
-    "Content"           -> appendNotebookIDMarker[ textContent, deployed ],
+    "Content"           -> appendNotebookURLMarker[ textContent, deployed ],
     "_meta"             -> <| "notebookUrl" -> deployed |>,
     "StructuredContent" -> <| "notebookUrl" -> deployed |>
 |>;
@@ -109,28 +104,35 @@ makeNotebookUIResult // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*appendNotebookIDMarker*)
-appendNotebookIDMarker // beginDefinition;
+(*appendNotebookURLMarker*)
+appendNotebookURLMarker // beginDefinition;
 
-(* Only cloud URLs have a recoverable base name. Inline notebooks (MCP_APPS_NOTEBOOK_METHOD=
-   "Inline") carry the whole serialized notebook as the value, which cannot be reconstructed
-   from an id, so no marker is appended in that case. *)
-appendNotebookIDMarker[ textContent_List, url_String ] /; StringStartsQ[ url, "http" ] :=
-    Append[ textContent, <| "type" -> "text", "text" -> "<nbid>" <> notebookIDFromURL[ url ] <> "</nbid>" |> ];
+(* Only cloud URLs are embedded this way. Inline notebooks (MCP_APPS_NOTEBOOK_METHOD="Inline")
+   carry the whole serialized notebook as the value and are delivered via _meta only. *)
+appendNotebookURLMarker[ textContent_List, url_String ] /; StringStartsQ[ url, "http" ] :=
+    Append[ textContent, <| "type" -> "text", "text" -> notebookURLMarkerText[ url ] |> ];
 
-appendNotebookIDMarker[ textContent_List, _ ] := textContent;
+appendNotebookURLMarker[ textContent_List, _ ] := textContent;
 
-appendNotebookIDMarker // endDefinition;
+appendNotebookURLMarker // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*notebookIDFromURL*)
-(* The deployed notebook's id is the base name of its cloud URL, e.g.
-   ".../AgentTools/Notebooks/08aba9b360121fee.nb" -> "08aba9b360121fee". Uses plain string ops
-   (cloud URLs are always "/"-separated) so it is platform independent. *)
-notebookIDFromURL // beginDefinition;
-notebookIDFromURL[ url_String ] := StringDelete[ Last @ StringSplit[ url, "/" ], ".nb" ~~ EndOfString ];
-notebookIDFromURL // endDefinition;
+(*notebookURLMarkerText*)
+(* Wraps the URL in an instruction the model can read (so it ignores the URL) and in <url> tags
+   the viewer matches. The format lives here on the WL side; the viewers' extraction and strip
+   regexes must stay in sync with these tags. *)
+notebookURLMarkerText // beginDefinition;
+
+notebookURLMarkerText[ url_String ] := StringJoin[
+    "<internal>",
+    "This tool call was displayed to the user as an interactive notebook, which they can already see. ",
+    "The URL below only renders that notebook; you do not need to read, repeat, visit, or otherwise use it. ",
+    "<url>", url, "</url>",
+    "</internal>"
+];
+
+notebookURLMarkerText // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -313,27 +315,8 @@ listUIResources // endDefinition;
 readUIResource // beginDefinition;
 
 readUIResource[ msg_Association, req_ ] := Enclose[
-    Module[ { uri },
+    Module[ { uri, resource },
         uri = ConfirmBy[ msg[[ "params", "uri" ]], StringQ, "URI" ];
-        (* Notebook-url resolution requests (the "dropped _meta" workaround) are handled
-           separately; everything else is a registered HTML app resource. *)
-        If[ StringStartsQ[ uri, $notebookURLResourcePrefix ],
-            readNotebookURLResource @ uri,
-            readRegisteredUIResource @ uri
-        ]
-    ],
-    throwInternalFailure
-];
-
-readUIResource // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*readRegisteredUIResource*)
-readRegisteredUIResource // beginDefinition;
-
-readRegisteredUIResource[ uri_String ] :=
-    Module[ { resource },
         resource = Lookup[ $uiResourceRegistry, uri, Missing[ "NotFound" ] ];
         If[ MissingQ @ resource,
             throwFailure[ "UIResourceNotFound", uri ],
@@ -346,68 +329,11 @@ readRegisteredUIResource[ uri_String ] :=
                 |>
             } |>
         ]
-    ];
-
-readRegisteredUIResource // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*readNotebookURLResource*)
-(* Reconstructs the full cloud notebook URL from the hex id embedded in the URI and returns it
-   as the resource text. The text payload of a resource is not stripped by hosts (unlike _meta),
-   so this is how the workaround gets the URL to the app. *)
-readNotebookURLResource // beginDefinition;
-
-readNotebookURLResource[ uri_String ] := Enclose[
-    Module[ { id, url },
-        id = notebookIDFromResourceURI @ uri;
-        (* Restrict to hex ids: keeps arbitrary path segments out of the reconstructed
-           CloudObject and treats anything else as an unknown resource. *)
-        If[ notebookIDStringQ @ id,
-            url = ConfirmBy[ resolveNotebookURLFromID @ id, StringQ, "URL" ];
-            <| "contents" -> { <| "uri" -> uri, "mimeType" -> "text/plain", "text" -> url |> } |>,
-            (* else: not a valid notebook id *)
-            throwFailure[ "UIResourceNotFound", uri ]
-        ]
     ],
     throwInternalFailure
 ];
 
-readNotebookURLResource // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*notebookIDFromResourceURI*)
-notebookIDFromResourceURI // beginDefinition;
-notebookIDFromResourceURI[ uri_String ] := StringDelete[ uri, StartOfString ~~ $notebookURLResourcePrefix ];
-notebookIDFromResourceURI // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*notebookIDStringQ*)
-notebookIDStringQ // beginDefinition;
-notebookIDStringQ[ id_String ] := StringLength @ id > 0 && StringMatchQ[ id, HexadecimalCharacter.. ];
-notebookIDStringQ[ _ ] := False;
-notebookIDStringQ // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*resolveNotebookURLFromID*)
-(* Deterministically rebuilds the deployed URL from its base name; this is the exact inverse of
-   notebookIDFromURL and matches what CloudDeploy returned for the same target (verified: the
-   CloudObject URL is constructed locally from the base name and the user's cloud path). *)
-resolveNotebookURLFromID // beginDefinition;
-
-resolveNotebookURLFromID[ id_String ] := Enclose[
-    ConfirmBy[
-        First @ CloudObject @ FileNameJoin @ { CloudObject @ $deployedNotebookRoot, id <> ".nb" },
-        StringQ,
-        "URL"
-    ],
-    throwInternalFailure
-];
-
-resolveNotebookURLFromID // endDefinition;
+readUIResource // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

@@ -142,10 +142,6 @@
         // Bumped on every embedNotebook() call so a stale embed that resolves
         // after a newer result can be discarded instead of clobbering it.
         var embedGeneration = 0;
-        // Bumped whenever a new tool result or input supersedes the current one, so a
-        // late-resolving notebook-id lookup (resources/read) can be discarded instead of
-        // embedding a stale notebook over a newer result.
-        var latestResultSeq = 0;
 
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
@@ -190,9 +186,12 @@
             loadingEl.style.display = "none";
         }
 
-        // ---- Find notebookUrl in structuredContent, top-level _meta, or content items ----
-        // structuredContent is the spec's UI-only channel (kept out of model context);
-        // _meta is the fallback for spec-compliant hosts and direct tools/call responses.
+        // ---- Find notebookUrl in structuredContent, _meta, content items, or content marker ----
+        // structuredContent is the spec's UI-only channel (kept out of model context); _meta is
+        // the fallback for spec-compliant hosts and direct tools/call responses. When a host
+        // drops both (ext-apps#696), the tool also embeds the URL in an
+        // <internal>...<url>...</url></internal> marker in the text content (see
+        // extractNotebookUrlMarker), which the host does not strip.
         function findNotebookUrl(content, meta, structured) {
             if (structured && structured.notebookUrl) return structured.notebookUrl;
             if (meta && meta.notebookUrl) return meta.notebookUrl;
@@ -203,42 +202,23 @@
                     return item._meta.notebookUrl;
                 }
             }
-            return null;
+            return extractNotebookUrlMarker(content);
         }
 
-        // ---- Recover a notebook id from the opaque <nbid> content marker ----
-        // Workaround for hosts that drop _meta/structuredContent from tool results
-        // (ext-apps#696): the tool appends "<nbid>HEXID</nbid>" to the text content, where
-        // HEXID is the deployed notebook's base file name. Unlike _meta, content survives, so
-        // we can recover the id here and ask the server for the full URL (resolveNotebookUrl).
-        function findNotebookId(content) {
+        // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
+        // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
+        // wrapper text tells the model the notebook is already shown and the URL is not for it
+        // to use; stripAgentOnlyText removes the whole marker before anything reaches the user.
+        function extractNotebookUrlMarker(content) {
             if (!content || !Array.isArray(content)) return null;
             for (var i = 0; i < content.length; i++) {
                 var item = content[i];
                 if (item && item.type === "text" && typeof item.text === "string") {
-                    var m = item.text.match(/<nbid>([0-9a-fA-F]+)<\/nbid>/);
-                    if (m) return m[1];
+                    var m = item.text.match(/<internal>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/internal>/);
+                    if (m && m[1].trim()) return m[1].trim();
                 }
             }
             return null;
-        }
-
-        // ---- Ask the server to resolve a notebook id to its full cloud URL ----
-        // resources/read is forwarded to the server by the host; the spec lets apps read any
-        // resource URI, and a resource's text payload is not stripped the way _meta is.
-        function resolveNotebookUrl(id) {
-            return sendRequest("resources/read", {
-                uri: "ui://wolfram/notebook-url/" + id
-            }).then(function(result) {
-                var contents = result && result.contents;
-                if (Array.isArray(contents)) {
-                    for (var i = 0; i < contents.length; i++) {
-                        var c = contents[i];
-                        if (c && typeof c.text === "string" && c.text) return c.text;
-                    }
-                }
-                return null;
-            });
         }
 
         // ---- Detach previous notebook ----
@@ -339,13 +319,13 @@
         // never be surfaced in the widget:
         //   * the Wolfram session-ID <system-reminder> appended to evaluator output
         //   * the interactive-widget notice injected by the host (e.g. Claude Desktop)
-        //   * the opaque <nbid> notebook-id marker (see findNotebookId / resolveNotebookUrl)
+        //   * the <internal>...</internal> notebook-URL marker (see extractNotebookUrlMarker)
         function stripAgentOnlyText(text) {
             if (!text) return "";
             return text
                 .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, "")
                 .replace(/\[This tool call rendered an interactive widget[\s\S]*?\]/g, "")
-                .replace(/<nbid>[\s\S]*?<\/nbid>/g, "")
+                .replace(/<internal>[\s\S]*?<\/internal>/g, "")
                 .trim();
         }
 
@@ -393,7 +373,6 @@
 
         // ---- Handle tool result: try notebook embed, or fall back to text+image ----
         function handleToolResult(content, meta, structured) {
-            var seq = ++latestResultSeq;
             var notebookUrl = findNotebookUrl(content, meta, structured);
             log("handleToolResult: notebookUrl =", describeUrl(notebookUrl),
                 "| meta =", describe(meta),
@@ -406,34 +385,11 @@
                 // the notebook actually renders.
                 renderContent(content);
                 embedNotebook(notebookUrl);
-                return;
-            }
-
-            // No direct notebookUrl (the host dropped _meta/structuredContent). Try the
-            // <nbid> workaround: recover the id from the content and resolve the URL via the
-            // server. Render the text/image fallback meanwhile so output is never blank.
-            var nbId = findNotebookId(content);
-            if (nbId) {
-                log("handleToolResult: no notebookUrl; resolving nbid", nbId, "via resources/read");
+            } else {
+                log("handleToolResult: no notebookUrl; rendering text/image fallback");
                 detachNotebook();
                 renderContent(content);
-                resolveNotebookUrl(nbId).then(function(url) {
-                    if (seq !== latestResultSeq) return; // superseded by a newer result
-                    if (url) {
-                        embedNotebook(url);
-                    } else {
-                        log("handleToolResult: resources/read returned no url for", nbId);
-                    }
-                }).catch(function(err) {
-                    logError("handleToolResult: resources/read failed for", nbId, "->", err);
-                    // text/image fallback is already on screen; leave it in place
-                });
-                return;
             }
-
-            log("handleToolResult: no notebookUrl or nbid; rendering text/image fallback");
-            detachNotebook();
-            renderContent(content);
         }
 
         // ---- postMessage transport ----
@@ -532,7 +488,6 @@
 
             switch (method) {
                 case "ui/notifications/tool-input":
-                    latestResultSeq++; // invalidate any pending notebook-id resolution
                     clearError();
                     detachNotebook();
                     resultsEl.innerHTML = "";

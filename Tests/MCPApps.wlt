@@ -689,52 +689,6 @@ VerificationTest[
 ]
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*Notebook URL Resolution (dropped-_meta workaround)*)
-
-(* A non-hex id under the notebook-url prefix is rejected (guards against path segments). *)
-VerificationTest[
-    Quiet @ Block[ {
-        Wolfram`AgentTools`Common`$clientSupportsUI = True,
-        Wolfram`AgentTools`Common`$uiResourceRegistry
-    },
-        Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`Common`readUIResource[
-            <| "params" -> <| "uri" -> "ui://wolfram/notebook-url/not-a-hex-id" |> |>,
-            <| "jsonrpc" -> "2.0", "id" -> 8 |>
-        ]
-    ],
-    _Failure,
-    SameTest -> MatchQ,
-    TestID   -> "ReadUIResource-NotebookURLNonHex"
-]
-
-(* A valid hex id reconstructs the full cloud URL, whose base name round-trips back to the id.
-   Reconstruction needs an active cloud connection; when there is none, the test is a no-op. *)
-VerificationTest[
-    Block[ {
-        Wolfram`AgentTools`Common`$clientSupportsUI = True,
-        Wolfram`AgentTools`Common`$uiResourceRegistry
-    },
-        Wolfram`AgentTools`Common`initializeUIResources[ ];
-        If[ TrueQ @ $CloudConnected,
-            Module[ { response, text },
-                response = Wolfram`AgentTools`Common`readUIResource[
-                    <| "params" -> <| "uri" -> "ui://wolfram/notebook-url/08aba9b360121fee" |> |>,
-                    <| "jsonrpc" -> "2.0", "id" -> 9 |>
-                ];
-                text = response[[ "contents", 1, "text" ]];
-                StringQ @ text && StringStartsQ[ text, "http" ] && StringEndsQ[ text, "/08aba9b360121fee.nb" ]
-            ],
-            True
-        ]
-    ],
-    True,
-    SameTest -> Equal,
-    TestID   -> "ReadUIResource-NotebookURLResolves"
-]
-
-(* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*handleResourceRead*)
 
@@ -1314,29 +1268,51 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*Cloud URL Appends nbid Marker*)
+(*Cloud URL Appends URL Marker*)
 VerificationTest[
-    Module[ { url, result },
+    Module[ { url, result, marker },
         url    = "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb";
         result = Wolfram`AgentTools`Common`makeNotebookUIResult[
             { <| "type" -> "text", "text" -> "1 + 1 = 2" |> },
             url
         ];
+        marker = Last[ result[ "Content" ] ][ "text" ];
         {
             Length @ result[ "Content" ],
-            Last @ result[ "Content" ],
+            StringContainsQ[ marker, "<internal>" ] && StringContainsQ[ marker, "</internal>" ],
+            StringContainsQ[ marker, "<url>" <> url <> "</url>" ],
             result[ "_meta", "notebookUrl" ],
             result[ "StructuredContent", "notebookUrl" ]
         }
     ],
     {
         2,
-        <| "type" -> "text", "text" -> "<nbid>deadbeef12345678</nbid>" |>,
+        True,
+        True,
         "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb",
         "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb"
     },
     SameTest -> MatchQ,
     TestID   -> "MakeNotebookUIResult-CloudURLAppendsMarker"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Marker URL Is Extractable*)
+(* Mirrors the viewers' extraction: the URL must sit inside <url>...</url> within the marker so
+   the client regex <internal>...<url>(...)</url>...</internal> can recover it. *)
+VerificationTest[
+    Module[ { url, marker },
+        url    = "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb";
+        marker = Wolfram`AgentTools`UIResources`Private`notebookURLMarkerText[ url ];
+        First[
+            StringCases[ marker, "<internal>" ~~ ___ ~~ "<url>" ~~ u: Except[ "<" ].. ~~ "</url>" ~~ ___ ~~ "</internal>" :> u ],
+            None
+        ]
+    ],
+    "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb",
+    SameTest -> MatchQ,
+    TestID   -> "NotebookURLMarkerText-URLIsExtractable"
 ]
 
 (* ::**************************************************************************************************************:: *)
