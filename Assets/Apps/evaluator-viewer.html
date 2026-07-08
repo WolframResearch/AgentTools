@@ -440,8 +440,9 @@
 
                 case "ui/notifications/tool-result":
                     hideLoading();
-                    log("ui/notifications/tool-result: msg =", msg);
                     var params = msg.params || {};
+                    log("ui/notifications/tool-result: param keys =", Object.keys(params),
+                        "| content items =", Array.isArray(params.content) ? params.content.length : 0);
                     if (params.content && Array.isArray(params.content)) {
                         handleToolResult(params.content, params._meta, params.structuredContent);
                     } else if (params.text) {
