@@ -217,6 +217,21 @@
             return url.startsWith("http") ? url : "(inline notebook, " + url.length + " chars)";
         }
 
+        // ---- Summarize an arbitrary value for logging ----
+        // object -> its keys, array -> its item types, anything else -> its type.
+        // Never logs values, so large or sensitive payloads (inline notebooks,
+        // base64 image data) carried in meta/structuredContent/content can't flood
+        // the console or leak into host-collected logs.
+        function describe(value) {
+            if (Array.isArray(value)) {
+                return value.map(function(item) {
+                    return item && item.type ? item.type : describe(item);
+                });
+            }
+            if (value && typeof value === "object") return Object.keys(value);
+            return value === null ? "null" : typeof value;
+        }
+
         // ---- Embed a cloud notebook ----
         function embedNotebook(url) {
             detachNotebook();
@@ -320,9 +335,10 @@
         // ---- Handle tool result: try notebook embed, or fall back to text+image ----
         function handleToolResult(content, meta, structured) {
             var notebookUrl = findNotebookUrl(content, meta, structured);
-            log("handleToolResult: notebookUrl =", notebookUrl, "| meta =", meta,
-                "| structuredContent =", structured,
-                "| content items =", Array.isArray(content) ? content.length : content);
+            log("handleToolResult: notebookUrl =", describeUrl(notebookUrl),
+                "| meta =", describe(meta),
+                "| structuredContent =", describe(structured),
+                "| content =", describe(content));
 
             if (notebookUrl) {
                 embedNotebook(notebookUrl);
