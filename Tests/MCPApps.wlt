@@ -1269,10 +1269,7 @@ VerificationTest[
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*Cloud URL Appends URL Marker*)
-(* Block the wrapper cache to Missing so the notebookUIMeta path does not attempt a real cloud
-   deploy of notebook-frame.html during this unit test (keeps it hermetic and cloud-independent). *)
 VerificationTest[
-    Block[ { Wolfram`AgentTools`UIResources`Private`$notebookFrameWrapperURL = Missing[ "NotDeployed" ] },
     Module[ { url, result, marker },
         url    = "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb";
         result = Wolfram`AgentTools`Common`makeNotebookUIResult[
@@ -1287,7 +1284,7 @@ VerificationTest[
             result[ "_meta", "notebookUrl" ],
             result[ "StructuredContent", "notebookUrl" ]
         }
-    ] ],
+    ],
     {
         2,
         True,
@@ -1351,78 +1348,6 @@ VerificationTest[
     },
     SameTest -> MatchQ,
     TestID   -> "MakeNotebookUIResult-InlineNoMarker"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*notebookUIMeta*)
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*Cloud URL Includes wrapperUrl When Available*)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`UIResources`Private`$notebookFrameWrapperURL =
-                 "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/notebook-frame.html" },
-        Wolfram`AgentTools`UIResources`Private`notebookUIMeta[
-            "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb"
-        ]
-    ],
-    <|
-        "notebookUrl" -> "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb",
-        "wrapperUrl"  -> "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/notebook-frame.html"
-    |>,
-    SameTest -> MatchQ,
-    TestID   -> "NotebookUIMeta-IncludesWrapperUrl"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*Omits wrapperUrl When The Wrapper Is Unavailable*)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`UIResources`Private`$notebookFrameWrapperURL = Missing[ "NotDeployed" ] },
-        Wolfram`AgentTools`UIResources`Private`notebookUIMeta[
-            "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb"
-        ]
-    ],
-    <| "notebookUrl" -> "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb" |>,
-    SameTest -> MatchQ,
-    TestID   -> "NotebookUIMeta-OmitsWrapperUrlWhenUnavailable"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*Inline (Non-http) Value Gets No Wrapper*)
-(* Inline notebooks have no framable URL, so no wrapper is used (or even deployed): the Blocked
-   value below must be left untouched. *)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`UIResources`Private`$notebookFrameWrapperURL = Missing[ "ShouldNotBeUsed" ] },
-        Wolfram`AgentTools`UIResources`Private`notebookUIMeta[ "Notebook[{Cell[\"1\", \"Input\"]}]" ]
-    ],
-    <| "notebookUrl" -> "Notebook[{Cell[\"1\", \"Input\"]}]" |>,
-    SameTest -> MatchQ,
-    TestID   -> "NotebookUIMeta-InlineOmitsWrapper"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*makeNotebookUIResult Carries wrapperUrl In Both Channels*)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`UIResources`Private`$notebookFrameWrapperURL =
-                 "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/notebook-frame.html" },
-        Module[ { result },
-            result = Wolfram`AgentTools`Common`makeNotebookUIResult[
-                { <| "type" -> "text", "text" -> "x" |> },
-                "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb"
-            ];
-            { result[ "_meta", "wrapperUrl" ], result[ "StructuredContent", "wrapperUrl" ] }
-        ]
-    ],
-    {
-        "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/notebook-frame.html",
-        "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/notebook-frame.html"
-    },
-    SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-CarriesWrapperUrl"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1549,63 +1474,6 @@ VerificationTest[
     True,
     SameTest -> Equal,
     TestID   -> "NotebookViewers-EmbedderPathRetained"
-]
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*Notebook-Frame Wrapper (Auto-Resize)*)
-
-(* On eval-blocked hosts a cross-origin frame can't be measured, so small notebooks would leave a
-   mostly-empty frame. The deploy-based viewers instead frame a same-origin wrapper
-   (notebook-frame.html) that measures the notebook and posts its exact height back for auto-
-   resizing. These tests guard the viewer wiring (findWrapperUrl + the height message) and the
-   wrapper asset. *)
-
-(* The evaluator and Wolfram|Alpha viewers -- which deploy the notebook and can supply a wrapper
-   URL -- must consume it (findWrapperUrl) and honor its height messages (wolfram-notebook-height). *)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
-        Wolfram`AgentTools`Common`initializeUIResources[ ];
-        AllTrue[
-            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer" },
-            Function[ uri,
-                With[ { html = Wolfram`AgentTools`Common`$uiResourceRegistry[ uri, "html" ] },
-                    StringContainsQ[ html, "findWrapperUrl" ] && StringContainsQ[ html, "wolfram-notebook-height" ]
-                ]
-            ]
-        ]
-    ],
-    True,
-    SameTest -> Equal,
-    TestID   -> "NotebookViewers-WrapperAutoResizeWired"
-]
-
-(* The wrapper asset ships and carries its height-relay logic. *)
-VerificationTest[
-    Module[ { file, html },
-        file = PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "NotebookFrame" ];
-        html = If[ FileExistsQ @ file, ByteArrayToString @ ReadByteArray @ file, "" ];
-        And[
-            FileExistsQ @ file,
-            StringContainsQ[ html, "wolfram-notebook-height" ],
-            StringContainsQ[ html, "parseNotebookUrl" ]
-        ]
-    ],
-    True,
-    SameTest -> Equal,
-    TestID   -> "NotebookFrame-AssetContainsHeightRelay"
-]
-
-(* The wrapper lives under Assets/ (not Assets/Apps/), so it must NOT be registered as a UI
-   resource -- it is deployed to the cloud, never served as an app. *)
-VerificationTest[
-    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
-        Wolfram`AgentTools`Common`initializeUIResources[ ];
-        KeyExistsQ[ Wolfram`AgentTools`Common`$uiResourceRegistry, "ui://wolfram/notebook-frame" ]
-    ],
-    False,
-    SameTest -> Equal,
-    TestID   -> "NotebookFrame-NotRegisteredAsUIResource"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

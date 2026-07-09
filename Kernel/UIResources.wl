@@ -23,10 +23,6 @@ $includeAppearanceElements = False;
 $deployedNotebookRoot      = "AgentTools/Notebooks";
 $deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be connected to deploy notebooks *)
 
-(* Session cache for the deployed notebook-frame wrapper URL (see notebookFrameWrapperURL):
-   Automatic = not yet attempted, a URL string = deployed, Missing[...] = deploy failed (don't retry). *)
-$notebookFrameWrapperURL = Automatic;
-
 (* Inline notebooks are not yet the default since there are still some issues to work out.
    These can be enabled via the following environment variable: *)
 $mcpAppsNotebookMethod := $mcpAppsNotebookMethod = Environment[ "MCP_APPS_NOTEBOOK_METHOD" ];
@@ -95,112 +91,16 @@ deployCloudNotebookForMCPApp // endDefinition;
    the URL and strips the whole marker before rendering. *)
 makeNotebookUIResult // beginDefinition;
 
-makeNotebookUIResult[ textContent_List, deployed_String ] :=
-    With[ { meta = notebookUIMeta @ deployed },
-        <|
-            "Content"           -> appendNotebookURLMarker[ textContent, deployed ],
-            "_meta"             -> meta,
-            "StructuredContent" -> meta
-        |>
-    ];
+makeNotebookUIResult[ textContent_List, deployed_String ] := <|
+    "Content"           -> appendNotebookURLMarker[ textContent, deployed ],
+    "_meta"             -> <| "notebookUrl" -> deployed |>,
+    "StructuredContent" -> <| "notebookUrl" -> deployed |>
+|>;
 
 (* Deployment failed (deployCloudNotebookForMCPApp returned $Failed): no UI result. *)
 makeNotebookUIResult[ _List, _ ] := $Failed;
 
 makeNotebookUIResult // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*notebookUIMeta*)
-(* The _meta/structuredContent payload sent to the app: always the notebookUrl, plus a
-   wrapperUrl for cloud (http) notebooks when the notebook-frame wrapper is available. On hosts
-   whose sandbox CSP blocks eval, the viewer can't run the in-document embedder; it instead
-   frames the same-origin wrapper (notebook-frame.html), which measures the notebook and relays
-   its height for pixel-perfect auto-resizing. Without a wrapperUrl the viewer falls back to a
-   fixed-height frame, so the field is best-effort. Inline notebooks (non-http) get no wrapper. *)
-notebookUIMeta // beginDefinition;
-
-notebookUIMeta[ deployed_String ] /; StringStartsQ[ deployed, "http" ] :=
-    With[ { wrapper = notebookFrameWrapperURL[ ] },
-        If[ StringQ @ wrapper,
-            <| "notebookUrl" -> deployed, "wrapperUrl" -> wrapper |>,
-            <| "notebookUrl" -> deployed |>
-        ]
-    ];
-
-notebookUIMeta[ deployed_String ] := <| "notebookUrl" -> deployed |>;
-
-notebookUIMeta // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*notebookFrameWrapperURL*)
-(* Deploys the notebook-frame wrapper once per session and returns its URL (or Missing if the
-   deploy fails, cached so we don't retry every result). *)
-notebookFrameWrapperURL // beginDefinition;
-
-notebookFrameWrapperURL[ ] := (
-    If[ $notebookFrameWrapperURL === Automatic,
-        $notebookFrameWrapperURL = deployNotebookFrameWrapper[ ]
-    ];
-    $notebookFrameWrapperURL
-);
-
-notebookFrameWrapperURL // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*deployNotebookFrameWrapper*)
-(* Deploys Assets/notebook-frame.html as a public text/html cloud object on the same origin as
-   the notebooks it frames (required for the same-origin height measurement). Served verbatim
-   via Delayed@HTTPResponse (not re-wrapped in the cloud notebook page). *)
-deployNotebookFrameWrapper // beginDefinition;
-
-deployNotebookFrameWrapper[ ] := Enclose[
-    Module[ { file, html, target, deployed },
-
-        (* This should be true if this function is being called (gated by notebookUIMeta on an
-           http notebook URL, which only exists after a successful notebook deploy). *)
-        ConfirmAssert[ $deployCloudNotebooks, "DeployCloudNotebooksAssert" ];
-
-        file = ConfirmBy[
-            PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "NotebookFrame" ],
-            FileExistsQ,
-            "File"
-        ];
-
-        html = ConfirmBy[ ByteArrayToString @ ReadByteArray @ file, StringQ, "HTML" ];
-
-        target = ConfirmMatch[
-            CloudObject @ FileNameJoin @ { $deployedNotebookRoot, "notebook-frame.html" },
-            _CloudObject,
-            "Target"
-        ];
-
-        (* "Public" (not the notebooks' {"All"->{"Read","Interact"}}): a Delayed HTTPResponse is
-           active content, so anonymous viewers need execute rights to receive the HTML. With
-           Read/Interact only, the cloud redirects an unauthenticated request to a login page
-           (which sets X-Frame-Options: DENY and would break framing). The wrapper is inert
-           static HTML, so public execute is safe. *)
-        deployed = Quiet @ Check[
-            CloudDeploy[
-                Delayed @ HTTPResponse[ html, <| "ContentType" -> "text/html" |> ],
-                target,
-                Permissions -> "Public"
-            ],
-            $Failed
-        ];
-
-        If[ MatchQ[ deployed, _CloudObject ],
-            ConfirmBy[ First @ deployed, StringQ, "URL" ],
-            (* Graceful: no wrapper -> the viewer uses a fixed-height frame instead. *)
-            Missing[ "DeployFailed" ]
-        ]
-    ],
-    (Missing[ "DeployFailed" ]) &
-];
-
-deployNotebookFrameWrapper // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

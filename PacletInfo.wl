@@ -59,7 +59,6 @@ PacletObject[ <|
         { "Asset",
             "Assets" -> {
                 { "Apps"               , "Assets/Apps"                    },
-                { "NotebookFrame"      , "Assets/notebook-frame.html"     },
                 { "SymbolPageTemplate" , "Assets/Templates/SymbolPage.wl" },
                 { "TestReportScript"   , "Assets/TestReport.wls"          },
                 { "AGENTS.md"          , "AGENTS.md"                      }

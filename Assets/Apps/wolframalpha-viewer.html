@@ -240,14 +240,8 @@
         })();
         log("cspAllowsEval =", cspAllowsEval);
 
-        // Initial/fallback height (px) for the cross-origin iframe. When a same-origin wrapper
-        // (notebook-frame.html) is available it measures the notebook and posts back an exact
-        // height that replaces this (see the height listener); otherwise this fixed height stands.
+        // Fixed height (px) for the cross-origin iframe fallback, which cannot be auto-sized.
         var NOTEBOOK_IFRAME_HEIGHT = 600;
-        // Clamp for wrapper-reported heights, guarding against a runaway value.
-        var MAX_NOTEBOOK_IFRAME_HEIGHT = 6000;
-        // The wrapper iframe currently on screen (if any); only its height messages are honored.
-        var frameIframe = null;
 
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
@@ -317,17 +311,6 @@
             return extractNotebookUrlMarker(content);
         }
 
-        // ---- Find the notebook-frame wrapper URL (structuredContent or _meta only) ----
-        // When present, the eval-blocked iframe path frames this same-origin wrapper (which
-        // measures the notebook and posts back its height) instead of the notebook directly,
-        // giving exact auto-sizing. It is delivered only via the UI-only channels, never the
-        // content marker, so hosts that drop those simply fall back to a fixed-height frame.
-        function findWrapperUrl(meta, structured) {
-            if (structured && typeof structured.wrapperUrl === "string") return structured.wrapperUrl;
-            if (meta && typeof meta.wrapperUrl === "string") return meta.wrapperUrl;
-            return null;
-        }
-
         // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
         // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
         // wrapper text tells the model the notebook is already shown and the URL is not for it
@@ -372,8 +355,6 @@
                 embedded.detach();
                 embedded = null;
             }
-            // Drop the wrapper reference so late height messages from a torn-down frame are ignored.
-            frameIframe = null;
             notebookContainer.innerHTML = "";
         }
 
@@ -402,21 +383,14 @@
         }
 
         // ---- Embed a cloud notebook via a cross-origin iframe ----
-        // Used when the host CSP blocks eval (see cspAllowsEval): rendering the notebook under
-        // wolframcloud.com's own (eval-permitting) CSP, isolated from this app's CSP.
-        //
-        // When a wrapper URL is available we frame the same-origin notebook-frame.html wrapper
-        // (passing the notebook URL in the fragment); being same-origin with the notebook, it
-        // measures the rendered height and posts it back, so the frame auto-sizes exactly to the
-        // content (see the height listener below). Without a wrapper we frame the notebook
-        // directly at a fixed height, since a cross-origin frame can't be measured. The cloud
-        // notebook is deployed chrome-free (AppearanceElements -> None). http(s) URLs only;
-        // inline notebook exprs have no framable URL and never reach here.
-        function embedNotebookViaIframe(url, generation, wrapperUrl) {
-            var useWrapper = typeof wrapperUrl === "string" && wrapperUrl.indexOf("http") === 0;
-            var src = useWrapper ? (wrapperUrl + "#nb=" + encodeURIComponent(url)) : url;
-            log("embedNotebookViaIframe:", useWrapper ? "wrapped (auto-resize)" : "direct (fixed height)", "for", url);
-
+        // Used when the host CSP blocks eval (see cspAllowsEval). Pointing an iframe
+        // straight at the cloud URL renders the notebook under wolframcloud.com's own
+        // (eval-permitting) CSP, isolated from this app's CSP. The cloud notebook is
+        // deployed chrome-free (AppearanceElements -> None), but a cross-origin iframe
+        // can't be measured, so it uses a fixed height with internal scrolling rather
+        // than the embedder's fit-to-content sizing. http(s) URLs only; inline notebook
+        // exprs have no framable URL and never reach here.
+        function embedNotebookViaIframe(url, generation) {
             var settled = false;
             var watchdog = setTimeout(function() {
                 if (!settled) {
@@ -426,7 +400,7 @@
             }, 20000);
 
             var iframe = document.createElement("iframe");
-            iframe.src = src;
+            iframe.src = url;
             iframe.title = "Wolfram notebook";
             iframe.style.width = "100%";
             iframe.style.height = NOTEBOOK_IFRAME_HEIGHT + "px";
@@ -441,13 +415,11 @@
                 resultsEl.innerHTML = "";
                 loadingEl.style.display = "none";
             });
-            // Honor height messages only from this frame (see the height listener).
-            frameIframe = useWrapper ? iframe : null;
             notebookContainer.appendChild(iframe);
         }
 
         // ---- Embed a cloud notebook ----
-        function embedNotebook(url, wrapperUrl) {
+        function embedNotebook(url) {
             detachNotebook();
             // Do NOT clear resultsEl here: any text/image fallback rendered by
             // handleToolResult must stay visible until the embed actually
@@ -464,7 +436,7 @@
             // notebook engine. Render the cloud notebook in a cross-origin iframe instead.
             if (!cspAllowsEval && isHttpUrl) {
                 log("embedNotebook: host CSP blocks eval; rendering via cross-origin iframe");
-                embedNotebookViaIframe(url, generation, wrapperUrl);
+                embedNotebookViaIframe(url, generation);
                 return;
             }
 
@@ -559,9 +531,7 @@
         // ---- Handle tool result: embed notebook, falling back to text/image ----
         function handleToolResult(content, meta, structured) {
             var notebookUrl = findNotebookUrl(content, meta, structured);
-            var wrapperUrl = findWrapperUrl(meta, structured);
             log("handleToolResult: notebookUrl =", describeUrl(notebookUrl),
-                "| wrapperUrl =", wrapperUrl || "(none)",
                 "| meta =", describe(meta),
                 "| structuredContent =", describe(structured),
                 "| content =", describe(content));
@@ -574,7 +544,7 @@
                 // leaves readable output; embedNotebook() clears it again once
                 // the notebook actually renders.
                 renderContent(content);
-                embedNotebook(notebookUrl, wrapperUrl);
+                embedNotebook(notebookUrl);
             } else {
                 // No notebookUrl (e.g. the host dropped _meta/structuredContent and the result
                 // carries no marker): fall back to the text/image content the result still
@@ -708,20 +678,6 @@
             queryInput.value = "";
             updateClearBtn();
             queryInput.focus();
-        });
-
-        // ---- Notebook-frame height messages (auto-resize) ----
-        // The same-origin wrapper (notebook-frame.html) measures the notebook it hosts and posts
-        // its exact rendered height here. We accept it only from the current wrapper frame (so a
-        // superseded frame can't resize the live one) and clamp it. These messages come from the
-        // wrapper iframe, not window.parent, so they are handled here rather than in the host
-        // message handler below (which ignores anything whose source isn't window.parent).
-        window.addEventListener("message", function(event) {
-            var d = event.data;
-            if (!d || d.type !== "wolfram-notebook-height" || typeof d.height !== "number") return;
-            if (!frameIframe || event.source !== frameIframe.contentWindow) return;
-            var h = Math.max(1, Math.min(d.height, MAX_NOTEBOOK_IFRAME_HEIGHT));
-            frameIframe.style.height = h + "px";
         });
 
         // ---- Incoming message handler ----

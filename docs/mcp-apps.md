@@ -110,27 +110,8 @@ To render the notebook anyway, each embedding viewer (`evaluator-viewer`, `noteb
 
 The fallback is additive — nothing changes on eval-permitting hosts. Two constraints are worth noting:
 
-- **Sizing.** A cross-origin iframe can't be measured by the app. The two deploy-based viewers (`evaluator-viewer`, `wolframalpha-viewer`) recover an exact height through a same-origin wrapper (see [below](#auto-resizing-the-iframe-the-notebook-frame-wrapper)). When no wrapper is available — its deploy failed, or `notebook-viewer`, which frames arbitrary user-supplied URLs — the frame falls back to a fixed height (`NOTEBOOK_IFRAME_HEIGHT`, 600 px; `notebook-viewer` honors a finite positive `maxHeight` argument) with internal scrolling.
+- **Sizing.** A cross-origin iframe can't be measured by the app, so it uses a fixed height (`NOTEBOOK_IFRAME_HEIGHT`, 600 px; `notebook-viewer` uses a finite positive `maxHeight` tool argument when given) with internal scrolling, rather than the embedder's fit-to-content sizing.
 - **Cloud URLs only.** Only an `http(s)` cloud URL can be framed. Inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry a serialized expression with no URL, so on an eval-blocked host they fall through to the text/image result — another reason inline delivery remains experimental.
-
-### Auto-Resizing the Iframe: the Notebook-Frame Wrapper
-
-A cross-origin frame can't be measured by the app, and the cloud notebook page can't be measured either: it sets `html, body { height: 100% }` (so its `scrollHeight` just echoes the frame height) and never posts its size to a parent. Left at a fixed height, a small notebook leaves a mostly-empty frame.
-
-The fix exploits same-origin access. A page served **from `www.wolframcloud.com`** *can* measure the notebook (same origin). So the deploy-based tools insert one: `Assets/notebook-frame.html`, deployed to the cloud by `deployNotebookFrameWrapper` (once per session, cached in `$notebookFrameWrapperURL`) as a **public `text/html`** object via `Delayed@HTTPResponse`. `makeNotebookUIResult` passes its URL to the app as `wrapperUrl` (via `notebookUIMeta`, for cloud URLs only), alongside `notebookUrl`.
-
-The flow, on an eval-blocked host:
-
-1. The viewer frames `notebook-frame.html#nb=<encoded notebook URL>` instead of the notebook directly (`findWrapperUrl` → `embedNotebookViaIframe`).
-2. The wrapper, being same-origin with the notebook, iframes it and measures its rendered height. Because the notebook's `body` is `height: 100%`, the wrapper first collapses the inner frame to 0 (synchronously, so it's never painted), reads `documentElement.scrollHeight` — now the true content height, which overflows the collapsed body — then restores it.
-3. The wrapper `postMessage`s `{ type: "wolfram-notebook-height", height }` up to the viewer, which validates the message came from the current wrapper frame, clamps it (`MAX_NOTEBOOK_IFRAME_HEIGHT`), and applies it. A `MutationObserver` plus a short poll keep it live as dynamic content (`Manipulate`, opened cell groups) changes size.
-
-Notes:
-
-- **Scope.** Only `evaluator-viewer` and `wolframalpha-viewer` get this — they deploy the notebook and control the result `_meta`. `notebook-viewer` frames arbitrary user-supplied URLs (no wrapper) and keeps the fixed-height frame.
-- **Delivery.** `wrapperUrl` travels only through `_meta`/`structuredContent`, never the content marker, so a host that drops those (see below) simply falls back to a fixed-height frame.
-- **Permissions.** The wrapper deploys with `Permissions -> "Public"`, not the notebooks' `{"All" -> {"Read", "Interact"}}`: a `Delayed@HTTPResponse` is *active* content, so anonymous viewers need execute rights, otherwise the cloud redirects them to a login page that sets `X-Frame-Options: DENY` and breaks framing. The wrapper is inert static HTML, so public execute is safe.
-- **Same origin, any path.** An origin is scheme + host + port only, so one wrapper serves notebooks under any cloud path or user.
 
 ### Recovering the Notebook URL When `_meta` Is Dropped
 
@@ -266,7 +247,6 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `Kernel/InstallMCPServer.wl` | `"EnableMCPApps"` option and `MCP_APPS_ENABLED` environment variable |
 | `Kernel/Messages.wl` | Error messages for UI resources |
 | `Assets/Apps/` | HTML and JSON files for UI resources |
-| `Assets/notebook-frame.html` | Same-origin wrapper that measures a framed notebook and posts its height back for auto-resizing (deployed to the cloud, **not** a `ui://` app) |
 | `Kernel/Tools/NotebookViewer.wl` | NotebookViewer tool definition |
 | `Kernel/Tools/MCPAppsTest.wl` | MCPAppsTest diagnostic tool definition |
 | `Kernel/Tools/WolframAlpha.wl` | UI-enhanced Wolfram\|Alpha evaluation |
@@ -281,8 +261,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
 | `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
 | `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
-| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` (and, for cloud URLs, `wrapperUrl`) in `_meta`/`structuredContent`, and for cloud URLs appends the `<internal>…<url>…</url></internal>` content marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
-| `notebookFrameWrapperURL` | `UIResources` | Deploys `notebook-frame.html` once per session (cached in `$notebookFrameWrapperURL`) and returns its URL, or `Missing` if the deploy fails — used by `notebookUIMeta` to attach `wrapperUrl` for iframe auto-resizing |
+| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta`/`structuredContent`, and for cloud URLs appends the `<internal>…<url>…</url></internal>` content marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |
