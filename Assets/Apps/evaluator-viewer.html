@@ -369,6 +369,21 @@
             return frame;
         }
 
+        // ---- Restrict the eval-blocked iframe fallback to Wolfram Cloud URLs ----
+        // The fallback frames the URL directly (see embedNotebookViaIframe), so only allow
+        // https Wolfram Cloud hosts. A tampered or attacker-controlled result then can't
+        // cause an arbitrary third-party page to load in the iframe. The embedder path is
+        // left unchanged; it still accepts inline notebooks and other targets.
+        function isWolframCloudUrl(url) {
+            try {
+                var u = new URL(url);
+                return u.protocol === "https:" &&
+                    (u.hostname === "wolframcloud.com" || u.hostname.endsWith(".wolframcloud.com"));
+            } catch (err) {
+                return false;
+            }
+        }
+
         // ---- Embed a cloud notebook via a cross-origin iframe ----
         // Used when the host CSP blocks eval (see cspAllowsEval). Pointing an iframe
         // straight at the cloud URL renders the notebook under wolframcloud.com's own
@@ -420,8 +435,10 @@
             log("embedNotebook: target =", describeUrl(url));
 
             // Strict host CSP (no 'unsafe-eval'): the in-document embedder can't run the
-            // notebook engine. Render the cloud notebook in a cross-origin iframe instead.
-            if (!cspAllowsEval && isHttpUrl) {
+            // notebook engine. Render the cloud notebook in a cross-origin iframe instead
+            // — but only for Wolfram Cloud URLs, so a tampered result can't frame an
+            // arbitrary third-party page.
+            if (!cspAllowsEval && isWolframCloudUrl(url)) {
                 log("embedNotebook: host CSP blocks eval; rendering via cross-origin iframe");
                 embedNotebookViaIframe(url, generation);
                 return;

@@ -1495,4 +1495,24 @@ VerificationTest[
     TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1482,1-1496,2"
 ]
 
+(* Under strict CSP the fallback frames the notebook URL directly, so each viewer must
+   restrict that iframe to Wolfram Cloud hosts (parsed with new URL) instead of embedding
+   any http(s) URL; otherwise a tampered result could frame an arbitrary third-party page. *)
+VerificationTest[
+    Module[ { html },
+        Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+            Wolfram`AgentTools`Common`initializeUIResources[ ];
+            AllTrue[
+                { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+                ( html = Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ];
+                  StringContainsQ[ html, "!cspAllowsEval && isWolframCloudUrl" ] &&
+                  StringContainsQ[ html, ".wolframcloud.com" ] ) &
+            ]
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)
