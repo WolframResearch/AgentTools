@@ -1293,7 +1293,7 @@ VerificationTest[
         "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-CloudURLAppendsMarker"
+    TestID   -> "MakeNotebookUIResult-CloudURLAppendsMarker@@Tests/MCPApps.wlt:1272,1-1297,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1312,7 +1312,7 @@ VerificationTest[
     ],
     "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb",
     SameTest -> MatchQ,
-    TestID   -> "NotebookURLMarkerText-URLIsExtractable"
+    TestID   -> "NotebookURLMarkerText-URLIsExtractable@@Tests/MCPApps.wlt:1304,1-1316,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1325,7 +1325,7 @@ VerificationTest[
     ],
     $Failed,
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-DeployFailed"
+    TestID   -> "MakeNotebookUIResult-DeployFailed@@Tests/MCPApps.wlt:1321,1-1329,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1347,7 +1347,7 @@ VerificationTest[
         "Notebook[{Cell[\"1 + 1\", \"Input\"]}]"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-InlineNoMarker"
+    TestID   -> "MakeNotebookUIResult-InlineNoMarker@@Tests/MCPApps.wlt:1336,1-1351,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1363,7 +1363,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1272,1-1279,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1360,1-1367,2"
 ]
 
 VerificationTest[
@@ -1372,7 +1372,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1281,1-1288,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1369,1-1376,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1384,7 +1384,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1293,1-1300,2"
+    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1381,1-1388,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1396,7 +1396,7 @@ VerificationTest[
     ],
     RowBox @ { "1", "+", "1" },
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1305,1-1312,2"
+    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1393,1-1400,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1410,7 +1410,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1317,1-1326,2"
+    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1405,1-1414,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1433,7 +1433,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent"
+    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1428,1-1437,2"
 ]
 
 VerificationTest[
@@ -1444,7 +1444,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent"
+    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1439,1-1448,2"
 ]
 
 VerificationTest[
@@ -1455,7 +1455,26 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-EvalCSPFallbackPresent"
+    TestID   -> "NotebookViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1450,1-1459,2"
+]
+
+(* The eval-blocked iframe fallback can't be auto-sized, so each viewer must let the user
+   resize it via a drag handle rather than pin it to a single fixed height. A native corner
+   `resize` grip is unusable here because the framed notebook's own scrollbar covers it. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        AllTrue[
+            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+            StringContainsQ[
+                Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ],
+                "notebook-resize-handle"
+            ] &
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-IframeFallbackResizable@@Tests/MCPApps.wlt:1464,1-1478,2"
 ]
 
 (* The embedder path must remain for hosts whose CSP does permit eval (fit-to-content sizing),
@@ -1473,7 +1492,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-EmbedderPathRetained"
+    TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1482,1-1496,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

@@ -110,7 +110,7 @@ To render the notebook anyway, each embedding viewer (`evaluator-viewer`, `noteb
 
 The fallback is additive — nothing changes on eval-permitting hosts. Two constraints are worth noting:
 
-- **Sizing.** A cross-origin iframe can't be measured by the app, so it uses a fixed height (`NOTEBOOK_IFRAME_HEIGHT`, 600 px; `notebook-viewer` uses a finite positive `maxHeight` tool argument when given) with internal scrolling, rather than the embedder's fit-to-content sizing.
+- **Sizing.** A cross-origin iframe can't be measured by the app, so it opens at a default height (`NOTEBOOK_IFRAME_HEIGHT`, 200 px; `notebook-viewer` uses a finite positive `maxHeight` tool argument when given) that the user can grow with a drag handle along the frame's bottom edge (`makeResizableFrame`), with internal scrolling, rather than the embedder's fit-to-content sizing. A native corner `resize` grip is avoided because the framed notebook's own scrollbar sits on top of it and swallows the clicks.
 - **Cloud URLs only.** Only an `http(s)` cloud URL can be framed. Inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry a serialized expression with no URL, so on an eval-blocked host they fall through to the text/image result — another reason inline delivery remains experimental.
 
 ### Recovering the Notebook URL When `_meta` Is Dropped

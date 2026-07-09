@@ -157,6 +157,45 @@
             border: 1px solid var(--img-border);
             border-radius: 4px;
         }
+        .notebook-frame {
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 100px;
+            padding-bottom: 11px;
+        }
+        .notebook-frame iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Full-width drag handle for the cross-origin iframe fallback. It sits in the
+           frame's bottom padding strip, clear of the framed notebook's own scrollbar,
+           which otherwise covers a native corner `resize` grip and eats the clicks. */
+        .notebook-resize-handle {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: ns-resize;
+            background: rgba(127, 127, 127, 0.14);
+            touch-action: none;
+        }
+        .notebook-resize-handle:hover {
+            background: rgba(127, 127, 127, 0.24);
+        }
+        .notebook-resize-handle::before {
+            content: "";
+            width: 32px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(127, 127, 127, 0.75);
+        }
     </style>
 </head>
 <body>
@@ -240,8 +279,9 @@
         })();
         log("cspAllowsEval =", cspAllowsEval);
 
-        // Fixed height (px) for the cross-origin iframe fallback, which cannot be auto-sized.
-        var NOTEBOOK_IFRAME_HEIGHT = 600;
+        // Default height (px) for the cross-origin iframe fallback, which cannot be
+        // auto-sized. The frame starts at this height; the user can drag to resize it.
+        var NOTEBOOK_IFRAME_HEIGHT = 200;
 
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
@@ -382,14 +422,59 @@
             return value === null ? "null" : typeof value;
         }
 
+        // ---- Wrap an iframe so the user can drag its bottom edge to resize it ----
+        // The cross-origin notebook can't be auto-sized, so the fallback frame opens at a
+        // default height and the user grows it from there. A native CSS `resize` grip lands
+        // in the bottom-right corner, where the framed notebook's own scrollbar sits on top
+        // and eats the clicks, so we add our own full-width drag handle along the bottom
+        // (in the frame's padding strip, below the iframe) instead.
+        function makeResizableFrame(iframe, initialHeight) {
+            var frame = document.createElement("div");
+            frame.className = "notebook-frame";
+            frame.style.height = Math.max(100, initialHeight) + "px";
+            frame.appendChild(iframe);
+
+            var handle = document.createElement("div");
+            handle.className = "notebook-resize-handle";
+            handle.title = "Drag to resize";
+            frame.appendChild(handle);
+
+            handle.addEventListener("pointerdown", function(e) {
+                e.preventDefault();
+                var startY = e.clientY;
+                var startHeight = frame.getBoundingClientRect().height;
+                // Pointer capture keeps the move/up events on the handle even while the
+                // cursor is over the cross-origin iframe; disabling the iframe's pointer
+                // events for the drag is extra insurance against it swallowing the stream.
+                iframe.style.pointerEvents = "none";
+                try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+
+                function onMove(ev) {
+                    frame.style.height = Math.max(100, startHeight + ev.clientY - startY) + "px";
+                }
+                function onEnd() {
+                    iframe.style.pointerEvents = "";
+                    handle.removeEventListener("pointermove", onMove);
+                    handle.removeEventListener("pointerup", onEnd);
+                    handle.removeEventListener("pointercancel", onEnd);
+                }
+                handle.addEventListener("pointermove", onMove);
+                handle.addEventListener("pointerup", onEnd);
+                handle.addEventListener("pointercancel", onEnd);
+            });
+
+            return frame;
+        }
+
         // ---- Embed a cloud notebook via a cross-origin iframe ----
         // Used when the host CSP blocks eval (see cspAllowsEval). Pointing an iframe
         // straight at the cloud URL renders the notebook under wolframcloud.com's own
         // (eval-permitting) CSP, isolated from this app's CSP. The cloud notebook is
         // deployed chrome-free (AppearanceElements -> None), but a cross-origin iframe
-        // can't be measured, so it uses a fixed height with internal scrolling rather
-        // than the embedder's fit-to-content sizing. http(s) URLs only; inline notebook
-        // exprs have no framable URL and never reach here.
+        // can't be measured, so it opens at a fixed default height the user can drag to
+        // resize, with internal scrolling, rather than the embedder's fit-to-content
+        // sizing. http(s) URLs only; inline notebook exprs have no framable URL and
+        // never reach here.
         function embedNotebookViaIframe(url, generation) {
             var settled = false;
             var watchdog = setTimeout(function() {
@@ -402,10 +487,6 @@
             var iframe = document.createElement("iframe");
             iframe.src = url;
             iframe.title = "Wolfram notebook";
-            iframe.style.width = "100%";
-            iframe.style.height = NOTEBOOK_IFRAME_HEIGHT + "px";
-            iframe.style.border = "none";
-            iframe.style.display = "block";
             iframe.addEventListener("load", function() {
                 settled = true;
                 clearTimeout(watchdog);
@@ -415,7 +496,7 @@
                 resultsEl.innerHTML = "";
                 loadingEl.style.display = "none";
             });
-            notebookContainer.appendChild(iframe);
+            notebookContainer.appendChild(makeResizableFrame(iframe, NOTEBOOK_IFRAME_HEIGHT));
         }
 
         // ---- Embed a cloud notebook ----
