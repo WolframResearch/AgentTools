@@ -1268,52 +1268,80 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*Cloud URL Appends URL Marker*)
+(*Cloud URL Wraps Result In Marker*)
 VerificationTest[
-    Module[ { url, result, marker },
-        url    = "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb";
-        result = Wolfram`AgentTools`Common`makeNotebookUIResult[
+    Module[ { uuid, url, result, content, joined },
+        uuid    = "e0f29bea-667b-4780-b36b-59de225e660e";
+        url     = "https://www.wolframcloud.com/obj/" <> uuid;
+        result  = Wolfram`AgentTools`Common`makeNotebookUIResult[
             { <| "type" -> "text", "text" -> "1 + 1 = 2" |> },
             url
         ];
-        marker = Last[ result[ "Content" ] ][ "text" ];
+        content = result[ "Content" ];
+        joined  = StringJoin[ #[ "text" ] & /@ content ];
         {
-            Length @ result[ "Content" ],
-            StringContainsQ[ marker, "<internal>" ] && StringContainsQ[ marker, "</internal>" ],
-            StringContainsQ[ marker, "<url>" <> url <> "</url>" ],
+            (* The single text item is wrapped by an opening and a closing tag item *)
+            Length @ content,
+            StringContainsQ[ joined, "<result uuid=\"" <> uuid <> "\">" ],
+            StringContainsQ[ joined, "</result>" ],
+            (* The original result text is preserved between the tags *)
+            StringContainsQ[ joined, "1 + 1 = 2" ],
             result[ "_meta", "notebookUrl" ],
             (* structuredContent must not be produced: some clients drop content when it is present *)
             KeyExistsQ[ result, "StructuredContent" ]
         }
     ],
     {
-        2,
+        3,
         True,
         True,
-        "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb",
+        True,
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e",
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-CloudURLAppendsMarker@@Tests/MCPApps.wlt:1272,1-1297,2"
+    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*Marker URL Is Extractable*)
-(* Mirrors the viewers' extraction: the URL must sit inside <url>...</url> within the marker so
-   the client regex <internal>...<url>(...)</url>...</internal> can recover it. *)
+(*Marker UUID Is Recoverable*)
+(* Mirrors the viewers' extraction: the uuid must sit inside <result uuid="..."> in the wrapped
+   content so the client regex <result uuid="(...)"> can recover it and rebuild the cloud URL as
+   https://www.wolframcloud.com/obj/<uuid>. *)
 VerificationTest[
-    Module[ { url, marker },
-        url    = "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb";
-        marker = Wolfram`AgentTools`UIResources`Private`notebookURLMarkerText[ url ];
-        First[
-            StringCases[ marker, "<internal>" ~~ ___ ~~ "<url>" ~~ u: Except[ "<" ].. ~~ "</url>" ~~ ___ ~~ "</internal>" :> u ],
+    Module[ { uuid, url, result, joined, recovered },
+        uuid      = "e0f29bea-667b-4780-b36b-59de225e660e";
+        url       = "https://www.wolframcloud.com/obj/" <> uuid;
+        result    = Wolfram`AgentTools`Common`makeNotebookUIResult[
+            { <| "type" -> "text", "text" -> "x" |> },
+            url
+        ];
+        joined    = StringJoin[ #[ "text" ] & /@ result[ "Content" ] ];
+        recovered = First[
+            StringCases[ joined, "<result uuid=\"" ~~ u: Except[ "\"" ].. ~~ "\">" :> u ],
             None
-        ]
+        ];
+        { recovered, "https://www.wolframcloud.com/obj/" <> recovered }
     ],
-    "https://www.wolframcloud.com/obj/u/AgentTools/Notebooks/deadbeef12345678.nb",
+    {
+        "e0f29bea-667b-4780-b36b-59de225e660e",
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
+    },
     SameTest -> MatchQ,
-    TestID   -> "NotebookURLMarkerText-URLIsExtractable@@Tests/MCPApps.wlt:1304,1-1316,2"
+    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudNotebookUUID Extracts UUID From Deployed URL*)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`cloudNotebookUUID[
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
+    ],
+    "e0f29bea-667b-4780-b36b-59de225e660e",
+    SameTest -> MatchQ,
+    TestID   -> "CloudNotebookUUID-ExtractsUUID"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1332,8 +1360,8 @@ VerificationTest[
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*Inline (Non-http) Value Omits Marker*)
-(* Inline notebooks have no reconstructable id, so no marker is appended; the value is still
-   carried in _meta. *)
+(* Inline notebooks carry the whole serialized notebook, so no <result uuid="..."> wrapper is
+   added; the value is still carried in _meta. *)
 VerificationTest[
     Module[ { serialized, result },
         serialized = "Notebook[{Cell[\"1 + 1\", \"Input\"]}]";

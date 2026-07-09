@@ -117,15 +117,17 @@ The fallback is additive — nothing changes on eval-permitting hosts. Two const
 
 The `notebookUrl` is delivered to the app through `_meta`, which is meant to reach the app without entering model context. (The MCP Apps spec also defines `structuredContent` for this, but the server deliberately does **not** send it: some clients discard a tool result's `content` — text and images — entirely when `structuredContent` is present, which we do not want.) Some hosts, however, drop `_meta` from tool results ([ext-apps#696](https://github.com/modelcontextprotocol/ext-apps/issues/696)), so the app never receives the URL directly and can only render the text/image fallback. Those same hosts also do not forward app-initiated `resources/read` (they answer it with JSON-RPC `-32601 "Method not found"`), so the app cannot ask the server for the URL either.
 
-The one channel that does survive is the tool result's `content`. So for cloud-notebook results, `makeNotebookUIResult` appends the URL to the content inside a self-describing marker (a separate text item):
+The one channel that does survive is the tool result's `content`. So for cloud-notebook results, `makeNotebookUIResult` wraps the content in a `<result uuid="…">…</result>` marker whose `uuid` identifies the deployed cloud notebook (a text item before and after the result text):
 
 ```
-<internal>This tool call was displayed to the user as an interactive notebook, which they can already see. The URL below only renders that notebook; you do not need to read, repeat, visit, or otherwise use it. <url>https://www.wolframcloud.com/obj/.../56a24661be6b3368.nb</url></internal>
+<result uuid="e0f29bea-667b-4780-b36b-59de225e660e">
+Out[1]= 2543568463
+</result>
 ```
 
-The wrapper text is addressed to the model — it explains that the notebook is already shown and the URL is not for it to act on — while the `<url>` tags let the viewer extract it. When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which pulls the URL straight out of the marker (no server round-trip). Each text-rendering viewer also strips the whole `<internal>…</internal>` block (via `stripAgentOnlyText`) so it never reaches the user.
+Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed URL is already `https://www.wolframcloud.com/obj/<uuid>` and the `uuid` is recovered from it with no extra round-trip (`cloudNotebookUUID`). When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which reads the `uuid` from the marker and reconstructs the same cloud URL as `https://www.wolframcloud.com/obj/<uuid>`. Each text-rendering viewer also strips the surrounding `<result>` tags (via `stripAgentOnlyText`), keeping the wrapped result text, so the tags never reach the user.
 
-This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no marker is appended. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
+This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no wrapper is added. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
 
 ## Available UI Resources
 
@@ -261,7 +263,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
 | `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
 | `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
-| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs appends the `<internal>…<url>…</url></internal>` content marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
+| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs wraps the content in a `<result uuid="…">…</result>` marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |

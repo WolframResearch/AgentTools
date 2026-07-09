@@ -247,9 +247,9 @@
 
         // ---- Find notebookUrl in _meta, content items, or content marker ----
         // _meta is the UI-only channel (kept out of model context) for spec-compliant hosts and
-        // direct tools/call responses. When a host drops it (ext-apps#696), the tool also embeds
-        // the URL in an <internal>...<url>...</url></internal> marker in the text content (see
-        // extractNotebookUrlMarker), which the host does not strip.
+        // direct tools/call responses. When a host drops it (ext-apps#696), the tool also wraps the
+        // output in a <result uuid="..."> marker in the text content (see extractNotebookUrlMarker),
+        // which the host does not strip.
         function findNotebookUrl(content, meta) {
             if (meta && meta.notebookUrl) return meta.notebookUrl;
             if (!content || !Array.isArray(content)) return null;
@@ -262,29 +262,29 @@
             return extractNotebookUrlMarker(content);
         }
 
-        // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
-        // Fallback for hosts that drop _meta (ext-apps#696). The marker's
-        // wrapper text tells the model the notebook is already shown and the URL is not for it
-        // to use; stripAgentOnlyText removes the whole marker before anything reaches the user.
+        // ---- Recover the URL from the <result uuid="..."> content marker ----
+        // Fallback for hosts that drop _meta (ext-apps#696). The tool wraps its output in a
+        // <result uuid="...">...</result> marker; the uuid identifies the deployed cloud notebook,
+        // from which we reconstruct the cloud URL. stripAgentOnlyText removes the <result> tags
+        // before anything reaches the user.
         function extractNotebookUrlMarker(content) {
             if (!content || !Array.isArray(content)) return null;
-            // Prefer the LAST marker in document order. The server appends its marker as the
-            // final content item (see appendNotebookURLMarker), so the last marker is the
-            // trusted one; scanning for the last match rather than the first keeps a marker
-            // injected earlier via user-controlled tool output text from overriding the
-            // server-appended URL (even if a host concatenates the text items).
-            var re = /<internal>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/internal>/g;
-            var url = null;
+            // Prefer the FIRST marker in document order. The server prepends its opening
+            // <result uuid="..."> tag as the first content item (see wrapResultTags), so the first
+            // marker is the trusted one; taking the first match keeps a marker injected via
+            // user-controlled tool output text (which can only appear after the server's) from
+            // overriding the server's uuid (even if a host concatenates the text items).
+            var re = /<result\s+uuid="([^"]+)"\s*>/;
             for (var i = 0; i < content.length; i++) {
                 var item = content[i];
                 if (item && item.type === "text" && typeof item.text === "string") {
-                    var m;
-                    while ((m = re.exec(item.text)) !== null) {
-                        if (m[1].trim()) url = m[1].trim();
+                    var m = item.text.match(re);
+                    if (m && m[1].trim()) {
+                        return "https://www.wolframcloud.com/obj/" + m[1].trim();
                     }
                 }
             }
-            return url;
+            return null;
         }
 
         // ---- Detach previous notebook ----
@@ -503,13 +503,15 @@
         // never be surfaced in the widget:
         //   * the Wolfram session-ID <system-reminder> appended to evaluator output
         //   * the interactive-widget notice injected by the host (e.g. Claude Desktop)
-        //   * the <internal>...</internal> notebook-URL marker (see extractNotebookUrlMarker)
+        //   * the <result uuid="...">...</result> notebook marker tags (see extractNotebookUrlMarker);
+        //     only the tags are removed, the wrapped result text is preserved
         function stripAgentOnlyText(text) {
             if (!text) return "";
             return text
                 .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, "")
                 .replace(/\[This tool call rendered an interactive widget[\s\S]*?\]/g, "")
-                .replace(/<internal>[\s\S]*?<\/internal>/g, "")
+                .replace(/<result\s+uuid="[^"]*"\s*>/g, "")
+                .replace(/<\/result>/g, "")
                 .trim();
         }
 

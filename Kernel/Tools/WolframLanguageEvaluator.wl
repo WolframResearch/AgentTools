@@ -356,9 +356,9 @@ makeEvaluatorUIResult[
             "Deployed"
         ];
 
-        (* Build the UI result: notebookUrl in _meta (the UI-only channel), plus the URL inside an
-           <internal>...<url>...</url></internal> marker in the content as a fallback for hosts that
-           drop _meta (ext-apps#696). See makeNotebookUIResult. Returns $Failed if deployment failed. *)
+        (* Build the UI result: notebookUrl in _meta (the UI-only channel), plus a <result uuid="...">
+           wrapper around the content as a fallback for hosts that drop _meta (ext-apps#696). See
+           makeNotebookUIResult. Returns $Failed if deployment failed. *)
         makeNotebookUIResult[ textContent, deployed ]
     ],
     throwInternalFailure
@@ -1018,10 +1018,10 @@ sessionInfoContentItem // endDefinition;
 sessionInfoText // beginDefinition;
 
 sessionInfoText[ id_String ] := StringJoin[
-    "\n\n<system-reminder>Wolfram session ID: ", id, ".",
-    If[ $sessionStatus === "reused", " (No saved state was found for this ID, so a new empty session was started.)", "" ],
-    " To continue this session (its definitions, line numbers, and history) in your next call to this tool, pass session=\"", id,
-    "\". Omit the session parameter only to start a new, empty session.</system-reminder>"
+    "\n\n<system-reminder>",
+    If[ $sessionStatus === "reused", "No saved state was found for the requested session ID, so a new empty session was started. ", "" ],
+    "Pass session=\"", id, "\" in future calls to this tool to continue this session.",
+    "</system-reminder>"
 ];
 
 sessionInfoText // endDefinition;
