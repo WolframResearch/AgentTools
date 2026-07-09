@@ -343,9 +343,9 @@
                 e.preventDefault();
                 var startY = e.clientY;
                 var startHeight = frame.getBoundingClientRect().height;
-                // Pointer capture keeps the move/up events on the handle even while the
-                // cursor is over the cross-origin iframe; disabling the iframe's pointer
-                // events for the drag is extra insurance against it swallowing the stream.
+                // Disabling the iframe's pointer events keeps the cross-origin frame from
+                // swallowing the drag stream; pointer capture is a further optimization that
+                // keeps the move/up events flowing while the cursor is over the iframe.
                 iframe.style.pointerEvents = "none";
                 try { handle.setPointerCapture(e.pointerId); } catch (err) {}
 
@@ -354,13 +354,16 @@
                 }
                 function onEnd() {
                     iframe.style.pointerEvents = "";
-                    handle.removeEventListener("pointermove", onMove);
-                    handle.removeEventListener("pointerup", onEnd);
-                    handle.removeEventListener("pointercancel", onEnd);
+                    window.removeEventListener("pointermove", onMove);
+                    window.removeEventListener("pointerup", onEnd);
+                    window.removeEventListener("pointercancel", onEnd);
                 }
-                handle.addEventListener("pointermove", onMove);
-                handle.addEventListener("pointerup", onEnd);
-                handle.addEventListener("pointercancel", onEnd);
+                // Bind move/end on window, not the handle, so a drag that strays off the
+                // handle (e.g. when setPointerCapture is unsupported) still delivers its
+                // events and cleans up, instead of leaving the frame stuck non-interactive.
+                window.addEventListener("pointermove", onMove);
+                window.addEventListener("pointerup", onEnd);
+                window.addEventListener("pointercancel", onEnd);
             });
 
             return frame;
