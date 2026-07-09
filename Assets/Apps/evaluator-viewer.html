@@ -245,14 +245,12 @@
             loadingEl.style.display = "none";
         }
 
-        // ---- Find notebookUrl in structuredContent, _meta, content items, or content marker ----
-        // structuredContent is the spec's UI-only channel (kept out of model context); _meta is
-        // the fallback for spec-compliant hosts and direct tools/call responses. When a host
-        // drops both (ext-apps#696), the tool also embeds the URL in an
-        // <internal>...<url>...</url></internal> marker in the text content (see
+        // ---- Find notebookUrl in _meta, content items, or content marker ----
+        // _meta is the UI-only channel (kept out of model context) for spec-compliant hosts and
+        // direct tools/call responses. When a host drops it (ext-apps#696), the tool also embeds
+        // the URL in an <internal>...<url>...</url></internal> marker in the text content (see
         // extractNotebookUrlMarker), which the host does not strip.
-        function findNotebookUrl(content, meta, structured) {
-            if (structured && structured.notebookUrl) return structured.notebookUrl;
+        function findNotebookUrl(content, meta) {
             if (meta && meta.notebookUrl) return meta.notebookUrl;
             if (!content || !Array.isArray(content)) return null;
             for (var i = 0; i < content.length; i++) {
@@ -265,7 +263,7 @@
         }
 
         // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
-        // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
+        // Fallback for hosts that drop _meta (ext-apps#696). The marker's
         // wrapper text tells the model the notebook is already shown and the URL is not for it
         // to use; stripAgentOnlyText removes the whole marker before anything reaches the user.
         function extractNotebookUrlMarker(content) {
@@ -310,7 +308,7 @@
         // ---- Summarize an arbitrary value for logging ----
         // object -> its keys, array -> its item types, anything else -> its type.
         // Never logs values, so large or sensitive payloads (inline notebooks,
-        // base64 image data) carried in meta/structuredContent/content can't flood
+        // base64 image data) carried in meta/content can't flood
         // the console or leak into host-collected logs.
         function describe(value) {
             if (Array.isArray(value)) {
@@ -558,11 +556,10 @@
         }
 
         // ---- Handle tool result: try notebook embed, or fall back to text+image ----
-        function handleToolResult(content, meta, structured) {
-            var notebookUrl = findNotebookUrl(content, meta, structured);
+        function handleToolResult(content, meta) {
+            var notebookUrl = findNotebookUrl(content, meta);
             log("handleToolResult: notebookUrl =", describeUrl(notebookUrl),
                 "| meta =", describe(meta),
-                "| structuredContent =", describe(structured),
                 "| content =", describe(content));
 
             if (notebookUrl) {
@@ -689,7 +686,7 @@
                     log("ui/notifications/tool-result: param keys =", Object.keys(params),
                         "| content items =", Array.isArray(params.content) ? params.content.length : 0);
                     if (params.content && Array.isArray(params.content)) {
-                        handleToolResult(params.content, params._meta, params.structuredContent);
+                        handleToolResult(params.content, params._meta);
                     } else if (params.text) {
                         renderPlainText(params.text);
                     }

@@ -83,18 +83,19 @@ deployCloudNotebookForMCPApp // endDefinition;
 (* ::Subsection::Closed:: *)
 (*makeNotebookUIResult*)
 (* Builds the UI-enhanced tool result for a deployed notebook. The notebookUrl is carried in
-   _meta and structuredContent (per the MCP Apps spec) so it reaches the app without entering
-   model context. Because some hosts drop both (ext-apps#696) and also do not forward
-   app-initiated resources/read, we additionally append the URL to the (non-dropped) text
-   content inside an <internal>...<url>...</url></internal> marker. The wrapper text tells the
-   model the notebook is already shown and the URL is not for it to use; each viewer extracts
-   the URL and strips the whole marker before rendering. *)
+   _meta so it reaches the app without entering model context. We deliberately do not include
+   structuredContent (the MCP Apps spec's other UI-only channel): some clients discard the tool
+   result's content (text/images) entirely when structuredContent is present, which we do not
+   want. Because some hosts also drop _meta (ext-apps#696) and do not forward app-initiated
+   resources/read, we additionally append the URL to the (non-dropped) text content inside an
+   <internal>...<url>...</url></internal> marker. The wrapper text tells the model the notebook
+   is already shown and the URL is not for it to use; each viewer extracts the URL and strips
+   the whole marker before rendering. *)
 makeNotebookUIResult // beginDefinition;
 
 makeNotebookUIResult[ textContent_List, deployed_String ] := <|
-    "Content"           -> appendNotebookURLMarker[ textContent, deployed ],
-    "_meta"             -> <| "notebookUrl" -> deployed |>,
-    "StructuredContent" -> <| "notebookUrl" -> deployed |>
+    "Content" -> appendNotebookURLMarker[ textContent, deployed ],
+    "_meta"   -> <| "notebookUrl" -> deployed |>
 |>;
 
 (* Deployment failed (deployCloudNotebookForMCPApp returned $Failed): no UI result. *)
@@ -108,8 +109,8 @@ makeNotebookUIResult // endDefinition;
 appendNotebookURLMarker // beginDefinition;
 
 (* Only cloud URLs are embedded this way. Inline notebooks (MCP_APPS_NOTEBOOK_METHOD="Inline")
-   carry the whole serialized notebook as the value and are delivered via _meta/structuredContent
-   only, never embedded in the content. *)
+   carry the whole serialized notebook as the value and are delivered via _meta only, never
+   embedded in the content. *)
 appendNotebookURLMarker[ textContent_List, url_String ] /; StringStartsQ[ url, "http" ] :=
     Append[ textContent, <| "type" -> "text", "text" -> notebookURLMarkerText[ url ] |> ];
 

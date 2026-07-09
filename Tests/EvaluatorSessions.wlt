@@ -268,20 +268,6 @@ VerificationTest[
 
 VerificationTest[
     Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionStatus = "new" },
-        KeyExistsQ[
-            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`appendSessionInfo[
-                <| "Content" -> { <| "type" -> "text", "text" -> "x" |> }, "StructuredContent" -> <| "notebookUrl" -> "u" |> |>,
-                "Abc123"
-            ],
-            "StructuredContent"
-        ]
-    ],
-    True,
-    TestID -> "AppendSessionInfo-PreservesStructuredContent@@Tests/EvaluatorSessions.wlt:269,1-281,2"
-]
-
-VerificationTest[
-    Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionStatus = "new" },
         MatchQ[
             Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`appendSessionInfo[ "plain text", "Abc123" ],
             _String? (StringContainsQ[ #, "plain text" ] && StringContainsQ[ #, "Abc123" ] &)

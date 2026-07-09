@@ -334,11 +334,9 @@
             clearBtn.style.display = queryInput.value ? "flex" : "none";
         }
 
-        // ---- Find notebookUrl in structuredContent, _meta, content items, or content marker ----
-        function findNotebookUrl(content, meta, structured) {
-            // structuredContent is the spec's UI-only channel (kept out of model context)
-            if (structured && structured.notebookUrl) return structured.notebookUrl;
-            // _meta works on direct tools/call responses
+        // ---- Find notebookUrl in _meta, content items, or content marker ----
+        function findNotebookUrl(content, meta) {
+            // _meta is the UI-only channel (kept out of model context); works on direct tools/call responses
             if (meta && meta.notebookUrl) return meta.notebookUrl;
             if (!content || !Array.isArray(content)) return null;
             for (var i = 0; i < content.length; i++) {
@@ -347,12 +345,12 @@
                     return item._meta.notebookUrl;
                 }
             }
-            // Host dropped _meta/structuredContent (ext-apps#696): recover from the marker.
+            // Host dropped _meta (ext-apps#696): recover from the marker.
             return extractNotebookUrlMarker(content);
         }
 
         // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
-        // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
+        // Fallback for hosts that drop _meta (ext-apps#696). The marker's
         // wrapper text tells the model the notebook is already shown and the URL is not for it
         // to use; stripAgentOnlyText removes the whole marker before anything reaches the user.
         function extractNotebookUrlMarker(content) {
@@ -410,7 +408,7 @@
         // ---- Summarize an arbitrary value for logging ----
         // object -> its keys, array -> its item types, anything else -> its type.
         // Never logs values, so large or sensitive payloads (inline notebooks,
-        // base64 image data) carried in meta/structuredContent/content can't flood
+        // base64 image data) carried in meta/content can't flood
         // the console or leak into host-collected logs.
         function describe(value) {
             if (Array.isArray(value)) {
@@ -643,11 +641,10 @@
         }
 
         // ---- Handle tool result: embed notebook, falling back to text/image ----
-        function handleToolResult(content, meta, structured) {
-            var notebookUrl = findNotebookUrl(content, meta, structured);
+        function handleToolResult(content, meta) {
+            var notebookUrl = findNotebookUrl(content, meta);
             log("handleToolResult: notebookUrl =", describeUrl(notebookUrl),
                 "| meta =", describe(meta),
-                "| structuredContent =", describe(structured),
                 "| content =", describe(content));
 
             // A fresh result supersedes any stale error banner.
@@ -660,7 +657,7 @@
                 renderContent(content);
                 embedNotebook(notebookUrl);
             } else {
-                // No notebookUrl (e.g. the host dropped _meta/structuredContent and the result
+                // No notebookUrl (e.g. the host dropped _meta and the result
                 // carries no marker): fall back to the text/image content the result still
                 // carries, and only show an error when there is nothing renderable.
                 detachNotebook();
@@ -764,7 +761,7 @@
                 hideLoading();
                 goBtn.disabled = false;
                 if (result && result.content) {
-                    handleToolResult(result.content, result._meta, result.structuredContent);
+                    handleToolResult(result.content, result._meta);
                 } else if (result && typeof result === "string") {
                     renderPlainText(result);
                 }
@@ -845,7 +842,7 @@
                     hideLoading();
                     var params = msg.params || {};
                     if (params.content && Array.isArray(params.content)) {
-                        handleToolResult(params.content, params._meta, params.structuredContent);
+                        handleToolResult(params.content, params._meta);
                     } else if (params.text) {
                         renderPlainText(params.text);
                     }

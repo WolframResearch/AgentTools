@@ -459,9 +459,8 @@
             });
         }
 
-        // ---- Find notebookUrl in structuredContent, _meta, content items, or content marker ----
-        function findNotebookUrl(content, meta, structured) {
-            if (structured && structured.notebookUrl) return structured.notebookUrl;
+        // ---- Find notebookUrl in _meta, content items, or content marker ----
+        function findNotebookUrl(content, meta) {
             if (meta && meta.notebookUrl) return meta.notebookUrl;
             if (!content || !Array.isArray(content)) return null;
             for (var i = 0; i < content.length; i++) {
@@ -474,7 +473,7 @@
         }
 
         // ---- Recover the URL from the <internal>...<url>...</url></internal> content marker ----
-        // Fallback for hosts that drop _meta/structuredContent (ext-apps#696). The marker's
+        // Fallback for hosts that drop _meta (ext-apps#696). The marker's
         // wrapper text tells the model the notebook is already shown and the URL is not for it
         // to use. (This viewer renders no text, so there is nothing to strip from the display.)
         function extractNotebookUrlMarker(content) {
@@ -501,10 +500,10 @@
         // ---- Recover and embed a notebook from a tool result ----
         // This viewer normally embeds from tool-input (arguments.url). As a fallback for hosts
         // that deliver a result but not the input, recover a URL from the result: from
-        // _meta/structuredContent, or from the content marker for hosts that drop those.
+        // _meta, or from the content marker for hosts that drop it.
         function recoverNotebookFromResult(params) {
             if (!params) return;
-            var url = findNotebookUrl(params.content, params._meta, params.structuredContent);
+            var url = findNotebookUrl(params.content, params._meta);
             if (url) {
                 embedRequested = true;
                 embedNotebook(url);

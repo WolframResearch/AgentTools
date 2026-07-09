@@ -143,10 +143,9 @@ makeUIResult[ as_, KeyValuePattern[ { "Result" -> waResult_, "String" -> stringR
             "Deployed"
         ];
 
-        (* Build the UI result: notebookUrl in _meta/structuredContent (per the MCP Apps spec),
-           plus the URL inside an <internal>...<url>...</url></internal> marker in the content as
-           a fallback for hosts that drop both (ext-apps#696). See makeNotebookUIResult. Returns
-           $Failed if deployment failed. *)
+        (* Build the UI result: notebookUrl in _meta (the UI-only channel), plus the URL inside an
+           <internal>...<url>...</url></internal> marker in the content as a fallback for hosts that
+           drop _meta (ext-apps#696). See makeNotebookUIResult. Returns $Failed if deployment failed. *)
         makeNotebookUIResult[ textContent, deployed ]
     ],
     throwInternalFailure

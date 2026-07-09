@@ -1282,7 +1282,8 @@ VerificationTest[
             StringContainsQ[ marker, "<internal>" ] && StringContainsQ[ marker, "</internal>" ],
             StringContainsQ[ marker, "<url>" <> url <> "</url>" ],
             result[ "_meta", "notebookUrl" ],
-            result[ "StructuredContent", "notebookUrl" ]
+            (* structuredContent must not be produced: some clients drop content when it is present *)
+            KeyExistsQ[ result, "StructuredContent" ]
         }
     ],
     {
@@ -1290,7 +1291,7 @@ VerificationTest[
         True,
         True,
         "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb",
-        "https://www.wolframcloud.com/obj/user/AgentTools/Notebooks/deadbeef12345678.nb"
+        False
     },
     SameTest -> MatchQ,
     TestID   -> "MakeNotebookUIResult-CloudURLAppendsMarker@@Tests/MCPApps.wlt:1272,1-1297,2"
@@ -1332,7 +1333,7 @@ VerificationTest[
 (* ::Subsubsection::Closed:: *)
 (*Inline (Non-http) Value Omits Marker*)
 (* Inline notebooks have no reconstructable id, so no marker is appended; the value is still
-   carried in _meta/structuredContent for spec-compliant hosts. *)
+   carried in _meta. *)
 VerificationTest[
     Module[ { serialized, result },
         serialized = "Notebook[{Cell[\"1 + 1\", \"Input\"]}]";
