@@ -1413,4 +1413,67 @@ VerificationTest[
     TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1317,1-1326,2"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cross-Origin Iframe Fallback (Strict-CSP Hosts)*)
+
+(* Each notebook-embedding viewer must ship the eval-capability probe (cspAllowsEval) and the
+   cross-origin iframe fallback (embedNotebookViaIframe). WolframNotebookEmbedder injects the
+   cloud notebook engine (which needs eval/WebAssembly) into the app document; strict MCP hosts
+   such as Goose build a sandbox CSP with no 'unsafe-eval' and reject any attempt to add it, so
+   the engine can't run and the notebook never renders. When eval is blocked the viewer instead
+   points an iframe at the cloud URL, where the notebook renders under wolframcloud.com's own
+   eval-permitting CSP. These tests guard against silently dropping that fallback. *)
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/evaluator-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent"
+]
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/wolframalpha-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent"
+]
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/notebook-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewer-EvalCSPFallbackPresent"
+]
+
+(* The embedder path must remain for hosts whose CSP does permit eval (fit-to-content sizing),
+   so the fallback is additive, not a replacement. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        AllTrue[
+            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+            StringContainsQ[
+                Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ],
+                "WolframNotebookEmbedder"
+            ] &
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-EmbedderPathRetained"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

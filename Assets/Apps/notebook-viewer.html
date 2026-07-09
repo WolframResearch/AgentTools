@@ -119,6 +119,26 @@
         // tool-result fallback below against embedding the same notebook twice.
         var embedRequested = false;
 
+        // ---- Detect whether this host's sandbox CSP permits eval ----
+        // WolframNotebookEmbedder injects the cloud notebook engine as <script>s into THIS
+        // document; that engine uses eval()/new Function()/WebAssembly, all of which the
+        // browser gates on script-src 'unsafe-eval'. Strict MCP hosts (e.g. Goose) build the
+        // app sandbox CSP without 'unsafe-eval' and reject any attempt to add it, so the
+        // engine throws EvalError and the notebook never renders. When eval is blocked we
+        // render the notebook in a cross-origin iframe instead (see embedNotebookViaIframe),
+        // where it runs under wolframcloud.com's own eval-permitting CSP. The Function
+        // constructor throws synchronously under such a CSP, so this probe is reliable; it
+        // emits one expected CSP violation on strict hosts.
+        var cspAllowsEval = (function() {
+            try { new Function(""); return true; }
+            catch (e) { return false; }
+        })();
+        log("cspAllowsEval =", cspAllowsEval);
+
+        // Default height (px) for the cross-origin iframe fallback, which cannot be
+        // auto-sized. Overridden by a finite positive maxHeight tool argument when given.
+        var NOTEBOOK_IFRAME_HEIGHT = 600;
+
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
             var script = document.createElement("script");
@@ -229,6 +249,46 @@
             return url.startsWith("http") ? url : "(inline notebook, " + url.length + " chars)";
         }
 
+        // ---- Embed a notebook via a cross-origin iframe ----
+        // Used when the host CSP blocks eval (see cspAllowsEval). Pointing an iframe
+        // straight at the cloud URL renders the notebook under wolframcloud.com's own
+        // (eval-permitting) CSP, isolated from this app's CSP. A cross-origin iframe
+        // can't be measured, so it uses a fixed height (the maxHeight tool argument when
+        // finite and positive, else NOTEBOOK_IFRAME_HEIGHT) with internal scrolling
+        // rather than the embedder's fit-to-content sizing. http(s) URLs only.
+        function embedNotebookViaIframe(url, maxHeight) {
+            // No generation counter here; clear any prior notebook so iframes don't stack.
+            if (embedded) { embedded.detach(); embedded = null; }
+            containerEl.innerHTML = "";
+
+            var height = (typeof maxHeight === "number" && isFinite(maxHeight) && maxHeight > 0)
+                ? maxHeight
+                : NOTEBOOK_IFRAME_HEIGHT;
+
+            var settled = false;
+            var watchdog = setTimeout(function() {
+                if (!settled) {
+                    logError("embedNotebookViaIframe: iframe still loading after 20s for", url,
+                        "- possible blocked wolframcloud.com iframe or network stall");
+                }
+            }, 20000);
+
+            var iframe = document.createElement("iframe");
+            iframe.src = url;
+            iframe.title = "Wolfram notebook";
+            iframe.style.width = "100%";
+            iframe.style.height = height + "px";
+            iframe.style.border = "none";
+            iframe.style.display = "block";
+            iframe.addEventListener("load", function() {
+                settled = true;
+                clearTimeout(watchdog);
+                log("embedNotebookViaIframe: iframe loaded for", url);
+                loadingEl.style.display = "none";
+            });
+            containerEl.appendChild(iframe);
+        }
+
         // ---- Embed notebook ----
         function embedNotebook(url, allowInteract, maxHeight) {
             loadingEl.style.display = "flex";
@@ -238,6 +298,14 @@
             var target = isHttpUrl ? url : { expr: url };
             log("embedNotebook: target =", describeUrl(url),
                 "| allowInteract =", allowInteract, "| maxHeight =", maxHeight);
+
+            // Strict host CSP (no 'unsafe-eval'): the in-document embedder can't run the
+            // notebook engine. Render the cloud notebook in a cross-origin iframe instead.
+            if (!cspAllowsEval && isHttpUrl) {
+                log("embedNotebook: host CSP blocks eval; rendering via cross-origin iframe");
+                embedNotebookViaIframe(url, maxHeight);
+                return;
+            }
 
             // Watchdog: if embed() neither resolves nor rejects, nothing hits the
             // console. Warn so a blocked iframe / network stall is visible.
@@ -385,6 +453,8 @@
                         embedded.detach();
                         embedded = null;
                     }
+                    // Also removes an iframe-rendered notebook (eval-blocked path).
+                    containerEl.innerHTML = "";
                     break;
 
                 case "ui/notifications/host-context-changed":
@@ -397,6 +467,8 @@
                         embedded.detach();
                         embedded = null;
                     }
+                    // Also removes an iframe-rendered notebook (eval-blocked path).
+                    containerEl.innerHTML = "";
                     if (msg.id != null) sendResult(msg.id, {});
                     break;
 
