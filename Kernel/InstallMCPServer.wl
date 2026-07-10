@@ -633,6 +633,7 @@ guessClientName[ file_? fileQ ] := Enclose[
             { __, ".amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".aws", "amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".junie", "mcp", "mcp.json" }, Throw[ "Junie" ],
+            { __, ".qwen", "settings.json" }, Throw[ "QwenCode" ],
             { __, ".continue", "config.yaml" }, Throw[ "Continue" ],
             { __, ".continue", "mcpservers", _ }, Throw[ "Continue" ],
             { __, ".lmstudio", "mcp.json" }, Throw[ "LMStudio" ],

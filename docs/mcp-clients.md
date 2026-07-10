@@ -33,6 +33,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | LM Studio | `"LMStudio"` | — | JSON | No | `"Wolfram"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
 | OpenCode | `"OpenCode"` | — | JSON | Yes | `"WolframLanguage"` |
+| Qwen Code | `"QwenCode"` | `"Qwen"` | JSON | Yes | `"WolframLanguage"` |
 | Visual Studio Code | `"VisualStudioCode"` | `"VSCode"` | JSON | Yes | `"WolframLanguage"` |
 | Windsurf | `"Windsurf"` | `"Codeium"` | JSON | No | `"WolframLanguage"` |
 | Zed | `"Zed"` | — | JSON | Yes | `"WolframLanguage"` |
@@ -261,6 +262,19 @@ Note: Copilot CLI requires the `tools` field to specify which tools to enable. `
 | Global | `~/.gemini/settings.json` |
 
 **Format:** Same as Claude Desktop (`mcpServers` key).
+
+### Qwen Code
+
+Qwen Code is Alibaba's terminal coding agent, forked from Gemini CLI. It reads MCP servers from the `mcpServers` key of its `settings.json`, at both user and project scope.
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.qwen/settings.json` |
+| Project | `.qwen/settings.json` (in project root) |
+
+**Format:** Same as Claude Desktop (`mcpServers` key).
+
+Note: Qwen Code shares Gemini CLI's config structure but, unlike Gemini CLI, also supports a project-scope `.qwen/settings.json`, so `InstallMCPServer[{"QwenCode", "/path/to/project"}]` installs a server for just that project. Qwen Code auto-migrates older `settings.json` layouts, but `mcpServers` remains a root-level key.
 
 ### Antigravity (IDE, desktop app, and CLI)
 

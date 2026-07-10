@@ -133,6 +133,7 @@ AgentTools can be installed into the following MCP client applications:
 | [LM Studio](https://lmstudio.ai) | `"LMStudio"` | No |
 | [OpenAI Codex](https://openai.com/codex) | `"Codex"` | Yes |
 | [OpenCode](https://opencode.ai) | `"OpenCode"` | Yes |
+| [Qwen Code](https://github.com/QwenLM/qwen-code) | `"QwenCode"` | Yes |
 | [Visual Studio Code](https://code.visualstudio.com) | `"VisualStudioCode"` | Yes |
 | [Windsurf](https://codeium.com/windsurf) | `"Windsurf"` | No |
 | [Zed](https://zed.dev) | `"Zed"` | Yes |
