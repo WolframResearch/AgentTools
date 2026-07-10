@@ -83,16 +83,6 @@ $supportedMCPClients = <|
         "URL"             -> "https://github.com/google-gemini/gemini-cli",
         "InstallLocation" :> { $HomeDirectory, ".gemini", "settings.json" }
     |>,
-    "QwenCode" -> <|
-        "DisplayName"     -> "Qwen Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Qwen" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://github.com/QwenLM/qwen-code",
-        "ProjectPath"     -> { ".qwen", "settings.json" },
-        "InstallLocation" :> { $HomeDirectory, ".qwen", "settings.json" }
-    |>,
     "Goose" -> <|
         "DisplayName"     -> "Goose",
         "DefaultToolset"  -> "Wolfram",
@@ -221,6 +211,16 @@ $supportedMCPClients = <|
         "URL"             -> "https://opencode.ai",
         "ProjectPath"     -> { "opencode.json" },
         "InstallLocation" :> { $HomeDirectory, ".config", "opencode", "opencode.json" }
+    |>,
+    "QwenCode" -> <|
+        "DisplayName"     -> "Qwen Code",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { "Qwen" },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://github.com/QwenLM/qwen-code",
+        "ProjectPath"     -> { ".qwen", "settings.json" },
+        "InstallLocation" :> { $HomeDirectory, ".qwen", "settings.json" }
     |>,
     "VisualStudioCode" -> <|
         "DisplayName"     -> "Visual Studio Code",
