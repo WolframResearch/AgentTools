@@ -212,6 +212,16 @@ $supportedMCPClients = <|
         "ProjectPath"     -> { "opencode.json" },
         "InstallLocation" :> { $HomeDirectory, ".config", "opencode", "opencode.json" }
     |>,
+    "QwenCode" -> <|
+        "DisplayName"     -> "Qwen Code",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { "Qwen" },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://github.com/QwenLM/qwen-code",
+        "ProjectPath"     -> { ".qwen", "settings.json" },
+        "InstallLocation" :> { $HomeDirectory, ".qwen", "settings.json" }
+    |>,
     "VisualStudioCode" -> <|
         "DisplayName"     -> "Visual Studio Code",
         "DefaultToolset"  -> "WolframLanguage",

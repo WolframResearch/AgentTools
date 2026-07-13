@@ -23,6 +23,14 @@ $includeAppearanceElements = False;
 $deployedNotebookRoot      = "AgentTools/Notebooks";
 $deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be connected to deploy notebooks *)
 
+(* A cloud object UUID (8-4-4-4-12 hexadecimal characters). Notebooks are deployed with
+   CloudObjectNameFormat -> "UUID", so the deployed URL is https://www.wolframcloud.com/obj/<uuid>;
+   cloudNotebookUUID pulls the uuid back out for the <result uuid="..."> marker. *)
+$$notebookUUID =
+    Repeated[ HexadecimalCharacter, { 8 } ] ~~ "-" ~~ Repeated[ HexadecimalCharacter, { 4 } ] ~~ "-" ~~
+    Repeated[ HexadecimalCharacter, { 4 } ] ~~ "-" ~~ Repeated[ HexadecimalCharacter, { 4 } ] ~~ "-" ~~
+    Repeated[ HexadecimalCharacter, { 12 } ];
+
 (* Inline notebooks are not yet the default since there are still some issues to work out.
    These can be enabled via the following environment variable: *)
 $mcpAppsNotebookMethod := $mcpAppsNotebookMethod = Environment[ "MCP_APPS_NOTEBOOK_METHOD" ];
@@ -81,6 +89,64 @@ deployCloudNotebookForMCPApp // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*makeNotebookUIResult*)
+(* Builds the UI-enhanced tool result for a deployed notebook. The notebookUrl is carried in
+   _meta so it reaches the app without entering model context. We deliberately do not include
+   structuredContent (the MCP Apps spec's other UI-only channel): some clients discard the tool
+   result's content (text/images) entirely when structuredContent is present, which we do not
+   want. Because some hosts also drop _meta (ext-apps#696) and do not forward app-initiated
+   resources/read, we additionally wrap the (non-dropped) text content in a <result uuid="...">
+   marker whose uuid identifies the deployed cloud notebook. A viewer reconstructs the notebook
+   URL from the uuid (https://www.wolframcloud.com/obj/<uuid>) and strips the surrounding <result>
+   tags before rendering, so they never reach the user. *)
+makeNotebookUIResult // beginDefinition;
+
+makeNotebookUIResult[ textContent_List, deployed_String ] := <|
+    "Content" -> wrapResultTags[ textContent, deployed ],
+    "_meta"   -> <| "notebookUrl" -> deployed |>
+|>;
+
+(* Deployment failed (deployCloudNotebookForMCPApp returned $Failed): no UI result. *)
+makeNotebookUIResult[ _List, _ ] := $Failed;
+
+makeNotebookUIResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*wrapResultTags*)
+(* Wraps the result content in a <result uuid="..."> ... </result> marker. The uuid identifies the
+   deployed cloud notebook; a viewer that lost _meta reconstructs the URL from it and strips the tags
+   before rendering. The format lives here on the WL side; the viewers' extraction and strip regexes
+   must stay in sync with these tags. *)
+wrapResultTags // beginDefinition;
+
+(* Only cloud URLs are wrapped this way. Inline notebooks (MCP_APPS_NOTEBOOK_METHOD="Inline")
+   carry the whole serialized notebook as the value and are delivered via _meta only, never
+   embedded in the content. *)
+wrapResultTags[ textContent_List, url_String ] /; StringStartsQ[ url, "http" ] :=
+    Join[
+        { <| "type" -> "text", "text" -> "<result uuid=\"" <> cloudNotebookUUID @ url <> "\">\n" |> },
+        textContent,
+        { <| "type" -> "text", "text" -> "\n</result>" |> }
+    ];
+
+wrapResultTags[ textContent_List, _ ] := textContent;
+
+wrapResultTags // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudNotebookUUID*)
+(* Notebooks are deployed with CloudObjectNameFormat -> "UUID", so the deployed URL has the form
+   https://www.wolframcloud.com/obj/<uuid>. Pull the uuid back out for the <result uuid="..."> marker;
+   a viewer reconstructs the same URL as https://www.wolframcloud.com/obj/<uuid>. Falls back to the
+   last path segment if the URL is not in UUID form. *)
+cloudNotebookUUID // beginDefinition;
+cloudNotebookUUID[ url_String ] := First[ StringCases[ url, $$notebookUUID ], Last @ StringSplit[ url, "/" ] ];
+cloudNotebookUUID // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*delayedDisplay*)
 (* This is a workaround for plots showing up empty when embedding an inline notebook expression instead of a URL *)
 delayedDisplay // beginDefinition;
@@ -118,10 +184,14 @@ cloudDeployTryAppearanceElements[ expr_, target_ ] := Quiet[
         CloudDeploy[
             expr,
             target,
-            AppearanceElements -> None,
-            AutoRemove         -> True,
-            IconRules          -> { },
-            Permissions        -> { "All" -> { "Read", "Interact" } }
+            AppearanceElements    -> None,
+            AutoRemove            -> True,
+            (* Deploy to the hashed path (so identical evaluations reuse one object) but return the
+               URL in UUID form (https://www.wolframcloud.com/obj/<uuid>), which cloudNotebookUUID
+               reads for the <result uuid="..."> marker. *)
+            CloudObjectNameFormat -> "UUID",
+            IconRules             -> { },
+            Permissions           -> { "All" -> { "Read", "Interact" } }
         ],
         (* Disable this check for the remainder of the session: *)
         $includeAppearanceElements = True;
@@ -141,9 +211,10 @@ cloudDeployWithAppearanceElements // beginDefinition;
 cloudDeployWithAppearanceElements[ expr_, target_ ] := CloudDeploy[
     expr,
     target,
-    AutoRemove  -> True,
-    IconRules   -> { },
-    Permissions -> { "All" -> { "Read", "Interact" } }
+    AutoRemove            -> True,
+    CloudObjectNameFormat -> "UUID",
+    IconRules             -> { },
+    Permissions           -> { "All" -> { "Read", "Interact" } }
 ];
 
 cloudDeployWithAppearanceElements // endDefinition;

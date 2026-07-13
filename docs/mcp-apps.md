@@ -99,6 +99,38 @@ Inline embedding is **experimental and not yet the default**. Both methods curre
 
 When inline embedding is active, graphics can render empty in the embedded notebook. The `delayedDisplay` helper works around this for `WolframLanguageEvaluator` output: any output boxes containing `GraphicsBox`/`Graphics3DBox` are serialized and reconstructed asynchronously inside a `DynamicModule` (showing a progress indicator until ready). Outside inline mode, or for output without graphics, `delayedDisplay` returns the boxes unchanged.
 
+### Rendering the Notebook: Embedder vs. Cross-Origin Iframe
+
+`WolframNotebookEmbedder.embed` does **not** use an iframe. It fetches `wolframcloud.com/notebooks/embedding` and injects the cloud notebook engine's scripts (`mainScript` + `otherScripts`) directly into the **app document**, where the engine then runs. That engine uses `eval`/`new Function` and WebAssembly, all of which the browser gates on the app iframe's CSP `script-src 'unsafe-eval'` (WASM additionally on `'wasm-unsafe-eval'`).
+
+Strict MCP hosts build the app sandbox CSP **without** `'unsafe-eval'`, and there is no way for the server to add it. Goose, for example, constructs the CSP server-side (`crates/goose/src/acp/mcp_app_proxy.rs`) and runs every declared `csp` domain through a validator (`normalize_csp_source`) that rejects any entry containing a `'` (single quote) — so quoted keyword-sources like `'unsafe-eval'`/`'wasm-unsafe-eval'` are dropped, exactly as `data:` in `connectDomains` is dropped. Under such a CSP the injected engine throws `EvalError` and the notebook never renders, even though the embedder's `embed()` promise resolves.
+
+To render the notebook anyway, each embedding viewer (`evaluator-viewer`, `notebook-viewer`, `wolframalpha-viewer`) probes eval capability once at startup with `cspAllowsEval` (a synchronous `new Function("")`, which throws under a no-`'unsafe-eval'` policy):
+
+- **eval permitted** → use `WolframNotebookEmbedder` as before (in-document render, fit-to-content sizing).
+- **eval blocked** → `embedNotebookViaIframe` points a plain cross-origin `<iframe>` straight at the cloud notebook URL. The notebook then renders inside `wolframcloud.com`'s own origin under *its* CSP (which permits `unsafe-eval`), fully isolated from the app's CSP. The app's `frame-src` already allows `https://www.wolframcloud.com`, and the notebook is deployed chrome-free (`AppearanceElements -> None`), so the framed page shows just the notebook.
+
+The fallback is additive — nothing changes on eval-permitting hosts. Two constraints are worth noting:
+
+- **Sizing.** A cross-origin iframe can't be measured by the app, so it opens at a default height (`NOTEBOOK_IFRAME_HEIGHT`, 200 px; `notebook-viewer` uses a finite positive `maxHeight` tool argument when given) that the user can grow with a drag handle along the frame's bottom edge (`makeResizableFrame`), with internal scrolling, rather than the embedder's fit-to-content sizing. A native corner `resize` grip is avoided because the framed notebook's own scrollbar sits on top of it and swallows the clicks.
+- **Cloud URLs only.** Only an `http(s)` cloud URL can be framed. Inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry a serialized expression with no URL, so on an eval-blocked host they fall through to the text/image result — another reason inline delivery remains experimental.
+
+### Recovering the Notebook URL When `_meta` Is Dropped
+
+The `notebookUrl` is delivered to the app through `_meta`, which is meant to reach the app without entering model context. (The MCP Apps spec also defines `structuredContent` for this, but the server deliberately does **not** send it: some clients discard a tool result's `content` — text and images — entirely when `structuredContent` is present, which we do not want.) Some hosts, however, drop `_meta` from tool results ([ext-apps#696](https://github.com/modelcontextprotocol/ext-apps/issues/696)), so the app never receives the URL directly and can only render the text/image fallback. Those same hosts also do not forward app-initiated `resources/read` (they answer it with JSON-RPC `-32601 "Method not found"`), so the app cannot ask the server for the URL either.
+
+The one channel that does survive is the tool result's `content`. So for cloud-notebook results, `makeNotebookUIResult` wraps the content in a `<result uuid="…">…</result>` marker whose `uuid` identifies the deployed cloud notebook (a text item before and after the result text):
+
+```
+<result uuid="e0f29bea-667b-4780-b36b-59de225e660e">
+Out[1]= 2543568463
+</result>
+```
+
+Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed URL is already `https://www.wolframcloud.com/obj/<uuid>` and the `uuid` is recovered from it with no extra round-trip (`cloudNotebookUUID`). When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which reads the `uuid` from the marker and reconstructs the same cloud URL as `https://www.wolframcloud.com/obj/<uuid>`. Each text-rendering viewer also strips the surrounding `<result>` tags (via `stripAgentOnlyText`), keeping the wrapped result text, so the tags never reach the user.
+
+This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no wrapper is added. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
+
 ## Available UI Resources
 
 | URI | HTML Asset | Description |
@@ -233,6 +265,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
 | `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
 | `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
+| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs wraps the content in a `<result uuid="…">…</result>` marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |

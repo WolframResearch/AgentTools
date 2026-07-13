@@ -65,6 +65,45 @@
             border-radius: 6px;
             font-size: 0.9em;
         }
+        .notebook-frame {
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 100px;
+            padding-bottom: 11px;
+        }
+        .notebook-frame iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Full-width drag handle for the cross-origin iframe fallback. It sits in the
+           frame's bottom padding strip, clear of the framed notebook's own scrollbar,
+           which otherwise covers a native corner `resize` grip and eats the clicks. */
+        .notebook-resize-handle {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: ns-resize;
+            background: rgba(127, 127, 127, 0.14);
+            touch-action: none;
+        }
+        .notebook-resize-handle:hover {
+            background: rgba(127, 127, 127, 0.24);
+        }
+        .notebook-resize-handle::before {
+            content: "";
+            width: 32px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(127, 127, 127, 0.75);
+        }
     </style>
 </head>
 <body>
@@ -81,18 +120,78 @@
     (function() {
         "use strict";
 
+        // ---- Debug logging ----
+        // Prefixed so it can be filtered in the console (search "notebook-viewer").
+        // Added to diagnose WolframNotebookEmbedder failures under newer hosts.
+        var LOG_PREFIX = "[notebook-viewer]";
+        function log() {
+            var a = Array.prototype.slice.call(arguments);
+            a.unshift(LOG_PREFIX);
+            console.log.apply(console, a);
+        }
+        function logError() {
+            var a = Array.prototype.slice.call(arguments);
+            a.unshift(LOG_PREFIX);
+            console.error.apply(console, a);
+        }
+
+        // Surface failures the host console might otherwise hide: uncaught
+        // exceptions, rejected promises, and CSP blocks (a likely cause of the
+        // CDN script or wolframcloud.com iframe failing to load in newer hosts).
+        window.addEventListener("error", function(e) {
+            logError("window error:", e.message, "@",
+                (e.filename || "?") + ":" + e.lineno + ":" + e.colno, e.error || "");
+        });
+        window.addEventListener("unhandledrejection", function(e) {
+            logError("unhandled promise rejection:", e.reason);
+        });
+        document.addEventListener("securitypolicyviolation", function(e) {
+            logError("CSP violation:", e.violatedDirective, "blocked", e.blockedURI,
+                "| policy:", e.originalPolicy);
+        });
+
         // ---- State ----
         var nextId = 1;
         var pending = {};
         var embedded = null;
+        // Whether an embed has been initiated (from tool-input, normally). Guards the
+        // tool-result fallback below against embedding the same notebook twice.
+        var embedRequested = false;
+
+        // ---- Detect whether this host's sandbox CSP permits eval ----
+        // WolframNotebookEmbedder injects the cloud notebook engine as <script>s into THIS
+        // document; that engine uses eval()/new Function()/WebAssembly, all of which the
+        // browser gates on script-src 'unsafe-eval'. Strict MCP hosts (e.g. Goose) build the
+        // app sandbox CSP without 'unsafe-eval' and reject any attempt to add it, so the
+        // engine throws EvalError and the notebook never renders. When eval is blocked we
+        // render the notebook in a cross-origin iframe instead (see embedNotebookViaIframe),
+        // where it runs under wolframcloud.com's own eval-permitting CSP. The Function
+        // constructor throws synchronously under such a CSP, so this probe is reliable; it
+        // emits one expected CSP violation on strict hosts.
+        var cspAllowsEval = (function() {
+            try { new Function(""); return true; }
+            catch (e) { return false; }
+        })();
+        log("cspAllowsEval =", cspAllowsEval);
+
+        // Default initial height (px) for the cross-origin iframe fallback, which cannot
+        // be auto-sized. Overridden by a finite positive maxHeight tool argument when
+        // given; either way the frame starts at this height and the user can drag to resize.
+        var NOTEBOOK_IFRAME_HEIGHT = 200;
 
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
             var script = document.createElement("script");
             script.src = "https://unpkg.com/wolfram-notebook-embedder@0.3/dist/wolfram-notebook-embedder.min.js";
             script.crossOrigin = "";
-            script.onload = resolve;
-            script.onerror = function() {
+            log("loading WolframNotebookEmbedder from", script.src);
+            script.onload = function() {
+                log("WolframNotebookEmbedder script loaded; global available:",
+                    typeof WolframNotebookEmbedder !== "undefined");
+                resolve();
+            };
+            script.onerror = function(e) {
+                logError("failed to load WolframNotebookEmbedder from CDN:", script.src, e);
                 reject(new Error("Failed to load WolframNotebookEmbedder library from CDN."));
             };
             document.head.appendChild(script);
@@ -181,12 +280,161 @@
             }
         }
 
+        // ---- Summarize a notebook target for logging ----
+        // Inline delivery (MCP_APPS_NOTEBOOK_METHOD="Inline") passes the entire
+        // serialized notebook as `url`; logging it verbatim floods the console and
+        // can leak notebook content into host-collected logs, so report only size.
+        function describeUrl(url) {
+            if (typeof url !== "string") return "(non-string: " + (url === null ? "null" : typeof url) + ")";
+            return url.startsWith("http") ? url : "(inline notebook, " + url.length + " chars)";
+        }
+
+        // ---- Wrap an iframe so the user can drag its bottom edge to resize it ----
+        // The cross-origin notebook can't be auto-sized, so the fallback frame opens at a
+        // default height and the user grows it from there. A native CSS `resize` grip lands
+        // in the bottom-right corner, where the framed notebook's own scrollbar sits on top
+        // and eats the clicks, so we add our own full-width drag handle along the bottom
+        // (in the frame's padding strip, below the iframe) instead.
+        function makeResizableFrame(iframe, initialHeight) {
+            var frame = document.createElement("div");
+            frame.className = "notebook-frame";
+            frame.style.height = Math.max(100, initialHeight) + "px";
+            frame.appendChild(iframe);
+
+            var handle = document.createElement("div");
+            handle.className = "notebook-resize-handle";
+            handle.title = "Drag to resize";
+            frame.appendChild(handle);
+
+            // Track the initiating pointer so this drag responds only to it. The move/end
+            // listeners live on window (below), so without this filter a second finger on a
+            // multi-pointer device could resize the frame or end the drag out from under the
+            // pointer that started it. The same guard also blocks a concurrent second drag.
+            var activePointerId = null;
+            handle.addEventListener("pointerdown", function(e) {
+                if (activePointerId !== null) return; // a drag is already in progress
+                e.preventDefault();
+                activePointerId = e.pointerId;
+                var startY = e.clientY;
+                var startHeight = frame.getBoundingClientRect().height;
+                // Disabling the iframe's pointer events keeps the cross-origin frame from
+                // swallowing the drag stream; pointer capture is a further optimization that
+                // keeps the move/up events flowing while the cursor is over the iframe.
+                iframe.style.pointerEvents = "none";
+                try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+
+                function onMove(ev) {
+                    if (ev.pointerId !== activePointerId) return;
+                    frame.style.height = Math.max(100, startHeight + ev.clientY - startY) + "px";
+                }
+                function onEnd(ev) {
+                    if (ev.pointerId !== activePointerId) return;
+                    activePointerId = null;
+                    iframe.style.pointerEvents = "";
+                    window.removeEventListener("pointermove", onMove);
+                    window.removeEventListener("pointerup", onEnd);
+                    window.removeEventListener("pointercancel", onEnd);
+                }
+                // Bind move/end on window, not the handle, so a drag that strays off the
+                // handle (e.g. when setPointerCapture is unsupported) still delivers its
+                // events and cleans up, instead of leaving the frame stuck non-interactive.
+                window.addEventListener("pointermove", onMove);
+                window.addEventListener("pointerup", onEnd);
+                window.addEventListener("pointercancel", onEnd);
+            });
+
+            return frame;
+        }
+
+        // ---- Restrict the eval-blocked iframe fallback to Wolfram Cloud URLs ----
+        // The fallback frames the URL directly (see embedNotebookViaIframe), so only allow
+        // https Wolfram Cloud hosts. A tampered or attacker-controlled result then can't
+        // cause an arbitrary third-party page to load in the iframe. The embedder path is
+        // left unchanged; it still accepts inline notebooks and other targets.
+        function isWolframCloudUrl(url) {
+            try {
+                var u = new URL(url);
+                return u.protocol === "https:" &&
+                    (u.hostname === "wolframcloud.com" || u.hostname.endsWith(".wolframcloud.com"));
+            } catch (err) {
+                return false;
+            }
+        }
+
+        // ---- Embed a notebook via a cross-origin iframe ----
+        // Used when the host CSP blocks eval (see cspAllowsEval). Pointing an iframe
+        // straight at the cloud URL renders the notebook under wolframcloud.com's own
+        // (eval-permitting) CSP, isolated from this app's CSP. A cross-origin iframe
+        // can't be measured, so it opens at a fixed height (the maxHeight tool argument
+        // when finite and positive, else NOTEBOOK_IFRAME_HEIGHT) that the user can drag
+        // to resize, with internal scrolling, rather than the embedder's fit-to-content
+        // sizing. http(s) URLs only.
+        function embedNotebookViaIframe(url, maxHeight) {
+            // No generation counter here; clear any prior notebook so iframes don't stack.
+            if (embedded) { embedded.detach(); embedded = null; }
+            containerEl.innerHTML = "";
+
+            var height = (typeof maxHeight === "number" && isFinite(maxHeight) && maxHeight > 0)
+                ? maxHeight
+                : NOTEBOOK_IFRAME_HEIGHT;
+
+            var iframe = document.createElement("iframe");
+            iframe.src = url;
+            iframe.title = "Wolfram notebook";
+
+            var settled = false;
+            var watchdog = setTimeout(function() {
+                // Skip the warning if the iframe is no longer in the document: a newer
+                // notebook or teardown removed it on purpose, so it wasn't stuck loading.
+                if (!settled && iframe.isConnected) {
+                    logError("embedNotebookViaIframe: iframe still loading after 20s for", url,
+                        "- possible blocked wolframcloud.com iframe or network stall");
+                }
+            }, 20000);
+
+            iframe.addEventListener("load", function() {
+                settled = true;
+                clearTimeout(watchdog);
+                log("embedNotebookViaIframe: iframe loaded for", url);
+                loadingEl.style.display = "none";
+            });
+            containerEl.appendChild(makeResizableFrame(iframe, height));
+        }
+
         // ---- Embed notebook ----
         function embedNotebook(url, allowInteract, maxHeight) {
             loadingEl.style.display = "flex";
             errorEl.style.display = "none";
 
+            var isHttpUrl = typeof url === "string" && url.startsWith("http");
+            var target = isHttpUrl ? url : { expr: url };
+            log("embedNotebook: target =", describeUrl(url),
+                "| allowInteract =", allowInteract, "| maxHeight =", maxHeight);
+
+            // Strict host CSP (no 'unsafe-eval'): the in-document embedder can't run the
+            // notebook engine. Render the cloud notebook in a cross-origin iframe instead
+            // — but only for Wolfram Cloud URLs, so a tampered result can't frame an
+            // arbitrary third-party page.
+            if (!cspAllowsEval && isWolframCloudUrl(url)) {
+                log("embedNotebook: host CSP blocks eval; rendering via cross-origin iframe");
+                embedNotebookViaIframe(url, maxHeight);
+                return;
+            }
+
+            // Watchdog: if embed() neither resolves nor rejects, nothing hits the
+            // console. Warn so a blocked iframe / network stall is visible.
+            var settled = false;
+            var watchdog = setTimeout(function() {
+                if (!settled) {
+                    logError("embedNotebook: embed() still pending after 20s for", describeUrl(url),
+                        "- possible blocked wolframcloud.com iframe or network stall");
+                }
+            }, 20000);
+
             embedderLoaded.then(function() {
+                if (typeof WolframNotebookEmbedder === "undefined" || !WolframNotebookEmbedder.embed) {
+                    throw new Error("WolframNotebookEmbedder.embed is unavailable after load");
+                }
                 var opts = {
                     allowInteract: allowInteract !== false,
                     showRenderProgress: true,
@@ -194,14 +442,72 @@
                     maxHeight: typeof maxHeight === "number" && maxHeight > 0 ? maxHeight : Infinity
                 };
 
-                return WolframNotebookEmbedder.embed((url.startsWith("http") ? url : {expr: url}), containerEl, opts);
+                log("embedNotebook: calling WolframNotebookEmbedder.embed()");
+                return WolframNotebookEmbedder.embed(target, containerEl, opts);
             }).then(function(nb) {
+                settled = true;
+                clearTimeout(watchdog);
+                log("embedNotebook: embed succeeded");
                 embedded = nb;
                 loadingEl.style.display = "none";
             }).catch(function(err) {
+                settled = true;
+                clearTimeout(watchdog);
+                logError("embedNotebook: embed failed for", describeUrl(url), "->", err);
                 var msg = (err && err.message) ? err.message : String(err);
                 showError(msg);
             });
+        }
+
+        // ---- Find notebookUrl in _meta, content items, or content marker ----
+        function findNotebookUrl(content, meta) {
+            if (meta && meta.notebookUrl) return meta.notebookUrl;
+            if (!content || !Array.isArray(content)) return null;
+            for (var i = 0; i < content.length; i++) {
+                var item = content[i];
+                if (item && item._meta && item._meta.notebookUrl) {
+                    return item._meta.notebookUrl;
+                }
+            }
+            return extractNotebookUrlMarker(content);
+        }
+
+        // ---- Recover the URL from the <result uuid="..."> content marker ----
+        // Fallback for hosts that drop _meta (ext-apps#696). The tool wraps its output in a
+        // <result uuid="...">...</result> marker; the uuid identifies the deployed cloud notebook,
+        // from which we reconstruct the cloud URL. (This viewer renders no text, so there is nothing
+        // to strip from the display.)
+        function extractNotebookUrlMarker(content) {
+            if (!content || !Array.isArray(content)) return null;
+            // Prefer the FIRST marker in document order. The server prepends its opening
+            // <result uuid="..."> tag as the first content item (see wrapResultTags), so the first
+            // marker is the trusted one; taking the first match keeps a marker injected via
+            // user-controlled tool output text (which can only appear after the server's) from
+            // overriding the server's uuid (even if a host concatenates the text items).
+            var re = /<result\s+uuid="([^"]+)"\s*>/;
+            for (var i = 0; i < content.length; i++) {
+                var item = content[i];
+                if (item && item.type === "text" && typeof item.text === "string") {
+                    var m = item.text.match(re);
+                    if (m && m[1].trim()) {
+                        return "https://www.wolframcloud.com/obj/" + m[1].trim();
+                    }
+                }
+            }
+            return null;
+        }
+
+        // ---- Recover and embed a notebook from a tool result ----
+        // This viewer normally embeds from tool-input (arguments.url). As a fallback for hosts
+        // that deliver a result but not the input, recover a URL from the result: from
+        // _meta, or from the content marker for hosts that drop it.
+        function recoverNotebookFromResult(params) {
+            if (!params) return;
+            var url = findNotebookUrl(params.content, params._meta);
+            if (url) {
+                embedRequested = true;
+                embedNotebook(url);
+            }
         }
 
         // ---- Incoming message handler ----
@@ -232,11 +538,14 @@
                     var args = (msg.params && msg.params.arguments) || {};
                     var url = args.url;
                     if (url) {
+                        embedRequested = true;
                         embedNotebook(
                             url,
                             args.allowInteract,
                             args.maxHeight
                         );
+                    } else {
+                        logError("tool-input received without a url; args =", args);
                     }
                     break;
 
@@ -245,15 +554,20 @@
                     break;
 
                 case "ui/notifications/tool-result":
-                    // Notebook is already embedding from tool-input
+                    // Normally the notebook is already embedding from tool-input; recover from
+                    // the result only if no embed has been initiated yet.
+                    if (!embedRequested) recoverNotebookFromResult(msg.params);
                     break;
 
                 case "ui/notifications/tool-cancelled":
                     loadingEl.style.display = "none";
+                    embedRequested = false;
                     if (embedded) {
                         embedded.detach();
                         embedded = null;
                     }
+                    // Also removes an iframe-rendered notebook (eval-blocked path).
+                    containerEl.innerHTML = "";
                     break;
 
                 case "ui/notifications/host-context-changed":
@@ -261,10 +575,13 @@
                     break;
 
                 case "ui/resource-teardown":
+                    embedRequested = false;
                     if (embedded) {
                         embedded.detach();
                         embedded = null;
                     }
+                    // Also removes an iframe-rendered notebook (eval-blocked path).
+                    containerEl.innerHTML = "";
                     if (msg.id != null) sendResult(msg.id, {});
                     break;
 
@@ -288,12 +605,14 @@
                 tools: { listChanged: false }
             }
         }).then(function(result) {
+            log("ui/initialize succeeded; host result:", result);
             sendNotification("ui/notifications/initialized");
             setupAutoResize();
             if (result) {
                 applyTheme(result.hostContext || result.context || result);
             }
         }).catch(function(err) {
+            logError("ui/initialize failed:", err);
             showError("Failed to initialize: " + ((err && err.message) || String(err)));
         });
     })();

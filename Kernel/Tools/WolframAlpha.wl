@@ -143,10 +143,10 @@ makeUIResult[ as_, KeyValuePattern[ { "Result" -> waResult_, "String" -> stringR
             "Deployed"
         ];
 
-        If[ StringQ @ deployed,
-            <| "Content" -> textContent, "_meta" -> <| "notebookUrl" -> deployed |> |>,
-            $Failed
-        ]
+        (* Build the UI result: notebookUrl in _meta (the UI-only channel), plus a <result uuid="...">
+           wrapper around the content as a fallback for hosts that drop _meta (ext-apps#696). See
+           makeNotebookUIResult. Returns $Failed if deployment failed. *)
+        makeNotebookUIResult[ textContent, deployed ]
     ],
     throwInternalFailure
 ];

@@ -46,6 +46,7 @@ Replace `<ClientName>` with one of the supported clients:
 | Junie | `"Junie"` |
 | LM Studio | `"LMStudio"` |
 | OpenCode | `"OpenCode"` |
+| Qwen Code | `"QwenCode"` |
 | VS Code | `"VisualStudioCode"` |
 | Windsurf | `"Windsurf"` |
 | Zed | `"Zed"` |

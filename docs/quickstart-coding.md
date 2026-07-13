@@ -198,6 +198,30 @@ opencode mcp list
 
 The output should indicate that the "WolframLanguage" server is connected.
 
+### Qwen Code
+
+Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation writes `.qwen/settings.json` in the project root.
+
+Global installation:
+
+```wl
+InstallMCPServer["QwenCode", "WolframLanguage"]
+```
+
+Project-level installation:
+
+```wl
+InstallMCPServer[{"QwenCode", "/path/to/project"}, "WolframLanguage"]
+```
+
+To verify the installation from the command line:
+
+```shell
+qwen mcp list
+```
+
+The output should indicate that the "WolframLanguage" server is configured.
+
 ### Visual Studio Code
 
 Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation is available only in a specific project directory.

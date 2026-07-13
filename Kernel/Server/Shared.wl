@@ -790,7 +790,10 @@ evaluateTool[ msg_, req_ ] := Enclose[
 
         toolResultAssoc = <| "content" -> ConfirmMatch[ content, { __Association } ], "isError" -> FailureQ @ result |>;
 
-        (* Forward _meta from structured tool results (e.g. notebookUrl for MCP Apps) *)
+        (* Forward _meta from structured tool results (e.g. notebookUrl for MCP Apps). We deliberately
+           do not forward structuredContent: some clients discard the content (text/images) entirely
+           when structuredContent is present, so the notebookUrl travels via _meta (and the content
+           marker fallback) only. *)
         If[ AssociationQ @ result && AssociationQ @ result[ "_meta" ],
             toolResultAssoc[ "_meta" ] = result[ "_meta" ]
         ];

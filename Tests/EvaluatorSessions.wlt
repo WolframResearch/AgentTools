@@ -274,7 +274,7 @@ VerificationTest[
         ]
     ],
     True,
-    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:269,1-278,2"
+    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:283,1-292,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -287,13 +287,13 @@ VerificationTest[
         Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLine[ 5 ]
     ],
     Null,
-    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:285,1-291,2"
+    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:299,1-305,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLineSafe[ "not an integer" ],
     Null,
-    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:293,1-297,2"
+    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:307,1-311,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -321,7 +321,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:306,1-325,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:320,1-339,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
@@ -343,7 +343,7 @@ VerificationTest[
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:328,1-347,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:342,1-361,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
@@ -367,7 +367,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:350,1-371,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:364,1-385,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
@@ -387,7 +387,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:374,1-391,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:388,1-405,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
@@ -407,7 +407,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:394,1-411,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:408,1-425,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -432,7 +432,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:416,1-436,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:430,1-450,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
@@ -452,7 +452,7 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:439,1-456,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:453,1-470,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
