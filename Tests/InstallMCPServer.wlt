@@ -3840,7 +3840,7 @@ VerificationTest[
     Length @ $SupportedMCPClients,
     21,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-Has20Clients@@Tests/InstallMCPServer.wlt:3839,1-3844,2"
+    TestID   -> "SupportedMCPClients-Has21Clients@@Tests/InstallMCPServer.wlt:3839,1-3844,2"
 ]
 
 VerificationTest[
