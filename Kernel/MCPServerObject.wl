@@ -739,6 +739,14 @@ MCPServerObject /: LLMConfiguration[ obj_MCPServerObject ] := catchTop[
     MCPServerObject
 ];
 
+(* CloudDeploy of an MCPServerObject deploys the full directory bundle (the live /mcp endpoint, landing page,
+   and owner-only admin page) and returns the directory CloudObject. The implementation -- cloudDeployDirectory
+   and its helpers -- lives in Server/Cloud.wl (declared shared in CommonSymbols.wl). *)
+MCPServerObject /: CloudDeploy[ obj_MCPServerObject, args___ ] := catchTop[
+    cloudDeployDirectory[ obj, args ],
+    MCPServerObject
+];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*deleteMCPServer*)

@@ -957,21 +957,13 @@ injectAdminDefinitions // endDefinition;
 (*CloudDeploy (Full Directory Bundle)*)
 (* The headline integration: CloudDeploy of an MCPServerObject deploys a full directory bundle -- the live
    /mcp endpoint, a public landing page (/index.html + /assets/* + /api/info), and an owner-only admin page
-   (/admin/index.html + /api/admin) -- and returns the directory CloudObject. It is defined as an UpValue on
-   MCPServerObject, mirroring the existing DeleteObject / LLMConfiguration upvalues (MCPServerObject.wl), and
-   orchestrates the primitives built by the earlier tasks: the endpoint payload (cloudMCPServerPayload) and
-   deploy helper (deployMCPEndpoint), the /api/info generator (cloudMCPServerInfo), and the admin payload
-   (cloudAdminAPIPayload). /mcp, /index.html, /assets/*, and /api/info carry the resolved Permissions;
-   /admin/index.html and /api/admin are always Private. See Specs/CloudDeployment.md (CloudDeploy UpValue,
-   Deployed Directory Layout). *)
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*UpValue*)
-(* Mirrors the MCPServerObject upvalues in MCPServerObject.wl. Defined in Cloud.wl (where cloudDeployDirectory
-   lives); MCPServerObject is not yet protected when the Server context loads, so no unprotect is needed. *)
-MCPServerObject /: CloudDeploy[ obj_MCPServerObject, args___ ] :=
-    catchTop[ cloudDeployDirectory[ obj, args ], MCPServerObject ];
+   (/admin/index.html + /api/admin) -- and returns the directory CloudObject. The CloudDeploy UpValue on
+   MCPServerObject lives with the other upvalues (DeleteObject / LLMConfiguration) in MCPServerObject.wl and
+   delegates to cloudDeployDirectory (below), which orchestrates the primitives built by the earlier tasks:
+   the endpoint payload (cloudMCPServerPayload) and deploy helper (deployMCPEndpoint), the /api/info generator
+   (cloudMCPServerInfo), and the admin payload (cloudAdminAPIPayload). /mcp, /index.html, /assets/*, and
+   /api/info carry the resolved Permissions; /admin/index.html and /api/admin are always Private. See
+   Specs/CloudDeployment.md (CloudDeploy UpValue, Deployed Directory Layout). *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

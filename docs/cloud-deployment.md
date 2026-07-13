@@ -326,9 +326,11 @@ client's requested `protocolVersion` when it is supported, otherwise returning t
 
 ## Related Files
 
-- `Kernel/Server/Cloud.wl` — `CloudDeployMCPServer`, `RunCloudMCPServer`, the `CloudDeploy` UpValue,
-  the session-ID capability codec, the server-embedding deploy helpers, and the `/api/info` and
-  `/api/admin` handlers
+- `Kernel/MCPServerObject.wl` — the `CloudDeploy` UpValue on `MCPServerObject` (with the `DeleteObject`
+  and `LLMConfiguration` upvalues), which delegates to `cloudDeployDirectory` in `Cloud.wl`
+- `Kernel/Server/Cloud.wl` — `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deploy
+  implementation (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, the session-ID capability
+  codec, the server-embedding deploy helpers, and the `/api/info` and `/api/admin` handlers
 - `Kernel/Server/Shared.wl` — transport-agnostic core shared with the local server (dispatch, tool/prompt
   resolution, result formatting, `initializeServerState`, protocol-version negotiation)
 - `Assets/Cloud/` — landing page (`index.html` + `assets/`) and admin page (`admin.html`)

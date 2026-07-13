@@ -147,7 +147,7 @@ reorganized into a `Server/` subdirectory.
 | `Kernel/Server/Server.wl` | ``…`Server` `` | Entry point that `Get`s the other three files. Added to `$AgentToolsContexts` in `Main.wl`. |
 | `Kernel/Server/Shared.wl` | ``…`Server`Shared` `` | Transport-agnostic core (see below). |
 | `Kernel/Server/Local.wl` | ``…`Server`Local` `` | `StartMCPServer` and stdio-specific logic. |
-| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunCloudMCPServer`, the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
+| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
 
 > **Symbol sharing.** Symbols consumed across the three `Server` files (or reached from
 > `MCPServerObject.wl` and existing callers) are declared paclet-wide in `Kernel/CommonSymbols.wl`
@@ -850,11 +850,11 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/Server/Server.wl` | **New.** Entry point loading `Shared.wl`, `Local.wl`, `Cloud.wl`. |
 | `Kernel/Server/Shared.wl` | **New.** Transport-agnostic core moved from `StartMCPServer.wl` (dispatch, tool/prompt resolution, `evaluateTool`, result formatting, `initResponse`, bootstrapping, logging helpers) + `initializeServerState` + protocol-version negotiation. |
 | `Kernel/Server/Local.wl` | **New.** `StartMCPServer`, stdio read loop, `superQuiet`, log-file plumbing, `toolWarmup`. |
-| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunCloudMCPServer`, the `CloudDeploy` UpValue, directory/page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
+| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
 | `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
 | `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunCloudMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
 | `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |
-| `Kernel/MCPServerObject.wl` | No data-model change required. The `CloudDeploy` UpValue lives in `Cloud.wl`; `$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired. |
+| `Kernel/MCPServerObject.wl` | Hosts the `CloudDeploy` UpValue (alongside the `DeleteObject`/`LLMConfiguration` upvalues), which delegates to `cloudDeployDirectory` in `Cloud.wl`. No data-model change required; `$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired. |
 | `Kernel/Files.wl` | Add cloud-path helpers if needed (e.g. for the optional key-label store). |
 | `PacletInfo.wl` | Add the two symbols to `"Symbols"` (`:22–50`); add `{ "Cloud", "Assets/Cloud" }` to the `"Asset"` extension (`:59–66`). |
 | `Assets/Cloud/` | **New.** Landing/admin HTML, CSS, JS. |
