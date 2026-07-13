@@ -124,10 +124,7 @@ runCloudMCPServer // beginDefinition;
 runCloudMCPServer[ obj_MCPServerObject, request_ ] :=
     Module[ { result },
         result = catchAlways @ Catch[ runCloudMCPServer0[ obj, request ], $cloudResponseTag ];
-        If[ MatchQ[ result, _HTTPResponse ],
-            result,
-            emptyResponse[ 500 ]
-        ]
+        ensureHTTPResponse @ result
     ];
 
 runCloudMCPServer // endDefinition;
@@ -213,6 +210,22 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
     ];
 
 runCloudMCPServer0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*ensureHTTPResponse*)
+ensureHTTPResponse // beginDefinition;
+
+ensureHTTPResponse[ resp_HTTPResponse ] :=
+    resp;
+
+ensureHTTPResponse[ Failure[ tag_String, _ ] ] :=
+    HTTPResponse[ "An unexpected error occurred: " <> tag, <| "StatusCode" -> 500 |> ];
+
+ensureHTTPResponse[ other_ ] :=
+    HTTPResponse[ "An unexpected error occurred.", <| "StatusCode" -> 500 |> ];
+
+ensureHTTPResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
