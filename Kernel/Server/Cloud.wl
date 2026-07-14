@@ -572,6 +572,9 @@ cloudDeployResult // endDefinition;
    too; RunCloudMCPServer is never evaluated here (it stays held inside Delayed). *)
 cloudMCPServerPayload // beginDefinition;
 
+cloudMCPServerPayload[ server_MCPServerObject ] /; MatchQ[ server[ "Location" ], _File ] :=
+    cloudMCPServerPayload @ removeLocalServerLocation @ server;
+
 cloudMCPServerPayload[ server_MCPServerObject ] := Enclose[
     Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
         Module[ { defs },
@@ -587,6 +590,24 @@ cloudMCPServerPayload[ server_MCPServerObject ] := Enclose[
 ];
 
 cloudMCPServerPayload // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*removeLocalServerLocation*)
+(* Converts the MCPServerObject to a purely in-memory representation, removing the local server location.
+   This is necessary for custom MCP servers, since they'll have a `"Location" -> File[...]` in their metadata.
+   This would cause validation to fail in the cloud, since that file doesn't exist in the cloud. *)
+removeLocalServerLocation // beginDefinition;
+
+removeLocalServerLocation[ server_MCPServerObject ] := Enclose[
+    MCPServerObject @ <|
+        ConfirmBy[ server[ "Data" ], AssociationQ, "Data" ],
+        "Location" -> None
+    |>,
+    throwInternalFailure
+];
+
+removeLocalServerLocation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

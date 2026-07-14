@@ -23,7 +23,7 @@ $$transport = "StandardInputOutput" | "HTTP" | "ServerSentEvents";
 
 $$metadata = KeyValuePattern @ {
     "LLMEvaluator"  -> _Association? AssociationQ,
-    "Location"      -> _File? fileQ | "BuiltIn" | _PacletObject,
+    "Location"      -> _File? fileQ | "BuiltIn" | None | _PacletObject,
     "Name"          -> _String? StringQ,
     "ObjectVersion" -> _Integer? IntegerQ,
     "ServerVersion" -> _String? StringQ,
@@ -814,6 +814,7 @@ MCPServerObjectQ // endExportedDefinition;
 mcpServerExistsQ // beginDefinition;
 mcpServerExistsQ[ HoldPattern @ MCPServerObject[ as_Association ] ] := mcpServerExistsQ[ as, as[ "Location" ] ];
 mcpServerExistsQ[ as_, "BuiltIn" ] := True;
+mcpServerExistsQ[ as_, None ] := True; (* A purely in-memory server *)
 mcpServerExistsQ[ as_, location_File ] := FileExistsQ @ location;
 
 mcpServerExistsQ[ as_, paclet_PacletObject ] := MemberQ[

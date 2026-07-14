@@ -650,6 +650,15 @@ tools, no built-in/Chatbook dependencies) works with no paclet present.
 > deployment directory and have the handler `BinaryDeserialize` it on cold start; the two approaches
 > are interchangeable.
 
+**Neutralizing the local location.** Independently of definition capture, a custom server created with
+`CreateMCPServer` is persisted to disk and so carries `"Location" -> File[...]` pointing at the
+deploying machine — a path absent from the cloud kernel that would fail server validation there. Such a
+server is therefore rebuilt as a *purely in-memory* server (`"Location" -> None`) by
+`removeLocalServerLocation` before its payload is deployed. The data model admits this: `$$metadata`
+accepts `None` for `"Location"`, and `mcpServerExistsQ[_, None]` reports it as existing (both in
+`MCPServerObject.wl`). Built-in servers (`"Location" -> "BuiltIn"`) and servers already built in memory
+need no such treatment.
+
 ### End state (future)
 
 Once a cloud-native `Wolfram/AgentTools` paclet is available by default in the Wolfram Cloud, drop the
@@ -854,7 +863,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
 | `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunCloudMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
 | `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |
-| `Kernel/MCPServerObject.wl` | Hosts the `CloudDeploy` UpValue (alongside the `DeleteObject`/`LLMConfiguration` upvalues), which delegates to `cloudDeployDirectory` in `Cloud.wl`. No data-model change required; `$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired. |
+| `Kernel/MCPServerObject.wl` | Hosts the `CloudDeploy` UpValue (alongside the `DeleteObject`/`LLMConfiguration` upvalues), which delegates to `cloudDeployDirectory` in `Cloud.wl`. The `$$metadata` `"Location"` pattern gains `None` — a *purely in-memory* server with no backing file — which `mcpServerExistsQ[_, None]` reports as existing, so a file-backed custom server can be rebuilt in memory before cloud deployment (see [Embedding the Server](#embedding-the-server)). (`$$transport` already admits `"HTTP"`/`"ServerSentEvents"` (`:22`) should a transport tag be desired.) |
 | `Kernel/Files.wl` | Add cloud-path helpers if needed (e.g. for the optional key-label store). |
 | `PacletInfo.wl` | Add the two symbols to `"Symbols"` (`:22–50`); add `{ "Cloud", "Assets/Cloud" }` to the `"Asset"` extension (`:59–66`). |
 | `Assets/Cloud/` | **New.** Landing/admin HTML, CSS, JS. |
