@@ -497,7 +497,7 @@
                 if (item && item.type === "text" && typeof item.text === "string") {
                     var m = item.text.match(re);
                     if (m && m[1].trim()) {
-                        return WOLFRAM_CLOUDBASE + "/obj/" + m[1].trim();
+                        return WOLFRAM_CLOUDBASE + "/obj/" + m[1].trim() + "?syntaxMethod=editor";
                     }
                 }
             }
