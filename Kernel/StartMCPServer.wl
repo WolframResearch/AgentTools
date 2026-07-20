@@ -108,6 +108,9 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
         SetOptions[ First @ Streams[ "stdout" ], CharacterEncoding -> "UTF-8" ];
         SetOptions[ First @ Streams[ "stderr" ], CharacterEncoding -> "UTF-8" ];
 
+        (* Apply any cloud base override before anything uses the cloud: *)
+        setCloudBaseFromEnvironment[ ];
+
         cleanupOldOutputLogs[ ];
 
         logFile = ConfirmBy[ ensureFilePath @ mcpServerLogFile @ obj, fileQ, "LogFile" ];
@@ -165,6 +168,22 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
 (* :!CodeAnalysis::EndBlock:: *)
 
 startMCPServer // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*setCloudBaseFromEnvironment*)
+(* Overrides the default cloud base for the server session when the WOLFRAM_CLOUDBASE environment
+   variable is set, e.g. WOLFRAM_CLOUDBASE="https://www.test.wolframcloud.com" (primarily for
+   internal purposes). All cloud operations (MCP Apps notebook deployments, LLMKit subscription
+   checks, etc.) then target that cloud, and UI resources are rewritten to match as they are
+   loaded (see applyCloudBaseToHTML and applyCloudBaseToMeta in UIResources.wl). *)
+setCloudBaseFromEnvironment // beginDefinition;
+
+setCloudBaseFromEnvironment[ ] := setCloudBaseFromEnvironment @ Environment[ "WOLFRAM_CLOUDBASE" ];
+setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := (CloudObject; $CloudBase = StringTrim @ base);
+setCloudBaseFromEnvironment[ _ ] := Null;
+
+setCloudBaseFromEnvironment // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
