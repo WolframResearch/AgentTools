@@ -332,7 +332,7 @@ loadUIResource // endDefinition;
    framework's normalization). Falls back to $defaultCloudBase when $CloudBase is unusable. *)
 currentCloudBase // beginDefinition;
 
-currentCloudBase[ ] := currentCloudBase @ $CloudBase;
+currentCloudBase[ ] := (CloudObject; currentCloudBase @ $CloudBase);
 currentCloudBase[ URL[ base_String ] ] := currentCloudBase @ base;
 
 currentCloudBase[ base0_String ] :=
