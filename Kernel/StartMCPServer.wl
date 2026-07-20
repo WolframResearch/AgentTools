@@ -180,7 +180,7 @@ startMCPServer // endDefinition;
 setCloudBaseFromEnvironment // beginDefinition;
 
 setCloudBaseFromEnvironment[ ] := setCloudBaseFromEnvironment @ Environment[ "WOLFRAM_CLOUDBASE" ];
-setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := $CloudBase = StringTrim @ base;
+setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := (CloudObject; $CloudBase = StringTrim @ base);
 setCloudBaseFromEnvironment[ _ ] := Null;
 
 setCloudBaseFromEnvironment // endDefinition;
