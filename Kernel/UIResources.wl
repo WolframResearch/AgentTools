@@ -108,13 +108,30 @@ makeNotebookUIResult // beginDefinition;
 
 makeNotebookUIResult[ textContent_List, deployed_String ] := <|
     "Content" -> wrapResultTags[ textContent, deployed ],
-    "_meta"   -> <| "notebookUrl" -> deployed |>
+    "_meta"   -> <| "notebookUrl" -> notebookEmbedURL @ deployed |>
 |>;
 
 (* Deployment failed (deployCloudNotebookForMCPApp returned $Failed): no UI result. *)
 makeNotebookUIResult[ _List, _ ] := $Failed;
 
 makeNotebookUIResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookEmbedURL*)
+(* The notebookUrl delivered to viewers via _meta: the deployed cloud URL with a
+   syntaxMethod=editor query parameter appended. The viewers append the same parameter when
+   reconstructing a URL from a <result uuid="..."> marker (extractNotebookUrlMarker), so the
+   two delivery paths must stay in sync. Non-URL values (inline serialized notebooks) pass
+   through unchanged. *)
+notebookEmbedURL // beginDefinition;
+
+notebookEmbedURL[ url_String ] /; StringStartsQ[ url, "http" ] :=
+    url <> If[ StringFreeQ[ url, "?" ], "?", "&" ] <> "syntaxMethod=editor";
+
+notebookEmbedURL[ other_ ] := other;
+
+notebookEmbedURL // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

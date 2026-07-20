@@ -125,7 +125,7 @@ Out[1]= 2543568463
 </result>
 ```
 
-Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed URL is already `https://www.wolframcloud.com/obj/<uuid>` and the `uuid` is recovered from it with no extra round-trip (`cloudNotebookUUID`). When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which reads the `uuid` from the marker and reconstructs the same cloud URL as `https://www.wolframcloud.com/obj/<uuid>`. Each text-rendering viewer also strips the surrounding `<result>` tags (via `stripAgentOnlyText`), keeping the wrapped result text, so the tags never reach the user.
+Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed URL is already `https://www.wolframcloud.com/obj/<uuid>` and the `uuid` is recovered from it with no extra round-trip (`cloudNotebookUUID`). When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which reads the `uuid` from the marker and reconstructs the same cloud URL as `https://www.wolframcloud.com/obj/<uuid>`. Both delivery paths carry a `syntaxMethod=editor` query parameter on the embedded-notebook URL: the server appends it to `notebookUrl` (`notebookEmbedURL`), and the viewers append the same parameter when reconstructing from the marker — the two must stay in sync. Each text-rendering viewer also strips the surrounding `<result>` tags (via `stripAgentOnlyText`), keeping the wrapped result text, so the tags never reach the user.
 
 This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no wrapper is added. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
 
@@ -285,6 +285,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `readUIResource` | `Common` | Handles `resources/read` requests |
 | `toolUIMetadata` | `Common` | Returns `_meta.ui` for a tool name |
 | `withToolUIMetadata` | `Common` | Augments a tool list with UI metadata |
+| `notebookEmbedURL` | `UIResources` (private) | Appends the `syntaxMethod=editor` query parameter to a deployed notebook URL for `_meta.notebookUrl`; inline (non-URL) values pass through |
 | `setCloudBaseFromEnvironment` | `StartMCPServer` (private) | Applies the `WOLFRAM_CLOUDBASE` environment variable to `$CloudBase` at server startup |
 | `applyCloudBaseToHTML` | `UIResources` (private) | Rewrites a viewer's `var WOLFRAM_CLOUDBASE = "…"` assignment when a custom cloud base is in effect |
 | `applyCloudBaseToMeta` | `UIResources` (private) | Prepends a custom cloud base to the CSP domain lists in app JSON metadata |
