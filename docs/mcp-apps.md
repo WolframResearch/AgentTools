@@ -129,6 +129,19 @@ Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed U
 
 This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no wrapper is added. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
 
+### Custom Cloud Base
+
+All cloud URLs above assume the production cloud, `https://www.wolframcloud.com`. Setting the `WOLFRAM_CLOUDBASE` environment variable (primarily for internal purposes) points the server at a different cloud:
+
+```json
+"env": { "WOLFRAM_CLOUDBASE": "https://www.test.wolframcloud.com" }
+```
+
+At server startup, `setCloudBaseFromEnvironment` assigns the value to `$CloudBase`, so notebook deployments (and every other cloud operation) target that cloud. The static app assets are adjusted to match as they are loaded from disk (`loadUIResource`):
+
+- Each viewer declares the cloud base in a `var WOLFRAM_CLOUDBASE = "https://www.wolframcloud.com";` assignment, which it uses to reconstruct notebook URLs from `<result uuid="…">` markers and to accept the configured origin in the iframe-fallback URL check (`isWolframCloudUrl`). The sandboxed JavaScript cannot read environment variables, so `applyCloudBaseToHTML` rewrites this assignment via string replacement when the HTML is read.
+- The JSON metadata's CSP domain lists (`connectDomains`, `resourceDomains`, `frameDomains`) must also allow the custom cloud, so `applyCloudBaseToMeta` prepends the custom base to every list that allows the default base. The default entries are kept so production URLs remain reachable (e.g. `wolfr.am` frames can redirect to production).
+
 ## Available UI Resources
 
 | URI | HTML Asset | Description |
@@ -272,6 +285,9 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `readUIResource` | `Common` | Handles `resources/read` requests |
 | `toolUIMetadata` | `Common` | Returns `_meta.ui` for a tool name |
 | `withToolUIMetadata` | `Common` | Augments a tool list with UI metadata |
+| `setCloudBaseFromEnvironment` | `StartMCPServer` (private) | Applies the `WOLFRAM_CLOUDBASE` environment variable to `$CloudBase` at server startup |
+| `applyCloudBaseToHTML` | `UIResources` (private) | Rewrites a viewer's `var WOLFRAM_CLOUDBASE = "…"` assignment when a custom cloud base is in effect |
+| `applyCloudBaseToMeta` | `UIResources` (private) | Prepends a custom cloud base to the CSP domain lists in app JSON metadata |
 
 ## Related Documentation
 

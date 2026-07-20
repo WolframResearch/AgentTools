@@ -35,6 +35,11 @@ $$notebookUUID =
    These can be enabled via the following environment variable: *)
 $mcpAppsNotebookMethod := $mcpAppsNotebookMethod = Environment[ "MCP_APPS_NOTEBOOK_METHOD" ];
 
+(* The production cloud base assumed by the static app assets in Assets/Apps. When $CloudBase
+   differs (e.g. set from the WOLFRAM_CLOUDBASE environment variable at server startup), the
+   assets are rewritten as they are loaded (see applyCloudBaseToHTML and applyCloudBaseToMeta). *)
+$defaultCloudBase = "https://www.wolframcloud.com";
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Cloud Notebooks*)
@@ -283,7 +288,7 @@ loadUIResource[ htmlFile_String ] := Enclose[
     Module[ { baseName, uri, html, metaFile, meta },
         baseName = FileBaseName @ htmlFile;
         uri = "ui://wolfram/" <> baseName;
-        html = ConfirmBy[ ByteArrayToString @ ReadByteArray @ htmlFile, StringQ, "HTML" ];
+        html = ConfirmBy[ applyCloudBaseToHTML @ ByteArrayToString @ ReadByteArray @ htmlFile, StringQ, "HTML" ];
         metaFile = FileNameJoin[ { DirectoryName @ htmlFile, baseName <> ".json" } ];
         meta = If[ FileExistsQ @ metaFile,
             Quiet @ Developer`ReadRawJSONString @ ByteArrayToString @ ReadByteArray @ metaFile,
@@ -294,13 +299,93 @@ loadUIResource[ htmlFile_String ] := Enclose[
             "name"     -> baseName,
             "mimeType" -> "text/html;profile=mcp-app",
             "html"     -> html,
-            "meta"     -> Replace[ meta, Except[ _Association ] :> <| |> ]
+            "meta"     -> applyCloudBaseToMeta @ Replace[ meta, Except[ _Association ] :> <| |> ]
         |>
     ],
     throwInternalFailure
 ];
 
 loadUIResource // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*currentCloudBase*)
+(* The cloud base currently in effect, normalized for use in URLs and CSP origins: no trailing
+   slash and an explicit scheme (https:// is assumed when missing, matching the cloud object
+   framework's normalization). Falls back to $defaultCloudBase when $CloudBase is unusable. *)
+currentCloudBase // beginDefinition;
+
+currentCloudBase[ ] := currentCloudBase @ $CloudBase;
+currentCloudBase[ URL[ base_String ] ] := currentCloudBase @ base;
+
+currentCloudBase[ base0_String ] :=
+    With[ { base = StringDelete[ StringTrim @ base0, "/".. ~~ EndOfString ] },
+        Which[
+            StringMatchQ[ base, ("http"|"https") ~~ "://" ~~ __, IgnoreCase -> True ], base,
+            StringFreeQ[ base, "://" ] && base =!= "", "https://" <> base,
+            True, $defaultCloudBase
+        ]
+    ];
+
+currentCloudBase[ _ ] := $defaultCloudBase;
+
+currentCloudBase // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*applyCloudBaseToHTML*)
+(* The viewers cannot read environment variables from their sandboxed JavaScript, so each one
+   declares the cloud base in a `var WOLFRAM_CLOUDBASE = "..."` assignment (used e.g. to
+   reconstruct notebook URLs from <result uuid="..."> markers). When a custom cloud base is in
+   effect, rewrite that assignment as the HTML is read from disk. *)
+applyCloudBaseToHTML // beginDefinition;
+
+applyCloudBaseToHTML[ html_String ] := applyCloudBaseToHTML[ html, currentCloudBase[ ] ];
+
+applyCloudBaseToHTML[ html_String, base_String ] /; base === $defaultCloudBase := html;
+
+applyCloudBaseToHTML[ html_String, base_String ] := StringReplace[
+    html,
+    "var WOLFRAM_CLOUDBASE = \"" <> $defaultCloudBase <> "\";" ->
+        "var WOLFRAM_CLOUDBASE = \"" <> base <> "\";"
+];
+
+applyCloudBaseToHTML // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*applyCloudBaseToMeta*)
+(* The JSON metadata declares CSP domain lists (connectDomains, resourceDomains, frameDomains)
+   that allow the default cloud base. A custom cloud base must also be allowed by the host's
+   sandbox CSP, so prepend it to every list that already allows the default base. The default
+   entries are intentionally kept: production URLs remain reachable (e.g. wolfr.am frames can
+   redirect to production wolframcloud.com). *)
+applyCloudBaseToMeta // beginDefinition;
+
+applyCloudBaseToMeta[ meta_Association ] := applyCloudBaseToMeta[ meta, currentCloudBase[ ] ];
+
+applyCloudBaseToMeta[ meta_Association, base_String ] /; base === $defaultCloudBase := meta;
+
+applyCloudBaseToMeta[ meta_Association, base_String ] :=
+    applyCloudBaseToMeta[ meta, base, meta[ "ui", "csp" ] ];
+
+applyCloudBaseToMeta[ meta_Association, base_String, csp_Association ] :=
+    Module[ { updated = meta },
+        updated[ "ui", "csp" ] = Map[
+            Function[ domains,
+                If[ MatchQ[ domains, { ___String } ] && MemberQ[ domains, $defaultCloudBase ] && ! MemberQ[ domains, base ],
+                    Prepend[ domains, base ],
+                    domains
+                ]
+            ],
+            csp
+        ];
+        updated
+    ];
+
+applyCloudBaseToMeta[ meta_Association, _String, _ ] := meta;
+
+applyCloudBaseToMeta // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
