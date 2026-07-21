@@ -990,7 +990,8 @@ toPrintableASCII // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*sanitizeResponse*)
-(* Applies convertPUACharacters to every string in a response before it is encoded as JSON.
+(* Applies convertPUACharacters to every string in an outgoing message (a response or a
+   server-to-client request) before it is encoded as JSON.
    Sanitizing must happen before JSON encoding: the converted output can contain backslash
    sequences or raw control characters, which would corrupt an already-encoded JSON document. *)
 sanitizeResponse // beginDefinition;

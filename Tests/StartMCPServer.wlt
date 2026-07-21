@@ -1029,7 +1029,7 @@ VerificationTest[
             |>
         |>;
         json = Developer`WriteRawJSONString[
-            Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ response,
+            Wolfram`AgentTools`Common`sanitizeResponse @ response,
             "Compact" -> True
         ];
         {
@@ -1045,7 +1045,7 @@ VerificationTest[
 
 (* Non-string values and association structure pass through sanitization unchanged. *)
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
+    Wolfram`AgentTools`Common`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     SameTest -> MatchQ,
     TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
@@ -1056,7 +1056,7 @@ VerificationTest[
     Module[ { response, json },
         response = <| "result" -> <| FromCharacterCode @ { 107, 101, 121, 57345 } -> "value" |> |>;
         json = Developer`WriteRawJSONString[
-            Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ response,
+            Wolfram`AgentTools`Common`sanitizeResponse @ response,
             "Compact" -> True
         ];
         {
