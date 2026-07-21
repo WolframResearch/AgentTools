@@ -1051,6 +1051,24 @@ VerificationTest[
     TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
 ]
 
+(* Association keys are sanitized too: forwarded associations (e.g. _meta) can carry arbitrary keys. *)
+VerificationTest[
+    Module[ { response, json },
+        response = <| "result" -> <| FromCharacterCode @ { 107, 101, 121, 57345 } -> "value" |> |>;
+        json = Developer`WriteRawJSONString[
+            Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ response,
+            "Compact" -> True
+        ];
+        {
+            Max @ ToCharacterCode @ json < 57344,
+            AssociationQ @ Developer`ReadRawJSONString @ json
+        }
+    ],
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-PUAKeysSanitized@@Tests/StartMCPServer.wlt:1055,1-1070,2"
+]
+
 (* Strings without PUA characters are returned unchanged. *)
 VerificationTest[
     With[ { s = "plain ASCII text" },
@@ -1058,7 +1076,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1055,1-1062,2"
+    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1073,1-1080,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1070,7 +1088,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1067,1-1074,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1085,1-1092,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

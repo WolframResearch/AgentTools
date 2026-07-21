@@ -994,7 +994,7 @@ toPrintableASCII // endDefinition;
    Sanitizing must happen before JSON encoding: the converted output can contain backslash
    sequences or raw control characters, which would corrupt an already-encoded JSON document. *)
 sanitizeResponse // beginDefinition;
-sanitizeResponse[ response_Association ] := sanitizeResponse /@ response;
+sanitizeResponse[ response_Association ] := KeyMap[ sanitizeResponse, sanitizeResponse /@ response ];
 sanitizeResponse[ list_List ] := sanitizeResponse /@ list;
 sanitizeResponse[ string_String ] := convertPUACharacters @ string;
 sanitizeResponse[ other_ ] := other;
