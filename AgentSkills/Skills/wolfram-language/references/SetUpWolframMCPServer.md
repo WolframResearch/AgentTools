@@ -44,6 +44,7 @@ Replace `<ClientName>` with one of the supported clients:
 | Cursor | `"Cursor"` |
 | Gemini CLI | `"GeminiCLI"` |
 | Junie | `"Junie"` |
+| Kimi Code | `"KimiCode"` |
 | LM Studio | `"LMStudio"` |
 | OpenCode | `"OpenCode"` |
 | Qwen Code | `"QwenCode"` |

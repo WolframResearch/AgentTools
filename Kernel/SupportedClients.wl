@@ -181,6 +181,15 @@ $supportedMCPClients = <|
         "ProjectPath"     -> { ".junie", "mcp", "mcp.json" },
         "InstallLocation" :> { $HomeDirectory, ".junie", "mcp", "mcp.json" }
     |>,
+    "KimiCode" -> <|
+        "DisplayName"     -> "Kimi Code",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { "Kimi", "KimiCLI" },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcpServers" },
+        "URL"             -> "https://github.com/MoonshotAI/kimi-cli",
+        "InstallLocation" :> { $HomeDirectory, ".kimi", "mcp.json" }
+    |>,
     "Kiro" -> <|
         "DisplayName"     -> "Kiro",
         "DefaultToolset"  -> "WolframLanguage",
