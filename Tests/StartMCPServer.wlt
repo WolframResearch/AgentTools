@@ -1015,6 +1015,52 @@ VerificationTest[
     TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1002,1-1016,2"
 ]
 
+(* Responses are sanitized before JSON encoding so PUA characters never reach the wire.
+   Sanitizing the encoded JSON instead would corrupt it, since convertPUACharacters output
+   can contain backslash sequences or raw control characters. *)
+VerificationTest[
+    Module[ { response, json },
+        response = <|
+            "jsonrpc" -> "2.0",
+            "id"      -> 1,
+            "result"  -> <|
+                "content" -> { <| "type" -> "text", "text" -> FromCharacterCode @ { 97, 32, 57345, 32, 62371, 32, 98 } |> },
+                "isError" -> False
+            |>
+        |>;
+        json = Developer`WriteRawJSONString[
+            Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ response,
+            "Compact" -> True
+        ];
+        {
+            StringQ @ json,
+            Max @ ToCharacterCode @ json < 57344,
+            AssociationQ @ Developer`ReadRawJSONString @ json
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON@@Tests/StartMCPServer.wlt:1021,1-1044,2"
+]
+
+(* Non-string values and association structure pass through sanitization unchanged. *)
+VerificationTest[
+    Wolfram`AgentTools`StartMCPServer`Private`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
+    <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
+]
+
+(* Strings without PUA characters are returned unchanged. *)
+VerificationTest[
+    With[ { s = "plain ASCII text" },
+        Wolfram`AgentTools`StartMCPServer`Private`convertPUACharacters @ s === s
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1055,1-1062,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Cleanup Mock Paclet*)
@@ -1024,7 +1070,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1021,1-1028,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1067,1-1074,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
