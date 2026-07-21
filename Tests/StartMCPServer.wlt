@@ -994,6 +994,93 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Output Sanitization*)
+
+(* Strings containing inline StandardForm content hold PUA linear-syntax markers. safeString
+   must convert these to printable linear syntax on a single line; routing the string through
+   ToString instead would render the boxes as multi-line 2D typesetting and mangle the text. *)
+VerificationTest[
+    Module[ { converted },
+        converted = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+            "inline " <> ToString[ 1/2, StandardForm ] <> " form"
+        ];
+        {
+            StringContainsQ[ converted, "FractionBox" ],
+            StringFreeQ[ converted, "\n" ],
+            Max @ ToCharacterCode @ converted < 57344
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1002,1-1016,2"
+]
+
+(* Responses are sanitized before JSON encoding so PUA characters never reach the wire.
+   Sanitizing the encoded JSON instead would corrupt it, since convertPUACharacters output
+   can contain backslash sequences or raw control characters. *)
+VerificationTest[
+    Module[ { response, json },
+        response = <|
+            "jsonrpc" -> "2.0",
+            "id"      -> 1,
+            "result"  -> <|
+                "content" -> { <| "type" -> "text", "text" -> FromCharacterCode @ { 97, 32, 57345, 32, 62371, 32, 98 } |> },
+                "isError" -> False
+            |>
+        |>;
+        json = Developer`WriteRawJSONString[
+            Wolfram`AgentTools`Common`sanitizeResponse @ response,
+            "Compact" -> True
+        ];
+        {
+            StringQ @ json,
+            Max @ ToCharacterCode @ json < 57344,
+            AssociationQ @ Developer`ReadRawJSONString @ json
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON@@Tests/StartMCPServer.wlt:1021,1-1044,2"
+]
+
+(* Non-string values and association structure pass through sanitization unchanged. *)
+VerificationTest[
+    Wolfram`AgentTools`Common`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
+    <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
+]
+
+(* Association keys are sanitized too: forwarded associations (e.g. _meta) can carry arbitrary keys. *)
+VerificationTest[
+    Module[ { response, json },
+        response = <| "result" -> <| FromCharacterCode @ { 107, 101, 121, 57345 } -> "value" |> |>;
+        json = Developer`WriteRawJSONString[
+            Wolfram`AgentTools`Common`sanitizeResponse @ response,
+            "Compact" -> True
+        ];
+        {
+            Max @ ToCharacterCode @ json < 57344,
+            AssociationQ @ Developer`ReadRawJSONString @ json
+        }
+    ],
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SanitizeResponse-PUAKeysSanitized@@Tests/StartMCPServer.wlt:1055,1-1070,2"
+]
+
+(* Strings without PUA characters are returned unchanged. *)
+VerificationTest[
+    With[ { s = "plain ASCII text" },
+        Wolfram`AgentTools`StartMCPServer`Private`convertPUACharacters @ s === s
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1073,1-1080,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*Cleanup Mock Paclet*)
 VerificationTest[
     PacletDirectoryUnload @ FileNameJoin @ { $testResourceDirectory, "MockMCPPacletTest" };
@@ -1001,7 +1088,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:998,1-1005,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1085,1-1092,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

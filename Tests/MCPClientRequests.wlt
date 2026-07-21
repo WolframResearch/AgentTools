@@ -86,6 +86,34 @@ VerificationTest[
     TestID   -> "MCPClientRequests-SendUUIDsAreUnique@@Tests/MCPClientRequests.wlt:71,1-87,2"
 ]
 
+(* Requests are sanitized before JSON encoding so PUA characters never reach the wire,
+   matching the response sanitization in StartMCPServer.wl. *)
+VerificationTest[
+    Module[ { written, savedRegistry },
+        savedRegistry = Wolfram`AgentTools`Common`$mcpClientRequests;
+        written = None;
+        WithCleanup[
+            Wolfram`AgentTools`Common`$mcpClientRequests = <| |>,
+            Block[ { WriteLine = Function[ { stream, line }, written = line ] },
+                Wolfram`AgentTools`Common`sendClientRequest[
+                    "test/method",
+                    <| "text" -> FromCharacterCode @ { 97, 32, 57345, 32, 98 } |>,
+                    Identity
+                ]
+            ],
+            Wolfram`AgentTools`Common`$mcpClientRequests = savedRegistry
+        ];
+        {
+            StringQ @ written,
+            Max @ ToCharacterCode @ written < 57344,
+            AssociationQ @ Developer`ReadRawJSONString @ written
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "MCPClientRequests-SendSanitizesPUACharacters@@Tests/MCPClientRequests.wlt:91,1-115,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*handleClientResponse*)
@@ -117,7 +145,7 @@ VerificationTest[
     ],
     { False, True },
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseCallsHandlerAndRemoves@@Tests/MCPClientRequests.wlt:95,1-121,2"
+    TestID   -> "MCPClientRequests-ResponseCallsHandlerAndRemoves@@Tests/MCPClientRequests.wlt:123,1-149,2"
 ]
 
 (* Unknown response IDs are silently ignored - no handler call, no registry mutation. *)
@@ -136,7 +164,7 @@ VerificationTest[
     ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseUnknownIDIsNoOp@@Tests/MCPClientRequests.wlt:124,1-140,2"
+    TestID   -> "MCPClientRequests-ResponseUnknownIDIsNoOp@@Tests/MCPClientRequests.wlt:152,1-168,2"
 ]
 
 (* The handler still fires for error responses - interpretation is the handler's job. *)
@@ -161,7 +189,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "error" -> KeyValuePattern[ "code" -> -32601 ] ],
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseHandlerFiresOnError@@Tests/MCPClientRequests.wlt:143,1-165,2"
+    TestID   -> "MCPClientRequests-ResponseHandlerFiresOnError@@Tests/MCPClientRequests.wlt:171,1-193,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -173,7 +201,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`handleNotification[ "notifications/cancelled", <| |> ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationUnknownIsNoOp@@Tests/MCPClientRequests.wlt:172,1-177,2"
+    TestID   -> "MCPClientRequests-NotificationUnknownIsNoOp@@Tests/MCPClientRequests.wlt:200,1-205,2"
 ]
 
 (* notifications/initialized dispatches to onClientInitialized with the message.
@@ -192,7 +220,7 @@ VerificationTest[
     ],
     <| "method" -> "notifications/initialized" |>,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationInitializedDispatch@@Tests/MCPClientRequests.wlt:182,1-196,2"
+    TestID   -> "MCPClientRequests-NotificationInitializedDispatch@@Tests/MCPClientRequests.wlt:210,1-224,2"
 ]
 
 (* notifications/roots/list_changed dispatches to onRootsListChanged with the message. *)
@@ -209,7 +237,7 @@ VerificationTest[
     ],
     <| "method" -> "notifications/roots/list_changed" |>,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationRootsListChangedDispatch@@Tests/MCPClientRequests.wlt:199,1-213,2"
+    TestID   -> "MCPClientRequests-NotificationRootsListChangedDispatch@@Tests/MCPClientRequests.wlt:227,1-241,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

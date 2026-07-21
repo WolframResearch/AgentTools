@@ -113,6 +113,9 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `writeError;
 `writeLog;
 
+(* Output sanitization: *)
+`sanitizeResponse;
+
 (* MCP client requests / server-to-client traffic: *)
 `$mcpClientRequests;
 `handleClientResponse;
