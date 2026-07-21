@@ -958,6 +958,7 @@ safeString[ failure: Failure[ "AgentTools::Internal" | "General::ChatbookInterna
     ];
 
 safeString[ failure_Failure ] := With[ { s = failure[ "Message" ] }, "[Error] " <> safeString @ s /; StringQ @ s ];
+safeString[ string_String ] := convertPUACharacters @ string; (* avoid mangling due to StandardForm strings *)
 safeString[ arg_ ] := convertPUACharacters @ ToString @ Unevaluated @ arg;
 safeString // endDefinition;
 

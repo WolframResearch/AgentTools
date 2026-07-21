@@ -994,6 +994,29 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Output Sanitization*)
+
+(* Strings containing inline StandardForm content hold PUA linear-syntax markers. safeString
+   must convert these to printable linear syntax on a single line; routing the string through
+   ToString instead would render the boxes as multi-line 2D typesetting and mangle the text. *)
+VerificationTest[
+    Module[ { converted },
+        converted = Wolfram`AgentTools`StartMCPServer`Private`safeString[
+            "inline " <> ToString[ 1/2, StandardForm ] <> " form"
+        ];
+        {
+            StringContainsQ[ converted, "FractionBox" ],
+            StringFreeQ[ converted, "\n" ],
+            Max @ ToCharacterCode @ converted < 57344
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1002,1-1016,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*Cleanup Mock Paclet*)
 VerificationTest[
     PacletDirectoryUnload @ FileNameJoin @ { $testResourceDirectory, "MockMCPPacletTest" };
@@ -1001,7 +1024,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:998,1-1005,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1021,1-1028,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
