@@ -315,6 +315,16 @@ Paclet servers appear alongside file-based and built-in servers when listing wit
 
 See [paclet-extensions.md](paclet-extensions.md) for details on how paclets declare servers, tools, and prompts.
 
+## Deploying a Server to the Cloud
+
+Any `MCPServerObject` — predefined or custom — can be deployed as a remote HTTP MCP server in the Wolfram Cloud, reachable by clients such as the OpenAI Responses API and the Anthropic Messages API without a local kernel:
+
+```wl
+CloudDeploy[MCPServerObject["WolframLanguage"]]
+```
+
+This returns a `CloudObject` directory containing the live `/mcp` endpoint, a landing page with client-configuration snippets, and an owner-only admin page for managing API keys. See [cloud-deployment.md](cloud-deployment.md) for the full workflow, directory layout, authentication, and the stateless evaluation model.
+
 ## Related Documentation
 
 - [tools.md](tools.md) - Detailed tool documentation, [tool options](tools.md#tool-options), and creating custom tools
@@ -322,5 +332,6 @@ See [paclet-extensions.md](paclet-extensions.md) for details on how paclets decl
 - [mcp-apps.md](mcp-apps.md) - MCP Apps system for interactive UI resources
 - [mcp-clients.md](mcp-clients.md) - Client installation, configuration, and the [`"MCPServerName"` option](mcp-clients.md#mcpservername)
 - [deploy-agent-tools.md](deploy-agent-tools.md) - Managed deployment of tools to agent clients
+- [cloud-deployment.md](cloud-deployment.md) - Deploying a server as a remote HTTP MCP server in the Wolfram Cloud
 - [paclet-extensions.md](paclet-extensions.md) - Third-party paclet extension system
 - [getting-started.md](getting-started.md) - Development setup

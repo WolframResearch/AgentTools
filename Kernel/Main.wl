@@ -20,6 +20,8 @@ System`DeployAgentTools;
 `$LastAgentToolsFailureText;
 `$SupportedMCPClients;
 `AgentTools;
+`CloudDeployMCPServer;
+`CloudDeployMCPServerBundle;
 `CodeInspectorToolFunction;
 `CreateMCPServer;
 `CreatePreferencesContent;
@@ -29,6 +31,7 @@ System`DeployAgentTools;
 `MCPServerObject;
 `MCPServerObjectQ;
 `MCPServerObjects;
+`RunCloudMCPServer;
 `StartMCPServer;
 `TestReportToolFunction;
 `UninstallMCPServer;
@@ -75,7 +78,7 @@ $AgentToolsContexts = {
     "Wolfram`AgentTools`PacletExtension`",
     "Wolfram`AgentTools`PreferencesContent`",
     "Wolfram`AgentTools`Prompts`",
-    "Wolfram`AgentTools`StartMCPServer`",
+    "Wolfram`AgentTools`Server`",
     "Wolfram`AgentTools`SupportedClients`",
     "Wolfram`AgentTools`TOML`",
     "Wolfram`AgentTools`Tools`",
@@ -107,6 +110,8 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "$LastAgentToolsFailureText",
     "$SupportedMCPClients",
     "AgentTools",
+    "CloudDeployMCPServer",
+    "CloudDeployMCPServerBundle",
     "CodeInspectorToolFunction",
     "CreateMCPServer",
     "CreatePreferencesContent",
@@ -116,6 +121,7 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "MCPServerObject",
     "MCPServerObjectQ",
     "MCPServerObjects",
+    "RunCloudMCPServer",
     "StartMCPServer",
     "TestReportToolFunction",
     "UninstallMCPServer",

@@ -52,7 +52,7 @@ VerificationTest[
 
 VerificationTest[
     StringContainsQ[
-        ToString[ Wolfram`AgentTools`StartMCPServer`Private`toolSchema @ $DefaultMCPTools[ "WolframLanguageEvaluator" ], InputForm ],
+        ToString[ Wolfram`AgentTools`Server`Shared`Private`toolSchema @ $DefaultMCPTools[ "WolframLanguageEvaluator" ], InputForm ],
         "session"
     ],
     True,

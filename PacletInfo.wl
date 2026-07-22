@@ -34,6 +34,8 @@ PacletObject[ <|
                 "Wolfram`AgentTools`$LastAgentToolsFailureText",
                 "Wolfram`AgentTools`$SupportedMCPClients",
                 "Wolfram`AgentTools`AgentTools",
+                "Wolfram`AgentTools`CloudDeployMCPServer",
+                "Wolfram`AgentTools`CloudDeployMCPServerBundle",
                 "Wolfram`AgentTools`CodeInspectorToolFunction",
                 "Wolfram`AgentTools`CreateMCPServer",
                 "Wolfram`AgentTools`CreatePreferencesContent",
@@ -43,6 +45,7 @@ PacletObject[ <|
                 "Wolfram`AgentTools`MCPServerObject",
                 "Wolfram`AgentTools`MCPServerObjectQ",
                 "Wolfram`AgentTools`MCPServerObjects",
+                "Wolfram`AgentTools`RunCloudMCPServer",
                 "Wolfram`AgentTools`StartMCPServer",
                 "Wolfram`AgentTools`TestReportToolFunction",
                 "Wolfram`AgentTools`UninstallMCPServer",
@@ -59,6 +62,7 @@ PacletObject[ <|
         { "Asset",
             "Assets" -> {
                 { "Apps"               , "Assets/Apps"                    },
+                { "Cloud"              , "Assets/Cloud"                   },
                 { "SymbolPageTemplate" , "Assets/Templates/SymbolPage.wl" },
                 { "TestReportScript"   , "Assets/TestReport.wls"          },
                 { "AGENTS.md"          , "AGENTS.md"                      }

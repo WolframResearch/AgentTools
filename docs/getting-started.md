@@ -162,7 +162,7 @@ AgentTools/
 │   ├── Main.wl                # Package loading, exported symbols
 │   ├── Common.wl              # Utilities and [error handling](error-handling.md)
 │   ├── CreateMCPServer.wl     # Server creation
-│   ├── StartMCPServer.wl      # Server startup
+│   ├── Server/                # MCP server core (shared dispatch, stdio + cloud transports)
 │   ├── UIResources.wl         # MCP Apps UI resource registry
 │   ├── Messages.wl            # Error messages
 │   └── Tools/                 # Predefined MCP tools

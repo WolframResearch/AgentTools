@@ -28,7 +28,7 @@ VerificationTest[
 VerificationTest[
     environmentBlock[ "WOLFRAM_CLOUDBASE" -> "https://www.test.wolframcloud.com",
         Block[ { $CloudBase },
-            Wolfram`AgentTools`StartMCPServer`Private`setCloudBaseFromEnvironment[ ];
+            Wolfram`AgentTools`Server`Local`Private`setCloudBaseFromEnvironment[ ];
             $CloudBase
         ]
     ],
@@ -43,7 +43,7 @@ VerificationTest[
 VerificationTest[
     environmentBlock[ "WOLFRAM_CLOUDBASE" -> "  https://www.test.wolframcloud.com  ",
         Block[ { $CloudBase },
-            Wolfram`AgentTools`StartMCPServer`Private`setCloudBaseFromEnvironment[ ];
+            Wolfram`AgentTools`Server`Local`Private`setCloudBaseFromEnvironment[ ];
             $CloudBase
         ]
     ],
@@ -58,7 +58,7 @@ VerificationTest[
 VerificationTest[
     environmentBlock[ "WOLFRAM_CLOUDBASE" -> None,
         Block[ { $CloudBase = "sentinel" },
-            Wolfram`AgentTools`StartMCPServer`Private`setCloudBaseFromEnvironment[ ];
+            Wolfram`AgentTools`Server`Local`Private`setCloudBaseFromEnvironment[ ];
             $CloudBase
         ]
     ],
@@ -73,7 +73,7 @@ VerificationTest[
 VerificationTest[
     environmentBlock[ "WOLFRAM_CLOUDBASE" -> "   ",
         Block[ { $CloudBase = "sentinel" },
-            Wolfram`AgentTools`StartMCPServer`Private`setCloudBaseFromEnvironment[ ];
+            Wolfram`AgentTools`Server`Local`Private`setCloudBaseFromEnvironment[ ];
             $CloudBase
         ]
     ],

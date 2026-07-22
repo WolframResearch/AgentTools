@@ -23,6 +23,7 @@ This is the developer documentation for contributing to AgentTools. For user doc
 - **[CodeInspector Rules](code-inspector-rules.md)** - Adding custom CodeInspector rules and current rule catalog
 - **[Agent Skills](agent-skills.md)** - Distributable agent skills, dual-mode architecture, and how to add new skills
 - **[Deploy Agent Tools](deploy-agent-tools.md)** - Managed deployment of Wolfram tools to AI agent clients
+- **[Cloud Deployment](cloud-deployment.md)** - Deploying an `MCPServerObject` as a remote HTTP MCP server in the Wolfram Cloud
 - **[Preferences Content](preferences-content.md)** - System preferences UI for managing deployed Wolfram toolsets
 - **[Paclet Extensions](paclet-extensions.md)** - Third-party paclet extension system for contributing tools, prompts, and servers
 

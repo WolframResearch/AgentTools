@@ -93,7 +93,7 @@ $defaultMCPTools[ "WolframLanguageEvaluator" ] := LLMTool @ <|
 (* ::Subsection::Closed:: *)
 (*Default Tool Options*)
 $defaultToolOptions[ "WolframLanguageEvaluator" ] = <|
-    "Method"            -> "Session",
+    "Method"            -> Automatic,
     "ImageExportMethod" -> None,
     "TimeConstraint"    -> 60,
     "MaxSessionCount"   -> 100,
@@ -152,12 +152,21 @@ evaluateWolframLanguage0[ code_String, timeConstraint_Integer ] :=
             "MaxCharacterCount"     -> 10000,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
-            "Method"                -> $evaluatorMethod,
+            "Method"                -> getEvaluatorMethod[ ],
             "TimeConstraint"        -> timeConstraint
         ]
     ];
 (* :!CodeAnalysis::EndBlock:: *)
 evaluateWolframLanguage0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*getEvaluatorMethod*)
+getEvaluatorMethod // beginDefinition;
+getEvaluatorMethod[ ] := getEvaluatorMethod @ $evaluatorMethod;
+getEvaluatorMethod[ Automatic ] := If[ $CloudEvaluation, "Cloud", "Session" ];
+getEvaluatorMethod[ other_ ] := other;
+getEvaluatorMethod // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -296,7 +305,7 @@ evaluateWolframLanguageForUI[ code_String, timeConstraint_Integer ] :=
             "MaxCharacterCount"     -> 10000,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
-            "Method"                -> $evaluatorMethod,
+            "Method"                -> getEvaluatorMethod[ ],
             "TimeConstraint"        -> timeConstraint
         ]
     ];
@@ -425,7 +434,7 @@ useEvaluatorKernel // Attributes = { HoldAllComplete };
 
 (* Used for evaluations that need to be run in the same kernel as the evaluator tool (e.g. symbol definitions) *)
 useEvaluatorKernel[ eval_ ] :=
-    If[ $evaluatorMethod === "Local",
+    If[ getEvaluatorMethod[ ] === "Local",
         evaluateInLocalKernel @ eval,
         eval
     ];
@@ -674,7 +683,7 @@ syncEvalKernelLine // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 (* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
-syncEvalKernelLine[ line_Integer ] /; $evaluatorMethod === "Local" :=
+syncEvalKernelLine[ line_Integer ] /; getEvaluatorMethod[ ] === "Local" :=
     Block[ { Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False },
         With[ { n = line }, evaluateInLocalKernel0[ $Line = n ] ]
     ];

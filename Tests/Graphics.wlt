@@ -155,26 +155,26 @@ VerificationTest[
 (* ::Section::Closed:: *)
 (*extractImageContent Tests*)
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ Graphics[ Circle[ ] ],
+    Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ Graphics[ Circle[ ] ],
     { KeyValuePattern[ "type" -> "image" ] },
     SameTest -> MatchQ,
     TestID   -> "extractImageContent-SingleGraphics@@Tests/Graphics.wlt:157,1-162,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ "Hello",
+    Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ "Hello",
     { },
     TestID -> "extractImageContent-String@@Tests/Graphics.wlt:164,1-168,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ Failure[ "Test", <| |> ],
+    Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ Failure[ "Test", <| |> ],
     { },
     TestID -> "extractImageContent-Failure@@Tests/Graphics.wlt:170,1-174,2"
 ]
 
 VerificationTest[
-    Length @ Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ {
+    Length @ Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ {
         Graphics[ Circle[ ] ],
         Graphics[ Rectangle[ ] ]
     },
@@ -183,7 +183,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Length @ Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ <|
+    Length @ Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ <|
         "a" -> Graphics[ Circle[ ] ],
         "b" -> Graphics[ Rectangle[ ] ]
     |>,
@@ -192,7 +192,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`extractImageContent @ { "text", 123, Null },
+    Wolfram`AgentTools`Server`Shared`Private`extractImageContent @ { "text", 123, Null },
     { },
     TestID -> "extractImageContent-MixedNonGraphics@@Tests/Graphics.wlt:194,1-198,2"
 ]
@@ -201,19 +201,19 @@ VerificationTest[
 (* ::Section::Closed:: *)
 (*resultToContent Tests*)
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`resultToContent @ "Hello World",
+    Wolfram`AgentTools`Server`Shared`Private`resultToContent @ "Hello World",
     { <| "type" -> "text", "text" -> "Hello World" |> },
     TestID -> "resultToContent-String@@Tests/Graphics.wlt:203,1-207,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`resultToContent @ 42,
+    Wolfram`AgentTools`Server`Shared`Private`resultToContent @ 42,
     { <| "type" -> "text", "text" -> "42" |> },
     TestID -> "resultToContent-Integer@@Tests/Graphics.wlt:209,1-213,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`resultToContent @ Graphics[ Circle[ ] ],
+    Wolfram`AgentTools`Server`Shared`Private`resultToContent @ Graphics[ Circle[ ] ],
     { _Association, _Association },
     SameTest -> MatchQ,
     TestID   -> "resultToContent-Graphics@@Tests/Graphics.wlt:215,1-220,2"
@@ -221,7 +221,7 @@ VerificationTest[
 
 VerificationTest[
     With[
-        { result = Wolfram`AgentTools`StartMCPServer`Private`resultToContent @ Graphics[ Circle[ ] ] },
+        { result = Wolfram`AgentTools`Server`Shared`Private`resultToContent @ Graphics[ Circle[ ] ] },
         { result[[ 1, "type" ]], result[[ 2, "type" ]] }
     ],
     { "text", "image" },
