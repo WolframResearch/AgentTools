@@ -288,6 +288,6 @@ yourFunction[ args_ ] := Enclose[
 - `Kernel/Prompts/Notebook.wl` - Notebook prompt implementation
 - `Kernel/PacletExtension.wl` - Paclet-qualified prompt resolution (see [paclet-extensions.md](paclet-extensions.md))
 - `Kernel/MCPServerObject.wl` - Prompt validation and normalization
-- `Kernel/StartMCPServer.wl` - Protocol handling for `prompts/list` and `prompts/get`
+- `Kernel/Server/Shared.wl` - Protocol handling for `prompts/list` and `prompts/get`
 - `Kernel/DefaultServers.wl` - Server configurations with `"MCPPrompts"` settings
 - `Tests/Prompts.wlt` - Tests for prompt functionality

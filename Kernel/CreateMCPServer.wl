@@ -176,44 +176,6 @@ createMCPServerData[ name_String, evaluator_Association ] := Enclose[
 createMCPServerData // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*binarySerializeWithDefinitions*)
-binarySerializeWithDefinitions // beginDefinition;
-binarySerializeWithDefinitions[ data_Association ] := binarySerializeWithDefinitions0 @ unpackNoEntry @ data;
-binarySerializeWithDefinitions // endDefinition;
-
-binarySerializeWithDefinitions0 // beginDefinition;
-
-binarySerializeWithDefinitions0[ data_Association ] := Enclose[
-    Module[ { defs },
-        defs = ConfirmMatch[ Language`ExtendedFullDefinition @ data, _Language`DefinitionList, "Definitions" ];
-        With[ { d = defs },
-            ConfirmBy[
-                BinarySerialize @ Unevaluated[ Language`ExtendedFullDefinition[ ] = d; data ],
-                ByteArrayQ,
-                "Result"
-            ]
-        ]
-    ],
-    throwInternalFailure
-];
-
-binarySerializeWithDefinitions0 // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*unpackNoEntry*)
-unpackNoEntry // beginDefinition;
-
-unpackNoEntry[ as_Association ] :=
-    Module[ { h },
-        SetAttributes[ h, HoldAllComplete ];
-        as /. e: f_[ a___ ] /; System`Private`HoldNoEntryQ @ e :> h[ f ][ a ] /. h[ f_ ] :> f
-    ];
-
-unpackNoEntry // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[

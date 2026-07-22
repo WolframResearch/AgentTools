@@ -29,6 +29,8 @@ The server checks two conditions before enabling MCP Apps:
 - The client must advertise `io.modelcontextprotocol/ui` in `capabilities.extensions`
 - The `MCP_APPS_ENABLED` environment variable must not be set to `"false"`
 
+> **Cloud deployments.** MCP Apps are also supported by [cloud-deployed servers](cloud-deployment.md), whose stateless HTTP transport has no session store to hold `$clientSupportsUI` between requests. There, the negotiated capability is carried in a self-describing `Mcp-Session-Id` header that the client echoes on each request, re-establishing the same flag per request. If a client does not echo the session ID, MCP Apps simply stays off (fail-safe).
+
 ### UI Resources
 
 UI resources are HTML apps served via the MCP `resources/read` endpoint. Each resource is identified by a `ui://` URI (e.g., `ui://wolfram/wolframalpha-viewer`).
@@ -257,7 +259,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | File | Description |
 |------|-------------|
 | `Kernel/UIResources.wl` | UI resource registry, capability detection, tool-UI metadata |
-| `Kernel/StartMCPServer.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
+| `Kernel/Server/Shared.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
 | `Kernel/CommonSymbols.wl` | Shared symbols for MCP Apps (`$clientSupportsUI`, `$uiResourceRegistry`, etc.) |
 | `Kernel/InstallMCPServer.wl` | `"EnableMCPApps"` option and `MCP_APPS_ENABLED` environment variable |
 | `Kernel/Messages.wl` | Error messages for UI resources |
@@ -286,7 +288,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `toolUIMetadata` | `Common` | Returns `_meta.ui` for a tool name |
 | `withToolUIMetadata` | `Common` | Augments a tool list with UI metadata |
 | `notebookEmbedURL` | `UIResources` (private) | Appends the `syntaxMethod=editor` query parameter to a deployed notebook URL for `_meta.notebookUrl`; inline (non-URL) values pass through |
-| `setCloudBaseFromEnvironment` | `StartMCPServer` (private) | Applies the `WOLFRAM_CLOUDBASE` environment variable to `$CloudBase` at server startup |
+| `setCloudBaseFromEnvironment` | `Server`Local` (private) | Applies the `WOLFRAM_CLOUDBASE` environment variable to `$CloudBase` at server startup |
 | `applyCloudBaseToHTML` | `UIResources` (private) | Rewrites a viewer's `var WOLFRAM_CLOUDBASE = "…"` assignment when a custom cloud base is in effect |
 | `applyCloudBaseToMeta` | `UIResources` (private) | Prepends a custom cloud base to the CSP domain lists in app JSON metadata |
 
@@ -295,4 +297,5 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 - [MCP Apps specification](https://modelcontextprotocol.io/docs/extensions/apps) - Official MCP Apps documentation
 - [tools.md](tools.md) - MCP tools system and how to add new tools
 - [servers.md](servers.md) - Predefined server configurations
+- [cloud-deployment.md](cloud-deployment.md) - Cloud deployment and MCP Apps over the stateless HTTP transport
 - [mcp-clients.md](mcp-clients.md) - Client support and `EnableMCPApps` option

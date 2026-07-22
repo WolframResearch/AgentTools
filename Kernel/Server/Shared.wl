@@ -1,24 +1,26 @@
 (* ::Section::Closed:: *)
 (*Package Header*)
-BeginPackage[ "Wolfram`AgentTools`StartMCPServer`" ];
+BeginPackage[ "Wolfram`AgentTools`Server`Shared`" ];
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`AgentTools`"          ];
 Needs[ "Wolfram`AgentTools`Common`"   ];
 Needs[ "Wolfram`AgentTools`Graphics`" ];
+Needs[ "Wolfram`AgentTools`Server`"   ];
 
 Needs[ "Wolfram`Chatbook`" -> "cb`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
-$protocolVersion     = "2024-11-05";
-$toolWarmupDelay     = 5; (* seconds *)
-$waImageFetchTimeout = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
-$clientName          = None;
-$clientSupportsUI    = False;
-$currentMCPServer    = None;
-$mcpEvaluation       = False;
+(* Supported MCP protocol revisions, newest first; the preferred version is returned when the
+   client requests an unsupported one (see negotiateProtocolVersion). Shared by both transports. *)
+$supportedProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" };
+$preferredProtocolVersion  = "2025-11-25";
+$waImageFetchTimeout       = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
+$clientName                = None;
+$clientSupportsUI          = False;
+$mcpEvaluation             = False;
 
 $logTimeStamp := DateString[
     {
@@ -32,25 +34,6 @@ $logTimeStamp := DateString[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*StartMCPServer*)
-StartMCPServer // beginDefinition;
-StartMCPServer[ ] := stealthCatchTop @ StartMCPServer @ Environment[ "MCP_SERVER_NAME" ];
-StartMCPServer[ $Failed ] := stealthCatchTop @ StartMCPServer @ $defaultMCPServer;
-StartMCPServer[ name_String ] := stealthCatchTop @ StartMCPServer @ MCPServerObject @ name;
-StartMCPServer[ obj_MCPServerObject ] := stealthCatchTop @ startMCPServer @ ensureMCPServerExists @ obj;
-StartMCPServer // endExportedDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*stealthCatchTop*)
-(* A version of `catchTop` that doesn't set the message symbol or interfere with inner calls to `catchTop`. *)
-stealthCatchTop // beginDefinition;
-stealthCatchTop // Attributes = { HoldFirst };
-stealthCatchTop[ eval_ ] := Block[ { $catching = True }, Catch[ eval, $catchTopTag ] ];
-stealthCatchTop // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
 (*parseToolOptions*)
 parseToolOptions // beginDefinition;
 parseToolOptions[ env_String ] := parseToolOptions0 @ Quiet @ Developer`ReadRawJSONString @ env;
@@ -90,35 +73,20 @@ parseToolOptions0[ tool_String, optionName_String, optionValue_ ] :=
 parseToolOptions0 // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*startMCPServer*)
-startMCPServer // beginDefinition;
+(* ::Section::Closed:: *)
+(*initializeServerState*)
+(* Transport-agnostic build of the server's tool/prompt state, extracted from the local
+   read-loop startup so both the stdio and cloud transports share it. The local server calls
+   this once at startup and Blocks the returned values around its read loop; the cloud handler
+   calls it per request. Callers must have bound $currentMCPServer (ensurePacletsForStart may
+   reassign it for paclet-backed servers). *)
+initializeServerState // beginDefinition;
 
-startMCPServer[ obj_ ] /; $Notebooks :=
-    throwFailure[ "InvalidSession" ];
-
-(* :!CodeAnalysis::BeginBlock:: *)
-(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
-startMCPServer[ obj0_MCPServerObject ] := Enclose[
-    Block[ { $currentMCPServer = obj0, $mcpEvaluation = True },
-        superQuiet @ Module[ { obj, logFile, llmTools, toolList, promptList, promptLookup, response },
-
-        obj = obj0;
-
-        SetOptions[ First @ Streams[ "stdout" ], CharacterEncoding -> "UTF-8" ];
-        SetOptions[ First @ Streams[ "stderr" ], CharacterEncoding -> "UTF-8" ];
-
-        (* Apply any cloud base override before anything uses the cloud: *)
-        setCloudBaseFromEnvironment[ ];
-
-        cleanupOldOutputLogs[ ];
-
-        logFile = ConfirmBy[ ensureFilePath @ mcpServerLogFile @ obj, fileQ, "LogFile" ];
-        If[ FileExistsQ @ logFile, DeleteFile @ logFile ];
-        writeLog[ "LogFile" -> logFile ];
+initializeServerState[ obj0_MCPServerObject ] := Enclose[
+    Module[ { obj, llmTools, toolList, promptList, promptLookup, toolOptions },
 
         (* Ensure referenced paclets are installed before tool/prompt resolution *)
-        obj = ConfirmBy[ ensurePacletsForStart @ obj, MCPServerObjectQ, "EnsurePacletsForStart" ];
+        obj = ConfirmBy[ ensurePacletsForStart @ obj0, MCPServerObjectQ, "EnsurePacletsForStart" ];
 
         (* Run server-level initialization for custom and paclet-backed servers *)
         runServerInitialization @ obj;
@@ -133,57 +101,20 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
         promptLookup = ConfirmBy[ makePromptLookup @ obj[ "PromptData" ], AssociationQ, "PromptLookup" ];
 
         initializeUIResources[ ];
-        $toolOptions = parseToolOptions @ Environment[ "MCP_TOOL_OPTIONS" ];
+        toolOptions = parseToolOptions @ Environment[ "MCP_TOOL_OPTIONS" ];
 
-        Block[
-            {
-                $toolList     = toolList,
-                $llmTools     = llmTools,
-                $promptList   = promptList,
-                $promptLookup = promptLookup,
-                $logFile      = logFile,
-                $toolOptions  = $toolOptions
-            },
-            While[ True,
-                If[
-                    And[
-                        Or[ $OperatingSystem === "MacOSX", $OperatingSystem === "Unix" ],
-                        $ParentProcessID === 1
-                    ],
-                    Exit[0]
-                ];
-                response = catchAlways @ processRequest[ ];
-                If[ response =!= EndOfFile, writeLog[ "Response" -> response ] ];
-                If[ AssociationQ @ response,
-                    WriteLine[ "stdout", Developer`WriteRawJSONString[ response, "Compact" -> True ] ];
-                    If[ TrueQ @ $warmupTools, toolWarmup @ $toolList ],
-                    Pause[ 0.1 ]
-                ]
-            ]
-        ]
-    ]
+        <|
+            "ToolList"     -> toolList,
+            "LLMTools"     -> llmTools,
+            "PromptList"   -> promptList,
+            "PromptLookup" -> promptLookup,
+            "ToolOptions"  -> toolOptions
+        |>
     ],
     throwInternalFailure
 ];
-(* :!CodeAnalysis::EndBlock:: *)
 
-startMCPServer // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*setCloudBaseFromEnvironment*)
-(* Overrides the default cloud base for the server session when the WOLFRAM_CLOUDBASE environment
-   variable is set, e.g. WOLFRAM_CLOUDBASE="https://www.test.wolframcloud.com" (primarily for
-   internal purposes). All cloud operations (MCP Apps notebook deployments, LLMKit subscription
-   checks, etc.) then target that cloud, and UI resources are rewritten to match as they are
-   loaded (see applyCloudBaseToHTML and applyCloudBaseToMeta in UIResources.wl). *)
-setCloudBaseFromEnvironment // beginDefinition;
-
-setCloudBaseFromEnvironment[ ] := setCloudBaseFromEnvironment @ Environment[ "WOLFRAM_CLOUDBASE" ];
-setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := (CloudObject; $CloudBase = StringTrim @ base);
-setCloudBaseFromEnvironment[ _ ] := Null;
-
-setCloudBaseFromEnvironment // endDefinition;
+initializeServerState // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -359,6 +290,20 @@ createMCPToolData // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*serverToolListData*)
+(* The tool-list data for a server object, in the same shape tools/list returns (the $toolList that
+   initializeServerState builds): each tool disambiguated, then passed through createMCPToolData. Unlike
+   initializeServerState this runs no paclet install / server or tool initialization / UI setup -- it only
+   reads tool metadata -- so it is safe to call purely to describe a server, e.g. for the cloud /api/info
+   landing-page endpoint. Declared in the Server` context (Server.wl) so the cloud transport can reach it. *)
+serverToolListData // beginDefinition;
+serverToolListData[ obj_MCPServerObject ] := serverToolListData @ obj[ "Tools" ];
+serverToolListData[ tools: { ___LLMTool } ] := KeyValueMap[ createMCPToolData, disambiguateToolNames @ tools ];
+serverToolListData[ _ ] := { };
+serverToolListData // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*toolSchema*)
 toolSchema // beginDefinition;
 
@@ -390,46 +335,6 @@ toolSchema[ tool: HoldPattern[ _LLMTool ] ] := Enclose[
 ];
 
 toolSchema // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*toolWarmup*)
-toolWarmup // beginDefinition;
-toolWarmup[ ] := toolWarmup @ $toolList;
-toolWarmup[ tools_List ] := toolWarmup /@ tools;
-toolWarmup[ KeyValuePattern[ "name" -> name_String ] ] := toolWarmup @ name;
-toolWarmup[ "WolframContext" ] := toolWarmup @ { "WolframAlphaContext", "WolframLanguageContext" };
-toolWarmup[ "WolframLanguageContext"|"WolframAlphaContext" ] := preinstallVectorDatabases[ ];
-toolWarmup[ _ ] := Null;
-toolWarmup // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*preinstallVectorDatabases*)
-preinstallVectorDatabases // beginDefinition;
-
-preinstallVectorDatabases[ ] := preinstallVectorDatabases[ ] = (
-    debugPrint[ "Warming up vector databases" ];
-    debugPrint[ "Warmed up vector databases: ", First @ AbsoluteTiming @ initializeVectorDatabases[ ] ]
-);
-
-preinstallVectorDatabases // endDefinition;
-
-(* Test messages:
-
-```
-{"method":"initialize","params":{"clientInfo":{"name":"test-client"},"protocolVersion":"2024-11-05"},"jsonrpc":"2.0","id":0}
-{"method":"tools/list","params":{},"jsonrpc":"2.0","id":1}
-{"method":"tools/call","params":{"name":"WolframContext","arguments":{"context":"What's the 123456789th prime?"}},"jsonrpc":"2.0","id":2}
-```
-*)
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*initializeVectorDatabases*)
-initializeVectorDatabases // beginDefinition;
-initializeVectorDatabases[ ] := initializeVectorDatabases[ ] = cb`InstallVectorDatabases[ ];
-initializeVectorDatabases // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -500,58 +405,8 @@ normalizeArgument[ arg_Association ] := <|
 normalizeArgument // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*stdinShutdownQ*)
-(* The MCP stdio transport signals shutdown by closing the server's stdin, after which
-   InputString[""] returns the EndOfFile symbol on every call. We must exit the process
-   when that happens. Historically the read loop only detected client death on Unix (via
-   $ParentProcessID === 1) and treated EndOfFile as a transient empty read -- Pause[0.1]
-   and retry -- so on Windows a closed stdin left the kernel busy-spinning forever. The
-   Antigravity CLI then force-killed the hung process during a `/mcp` reload, and Go's
-   exec surfaced the TerminateProcess as "failed to stop mcp instance: <name>: exit
-   status 1". Treating the EndOfFile symbol (and the explicit "Quit" sentinel) as a
-   shutdown signal makes the server exit cleanly on all platforms. *)
-stdinShutdownQ // beginDefinition;
-stdinShutdownQ[ EndOfFile ] := True;
-stdinShutdownQ[ "Quit" ]    := True;
-stdinShutdownQ[ _ ]         := False;
-stdinShutdownQ // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*processRequest*)
-processRequest // beginDefinition;
-
-(* :!CodeAnalysis::BeginBlock:: *)
-(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
-processRequest[ ] :=
-    Catch @ Enclose @ Module[ { stdin, message, method, id, req, response },
-        stdin = InputString[ "" ];
-        If[ stdinShutdownQ @ stdin, Exit[ 0 ] ];
-        If[ ! StringQ @ stdin || StringTrim @ stdin === "", Throw @ EndOfFile ];
-        message = ConfirmBy[ Developer`ReadRawJSONString @ stdin, AssociationQ ];
-        writeLog[ "Request" -> message ];
-        method = Lookup[ message, "method", None ];
-        id     = Lookup[ message, "id", Null ];
-
-        (* Response to one of our outstanding server-to-client requests *)
-        If[ method === None && StringQ @ id && KeyExistsQ[ $mcpClientRequests, id ],
-            handleClientResponse[ id, message ];
-            Throw @ Null
-        ];
-
-        req = <| "jsonrpc" -> "2.0", "id" -> id |>;
-        response = catchAlways @ handleMethod[ method, message, req ];
-        If[ method === "tools/list", $warmupTools = True ];
-        writeLog[ "Response" -> response ];
-        If[ FailureQ @ response,
-            <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>,
-            response
-        ]
-    ];
-(* :!CodeAnalysis::EndBlock:: *)
-
-processRequest // endDefinition;
+(* ::Section::Closed:: *)
+(*Method Dispatch*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -745,6 +600,10 @@ formatPromptError[ failure_Failure ] :=
 formatPromptError[ _ ] := "[Error] Failed to generate prompt content.";
 
 formatPromptError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Tool Evaluation and Result Formatting*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -958,13 +817,18 @@ safeString[ failure: Failure[ "AgentTools::Internal" | "General::ChatbookInterna
     ];
 
 safeString[ failure_Failure ] := With[ { s = failure[ "Message" ] }, "[Error] " <> safeString @ s /; StringQ @ s ];
+safeString[ string_String ] := convertPUACharacters @ string; (* avoid mangling due to StandardForm strings *)
 safeString[ arg_ ] := convertPUACharacters @ ToString @ Unevaluated @ arg;
 safeString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*convertPUACharacters*)
+(* Characters in the Unicode private use area (0xE000-0xF8FF) *)
+$$puaCharacter = RegularExpression[ "[\\x{E000}-\\x{F8FF}]" ];
+
 convertPUACharacters // beginDefinition;
+convertPUACharacters[ str_String ] /; StringFreeQ[ str, $$puaCharacter ] := str;
 convertPUACharacters[ str_String ] := StringJoin[ convertPUACharacters /@ ToCharacterCode @ str ];
 convertPUACharacters[ n_Integer ] /; 57344 <= n <= 63743 := toPrintableASCII @ FromCharacterCode @ n;
 convertPUACharacters[ n_Integer ] := FromCharacterCode @ n;
@@ -978,50 +842,22 @@ toPrintableASCII[ expr_ ] := ToString[ Unevaluated @ expr, CharacterEncoding -> 
 toPrintableASCII // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*superQuiet*)
-(* Nothing can be written to stdout while running as an MCP server, so we aggressively suppress output. *)
-superQuiet // beginDefinition;
-superQuiet // Attributes = { HoldFirst };
+(* ::Subsubsection::Closed:: *)
+(*sanitizeResponse*)
+(* Applies convertPUACharacters to every string in an outgoing message (a response or a
+   server-to-client request) before it is encoded as JSON.
+   Sanitizing must happen before JSON encoding: the converted output can contain backslash
+   sequences or raw control characters, which would corrupt an already-encoded JSON document. *)
+sanitizeResponse // beginDefinition;
+sanitizeResponse[ response_Association ] := KeyMap[ sanitizeResponse, sanitizeResponse /@ response ];
+sanitizeResponse[ list_List ] := sanitizeResponse /@ list;
+sanitizeResponse[ string_String ] := convertPUACharacters @ string;
+sanitizeResponse[ other_ ] := other;
+sanitizeResponse // endDefinition;
 
-superQuiet[ eval_ ] :=
-    Module[ { logFile, logStream },
-        logFile = Quiet @ outputLogFile @ $currentMCPServer;
-        logStream = If[ fileQ @ logFile,
-            Quiet @ OpenWrite[ First @ logFile, CharacterEncoding -> "UTF-8" ],
-            $Failed
-        ];
-
-        If[ MatchQ[ logStream, _OutputStream ],
-            (* Success: redirect to log file *)
-
-            WithCleanup[
-                Block[
-                    {
-                        $ProgressReporting = False,
-                        $Messages = { logStream },
-                        $Output   = { logStream }
-                    },
-                    (* We use a veto handler to prevent print output from being written to stdout/stderr.
-                       We do this instead of redefining Print as a local symbol in Block because we need to let the
-                       WL evaluator tool capture and include print outputs in the tool call response. *)
-                    Internal`HandlerBlock[ { "Wolfram.System.Print.Veto", False & }, eval ]
-                ],
-                Quiet @ Close @ logStream
-            ],
-            (* Fallback: redirect to stderr as before *)
-            Block[
-                {
-                    $ProgressReporting = False,
-                    $Messages = Streams[ "stderr" ],
-                    $Output   = Streams[ "stderr" ]
-                },
-                Internal`HandlerBlock[ { "Wolfram.System.Print.Veto", False & }, eval ]
-            ]
-        ]
-    ];
-
-superQuiet // endDefinition;
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Capability / Initialization*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -1042,7 +878,7 @@ initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, cli
         tools = If[ Length @ tools0 > 0, <| "listChanged" -> True |>, <| |> ];
         instructions = ConfirmMatch[ makeInstructions @ prompts, _Missing | _String, "Instructions" ];
         DeleteMissing @ <|
-            "protocolVersion" -> $protocolVersion,
+            "protocolVersion" -> negotiateProtocolVersion @ clientMsg,
             "instructions"    -> instructions,
             "capabilities" -> <|
                 "prompts" -> <| |>,
@@ -1063,6 +899,24 @@ initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, cli
 ];
 
 initResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*negotiateProtocolVersion*)
+(* Echo the client's requested protocol version when we support it, otherwise fall back to the
+   preferred version. A missing/malformed request also yields the preferred version. Per the MCP
+   lifecycle rules: https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle *)
+negotiateProtocolVersion // beginDefinition;
+
+negotiateProtocolVersion[ clientMsg_Association ] :=
+    negotiateProtocolVersion @ clientMsg[ "params", "protocolVersion" ];
+
+negotiateProtocolVersion[ version_String ] /; MemberQ[ $supportedProtocolVersions, version ] :=
+    version;
+
+negotiateProtocolVersion[ _ ] := $preferredProtocolVersion;
+
+negotiateProtocolVersion // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1092,6 +946,10 @@ makeInstructions[ _ ] :=
     Missing[ "NotAvailable" ];
 
 makeInstructions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Logging Helpers*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

@@ -261,7 +261,7 @@ Operations on paclet extensions follow three trust levels:
 - `Kernel/CommonSymbols.wl` - Shared symbol declarations for paclet extension functions
 - `Kernel/Messages.wl` - Error messages for paclet extension operations
 - `Kernel/MCPServerObject.wl` - Paclet server integration into server objects
-- `Kernel/StartMCPServer.wl` - Paclet dependency resolution and initialization at server start
+- `Kernel/Server/Shared.wl` - Paclet dependency resolution and initialization at server start
 - `Kernel/InstallMCPServer.wl` - Paclet reference validation at install time
 - `Tests/PacletExtension.wlt` - Tests for paclet extension loading and resolution
 - `Tests/ValidateAgentToolsPacletExtension.wlt` - Tests for extension validation
