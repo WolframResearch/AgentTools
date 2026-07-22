@@ -993,12 +993,24 @@ injectAdminDefinitions // endDefinition;
 (* The headline integration: CloudDeploy of an MCPServerObject deploys a full directory bundle -- the live
    /mcp endpoint, a public landing page (/index.html + /assets/* + /api/info), and an owner-only admin page
    (/admin/index.html + /api/admin) -- and returns the directory CloudObject. The CloudDeploy UpValue on
-   MCPServerObject lives with the other upvalues (DeleteObject / LLMConfiguration) in MCPServerObject.wl and
-   delegates to cloudDeployDirectory (below), which orchestrates the primitives built by the earlier tasks:
+   MCPServerObject lives with the other upvalues (DeleteObject / LLMConfiguration) in MCPServerObject.wl;
+   both it and the exported CloudDeployMCPServerBundle (below) delegate to cloudDeployDirectory, which
+   orchestrates the primitives built by the earlier tasks:
    the endpoint payload (cloudMCPServerPayload) and deploy helper (deployMCPEndpoint), the /api/info generator
    (cloudMCPServerInfo), and the admin payload (cloudAdminAPIPayload). /mcp, /index.html, /assets/*, and
    /api/info carry the resolved Permissions; /admin/index.html and /api/admin are always Private. See
    Specs/CloudDeployment.md (CloudDeploy UpValue, Deployed Directory Layout). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*CloudDeployMCPServerBundle*)
+(* Exported entry point for the full directory bundle, equivalent to CloudDeploy[MCPServerObject[obj], ...]
+   but callable without going through the UpValue (e.g. with a server name or spec directly). Like
+   CloudDeployMCPServer, it wraps its body in catchMine so an error surfaces as a Failure[...]. *)
+
+CloudDeployMCPServerBundle // beginDefinition;
+CloudDeployMCPServerBundle[ obj_, args___ ] := catchMine @ cloudDeployDirectory[ obj, args ];
+CloudDeployMCPServerBundle // endExportedDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

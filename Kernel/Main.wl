@@ -21,6 +21,7 @@ System`DeployAgentTools;
 `$SupportedMCPClients;
 `AgentTools;
 `CloudDeployMCPServer;
+`CloudDeployMCPServerBundle;
 `CodeInspectorToolFunction;
 `CreateMCPServer;
 `CreatePreferencesContent;
@@ -110,6 +111,7 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "$SupportedMCPClients",
     "AgentTools",
     "CloudDeployMCPServer",
+    "CloudDeployMCPServerBundle",
     "CodeInspectorToolFunction",
     "CreateMCPServer",
     "CreatePreferencesContent",

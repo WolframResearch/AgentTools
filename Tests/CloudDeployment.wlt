@@ -1841,6 +1841,42 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*CloudDeployMCPServerBundle (exported entry point)*)
+
+(* The exported wrapper is declared and protected alongside the other exported symbols. *)
+VerificationTest[
+    MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`CloudDeployMCPServerBundle" ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Bundle-Export-Protected@@Tests/CloudDeployment.wlt:1847,1-1852,2"
+]
+
+VerificationTest[
+    MatchQ[ DownValues @ Wolfram`AgentTools`CloudDeployMCPServerBundle, { __ } ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Bundle-Export-HasDefinition@@Tests/CloudDeployment.wlt:1854,1-1859,2"
+]
+
+(* The wrapper routes to the same directory-bundle implementation as the CloudDeploy UpValue: a
+   disconnected session fails fast with NotCloudConnected. *)
+VerificationTest[
+    Quiet @ Block[ { $CloudConnected = False }, Wolfram`AgentTools`CloudDeployMCPServerBundle @ cloudDirServer ],
+    Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Bundle-NotCloudConnected@@Tests/CloudDeployment.wlt:1863,1-1868,2"
+]
+
+(* Argument validation also matches the UpValue path: an invalid second argument -> InvalidCloudTarget. *)
+VerificationTest[
+    Quiet @ Wolfram`AgentTools`CloudDeployMCPServerBundle[ cloudDirServer, 42 ],
+    Failure[ tag_String /; StringEndsQ[ tag, "InvalidCloudTarget" ], _Association ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Bundle-InvalidTarget@@Tests/CloudDeployment.wlt:1871,1-1876,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*End-to-end directory bundle (cloud-gated)*)
 
 (* Deploy the full directory bundle via the CloudDeploy UpValue and verify every spec requirement. Gated on
@@ -1905,7 +1941,7 @@ VerificationTest[
         "mcpCall"          -> "1011"
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1895,1-1909,2"
+    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1931,1-1945,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1944,7 +1980,7 @@ VerificationTest[
         "mcpDeployed"   -> True
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-OverwritesExplicitTarget@@Tests/CloudDeployment.wlt:1938,1-1948,2"
+    TestID   -> "CloudDeploy-Directory-OverwritesExplicitTarget@@Tests/CloudDeployment.wlt:1974,1-1984,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

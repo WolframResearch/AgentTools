@@ -11,19 +11,23 @@ landing page with client-configuration help, and an owner-only admin page for ma
 endpoint speaks a stateless subset of the MCP **Streamable HTTP** transport (protocol revision
 `2025-11-25`), and authentication is delegated to Wolfram Cloud's native `PermissionsKey` mechanism.
 
-Two entry points are provided:
+Three entry points are provided:
 
 | Entry point | Deploys | Returns |
 |-------------|---------|---------|
 | `CloudDeploy[MCPServerObject[…]]` | The **full directory bundle** (`/mcp`, landing page, `/api/info`, admin page + API). | The **directory** `CloudObject`. |
+| `CloudDeployMCPServerBundle[…]` | The same **full directory bundle**, as an exported function. | The **directory** `CloudObject`. |
 | `CloudDeployMCPServer[…]` | **Only** the `/mcp` endpoint, with caller-controlled path and permissions. | The **`/mcp`** `CloudObject`. |
 
 `CloudDeploy` is the built-in `System` function, extended here by an UpValue on `MCPServerObject`
 (mirroring the existing `DeleteObject` and `LLMConfiguration` upvalues); it reuses
-`CloudDeployMCPServer`'s endpoint primitive for its `/mcp` object. `CloudDeployMCPServer` is exported by
-the AgentTools paclet, so once the paclet is loaded you can call it unqualified. A third exported
-symbol, `RunCloudMCPServer`, is the HTTP request handler that runs *inside* the deployed endpoint — you
-do not call it directly, but it is exported so the deployed payload can reference it.
+`CloudDeployMCPServer`'s endpoint primitive for its `/mcp` object. `CloudDeployMCPServerBundle` is the
+same directory-bundle deployment as an exported function — its first argument resolves through
+`MCPServerObject`, so it also accepts a server name or association directly. `CloudDeployMCPServer` and
+`CloudDeployMCPServerBundle` are exported by the AgentTools paclet, so once the paclet is loaded you can
+call them unqualified. A further exported symbol, `RunCloudMCPServer`, is the HTTP request handler that
+runs *inside* the deployed endpoint — you do not call it directly, but it is exported so the deployed
+payload can reference it.
 
 > **Security note.** A deployed server exposes exactly the tools in its server object, including
 > code-execution tools such as `WolframLanguageEvaluator`. There is no built-in tool filtering or
@@ -60,6 +64,16 @@ is the only handle to the deployment — retain it.
 CloudDeploy[obj]
 CloudDeploy[obj, target]
 CloudDeploy[obj, target, opts]
+```
+
+The exported function `CloudDeployMCPServerBundle` takes the same arguments and options and performs
+the identical deployment; unlike the UpValue form, its first argument may also be a server name or
+association (resolved through `MCPServerObject`):
+
+```wl
+CloudDeployMCPServerBundle[obj]
+CloudDeployMCPServerBundle[obj, target]
+CloudDeployMCPServerBundle[obj, target, opts]
 ```
 
 ### Arguments
@@ -331,9 +345,10 @@ client's requested `protocolVersion` when it is supported, otherwise returning t
 
 - `Kernel/MCPServerObject.wl` — the `CloudDeploy` UpValue on `MCPServerObject` (with the `DeleteObject`
   and `LLMConfiguration` upvalues), which delegates to `cloudDeployDirectory` in `Cloud.wl`
-- `Kernel/Server/Cloud.wl` — `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deploy
-  implementation (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, the session-ID capability
-  codec, the server-embedding deploy helpers, and the `/api/info` and `/api/admin` handlers
+- `Kernel/Server/Cloud.wl` — `CloudDeployMCPServer`, `CloudDeployMCPServerBundle`, `RunCloudMCPServer`,
+  the directory-bundle deploy implementation (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue
+  and `CloudDeployMCPServerBundle`, the session-ID capability codec, the server-embedding deploy
+  helpers, and the `/api/info` and `/api/admin` handlers
 - `Kernel/Server/Shared.wl` — transport-agnostic core shared with the local server (dispatch, tool/prompt
   resolution, result formatting, `initializeServerState`, protocol-version negotiation)
 - `Assets/Cloud/` — landing page (`index.html` + `assets/`) and admin page (`admin.html`)

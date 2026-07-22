@@ -25,20 +25,22 @@ amount of request-handling logic. As part of this work that logic is refactored 
 `Kernel/Server/` directory so both transports call into a common core (`handleMethod`, tool/prompt
 resolution, result formatting, capability negotiation).
 
-Three new public symbols are introduced:
+Four new public symbols are introduced:
 
 | Symbol | Context | Purpose |
 |---|---|---|
 | `CloudDeployMCPServer` | ``Wolfram`AgentTools` `` | Deploy just the `/mcp` endpoint for a server object. |
+| `CloudDeployMCPServerBundle` | ``Wolfram`AgentTools` `` | Deploy the full directory bundle (exported form of the `CloudDeploy` UpValue). |
 | `RunCloudMCPServer` | ``Wolfram`AgentTools` `` | HTTP request handler invoked inside a deployed endpoint. |
 | `CloudDeploy` (UpValue) | (existing `System` symbol) | `MCPServerObject /: CloudDeploy[obj, args___]` deploys the full directory. |
 
-Both new symbols live in the ``Wolfram`AgentTools` `` context — **not** `System` (only `CloudDeploy`
+The new symbols live in the ``Wolfram`AgentTools` `` context — **not** `System` (only `CloudDeploy`
 itself is a `System` symbol, extended here by an `MCPServerObject` UpValue). They are declared
 identically — in `Kernel/Main.wl` (exported name list under the ``Wolfram`AgentTools` `` context, i.e.
 `` `CloudDeployMCPServer ``, plus `$AgentToolsProtectedNames`) and `PacletInfo.wl` (`"Symbols"`) — and
 defined with `beginDefinition` / `endExportedDefinition`. Their top-level error handling differs by role,
-however: `CloudDeployMCPServer` wraps its body in `catchMine` (surfacing a `Failure[...]` on error).
+however: `CloudDeployMCPServer` and `CloudDeployMCPServerBundle` wrap their bodies in `catchMine`
+(surfacing a `Failure[...]` on error).
 `RunCloudMCPServer` is an HTTP handler that must **always return an `HTTPResponse`**, so it does
 *not* rely on `catchMine` to surface a raw `Failure`; its wrapper converts failures into responses
 instead — transport-level problems into HTTP status codes, dispatch/tool failures into an in-band
@@ -149,7 +151,7 @@ reorganized into a `Server/` subdirectory.
 | `Kernel/Server/Server.wl` | ``…`Server` `` | Entry point that `Get`s the other three files. Added to `$AgentToolsContexts` in `Main.wl`. |
 | `Kernel/Server/Shared.wl` | ``…`Server`Shared` `` | Transport-agnostic core (see below). |
 | `Kernel/Server/Local.wl` | ``…`Server`Local` `` | `StartMCPServer` and stdio-specific logic. |
-| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, page/asset deployment, and the admin/info APIs. |
+| `Kernel/Server/Cloud.wl` | ``…`Server`Cloud` `` | `CloudDeployMCPServer`, `CloudDeployMCPServerBundle`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue and `CloudDeployMCPServerBundle`, page/asset deployment, and the admin/info APIs. |
 
 > **Symbol sharing.** Symbols consumed across the three `Server` files (or reached from
 > `MCPServerObject.wl` and existing callers) are declared paclet-wide in `Kernel/CommonSymbols.wl`
@@ -420,18 +422,25 @@ client is worse off than before.)
 ## `CloudDeploy` (UpValue on `MCPServerObject`)
 
 Deploys the full directory bundle. Defined as an UpValue, mirroring the existing `MCPServerObject`
-upvalues `DeleteObject` and `LLMConfiguration` (`MCPServerObject.wl:732–740`).
+upvalues `DeleteObject` and `LLMConfiguration` (`MCPServerObject.wl:732–740`). The same deployment is
+also exported as `CloudDeployMCPServerBundle`; because its first argument resolves through
+`MCPServerObject`, it additionally accepts a server name or association directly.
 
 ### Definition
 
 ```wl
 MCPServerObject /: CloudDeploy[ obj_MCPServerObject, args___ ] :=
     catchTop[ cloudDeployDirectory[ obj, args ], MCPServerObject ];
+
+CloudDeployMCPServerBundle // beginDefinition;
+CloudDeployMCPServerBundle[ obj_, args___ ] := catchMine @ cloudDeployDirectory[ obj, args ];
+CloudDeployMCPServerBundle // endExportedDefinition;
 ```
 
-> **Naming.** The internal `cloudDeployDirectory` (full directory) is distinct from the exported
-> `CloudDeployMCPServer` / internal `cloudDeployEndpoint` (endpoint only). The directory builder
-> reuses the endpoint primitive for `/mcp`.
+> **Naming.** The internal `cloudDeployDirectory` (full directory, exported as
+> `CloudDeployMCPServerBundle`) is distinct from the exported `CloudDeployMCPServer` / internal
+> `cloudDeployEndpoint` (endpoint only). The directory builder reuses the endpoint primitive for
+> `/mcp`.
 
 ### Arguments and options
 

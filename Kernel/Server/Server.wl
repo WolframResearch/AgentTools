@@ -41,8 +41,9 @@ $subcontexts = {
     (* Local stdio transport: StartMCPServer, the read loop, warmup, superQuiet *)
     "Wolfram`AgentTools`Server`Local`",
 
-    (* Cloud HTTP transport: CloudDeployMCPServer, RunCloudMCPServer, the CloudDeploy UpValue,
-       page/asset deployment, the self-describing session-ID codec, and the admin/info APIs *)
+    (* Cloud HTTP transport: CloudDeployMCPServer, CloudDeployMCPServerBundle, RunCloudMCPServer,
+       the CloudDeploy UpValue, page/asset deployment, the self-describing session-ID codec, and the
+       admin/info APIs *)
     "Wolfram`AgentTools`Server`Cloud`"
 };
 

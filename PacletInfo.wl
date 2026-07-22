@@ -35,6 +35,7 @@ PacletObject[ <|
                 "Wolfram`AgentTools`$SupportedMCPClients",
                 "Wolfram`AgentTools`AgentTools",
                 "Wolfram`AgentTools`CloudDeployMCPServer",
+                "Wolfram`AgentTools`CloudDeployMCPServerBundle",
                 "Wolfram`AgentTools`CodeInspectorToolFunction",
                 "Wolfram`AgentTools`CreateMCPServer",
                 "Wolfram`AgentTools`CreatePreferencesContent",
