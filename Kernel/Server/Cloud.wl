@@ -359,15 +359,19 @@ parseRequestBodyString // endDefinition;
 (*originAllowedQ*)
 (* DNS-rebinding protection: an absent Origin (server-to-server LLM providers) is allowed; a present
    Origin is allowed only when its host is within the trusted Wolfram Cloud family, so a cross-site
-   browser context is rejected with a 403. *)
+   browser context is rejected with a 403. A present Origin in any unrecognized representation
+   (e.g. a duplicated header surfacing as a list) fails closed. *)
 $allowedOriginSuffixes = { "wolframcloud.com", "wolfram.com" };
 
 originAllowedQ // beginDefinition;
-originAllowedQ[ headers_Association ] := originAllowedQ @ Lookup[ headers, "origin", Missing[ "Absent" ] ];
-originAllowedQ[ _Missing ] := True;
-originAllowedQ[ origin_String ] := allowedOriginHostQ @ URLParse[ origin, "Domain" ];
-originAllowedQ[ _ ] := True;
+originAllowedQ[ headers_Association ] := originHeaderAllowedQ @ Lookup[ headers, "origin", Missing[ "Absent" ] ];
 originAllowedQ // endDefinition;
+
+originHeaderAllowedQ // beginDefinition;
+originHeaderAllowedQ[ _Missing ] := True;
+originHeaderAllowedQ[ origin_String ] := allowedOriginHostQ @ URLParse[ origin, "Domain" ];
+originHeaderAllowedQ[ _ ] := False;
+originHeaderAllowedQ // endDefinition;
 
 allowedOriginHostQ // beginDefinition;
 allowedOriginHostQ[ host_String ] :=
