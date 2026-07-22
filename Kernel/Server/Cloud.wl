@@ -66,16 +66,19 @@ makeSessionIDFromFeatureList // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*getFeaturesFromSessionID*)
-(* Decode a session ID back into its feature list. Only the current "1" version shape decodes to
-   features; any other version or a malformed ID falls through to {} (fail-closed), so a client
-   replaying a session ID minted by an older deployment simply gets no features -- turning MCP-Apps
-   off rather than misfiring. *)
+(* Decode a session ID back into its feature list. Only the current "1" version shape with a valid
+   base-36 bitfield decodes to features; any other version or a malformed ID (wrong segment count,
+   non-base36 bitfield, etc.) falls through to {} (fail-closed), so a client replaying a session ID
+   minted by an older deployment simply gets no features -- turning MCP-Apps off rather than
+   misfiring. The base36StringQ guard keeps a tampered or corrupted bitfield segment away from
+   FromDigits, which would emit messages and return unevaluated on non-base36 input instead of
+   failing closed. *)
 getFeaturesFromSessionID // beginDefinition;
 
 getFeaturesFromSessionID[ sessionID_String ] :=
     getFeaturesFromSessionID @ StringSplit[ sessionID, ":" ];
 
-getFeaturesFromSessionID[ { "1", featureString_String, _String } ] :=
+getFeaturesFromSessionID[ { "1", featureString_String? base36StringQ, _String } ] :=
     Pick[
         $trackedFeatureList,
         Reverse @ IntegerDigits[ FromDigits[ featureString, 36 ], 2, Length @ $trackedFeatureList ],
@@ -85,6 +88,17 @@ getFeaturesFromSessionID[ { "1", featureString_String, _String } ] :=
 getFeaturesFromSessionID[ _ ] := { };
 
 getFeaturesFromSessionID // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*base36StringQ*)
+(* Matches exactly what the IntegerString[n, 36] call in makeSessionIDFromFeatureList can mint:
+   lowercase base-36 digits. Anything else (including uppercase) is not an ID this server issued. *)
+$base36Pattern = RegularExpression[ "[0-9a-z]+" ];
+
+base36StringQ // beginDefinition;
+base36StringQ[ s_String ] := StringMatchQ[ s, $base36Pattern ];
+base36StringQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)

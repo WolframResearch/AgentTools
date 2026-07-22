@@ -407,6 +407,33 @@ VerificationTest[
     TestID   -> "GetFeatures-EmptyStringFailsClosed@@Tests/CloudDeployment.wlt:403,1-408,2"
 ]
 
+(* A non-base-36 bitfield segment decodes to no features rather than reaching FromDigits, which
+   would emit messages and return unevaluated instead of failing closed. (VerificationTest fails on
+   unexpected messages, so this also asserts the decode is silent.) *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:!:" <> CreateUUID[ ] ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-NonBase36BitfieldFailsClosed@@Tests/CloudDeployment.wlt:413,1-418,2"
+]
+
+(* An uppercase bitfield segment decodes to no features: the server only ever mints lowercase base
+   36 (IntegerString), so anything else is not an ID this server issued. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:Z:" <> CreateUUID[ ] ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-UppercaseBitfieldFailsClosed@@Tests/CloudDeployment.wlt:422,1-427,2"
+]
+
+(* A numeric-looking but non-integer bitfield segment decodes to no features. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`getFeaturesFromSessionID[ "1:1.5:" <> CreateUUID[ ] ],
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "GetFeatures-NonIntegerBitfieldFailsClosed@@Tests/CloudDeployment.wlt:430,1-435,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*RunCloudMCPServer (stateless HTTP handler)*)
@@ -469,7 +496,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPServerObjectQ @ cloudTestServer,
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Fixture-ServerValid@@Tests/CloudDeployment.wlt:468,1-473,2"
+    TestID   -> "CloudHandler-Fixture-ServerValid@@Tests/CloudDeployment.wlt:495,1-500,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -480,14 +507,14 @@ VerificationTest[
     MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`RunCloudMCPServer" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Export-Protected@@Tests/CloudDeployment.wlt:479,1-484,2"
+    TestID   -> "CloudHandler-Export-Protected@@Tests/CloudDeployment.wlt:506,1-511,2"
 ]
 
 VerificationTest[
     MatchQ[ DownValues @ Wolfram`AgentTools`RunCloudMCPServer, { __ } ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Export-HasDefinition@@Tests/CloudDeployment.wlt:486,1-491,2"
+    TestID   -> "CloudHandler-Export-HasDefinition@@Tests/CloudDeployment.wlt:513,1-518,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -498,21 +525,21 @@ VerificationTest[
     cloudStatus @ <| "Body" -> cloudInitBodyUI |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Method-POST-200@@Tests/CloudDeployment.wlt:497,1-502,2"
+    TestID   -> "CloudHandler-Method-POST-200@@Tests/CloudDeployment.wlt:524,1-529,2"
 ]
 
 VerificationTest[
     cloudStatus @ <| "Method" -> "GET" |>,
     405,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Method-GET-405@@Tests/CloudDeployment.wlt:504,1-509,2"
+    TestID   -> "CloudHandler-Method-GET-405@@Tests/CloudDeployment.wlt:531,1-536,2"
 ]
 
 VerificationTest[
     cloudStatus @ <| "Method" -> "DELETE" |>,
     405,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Method-DELETE-405@@Tests/CloudDeployment.wlt:511,1-516,2"
+    TestID   -> "CloudHandler-Method-DELETE-405@@Tests/CloudDeployment.wlt:538,1-543,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -524,7 +551,7 @@ VerificationTest[
     cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ] |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Origin-Absent-Allowed@@Tests/CloudDeployment.wlt:523,1-528,2"
+    TestID   -> "CloudHandler-Origin-Absent-Allowed@@Tests/CloudDeployment.wlt:550,1-555,2"
 ]
 
 (* A trusted Wolfram Cloud Origin is allowed. *)
@@ -535,7 +562,7 @@ VerificationTest[
     |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Origin-Trusted-Allowed@@Tests/CloudDeployment.wlt:531,1-539,2"
+    TestID   -> "CloudHandler-Origin-Trusted-Allowed@@Tests/CloudDeployment.wlt:558,1-566,2"
 ]
 
 (* A cross-site Origin is rejected (DNS-rebinding protection). *)
@@ -546,7 +573,7 @@ VerificationTest[
     |>,
     403,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Origin-CrossSite-403@@Tests/CloudDeployment.wlt:542,1-550,2"
+    TestID   -> "CloudHandler-Origin-CrossSite-403@@Tests/CloudDeployment.wlt:569,1-577,2"
 ]
 
 (* A look-alike host is not treated as a subdomain of the trusted suffix. *)
@@ -557,7 +584,7 @@ VerificationTest[
     |>,
     403,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Origin-LookAlike-403@@Tests/CloudDeployment.wlt:553,1-561,2"
+    TestID   -> "CloudHandler-Origin-LookAlike-403@@Tests/CloudDeployment.wlt:580,1-588,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -570,7 +597,7 @@ VerificationTest[
     ],
     { 200, "application/json" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Accept-JSON@@Tests/CloudDeployment.wlt:567,1-574,2"
+    TestID   -> "CloudHandler-Accept-JSON@@Tests/CloudDeployment.wlt:594,1-601,2"
 ]
 
 (* An absent Accept header defaults to application/json (client accepts anything). *)
@@ -580,7 +607,7 @@ VerificationTest[
     ],
     { 200, "application/json" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Accept-Absent-DefaultsJSON@@Tests/CloudDeployment.wlt:577,1-584,2"
+    TestID   -> "CloudHandler-Accept-Absent-DefaultsJSON@@Tests/CloudDeployment.wlt:604,1-611,2"
 ]
 
 (* text/event-stream yields a single SSE data frame; the content type is text/event-stream (with a
@@ -596,7 +623,7 @@ VerificationTest[
     ],
     { 200, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Accept-SSE@@Tests/CloudDeployment.wlt:588,1-600,2"
+    TestID   -> "CloudHandler-Accept-SSE@@Tests/CloudDeployment.wlt:615,1-627,2"
 ]
 
 (* An Accept listing neither supported type -> 406. *)
@@ -604,7 +631,7 @@ VerificationTest[
     cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "text/plain" |> |>,
     406,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Accept-Unacceptable-406@@Tests/CloudDeployment.wlt:603,1-608,2"
+    TestID   -> "CloudHandler-Accept-Unacceptable-406@@Tests/CloudDeployment.wlt:630,1-635,2"
 ]
 
 (* Serialized responses are sanitized before JSON encoding, so PUA characters never reach the wire
@@ -621,7 +648,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-MakeResponseString-PUASanitized@@Tests/CloudDeployment.wlt:612,1-625,2"
+    TestID   -> "CloudHandler-MakeResponseString-PUASanitized@@Tests/CloudDeployment.wlt:639,1-652,2"
 ]
 
 VerificationTest[
@@ -637,7 +664,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-MakeResponseString-SSE-PUASanitized@@Tests/CloudDeployment.wlt:627,1-641,2"
+    TestID   -> "CloudHandler-MakeResponseString-SSE-PUASanitized@@Tests/CloudDeployment.wlt:654,1-668,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -649,7 +676,7 @@ VerificationTest[
     cloudStatus @ <| "Body" -> cloudBody[ "ping", 1 ], "Headers" -> <| "Accept" -> "application/json" |> |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Protocol-Absent-Allowed@@Tests/CloudDeployment.wlt:648,1-653,2"
+    TestID   -> "CloudHandler-Protocol-Absent-Allowed@@Tests/CloudDeployment.wlt:675,1-680,2"
 ]
 
 (* A supported version is accepted. *)
@@ -660,7 +687,7 @@ VerificationTest[
     |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Protocol-Supported-Allowed@@Tests/CloudDeployment.wlt:656,1-664,2"
+    TestID   -> "CloudHandler-Protocol-Supported-Allowed@@Tests/CloudDeployment.wlt:683,1-691,2"
 ]
 
 (* An unsupported version on a non-initialize request -> 400. *)
@@ -671,7 +698,7 @@ VerificationTest[
     |>,
     400,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Protocol-Unsupported-400@@Tests/CloudDeployment.wlt:667,1-675,2"
+    TestID   -> "CloudHandler-Protocol-Unsupported-400@@Tests/CloudDeployment.wlt:694,1-702,2"
 ]
 
 (* The initialize request itself is exempt from the header check (version is negotiated in the body). *)
@@ -682,7 +709,7 @@ VerificationTest[
     |>,
     200,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Protocol-InitializeExempt@@Tests/CloudDeployment.wlt:678,1-686,2"
+    TestID   -> "CloudHandler-Protocol-InitializeExempt@@Tests/CloudDeployment.wlt:705,1-713,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -694,7 +721,7 @@ VerificationTest[
     cloudStatus @ <| "Body" -> "this is not json" |>,
     400,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Body-Malformed-400@@Tests/CloudDeployment.wlt:693,1-698,2"
+    TestID   -> "CloudHandler-Body-Malformed-400@@Tests/CloudDeployment.wlt:720,1-725,2"
 ]
 
 (* A well-formed but non-object JSON body (an array) -> 400. *)
@@ -702,7 +729,7 @@ VerificationTest[
     cloudStatus @ <| "Body" -> "[1,2,3]" |>,
     400,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Body-NonObject-400@@Tests/CloudDeployment.wlt:701,1-706,2"
+    TestID   -> "CloudHandler-Body-NonObject-400@@Tests/CloudDeployment.wlt:728,1-733,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -716,7 +743,7 @@ VerificationTest[
     ],
     { "2024-11-05", cloudTestServer[ "Name" ] },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Initialize-Negotiates@@Tests/CloudDeployment.wlt:713,1-720,2"
+    TestID   -> "CloudHandler-Initialize-Negotiates@@Tests/CloudDeployment.wlt:740,1-747,2"
 ]
 
 (* An unknown requested version falls back to the preferred one. *)
@@ -724,7 +751,7 @@ VerificationTest[
     cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "initialize", 0, <| "protocolVersion" -> "1999-01-01" |> ] |> ][ "result", "protocolVersion" ],
     "2025-11-25",
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Initialize-UnknownVersionFallsBack@@Tests/CloudDeployment.wlt:723,1-728,2"
+    TestID   -> "CloudHandler-Initialize-UnknownVersionFallsBack@@Tests/CloudDeployment.wlt:750,1-755,2"
 ]
 
 (* tools/list returns the server object's tools. *)
@@ -732,7 +759,7 @@ VerificationTest[
     Lookup[ cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "tools/list", 1 ] |> ][ "result", "tools" ], "name" ],
     { "PrimeFinder", "MCPAppsTest" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsList-Tools@@Tests/CloudDeployment.wlt:731,1-736,2"
+    TestID   -> "CloudHandler-ToolsList-Tools@@Tests/CloudDeployment.wlt:758,1-763,2"
 ]
 
 (* tools/call evaluates a tool and returns its content. *)
@@ -742,7 +769,7 @@ VerificationTest[
     ],
     { { KeyValuePattern[ { "type" -> "text", "text" -> "11" } ] }, False },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsCall-Result@@Tests/CloudDeployment.wlt:739,1-746,2"
+    TestID   -> "CloudHandler-ToolsCall-Result@@Tests/CloudDeployment.wlt:766,1-773,2"
 ]
 
 (* ping returns an empty result. *)
@@ -750,7 +777,7 @@ VerificationTest[
     cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "ping", 3 ] |> ][ "result" ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Ping-Result@@Tests/CloudDeployment.wlt:749,1-754,2"
+    TestID   -> "CloudHandler-Ping-Result@@Tests/CloudDeployment.wlt:776,1-781,2"
 ]
 
 (* An unknown method is reported in-band as JSON-RPC -32601 within a 200. *)
@@ -760,7 +787,7 @@ VerificationTest[
     ],
     { 200, -32601 },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-UnknownMethod-32601@@Tests/CloudDeployment.wlt:757,1-764,2"
+    TestID   -> "CloudHandler-UnknownMethod-32601@@Tests/CloudDeployment.wlt:784,1-791,2"
 ]
 
 (* A notification owes no reply: 202 with an empty body. *)
@@ -770,7 +797,7 @@ VerificationTest[
     ],
     { 202, "" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-Notification-202@@Tests/CloudDeployment.wlt:767,1-774,2"
+    TestID   -> "CloudHandler-Notification-202@@Tests/CloudDeployment.wlt:794,1-801,2"
 ]
 
 (* A message with an explicit null id owes no reply: 202 with an empty body. *)
@@ -780,7 +807,7 @@ VerificationTest[
     ],
     { 202, "" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-NullId-202@@Tests/CloudDeployment.wlt:777,1-784,2"
+    TestID   -> "CloudHandler-NullId-202@@Tests/CloudDeployment.wlt:804,1-811,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -792,7 +819,7 @@ VerificationTest[
     cloudBodyJSON[ cloudRun @ <| "Body" -> cloudInitBodyUI |> ][ "result", "capabilities", "extensions" ],
     KeyValuePattern[ "io.modelcontextprotocol/ui" -> _ ],
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-InitUI-AdvertisesExtension@@Tests/CloudDeployment.wlt:791,1-796,2"
+    TestID   -> "CloudHandler-InitUI-AdvertisesExtension@@Tests/CloudDeployment.wlt:818,1-823,2"
 ]
 
 (* ...and returns an Mcp-Session-Id whose feature bitfield decodes to {"MCPApps"}. Captures the session
@@ -803,7 +830,7 @@ VerificationTest[
     cloudDecode @ uiSessionID,
     { "MCPApps" },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-InitUI-SessionIDDecodesMCPApps@@Tests/CloudDeployment.wlt:800,1-807,2"
+    TestID   -> "CloudHandler-InitUI-SessionIDDecodesMCPApps@@Tests/CloudDeployment.wlt:827,1-834,2"
 ]
 
 (* initialize without the UI extension yields a session ID decoding to no features. *)
@@ -813,7 +840,7 @@ VerificationTest[
     cloudDecode @ noUiSessionID,
     { },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-InitNoUI-SessionIDDecodesEmpty@@Tests/CloudDeployment.wlt:810,1-817,2"
+    TestID   -> "CloudHandler-InitNoUI-SessionIDDecodesEmpty@@Tests/CloudDeployment.wlt:837,1-844,2"
 ]
 
 (* With the UI session ID, tools/list attaches _meta.ui to the UI-associated tool. *)
@@ -829,7 +856,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "_meta" -> KeyValuePattern[ "ui" -> KeyValuePattern[ "resourceUri" -> "ui://wolfram/mcp-apps-test" ] ] ],
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsList-UISessionHasMeta@@Tests/CloudDeployment.wlt:820,1-833,2"
+    TestID   -> "CloudHandler-ToolsList-UISessionHasMeta@@Tests/CloudDeployment.wlt:847,1-860,2"
 ]
 
 (* With the no-feature session ID, tools/list carries no _meta. *)
@@ -848,7 +875,7 @@ VerificationTest[
     ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsList-NoFeatureSessionNoMeta@@Tests/CloudDeployment.wlt:836,1-852,2"
+    TestID   -> "CloudHandler-ToolsList-NoFeatureSessionNoMeta@@Tests/CloudDeployment.wlt:863,1-879,2"
 ]
 
 (* With no Mcp-Session-Id header at all, UI is off (no _meta). *)
@@ -862,7 +889,7 @@ VerificationTest[
     ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsList-NoSessionNoMeta@@Tests/CloudDeployment.wlt:855,1-866,2"
+    TestID   -> "CloudHandler-ToolsList-NoSessionNoMeta@@Tests/CloudDeployment.wlt:882,1-893,2"
 ]
 
 (* A malformed / wrong-version session ID fails closed: UI stays off. *)
@@ -881,7 +908,7 @@ VerificationTest[
     ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolsList-MalformedSessionUIOff@@Tests/CloudDeployment.wlt:869,1-885,2"
+    TestID   -> "CloudHandler-ToolsList-MalformedSessionUIOff@@Tests/CloudDeployment.wlt:896,1-912,2"
 ]
 
 (* With the UI session ID, resources/list enumerates the UI registry. *)
@@ -894,7 +921,7 @@ VerificationTest[
     ][ "result", "resources" ],
     { __Association },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ResourcesList-UISessionEnumerates@@Tests/CloudDeployment.wlt:888,1-898,2"
+    TestID   -> "CloudHandler-ResourcesList-UISessionEnumerates@@Tests/CloudDeployment.wlt:915,1-925,2"
 ]
 
 (* Without UI, resources/list is empty. *)
@@ -902,7 +929,7 @@ VerificationTest[
     cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "resources/list", 2 ] |> ][ "result", "resources" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ResourcesList-NoSessionEmpty@@Tests/CloudDeployment.wlt:901,1-906,2"
+    TestID   -> "CloudHandler-ResourcesList-NoSessionEmpty@@Tests/CloudDeployment.wlt:928,1-933,2"
 ]
 
 (* With the UI session ID, resources/read returns the app HTML for a registered URI. *)
@@ -915,7 +942,7 @@ VerificationTest[
     ][ "result", "contents" ],
     { KeyValuePattern[ { "uri" -> "ui://wolfram/mcp-apps-test", "text" -> _String } ] },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ResourcesRead-UISessionReturnsHTML@@Tests/CloudDeployment.wlt:909,1-919,2"
+    TestID   -> "CloudHandler-ResourcesRead-UISessionReturnsHTML@@Tests/CloudDeployment.wlt:936,1-946,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -931,7 +958,7 @@ VerificationTest[
     ],
     { 200, -32603 },
     SameTest -> MatchQ,
-    TestID   -> "CloudHandler-ToolFailure-32603In200@@Tests/CloudDeployment.wlt:928,1-935,2"
+    TestID   -> "CloudHandler-ToolFailure-32603In200@@Tests/CloudDeployment.wlt:955,1-962,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -946,14 +973,14 @@ VerificationTest[
     MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`CloudDeployMCPServer" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Export-Protected@@Tests/CloudDeployment.wlt:945,1-950,2"
+    TestID   -> "CloudDeploy-Export-Protected@@Tests/CloudDeployment.wlt:972,1-977,2"
 ]
 
 VerificationTest[
     MatchQ[ DownValues @ Wolfram`AgentTools`CloudDeployMCPServer, { __ } ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Export-HasDefinition@@Tests/CloudDeployment.wlt:952,1-957,2"
+    TestID   -> "CloudDeploy-Export-HasDefinition@@Tests/CloudDeployment.wlt:979,1-984,2"
 ]
 
 (* The CloudDeployFailed message tag is registered (throwFailure requires it to exist). *)
@@ -961,7 +988,7 @@ VerificationTest[
     StringQ @ MessageName[ Wolfram`AgentTools`AgentTools, "CloudDeployFailed" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Message-CloudDeployFailedExists@@Tests/CloudDeployment.wlt:960,1-965,2"
+    TestID   -> "CloudDeploy-Message-CloudDeployFailedExists@@Tests/CloudDeployment.wlt:987,1-992,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -997,7 +1024,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "DeAgentToolsInternalContexts-RemovesAgentTools@@Tests/CloudDeployment.wlt:993,1-1001,2"
+    TestID   -> "DeAgentToolsInternalContexts-RemovesAgentTools@@Tests/CloudDeployment.wlt:1020,1-1028,2"
 ]
 
 (* Leaves the other internal contexts (e.g. Wolfram`Chatbook`*, which stays internal and is installed at
@@ -1015,7 +1042,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "DeAgentToolsInternalContexts-KeepsOthers@@Tests/CloudDeployment.wlt:1005,1-1019,2"
+    TestID   -> "DeAgentToolsInternalContexts-KeepsOthers@@Tests/CloudDeployment.wlt:1032,1-1046,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1027,7 +1054,7 @@ VerificationTest[
     Head @ cloudEmbedPayload,
     Delayed,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerPayload-IsDelayed@@Tests/CloudDeployment.wlt:1026,1-1031,2"
+    TestID   -> "CloudMCPServerPayload-IsDelayed@@Tests/CloudDeployment.wlt:1053,1-1058,2"
 ]
 
 (* The NOENTRY-hidden helper's definition is captured (flag-based blocking overcome). *)
@@ -1035,7 +1062,7 @@ VerificationTest[
     ! FreeQ[ cloudEmbedPayload, cloudEmbedHelper ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerPayload-CapturesNoEntryHelper@@Tests/CloudDeployment.wlt:1034,1-1039,2"
+    TestID   -> "CloudMCPServerPayload-CapturesNoEntryHelper@@Tests/CloudDeployment.wlt:1061,1-1066,2"
 ]
 
 (* The AgentTools handler tree is captured (context-based stripping overcome by the dev bridge). *)
@@ -1043,7 +1070,7 @@ VerificationTest[
     ! FreeQ[ cloudEmbedPayload, Wolfram`AgentTools`Server`Cloud`Private`runCloudMCPServer ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerPayload-CapturesHandler@@Tests/CloudDeployment.wlt:1042,1-1047,2"
+    TestID   -> "CloudMCPServerPayload-CapturesHandler@@Tests/CloudDeployment.wlt:1069,1-1074,2"
 ]
 
 (* The gathered definitions are injected via Language`ExtendedFullDefinition[ ] = defs, so the cloud
@@ -1052,7 +1079,7 @@ VerificationTest[
     ! FreeQ[ cloudEmbedPayload, HoldPattern[ Language`ExtendedFullDefinition[ ] = _ ] ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerPayload-HasEFDInjection@@Tests/CloudDeployment.wlt:1051,1-1056,2"
+    TestID   -> "CloudMCPServerPayload-HasEFDInjection@@Tests/CloudDeployment.wlt:1078,1-1083,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1074,7 +1101,7 @@ VerificationTest[
     MatchQ[ cloudFileServer[ "Location" ], _File ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudFileServer-IsFileBacked@@Tests/CloudDeployment.wlt:1073,1-1078,2"
+    TestID   -> "CloudFileServer-IsFileBacked@@Tests/CloudDeployment.wlt:1100,1-1105,2"
 ]
 
 (* removeLocalServerLocation rebuilds it as a purely in-memory server: Location -> None, with the name and
@@ -1085,7 +1112,7 @@ VerificationTest[
     ],
     { None, cloudFileServerName, True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveLocalServerLocation-StripsToNone@@Tests/CloudDeployment.wlt:1082,1-1089,2"
+    TestID   -> "RemoveLocalServerLocation-StripsToNone@@Tests/CloudDeployment.wlt:1109,1-1116,2"
 ]
 
 (* The strip lives in cloudMCPServerPayload's guard clause, so BOTH deploy paths (CloudDeployMCPServer and
@@ -1100,7 +1127,7 @@ VerificationTest[
     ],
     { None },
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerPayload-StripsFileLocation@@Tests/CloudDeployment.wlt:1094,1-1104,2"
+    TestID   -> "CloudMCPServerPayload-StripsFileLocation@@Tests/CloudDeployment.wlt:1121,1-1131,2"
 ]
 
 (* Clean up the on-disk server. *)
@@ -1108,7 +1135,7 @@ VerificationTest[
     DeleteObject @ cloudFileServer,
     Null,
     SameTest -> MatchQ,
-    TestID   -> "CloudFileServer-Cleanup@@Tests/CloudDeployment.wlt:1107,1-1112,2"
+    TestID   -> "CloudFileServer-Cleanup@@Tests/CloudDeployment.wlt:1134,1-1139,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1124,7 +1151,7 @@ VerificationTest[
     ],
     { Delayed, True },
     SameTest -> MatchQ,
-    TestID   -> "InjectServerDefinitions-EmptyNoInjection@@Tests/CloudDeployment.wlt:1119,1-1128,2"
+    TestID   -> "InjectServerDefinitions-EmptyNoInjection@@Tests/CloudDeployment.wlt:1146,1-1155,2"
 ]
 
 (* A non-empty DefinitionList is injected ahead of the held handler call. *)
@@ -1136,7 +1163,7 @@ VerificationTest[
     ],
     { Delayed, True },
     SameTest -> MatchQ,
-    TestID   -> "InjectServerDefinitions-NonEmptyInjects@@Tests/CloudDeployment.wlt:1131,1-1140,2"
+    TestID   -> "InjectServerDefinitions-NonEmptyInjects@@Tests/CloudDeployment.wlt:1158,1-1167,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1184,7 +1211,7 @@ VerificationTest[
     cloudDeployEndToEndProbe[ ],
     "no-cloud" | { KeyValuePattern[ { "type" -> "text", "text" -> "1011" } ] },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Endpoint-EndToEnd@@Tests/CloudDeployment.wlt:1183,1-1188,2"
+    TestID   -> "CloudDeploy-Endpoint-EndToEnd@@Tests/CloudDeployment.wlt:1210,1-1215,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1224,7 +1251,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`serverToolListData[ { } ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "ServerToolListData-Empty@@Tests/CloudDeployment.wlt:1223,1-1228,2"
+    TestID   -> "ServerToolListData-Empty@@Tests/CloudDeployment.wlt:1250,1-1255,2"
 ]
 
 (* Builds the same disambiguated name set tools/list produces, from the server object directly. *)
@@ -1232,7 +1259,7 @@ VerificationTest[
     #[ "name" ] & /@ Wolfram`AgentTools`Server`serverToolListData[ cloudInfoServer ],
     { "Gamma", "Plain" },
     SameTest -> MatchQ,
-    TestID   -> "ServerToolListData-Names@@Tests/CloudDeployment.wlt:1231,1-1236,2"
+    TestID   -> "ServerToolListData-Names@@Tests/CloudDeployment.wlt:1258,1-1263,2"
 ]
 
 (* Each entry is the full $toolList-shape association (carries inputSchema), i.e. the same construction
@@ -1243,7 +1270,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ServerToolListData-HasInputSchema@@Tests/CloudDeployment.wlt:1240,1-1247,2"
+    TestID   -> "ServerToolListData-HasInputSchema@@Tests/CloudDeployment.wlt:1267,1-1274,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1257,7 +1284,7 @@ VerificationTest[
     ],
     <| "name" -> "X", "title" -> "T", "description" -> "D" |>,
     SameTest -> MatchQ,
-    TestID   -> "CloudInfoTool-Projects@@Tests/CloudDeployment.wlt:1254,1-1261,2"
+    TestID   -> "CloudInfoTool-Projects@@Tests/CloudDeployment.wlt:1281,1-1288,2"
 ]
 
 (* A tool with no title (DisplayName) omits the title field entirely. *)
@@ -1270,7 +1297,7 @@ VerificationTest[
     ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudInfoTool-NoTitle@@Tests/CloudDeployment.wlt:1264,1-1274,2"
+    TestID   -> "CloudInfoTool-NoTitle@@Tests/CloudDeployment.wlt:1291,1-1301,2"
 ]
 
 (* A missing description defaults to the empty string (never Missing in the JSON). *)
@@ -1278,7 +1305,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`cloudInfoTool[ <| "name" -> "X" |> ],
     <| "name" -> "X", "description" -> "" |>,
     SameTest -> MatchQ,
-    TestID   -> "CloudInfoTool-DescriptionDefault@@Tests/CloudDeployment.wlt:1277,1-1282,2"
+    TestID   -> "CloudInfoTool-DescriptionDefault@@Tests/CloudDeployment.wlt:1304,1-1309,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1290,7 +1317,7 @@ VerificationTest[
     Sort @ Keys @ cloudInfoResult,
     { "name", "tools", "url", "version" },
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-Keys@@Tests/CloudDeployment.wlt:1289,1-1294,2"
+    TestID   -> "CloudMCPServerInfo-Keys@@Tests/CloudDeployment.wlt:1316,1-1321,2"
 ]
 
 (* Name, version, and the deployer-supplied endpoint URL are carried through. *)
@@ -1298,7 +1325,7 @@ VerificationTest[
     { cloudInfoResult[ "name" ], cloudInfoResult[ "version" ], cloudInfoResult[ "url" ] },
     { "InfoRich", "1.0.0", cloudInfoURL },
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-NameVersionURL@@Tests/CloudDeployment.wlt:1297,1-1302,2"
+    TestID   -> "CloudMCPServerInfo-NameVersionURL@@Tests/CloudDeployment.wlt:1324,1-1329,2"
 ]
 
 (* The tools list is the projected shape: the rich tool carries title + description, the plain tool
@@ -1313,7 +1340,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-Tools@@Tests/CloudDeployment.wlt:1306,1-1317,2"
+    TestID   -> "CloudMCPServerInfo-Tools@@Tests/CloudDeployment.wlt:1333,1-1344,2"
 ]
 
 (* The plain tool has no title field. *)
@@ -1321,7 +1348,7 @@ VerificationTest[
     KeyExistsQ[ cloudInfoResult[ "tools" ][[ 2 ]], "title" ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-PlainToolNoTitle@@Tests/CloudDeployment.wlt:1320,1-1325,2"
+    TestID   -> "CloudMCPServerInfo-PlainToolNoTitle@@Tests/CloudDeployment.wlt:1347,1-1352,2"
 ]
 
 (* The public tool projection drops inputSchema -- /api/info advertises what tools are, not their schema. *)
@@ -1329,7 +1356,7 @@ VerificationTest[
     AnyTrue[ cloudInfoResult[ "tools" ], KeyExistsQ[ #, "inputSchema" ] & ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-NoInputSchema@@Tests/CloudDeployment.wlt:1328,1-1333,2"
+    TestID   -> "CloudMCPServerInfo-NoInputSchema@@Tests/CloudDeployment.wlt:1355,1-1360,2"
 ]
 
 (* The whole payload is JSON-serializable (it is plain-data: strings, associations, and lists). *)
@@ -1337,7 +1364,7 @@ VerificationTest[
     StringQ @ Developer`WriteRawJSONString @ cloudInfoResult,
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudMCPServerInfo-JSONSerializable@@Tests/CloudDeployment.wlt:1336,1-1341,2"
+    TestID   -> "CloudMCPServerInfo-JSONSerializable@@Tests/CloudDeployment.wlt:1363,1-1368,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1349,7 +1376,7 @@ VerificationTest[
     DirectoryQ @ PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudAssets-AssetLocationResolves@@Tests/CloudDeployment.wlt:1348,1-1353,2"
+    TestID   -> "CloudAssets-AssetLocationResolves@@Tests/CloudDeployment.wlt:1375,1-1380,2"
 ]
 
 (* The landing-page shell and its CSS/JS are all present under the asset directory. *)
@@ -1362,7 +1389,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudAssets-FilesExist@@Tests/CloudDeployment.wlt:1356,1-1366,2"
+    TestID   -> "CloudAssets-FilesExist@@Tests/CloudDeployment.wlt:1383,1-1393,2"
 ]
 
 (* index.html links its stylesheet/script and carries the containers the JS fills. *)
@@ -1375,7 +1402,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudAssets-IndexHTML-Content@@Tests/CloudDeployment.wlt:1369,1-1379,2"
+    TestID   -> "CloudAssets-IndexHTML-Content@@Tests/CloudDeployment.wlt:1396,1-1406,2"
 ]
 
 (* landing.js fetches /api/info, uses the <YOUR_KEY> placeholder, and builds the generic/OpenAI/Anthropic
@@ -1389,7 +1416,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudAssets-LandingJS-Content@@Tests/CloudDeployment.wlt:1383,1-1393,2"
+    TestID   -> "CloudAssets-LandingJS-Content@@Tests/CloudDeployment.wlt:1410,1-1420,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1432,14 +1459,14 @@ VerificationTest[
     First @ Wolfram`AgentTools`Server`Cloud`Private`adminMCPObject @ adminFakeBase,
     "https://www.wolframcloud.com/obj/user/dir/mcp",
     SameTest -> MatchQ,
-    TestID   -> "Admin-MCPObject-Sibling@@Tests/CloudDeployment.wlt:1431,1-1436,2"
+    TestID   -> "Admin-MCPObject-Sibling@@Tests/CloudDeployment.wlt:1458,1-1463,2"
 ]
 
 VerificationTest[
     First @ Wolfram`AgentTools`Server`Cloud`Private`adminKeyLabelStore @ adminFakeBase,
     "https://www.wolframcloud.com/obj/user/dir/admin/keys.wxf",
     SameTest -> MatchQ,
-    TestID   -> "Admin-KeyLabelStore-Sibling@@Tests/CloudDeployment.wlt:1438,1-1443,2"
+    TestID   -> "Admin-KeyLabelStore-Sibling@@Tests/CloudDeployment.wlt:1465,1-1470,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1451,7 +1478,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`validKeyStringQ @ CreateUUID[ ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Admin-ValidKey-UUID@@Tests/CloudDeployment.wlt:1450,1-1455,2"
+    TestID   -> "Admin-ValidKey-UUID@@Tests/CloudDeployment.wlt:1477,1-1482,2"
 ]
 
 (* A non-UUID string, a non-string, and a missing value are all rejected (guarding DeleteObject). *)
@@ -1459,7 +1486,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`validKeyStringQ /@ { "not-a-uuid", "", 12345, Null },
     { False, False, False, False },
     SameTest -> MatchQ,
-    TestID   -> "Admin-ValidKey-Rejects@@Tests/CloudDeployment.wlt:1458,1-1463,2"
+    TestID   -> "Admin-ValidKey-Rejects@@Tests/CloudDeployment.wlt:1485,1-1490,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1471,7 +1498,7 @@ VerificationTest[
     adminAction[ "bogus", <| |> ],
     <| "ok" -> False, "error" -> "Unknown action: bogus" |>,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Action-Unknown@@Tests/CloudDeployment.wlt:1470,1-1475,2"
+    TestID   -> "Admin-Action-Unknown@@Tests/CloudDeployment.wlt:1497,1-1502,2"
 ]
 
 (* A missing action (no "action" key) also fails closed. *)
@@ -1479,7 +1506,7 @@ VerificationTest[
     adminAction[ None, <| |> ],
     <| "ok" -> False, "error" -> "Unknown action: (none)" |>,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Action-NoAction@@Tests/CloudDeployment.wlt:1478,1-1483,2"
+    TestID   -> "Admin-Action-NoAction@@Tests/CloudDeployment.wlt:1505,1-1510,2"
 ]
 
 (* revokeKey validates its key before any cloud call: a missing or malformed key is rejected in-process. *)
@@ -1487,7 +1514,7 @@ VerificationTest[
     { adminAction[ "revokeKey", <| |> ], adminAction[ "revokeKey", <| "key" -> "not-a-uuid" |> ] },
     { <| "ok" -> False, "error" -> "Missing or invalid key." |>, <| "ok" -> False, "error" -> "Missing or invalid key." |> },
     SameTest -> MatchQ,
-    TestID   -> "Admin-Action-RevokeInvalidKey@@Tests/CloudDeployment.wlt:1486,1-1491,2"
+    TestID   -> "Admin-Action-RevokeInvalidKey@@Tests/CloudDeployment.wlt:1513,1-1518,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1502,7 +1529,7 @@ VerificationTest[
     },
     { 200, 400 },
     SameTest -> MatchQ,
-    TestID   -> "Admin-ActionResponse-StatusCodes@@Tests/CloudDeployment.wlt:1498,1-1506,2"
+    TestID   -> "Admin-ActionResponse-StatusCodes@@Tests/CloudDeployment.wlt:1525,1-1533,2"
 ]
 
 (* The response is application/json and its body round-trips the data. *)
@@ -1512,7 +1539,7 @@ VerificationTest[
     ],
     { 200, "application/json", <| "ok" -> True, "keys" -> { } |> },
     SameTest -> MatchQ,
-    TestID   -> "Admin-JSONResponse-Shape@@Tests/CloudDeployment.wlt:1509,1-1516,2"
+    TestID   -> "Admin-JSONResponse-Shape@@Tests/CloudDeployment.wlt:1536,1-1543,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1524,7 +1551,7 @@ VerificationTest[
     { adminStatus @ <| "Method" -> "GET" |>, adminStatus @ <| "Method" -> "DELETE" |> },
     { 405, 405 },
     SameTest -> MatchQ,
-    TestID   -> "Admin-Transport-MethodNotAllowed@@Tests/CloudDeployment.wlt:1523,1-1528,2"
+    TestID   -> "Admin-Transport-MethodNotAllowed@@Tests/CloudDeployment.wlt:1550,1-1555,2"
 ]
 
 (* A non-JSON body is a 400. *)
@@ -1532,7 +1559,7 @@ VerificationTest[
     adminStatus @ <| "Body" -> "not json" |>,
     400,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Transport-MalformedBody@@Tests/CloudDeployment.wlt:1531,1-1536,2"
+    TestID   -> "Admin-Transport-MalformedBody@@Tests/CloudDeployment.wlt:1558,1-1563,2"
 ]
 
 (* A well-formed POST with an unrecognized action dispatches to a 400 JSON error (no cloud call). *)
@@ -1542,7 +1569,7 @@ VerificationTest[
     ],
     { 400, False },
     SameTest -> MatchQ,
-    TestID   -> "Admin-Transport-UnknownActionDispatch@@Tests/CloudDeployment.wlt:1539,1-1546,2"
+    TestID   -> "Admin-Transport-UnknownActionDispatch@@Tests/CloudDeployment.wlt:1566,1-1573,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1557,7 +1584,7 @@ VerificationTest[
     },
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Admin-CloudWXFHelpers-Defined@@Tests/CloudDeployment.wlt:1553,1-1561,2"
+    TestID   -> "Admin-CloudWXFHelpers-Defined@@Tests/CloudDeployment.wlt:1580,1-1588,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1571,7 +1598,7 @@ VerificationTest[
     Head @ adminPayload,
     Delayed,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Payload-IsDelayed@@Tests/CloudDeployment.wlt:1570,1-1575,2"
+    TestID   -> "Admin-Payload-IsDelayed@@Tests/CloudDeployment.wlt:1597,1-1602,2"
 ]
 
 (* The AgentTools handler tree is captured (context-based stripping overcome by the dev bridge). *)
@@ -1579,7 +1606,7 @@ VerificationTest[
     ! FreeQ[ adminPayload, Wolfram`AgentTools`Server`Cloud`Private`runCloudAdminAPI ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Payload-CapturesHandler@@Tests/CloudDeployment.wlt:1578,1-1583,2"
+    TestID   -> "Admin-Payload-CapturesHandler@@Tests/CloudDeployment.wlt:1605,1-1610,2"
 ]
 
 (* The gathered definitions are injected via Language`ExtendedFullDefinition[ ] = defs. *)
@@ -1587,7 +1614,7 @@ VerificationTest[
     ! FreeQ[ adminPayload, HoldPattern[ Language`ExtendedFullDefinition[ ] = _ ] ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Payload-HasEFDInjection@@Tests/CloudDeployment.wlt:1586,1-1591,2"
+    TestID   -> "Admin-Payload-HasEFDInjection@@Tests/CloudDeployment.wlt:1613,1-1618,2"
 ]
 
 (* The captured deployment base is embedded, so the deployed handler resolves its own /mcp sibling. *)
@@ -1595,7 +1622,7 @@ VerificationTest[
     ! FreeQ[ adminPayload, "https://www.wolframcloud.com/obj/user/dir" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Payload-EmbedsBase@@Tests/CloudDeployment.wlt:1594,1-1599,2"
+    TestID   -> "Admin-Payload-EmbedsBase@@Tests/CloudDeployment.wlt:1621,1-1626,2"
 ]
 
 (* An empty DefinitionList needs no injection: just the held handler call, no EFD assignment. *)
@@ -1607,7 +1634,7 @@ VerificationTest[
     ],
     { Delayed, True },
     SameTest -> MatchQ,
-    TestID   -> "Admin-InjectDefinitions-EmptyNoInjection@@Tests/CloudDeployment.wlt:1602,1-1611,2"
+    TestID   -> "Admin-InjectDefinitions-EmptyNoInjection@@Tests/CloudDeployment.wlt:1629,1-1638,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1619,7 +1646,7 @@ VerificationTest[
     FileExistsQ @ FileNameJoin @ { PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "Cloud" ], "admin.html" },
     True,
     SameTest -> MatchQ,
-    TestID   -> "Admin-Assets-FileExists@@Tests/CloudDeployment.wlt:1618,1-1623,2"
+    TestID   -> "Admin-Assets-FileExists@@Tests/CloudDeployment.wlt:1645,1-1650,2"
 ]
 
 (* admin.html is self-contained (inline style/script, no external /assets references), resolves the sibling
@@ -1633,7 +1660,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> MatchQ,
-    TestID   -> "Admin-Assets-Content@@Tests/CloudDeployment.wlt:1627,1-1637,2"
+    TestID   -> "Admin-Assets-Content@@Tests/CloudDeployment.wlt:1654,1-1664,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1704,7 +1731,7 @@ VerificationTest[
         "usableAfterRevoke"  -> 401
     },
     SameTest -> MatchQ,
-    TestID   -> "Admin-KeyManagement-EndToEnd@@Tests/CloudDeployment.wlt:1694,1-1708,2"
+    TestID   -> "Admin-KeyManagement-EndToEnd@@Tests/CloudDeployment.wlt:1721,1-1735,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1741,7 +1768,7 @@ VerificationTest[
     ! FreeQ[ UpValues @ Wolfram`AgentTools`MCPServerObject, CloudDeploy ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-UpValueRegistered@@Tests/CloudDeployment.wlt:1740,1-1745,2"
+    TestID   -> "CloudDeploy-Directory-UpValueRegistered@@Tests/CloudDeployment.wlt:1767,1-1772,2"
 ]
 
 (* The NotCloudConnected and InvalidCloudTarget message tags are registered (throwFailure requires them). *)
@@ -1749,7 +1776,7 @@ VerificationTest[
     AllTrue[ { "NotCloudConnected", "InvalidCloudTarget" }, StringQ @ MessageName[ Wolfram`AgentTools`AgentTools, # ] & ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-MessageTagsExist@@Tests/CloudDeployment.wlt:1748,1-1753,2"
+    TestID   -> "CloudDeploy-Directory-MessageTagsExist@@Tests/CloudDeployment.wlt:1775,1-1780,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1770,7 +1797,7 @@ VerificationTest[
         "https://www.wolframcloud.com/obj/user/deploydir/api/admin"
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-SubObjectPaths@@Tests/CloudDeployment.wlt:1760,1-1774,2"
+    TestID   -> "CloudDeploy-Directory-SubObjectPaths@@Tests/CloudDeployment.wlt:1787,1-1801,2"
 ]
 
 (* An explicit CloudObject target is used as the directory as given. *)
@@ -1778,7 +1805,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Cloud`Private`resolveDeploymentDirectory[ cloudDirFakeDir, "Private" ],
     cloudDirFakeDir,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-ResolveCloudObjectPassthrough@@Tests/CloudDeployment.wlt:1777,1-1782,2"
+    TestID   -> "CloudDeploy-Directory-ResolveCloudObjectPassthrough@@Tests/CloudDeployment.wlt:1804,1-1809,2"
 ]
 
 (* The resolved directory is stripped to a bare CloudObject: plain CloudDeploy returns an option-free
@@ -1789,7 +1816,7 @@ VerificationTest[
         CloudObject[ "https://www.wolframcloud.com/obj/user/deploydir", Permissions -> "Private" ],
     cloudDirFakeDir,
     SameTest -> SameQ,
-    TestID   -> "CloudDeploy-Directory-BareDirectoryObject@@Tests/CloudDeployment.wlt:1787,1-1793,2"
+    TestID   -> "CloudDeploy-Directory-BareDirectoryObject@@Tests/CloudDeployment.wlt:1814,1-1820,2"
 ]
 
 (* An explicit (String or CloudObject) target is cleared with DeleteObject before deploying, restoring
@@ -1806,7 +1833,7 @@ VerificationTest[
     ],
     { cloudDirFakeDir, cloudDirFakeDir },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-ClearsExplicitTarget@@Tests/CloudDeployment.wlt:1798,1-1810,2"
+    TestID   -> "CloudDeploy-Directory-ClearsExplicitTarget@@Tests/CloudDeployment.wlt:1825,1-1837,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1819,7 +1846,7 @@ VerificationTest[
     Quiet @ CloudDeploy[ cloudDirServer, 42 ],
     Failure[ tag_String /; StringEndsQ[ tag, "InvalidCloudTarget" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-InvalidTarget@@Tests/CloudDeployment.wlt:1818,1-1823,2"
+    TestID   -> "CloudDeploy-Directory-InvalidTarget@@Tests/CloudDeployment.wlt:1845,1-1850,2"
 ]
 
 (* A disconnected session fails fast with NotCloudConnected rather than emitting an opaque cloud error. *)
@@ -1827,7 +1854,7 @@ VerificationTest[
     Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer ] ],
     Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-NotCloudConnected@@Tests/CloudDeployment.wlt:1826,1-1831,2"
+    TestID   -> "CloudDeploy-Directory-NotCloudConnected@@Tests/CloudDeployment.wlt:1853,1-1858,2"
 ]
 
 (* A bare Permissions rule as the second argument is an option, not a target: it routes to the anonymous
@@ -1836,7 +1863,7 @@ VerificationTest[
     Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer, Permissions -> "Private" ] ],
     Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-OptionsNotTarget@@Tests/CloudDeployment.wlt:1835,1-1840,2"
+    TestID   -> "CloudDeploy-Directory-OptionsNotTarget@@Tests/CloudDeployment.wlt:1862,1-1867,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1848,14 +1875,14 @@ VerificationTest[
     MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`CloudDeployMCPServerBundle" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Bundle-Export-Protected@@Tests/CloudDeployment.wlt:1847,1-1852,2"
+    TestID   -> "CloudDeploy-Bundle-Export-Protected@@Tests/CloudDeployment.wlt:1874,1-1879,2"
 ]
 
 VerificationTest[
     MatchQ[ DownValues @ Wolfram`AgentTools`CloudDeployMCPServerBundle, { __ } ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Bundle-Export-HasDefinition@@Tests/CloudDeployment.wlt:1854,1-1859,2"
+    TestID   -> "CloudDeploy-Bundle-Export-HasDefinition@@Tests/CloudDeployment.wlt:1881,1-1886,2"
 ]
 
 (* The wrapper routes to the same directory-bundle implementation as the CloudDeploy UpValue: a
@@ -1864,7 +1891,7 @@ VerificationTest[
     Quiet @ Block[ { $CloudConnected = False }, Wolfram`AgentTools`CloudDeployMCPServerBundle @ cloudDirServer ],
     Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Bundle-NotCloudConnected@@Tests/CloudDeployment.wlt:1863,1-1868,2"
+    TestID   -> "CloudDeploy-Bundle-NotCloudConnected@@Tests/CloudDeployment.wlt:1890,1-1895,2"
 ]
 
 (* Argument validation also matches the UpValue path: an invalid second argument -> InvalidCloudTarget. *)
@@ -1872,7 +1899,7 @@ VerificationTest[
     Quiet @ Wolfram`AgentTools`CloudDeployMCPServerBundle[ cloudDirServer, 42 ],
     Failure[ tag_String /; StringEndsQ[ tag, "InvalidCloudTarget" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Bundle-InvalidTarget@@Tests/CloudDeployment.wlt:1871,1-1876,2"
+    TestID   -> "CloudDeploy-Bundle-InvalidTarget@@Tests/CloudDeployment.wlt:1898,1-1903,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1941,7 +1968,7 @@ VerificationTest[
         "mcpCall"          -> "1011"
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1931,1-1945,2"
+    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1958,1-1972,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1980,7 +2007,7 @@ VerificationTest[
         "mcpDeployed"   -> True
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-OverwritesExplicitTarget@@Tests/CloudDeployment.wlt:1974,1-1984,2"
+    TestID   -> "CloudDeploy-Directory-OverwritesExplicitTarget@@Tests/CloudDeployment.wlt:2001,1-2011,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
