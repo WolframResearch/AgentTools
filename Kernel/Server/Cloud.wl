@@ -560,7 +560,7 @@ cloudDeployResult // endDefinition;
 (* ::Section::Closed:: *)
 (*Server Embedding*)
 (* The deployed /mcp endpoint must reconstruct the server -- including any custom, anonymous tool
-   functions -- at request time, in a cloud kernel that lacks the user's local definitions. Two
+   functions -- at request time, in a cloud kernel that lacks the user's local definitions. Three
    independent stripping mechanisms must be overcome:
 
      1. Context-based stripping. Wolfram`AgentTools`* is a member of Language`$InternalContexts, so the
@@ -572,6 +572,15 @@ cloudDeployResult // endDefinition;
         CloudDeploy's own capture) cannot see the user-defined functions inside a tool. The paclet's
         NOENTRY-aware extendedFullDefinition recursively unpacks NOENTRY subexpressions so those functions
         are captured.
+
+     3. Attribute-based blocking. When the paclet is loaded from its MX file (any installed/released
+        build -- the MX initialization in Main.wl sets ReadProtected on every top-level
+        Wolfram`AgentTools` symbol), Language`ExtendedFullDefinition silently skips ReadProtected
+        symbols: a ReadProtected root like RunCloudMCPServer yields an empty DefinitionList and a
+        ReadProtected symbol mid-walk silently prunes its subtree. ReadProtected is therefore removed
+        from AgentTools symbols for the duration of the gather and restored afterwards
+        (withCapturableAgentToolsDefinitions). A source-loaded dev kernel sets no such attributes, which
+        is why this only surfaces against MX-built paclets (e.g. CI, which builds the MX before testing).
 
    The gathered definitions are injected into the deployed expression with the same
    `Language`ExtendedFullDefinition[ ] = defs; expr` strategy binarySerializeWithDefinitions uses, so the
@@ -587,23 +596,22 @@ cloudDeployResult // endDefinition;
    a pattern variable bound to the actual MCPServerObject, so its value is substituted into the held
    argument of the HoldFirst extendedFullDefinition before the hold takes effect -- placing the server's
    NOENTRY-flagged tools lexically inside the gathered expression so extendedFullDefinition can unpack
-   them. The gather runs inside the internal-contexts Block so AgentTools's own definitions are captured
-   too; RunCloudMCPServer is never evaluated here (it stays held inside Delayed). *)
+   them. The gather runs inside withCapturableAgentToolsDefinitions so AgentTools's own definitions are
+   captured too (internal-contexts Block plus temporary removal of ReadProtected under MX loads);
+   RunCloudMCPServer is never evaluated here (it stays held inside Delayed). *)
 cloudMCPServerPayload // beginDefinition;
 
 cloudMCPServerPayload[ server_MCPServerObject ] /; MatchQ[ server[ "Location" ], _File ] :=
     cloudMCPServerPayload @ removeLocalServerLocation @ server;
 
 cloudMCPServerPayload[ server_MCPServerObject ] := Enclose[
-    Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
-        Module[ { defs },
-            defs = ConfirmMatch[
-                extendedFullDefinition[ Delayed @ RunCloudMCPServer @ server ],
-                _Language`DefinitionList,
-                "Definitions"
-            ];
-            injectServerDefinitions[ defs, server ]
-        ]
+    withCapturableAgentToolsDefinitions @ Module[ { defs },
+        defs = ConfirmMatch[
+            extendedFullDefinition[ Delayed @ RunCloudMCPServer @ server ],
+            _Language`DefinitionList,
+            "Definitions"
+        ];
+        injectServerDefinitions[ defs, server ]
     ],
     throwInternalFailure
 ];
@@ -638,6 +646,63 @@ deAgentToolsInternalContexts // beginDefinition;
 deAgentToolsInternalContexts[ ] :=
     DeleteCases[ Language`$InternalContexts, _String? (StringStartsQ[ "Wolfram`AgentTools`" ]) ];
 deAgentToolsInternalContexts // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*withCapturableAgentToolsDefinitions*)
+(* Runs a definition gather with both AgentTools-specific stripping mechanisms disabled: context-based
+   stripping (the internal-contexts Block) and attribute-based blocking (mechanism 3 above). Any
+   AgentTools symbol carrying ReadProtected -- every top-level symbol when the paclet is MX-loaded --
+   has the attribute removed for the duration of the gather, unprotecting only the symbols that are
+   also Protected. WithCleanup restores the attributes (and re-protects exactly the previously
+   protected subset) even if the gather throws. Like the internal-contexts Block, this is part of the
+   dev-bundling bridge and goes away once a cloud-native paclet exists. *)
+withCapturableAgentToolsDefinitions // beginDefinition;
+withCapturableAgentToolsDefinitions // Attributes = { HoldFirst };
+
+(* SetAttributes/ClearAttributes are HoldFirst, so the name lists must be passed via Evaluate --
+   otherwise they would target the local variable symbol instead of the symbols it names. *)
+withCapturableAgentToolsDefinitions[ eval_ ] :=
+    Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
+        Module[ { readProtected, protected },
+            readProtected = Select[ allAgentToolsSymbolNames[ ], readProtectedNameQ ];
+            protected     = Select[ readProtected, protectedNameQ ];
+            WithCleanup[
+                Scan[ Unprotect, protected ];
+                ClearAttributes[ Evaluate @ readProtected, ReadProtected ]
+                ,
+                eval
+                ,
+                SetAttributes[ Evaluate @ readProtected, ReadProtected ];
+                Scan[ Protect, protected ]
+            ]
+        ]
+    ];
+
+withCapturableAgentToolsDefinitions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*allAgentToolsSymbolNames*)
+(* Every symbol name in the Wolfram`AgentTools` context and its subcontexts, computed live (the two
+   patterns together cover all nesting levels, mirroring $AgentToolsSymbolNames in Main.wl). *)
+allAgentToolsSymbolNames // beginDefinition;
+allAgentToolsSymbolNames[ ] := Union[ Names[ "Wolfram`AgentTools`*" ], Names[ "Wolfram`AgentTools`*`*" ] ];
+allAgentToolsSymbolNames // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*readProtectedNameQ*)
+readProtectedNameQ // beginDefinition;
+readProtectedNameQ[ name_String ] := MemberQ[ Attributes @ name, ReadProtected ];
+readProtectedNameQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*protectedNameQ*)
+protectedNameQ // beginDefinition;
+protectedNameQ[ name_String ] := MemberQ[ Attributes @ name, Protected ];
+protectedNameQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -967,21 +1032,21 @@ validKeyStringQ // endDefinition;
 (*cloudAdminAPIPayload*)
 (* Build the definition-bearing Delayed[runCloudAdminAPI[base]] expression to deploy at /api/admin (Task 8,
    forced Private). base is a pattern variable bound to the deployment directory CloudObject, so its value
-   is substituted into the gathered expression. As with cloudMCPServerPayload, the gather runs inside the
-   internal-contexts Block so AgentTools's own definitions (runCloudAdminAPI and its dependency closure) are
-   captured rather than stripped, then injected so the cloud kernel restores them on each request. *)
+   is substituted into the gathered expression. As with cloudMCPServerPayload, the gather runs inside
+   withCapturableAgentToolsDefinitions so AgentTools's own definitions (runCloudAdminAPI and its dependency
+   closure) are captured rather than stripped -- including under MX loads, where ReadProtected top-level
+   symbols anywhere in the walk would otherwise silently prune their subtrees -- then injected so the cloud
+   kernel restores them on each request. *)
 cloudAdminAPIPayload // beginDefinition;
 
 cloudAdminAPIPayload[ base_CloudObject ] := Enclose[
-    Block[ { Language`$InternalContexts = deAgentToolsInternalContexts[ ] },
-        Module[ { defs },
-            defs = ConfirmMatch[
-                extendedFullDefinition[ Delayed @ runCloudAdminAPI @ base ],
-                _Language`DefinitionList,
-                "Definitions"
-            ];
-            injectAdminDefinitions[ defs, base ]
-        ]
+    withCapturableAgentToolsDefinitions @ Module[ { defs },
+        defs = ConfirmMatch[
+            extendedFullDefinition[ Delayed @ runCloudAdminAPI @ base ],
+            _Language`DefinitionList,
+            "Definitions"
+        ];
+        injectAdminDefinitions[ defs, base ]
     ],
     throwInternalFailure
 ];

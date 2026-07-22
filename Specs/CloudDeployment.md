@@ -107,7 +107,7 @@ At a glance (decisions resolved for v1):
 | `/mcp` permissions | Inherit the `Permissions` passed to `CloudDeploy` (same as `/index.html`); the admin page then adds/removes `PermissionsKey`s. |
 | Landing page | **Dynamic**: static shell fetches live server metadata from a public `/api/info` at view time. |
 | Protocol version | **Negotiate**: echo the client's requested version when supported, else return the preferred **2025-11-25**. Shared by local + cloud. |
-| Cloud tool definitions | Runtime paclet presence (`Wolfram/AgentTools` + `Wolfram/Chatbook`) for built-in machinery; NOENTRY-aware capture of custom tool functions; **plus** a `Language`$InternalContexts`` dev-bundling bridge (removed once a cloud-native paclet exists). |
+| Cloud tool definitions | Runtime paclet presence (`Wolfram/AgentTools` + `Wolfram/Chatbook`) for built-in machinery; NOENTRY-aware capture of custom tool functions; **plus** a dev-bundling bridge (removed once a cloud-native paclet exists) that both removes ``Wolfram`AgentTools`*`` from ``Language`$InternalContexts`` and temporarily clears `ReadProtected` from AgentTools symbols (set by MX-built paclets) during the gather. |
 | Admin auth | Wolfram Cloud owner session (both admin artifacts `Private`; no embedded secret). |
 | Local management | `CloudDeploy` returns the `CloudObject` directory; no local registry / wrapper object. |
 | Client setup | Landing-page click-to-copy config snippets only; no auto-install into local clients. |
@@ -623,8 +623,8 @@ provide.
 
 The deployed `/mcp` endpoint must reconstruct the server — including any **custom, anonymous tool
 functions** — at request time, in a cloud kernel that lacks the user's local definitions. This is the
-most technically delicate part of the design. Two independent stripping mechanisms must be overcome,
-both confirmed empirically in a live kernel:
+most technically delicate part of the design. Three independent stripping mechanisms must be overcome,
+all confirmed empirically in a live kernel:
 
 1. **Context-based stripping.** Both ``Wolfram`AgentTools`*`` and ``Wolfram`Chatbook`*`` are members
    of ``Language`$InternalContexts``, so their definitions are stripped from serialized expressions
@@ -637,15 +637,28 @@ both confirmed empirically in a live kernel:
    `binarySerializeWithDefinitions` (`Kernel/Utilities.wl:16–46`), whose `extendedFullDefinition`
    recursively unpacks `NOENTRY` subexpressions (`Utilities.wl:51–103`) so tool functions are
    captured.
+3. **Attribute-based blocking.** When the paclet is loaded from its **MX build** (any installed or
+   released copy — the MX initialization sets `ReadProtected` on every top-level
+   ``Wolfram`AgentTools``` symbol), ``Language`ExtendedFullDefinition`` **silently skips**
+   `ReadProtected` symbols: a `ReadProtected` root such as `RunCloudMCPServer` yields an *empty*
+   `DefinitionList`, and a `ReadProtected` symbol mid-walk silently prunes its subtree. A
+   source-loaded dev checkout sets no such attributes, so this only surfaces against MX-built
+   paclets (e.g. CI, which builds the MX into the checkout before running tests).
 
 ### v1 mechanism (dev-bundling bridge + custom-function capture)
 
-A single deploy helper builds the definition-bearing payload for `/mcp`, combining both fixes:
+A single deploy helper builds the definition-bearing payload for `/mcp`, combining the fixes
+(the first two live in the shared `withCapturableAgentToolsDefinitions` wrapper, also used by the
+admin-API payload builder):
 
 - Run inside ``Block[{ Language`$InternalContexts = DeleteCases[ Language`$InternalContexts, _?(StringStartsQ[#, "Wolfram`AgentTools`"]&) ] }, … ]`` so AgentTools's own definitions
   (`RunCloudMCPServer`, `handleMethod`, tool/prompt resolution, result formatting) are captured
   rather than stripped. This makes the endpoint self-contained without a published paclet — the point
   of the dev bridge.
+- Temporarily clear `ReadProtected` from AgentTools symbols for the duration of the gather
+  (unprotecting only symbols that are also `Protected`), restoring the attributes afterwards via
+  `WithCleanup` — otherwise an MX-loaded paclet produces a payload with **no** AgentTools
+  definitions at all and the deployed endpoint fails on every request.
 - Gather definitions with the paclet's **NOENTRY-aware** `extendedFullDefinition` so custom tool
   functions inside the server object's `LLMTool`s are included, and inject them into the deployed
   expression using the same ``Language`ExtendedFullDefinition[ ] = defs; expr`` strategy that
@@ -897,8 +910,9 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 
 Deferred from v1, in rough priority order:
 
-- **Cloud-native AgentTools paclet** → drop the ``Language`$InternalContexts`` dev-bundling block;
-  resolve `RunCloudMCPServer` and built-in tools from the installed paclet.
+- **Cloud-native AgentTools paclet** → drop the dev-bundling bridge
+  (`withCapturableAgentToolsDefinitions`: the ``Language`$InternalContexts`` block and the temporary
+  `ReadProtected` clearing); resolve `RunCloudMCPServer` and built-in tools from the installed paclet.
 - **`/logs/`** — capture per-request logs to a deployment log area, surfaced on the admin page.
 - **`/files/`** — per-deployment artifact area; route MCP-App notebooks/images here instead of the
   global `AgentTools/Notebooks` / `AgentTools/Images` locations.
