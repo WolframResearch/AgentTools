@@ -1003,9 +1003,11 @@ injectAdminDefinitions // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*cloudDeployDirectory*)
-(* Validate the server, require a cloud session, resolve the directory CloudObject, deploy the bundle, and
-   return the directory. Permissions defaults to the ambient $Permissions and applies to /mcp, /index.html,
-   /assets/*, and /api/info; the admin objects are forced Private inside deployDirectoryBundle. *)
+(* Validate the server, require a cloud session, resolve the directory CloudObject, clear any pre-existing
+   object at an explicit target (matching CloudDeploy's default overwrite behavior), deploy the bundle, and
+   return the (bare, option-free) directory. Permissions defaults to the ambient $Permissions and applies to
+   /mcp, /index.html, /assets/*, and /api/info; the admin objects are forced Private inside
+   deployDirectoryBundle. *)
 cloudDeployDirectory // beginDefinition;
 cloudDeployDirectory // Options = { Permissions :> $Permissions };
 
@@ -1021,7 +1023,8 @@ cloudDeployDirectory[ obj_, target: $$cloudDeployTarget, opts: OptionsPattern[ ]
            cloud error partway through the bundle. *)
         If[ ! TrueQ @ $CloudConnected, throwFailure[ "NotCloudConnected" ] ];
         perms = OptionValue[ Permissions ];
-        dir   = ConfirmMatch[ resolveDeploymentDirectory[ target, perms ], _CloudObject, "Directory" ];
+        dir   = bareCloudObject @ ConfirmMatch[ resolveDeploymentDirectory[ target, perms ], _CloudObject, "Directory" ];
+        clearExistingCloudTarget[ target, dir ];
         ConfirmMatch[ deployDirectoryBundle[ server, dir, perms, opts ], { __CloudObject }, "Bundle" ];
         dir
     ],
@@ -1056,6 +1059,30 @@ resolveDeploymentDirectory[ Automatic, perms_ ]      := CreateDirectory @ CloudO
 resolveDeploymentDirectory[ target_String, perms_ ]  := CloudObject[ target, Permissions -> perms ];
 resolveDeploymentDirectory[ target_CloudObject, _ ]  := target;
 resolveDeploymentDirectory // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*bareCloudObject*)
+(* Strip any options (e.g. the Permissions attached during resolution) down to a bare CloudObject[url].
+   Plain CloudDeploy returns an option-free CloudObject, so the directory deploy returns one too; keeping the
+   directory bare also keeps the base embedded in the admin payload (cloudAdminAPIPayload) option-free. *)
+bareCloudObject // beginDefinition;
+bareCloudObject[ CloudObject[ url_String, ___ ] ] := CloudObject @ url;
+bareCloudObject // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*clearExistingCloudTarget*)
+(* CloudDeploy's default for ordinary expressions is to overwrite whatever already occupies the target path,
+   but a pre-existing (leaf) object blocks the bundle's child deploys instead: the first child fails with
+   CloudDeploy::cloudunknown, surfacing as CloudDeployFailed. Deleting an explicit target up front restores
+   the overwrite semantics (DeleteObject removes a directory recursively, so a previous deployment at the
+   same path is fully replaced). The Quiet covers the usual case where nothing exists at the target yet. An
+   Automatic target is the anonymous directory CreateDirectory just made, so there is nothing to clear. *)
+clearExistingCloudTarget // beginDefinition;
+clearExistingCloudTarget[ Automatic, _CloudObject ] := Null;
+clearExistingCloudTarget[ _String | _CloudObject, dir_CloudObject ] := (Quiet @ DeleteObject @ dir; Null);
+clearExistingCloudTarget // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

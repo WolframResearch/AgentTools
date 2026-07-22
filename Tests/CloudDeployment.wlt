@@ -1781,6 +1781,34 @@ VerificationTest[
     TestID   -> "CloudDeploy-Directory-ResolveCloudObjectPassthrough@@Tests/CloudDeployment.wlt:1777,1-1782,2"
 ]
 
+(* The resolved directory is stripped to a bare CloudObject: plain CloudDeploy returns an option-free
+   CloudObject, so the directory deploy must too (and the base embedded in the admin payload stays bare
+   rather than carrying the Permissions attached during resolution). *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Cloud`Private`bareCloudObject @
+        CloudObject[ "https://www.wolframcloud.com/obj/user/deploydir", Permissions -> "Private" ],
+    cloudDirFakeDir,
+    SameTest -> SameQ,
+    TestID   -> "CloudDeploy-Directory-BareDirectoryObject@@Tests/CloudDeployment.wlt:1787,1-1793,2"
+]
+
+(* An explicit (String or CloudObject) target is cleared with DeleteObject before deploying, restoring
+   CloudDeploy's overwrite default (a pre-existing leaf object otherwise blocks the child deploys); an
+   Automatic target is the freshly created anonymous directory and is left alone. *)
+VerificationTest[
+    Module[ { deleted = { } },
+        Block[ { DeleteObject = Function[ obj, AppendTo[ deleted, obj ]; Null ] },
+            Wolfram`AgentTools`Server`Cloud`Private`clearExistingCloudTarget[ "user/deploydir", cloudDirFakeDir ];
+            Wolfram`AgentTools`Server`Cloud`Private`clearExistingCloudTarget[ cloudDirFakeDir, cloudDirFakeDir ];
+            Wolfram`AgentTools`Server`Cloud`Private`clearExistingCloudTarget[ Automatic, cloudDirFakeDir ]
+        ];
+        deleted
+    ],
+    { cloudDirFakeDir, cloudDirFakeDir },
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-ClearsExplicitTarget@@Tests/CloudDeployment.wlt:1798,1-1810,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Validation & dispatch (no cloud)*)
@@ -1791,7 +1819,7 @@ VerificationTest[
     Quiet @ CloudDeploy[ cloudDirServer, 42 ],
     Failure[ tag_String /; StringEndsQ[ tag, "InvalidCloudTarget" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-InvalidTarget@@Tests/CloudDeployment.wlt:1790,1-1795,2"
+    TestID   -> "CloudDeploy-Directory-InvalidTarget@@Tests/CloudDeployment.wlt:1818,1-1823,2"
 ]
 
 (* A disconnected session fails fast with NotCloudConnected rather than emitting an opaque cloud error. *)
@@ -1799,7 +1827,7 @@ VerificationTest[
     Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer ] ],
     Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-NotCloudConnected@@Tests/CloudDeployment.wlt:1798,1-1803,2"
+    TestID   -> "CloudDeploy-Directory-NotCloudConnected@@Tests/CloudDeployment.wlt:1826,1-1831,2"
 ]
 
 (* A bare Permissions rule as the second argument is an option, not a target: it routes to the anonymous
@@ -1808,7 +1836,7 @@ VerificationTest[
     Quiet @ Block[ { $CloudConnected = False }, CloudDeploy[ cloudDirServer, Permissions -> "Private" ] ],
     Failure[ tag_String /; StringEndsQ[ tag, "NotCloudConnected" ], _Association ],
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-OptionsNotTarget@@Tests/CloudDeployment.wlt:1807,1-1812,2"
+    TestID   -> "CloudDeploy-Directory-OptionsNotTarget@@Tests/CloudDeployment.wlt:1835,1-1840,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1877,7 +1905,46 @@ VerificationTest[
         "mcpCall"          -> "1011"
     },
     SameTest -> MatchQ,
-    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1867,1-1881,2"
+    TestID   -> "CloudDeploy-Directory-EndToEnd@@Tests/CloudDeployment.wlt:1895,1-1909,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Explicit-target overwrite (cloud-gated)*)
+
+(* Deploying to an explicit target already occupied by an ordinary cloud object overwrites it (matching
+   CloudDeploy's default for ordinary expressions) instead of failing with CloudDeployFailed, and the
+   returned directory is a bare, option-free CloudObject at the requested path. Gated on $CloudConnected:
+   with no cloud session the probe returns "no-cloud" and the test passes trivially. The target lives inside
+   an anonymous parent directory so a single recursive DeleteObject removes everything afterward. *)
+cloudDirOverwriteProbe[ ] := If[ ! TrueQ @ $CloudConnected,
+    "no-cloud",
+    Module[ { parent, path, leaf, dir, obs },
+        parent = CreateDirectory @ CloudObject[ ];
+        path   = CloudObject @ First @ FileNameJoin @ { parent, "server" };
+        leaf   = CloudDeploy[ 123, path ];
+        dir    = CloudDeploy[ cloudDirServer, path ];
+        obs    = <|
+            "overwroteLeaf" -> MatchQ[ dir, _CloudObject ],
+            "bareObject"    -> MatchQ[ dir, CloudObject[ _String ] ],
+            "atTargetPath"  -> MatchQ[ dir, _CloudObject ] && First @ dir === First @ leaf,
+            "mcpDeployed"   -> MatchQ[ Quiet @ Information[ FileNameJoin @ { path, "mcp" }, "Permissions" ], _List ]
+        |>;
+        Quiet @ DeleteObject @ parent;
+        obs
+    ]
+];
+
+VerificationTest[
+    cloudDirOverwriteProbe[ ],
+    "no-cloud" | KeyValuePattern @ {
+        "overwroteLeaf" -> True,
+        "bareObject"    -> True,
+        "atTargetPath"  -> True,
+        "mcpDeployed"   -> True
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudDeploy-Directory-OverwritesExplicitTarget@@Tests/CloudDeployment.wlt:1938,1-1948,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

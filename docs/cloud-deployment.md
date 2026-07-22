@@ -83,10 +83,13 @@ calls where meaningful.
 1. Validate the server object and require a cloud session (`$CloudConnected`, else a
    `NotCloudConnected` failure — see [Requirements](#requirements-and-limitations)).
 2. Resolve the directory `CloudObject` — an explicit `target`, or an anonymous directory when omitted.
-3. Deploy `/mcp` (carrying the server's definitions), `/index.html`, `/assets/*`, and `/api/info` at
+3. Delete any pre-existing object at an explicit `target`, matching `CloudDeploy`'s default overwrite
+   behavior (a pre-existing object would otherwise block the bundle's child deploys). A previous
+   deployment at the same path is replaced wholesale.
+4. Deploy `/mcp` (carrying the server's definitions), `/index.html`, `/assets/*`, and `/api/info` at
    the resolved `Permissions`.
-4. Deploy `/admin/index.html` and `/api/admin` as `"Private"`.
-5. Return the directory `CloudObject`.
+5. Deploy `/admin/index.html` and `/api/admin` as `"Private"`.
+6. Return the directory `CloudObject` — a bare, option-free object, as plain `CloudDeploy` returns.
 
 If the `target` is neither a valid path/object nor an option, an `InvalidCloudTarget` failure is
 issued.

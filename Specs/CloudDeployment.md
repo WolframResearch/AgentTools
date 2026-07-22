@@ -457,11 +457,15 @@ Given resolved permissions `perms`:
 2. Resolve the directory `CloudObject` (explicit target, or anonymous `CloudObject[Permissions ->
    perms]`) and sub-object paths by joining onto the directory, mirroring `UIResources.wl`
    (`FileNameJoin[{dir, "mcp"}]`, etc.).
-3. Deploy `/mcp` via the endpoint primitive (see [`CloudDeployMCPServer`](#clouddeploymcpserver)),
+3. Delete any pre-existing object at an explicit target (`Quiet @ DeleteObject`), matching
+   `CloudDeploy`'s default overwrite behavior — a pre-existing leaf object at the target otherwise
+   blocks the bundle's child deploys with `CloudDeploy::cloudunknown`.
+4. Deploy `/mcp` via the endpoint primitive (see [`CloudDeployMCPServer`](#clouddeploymcpserver)),
    carrying the server's definitions (see [Embedding the Server](#embedding-the-server)), at `perms`.
-4. Deploy `/index.html`, `/assets/*`, and `/api/info` at `perms`.
-5. Deploy `/admin/index.html` and `/api/admin` as `"Private"`.
-6. Return the directory `CloudObject`.
+5. Deploy `/index.html`, `/assets/*`, and `/api/info` at `perms`.
+6. Deploy `/admin/index.html` and `/api/admin` as `"Private"`.
+7. Return the directory `CloudObject` as a bare, option-free object (plain `CloudDeploy` returns an
+   option-free `CloudObject`, so the directory deploy does too).
 
 ### Example
 

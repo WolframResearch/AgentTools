@@ -682,3 +682,33 @@ across `Kernel/Server/*.wl` — all needing cloud connectivity and (for the repr
    `Local.wl:169`); `getting-started.md` dir-tree line → `Server/`; `mcp-clients.md` historical note →
    `Kernel/Server/Local.wl` (`stdinShutdownQ`). Left `Scripts/StartMCPServer.wls` + `Tests/StartMCPServer.wlt`
    (those files exist) and AGENTS.md's `StartMCPServer` *symbol* mention untouched.
+
+## Session 11
+
+**Fixed: `CloudDeploy[MCPServerObject[...], target]` fails when the target already exists; returned
+directory carried options.** (`Kernel/Server/Cloud.wl`)
+
+- **Overwrite semantics.** Plain `CloudDeploy` overwrites whatever occupies the target path, but the
+  directory bundle failed instead (`CloudDeploy::cloudunknown` → `CloudDeployFailed`) because a
+  pre-existing *leaf* object at the target blocks child deploys (`<target>/mcp` etc.). New
+  `clearExistingCloudTarget[target, dir]`: for an explicit (String/CloudObject) target it runs
+  `Quiet @ DeleteObject @ dir` before deploying; for `Automatic` it's a no-op (the anonymous directory
+  is freshly created). Verified in-cloud: `DeleteObject` on a nonexistent object quietly returns
+  `$Failed`; on a non-empty directory it deletes *recursively*, so redeploying to the same explicit
+  path replaces the previous deployment wholesale (previously-minted `PermissionsKey` grants on `/mcp`
+  didn't survive redeploys anyway, since every child deploy passes explicit `Permissions`).
+- **Bare return value.** `cloudDeployDirectory` now strips options from the resolved directory
+  (`bareCloudObject`, applied right after `resolveDeploymentDirectory`), so it returns
+  `CloudObject[url]` with no `Permissions -> ...` (matching plain `CloudDeploy`) and the base embedded
+  in the admin payload (`cloudAdminAPIPayload`) stays option-free too. `resolveDeploymentDirectory`
+  itself is unchanged (its passthrough unit test still holds).
+- **Tests** (`Tests/CloudDeployment.wlt`): `CloudDeploy-Directory-BareDirectoryObject` (strip),
+  `CloudDeploy-Directory-ClearsExplicitTarget` (Block-mocked `DeleteObject` records explicit targets,
+  skips `Automatic`), and cloud-gated `CloudDeploy-Directory-OverwritesExplicitTarget` (deploys `123`
+  to an explicit path inside an anonymous parent dir, deploys the bundle over it, checks bare return +
+  same URL + `/mcp` exists, then one recursive `DeleteObject` on the parent cleans up).
+- **Docs:** behavior lists updated in `docs/cloud-deployment.md` and `Specs/CloudDeployment.md`
+  (delete-first step + bare return).
+- Manual E2E (patched source, `/Claude/cdtest-e2e`): leaf `123` deployed first, bundle deploy over it
+  succeeded, returned bare `CloudObject`, `/mcp` answered 200. Note: full-bundle deploys from source
+  (no MX) run minutes each — budget accordingly in cloud-gated test runs.
