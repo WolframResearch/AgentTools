@@ -32,6 +32,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Kiro | `"Kiro"` | — | JSON | Yes | `"WolframLanguage"` |
 | LM Studio | `"LMStudio"` | — | JSON | No | `"Wolfram"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
+| MiMo Code | `"MimoCode"` | `"Mimo"`, `"MiMo"`, `"MiMoCode"` | JSON | Yes | `"WolframLanguage"` |
 | OpenCode | `"OpenCode"` | — | JSON | Yes | `"WolframLanguage"` |
 | Qwen Code | `"QwenCode"` | `"Qwen"` | JSON | Yes | `"WolframLanguage"` |
 | Visual Studio Code | `"VisualStudioCode"` | `"VSCode"` | JSON | Yes | `"WolframLanguage"` |
@@ -457,6 +458,29 @@ KEY = "value"
 ```
 
 Note: Project-level Codex configuration is stored in `.codex/config.toml`. This lets `InstallMCPServer[{"Codex", "/path/to/project"}]` install a server for just that project.
+
+### MiMo Code
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.config/mimocode/mimocode.json` |
+| Project | `.mimocode/mimocode.json` (in project root) |
+
+**Format:**
+```json
+{
+    "mcp": {
+        "ServerName": {
+            "type": "local",
+            "command": ["...", "arg1", "arg2"],
+            "enabled": true,
+            "environment": { ... }
+        }
+    }
+}
+```
+
+Note: MiMo Code (Xiaomi) is built on OpenCode and uses the same MCP configuration format — a top-level `mcp` key with the command and args combined into a single `command` array. MiMo Code also reads a `.jsonc` variant (`mimocode.jsonc`); `InstallMCPServer` writes the `.json` file.
 
 ### OpenCode
 

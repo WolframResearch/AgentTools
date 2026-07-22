@@ -45,6 +45,7 @@ Replace `<ClientName>` with one of the supported clients:
 | Gemini CLI | `"GeminiCLI"` |
 | Junie | `"Junie"` |
 | LM Studio | `"LMStudio"` |
+| MiMo Code | `"MimoCode"` |
 | OpenCode | `"OpenCode"` |
 | Qwen Code | `"QwenCode"` |
 | VS Code | `"VisualStudioCode"` |
