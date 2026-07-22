@@ -124,6 +124,9 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$preferredProtocolVersion;
 `$supportedProtocolVersions;
 
+(* Output sanitization: *)
+`sanitizeResponse;
+
 (* MCP client requests / server-to-client traffic: *)
 `$mcpClientRequests;
 `handleClientResponse;

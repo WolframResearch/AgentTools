@@ -40,10 +40,13 @@ startMCPServer[ obj_ ] /; $Notebooks :=
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 startMCPServer[ obj0_MCPServerObject ] := Enclose[
     Block[ { $currentMCPServer = obj0, $mcpEvaluation = True },
-        superQuiet @ Module[ { logFile, state, response },
+        superQuiet @ Module[ { logFile, state, response, output },
 
         SetOptions[ First @ Streams[ "stdout" ], CharacterEncoding -> "UTF-8" ];
         SetOptions[ First @ Streams[ "stderr" ], CharacterEncoding -> "UTF-8" ];
+
+        (* Apply any cloud base override before anything uses the cloud: *)
+        setCloudBaseFromEnvironment[ ];
 
         cleanupOldOutputLogs[ ];
 
@@ -75,7 +78,12 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
                 response = catchAlways @ processRequest[ ];
                 If[ response =!= EndOfFile, writeLog[ "Response" -> response ] ];
                 If[ AssociationQ @ response,
-                    WriteLine[ "stdout", Developer`WriteRawJSONString[ response, "Compact" -> True ] ];
+                    output = ConfirmBy[
+                        Developer`WriteRawJSONString[ sanitizeResponse @ response, "Compact" -> True ],
+                        StringQ,
+                        "WriteRawJSONString"
+                    ];
+                    WriteLine[ "stdout", output ];
                     If[ TrueQ @ $warmupTools, toolWarmup @ $toolList ],
                     Pause[ 0.1 ]
                 ]
@@ -88,6 +96,22 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
 (* :!CodeAnalysis::EndBlock:: *)
 
 startMCPServer // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*setCloudBaseFromEnvironment*)
+(* Overrides the default cloud base for the server session when the WOLFRAM_CLOUDBASE environment
+   variable is set, e.g. WOLFRAM_CLOUDBASE="https://www.test.wolframcloud.com" (primarily for
+   internal purposes). All cloud operations (MCP Apps notebook deployments, LLMKit subscription
+   checks, etc.) then target that cloud, and UI resources are rewritten to match as they are
+   loaded (see applyCloudBaseToHTML and applyCloudBaseToMeta in UIResources.wl). *)
+setCloudBaseFromEnvironment // beginDefinition;
+
+setCloudBaseFromEnvironment[ ] := setCloudBaseFromEnvironment @ Environment[ "WOLFRAM_CLOUDBASE" ];
+setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := (CloudObject; $CloudBase = StringTrim @ base);
+setCloudBaseFromEnvironment[ _ ] := Null;
+
+setCloudBaseFromEnvironment // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

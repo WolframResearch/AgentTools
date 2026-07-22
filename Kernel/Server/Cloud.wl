@@ -416,12 +416,13 @@ sessionIDHeader // endDefinition;
 (* ::Subsection::Closed:: *)
 (*makeResponseString*)
 (* Serialize a JSON-RPC result for the negotiated media type: compact JSON, or a single Server-Sent
-   Events data frame for text/event-stream. *)
+   Events data frame for text/event-stream. Sanitizes PUA characters before encoding, matching the
+   stdio transport's write path (see sanitizeResponse in Shared.wl). *)
 makeResponseString // beginDefinition;
 makeResponseString[ "application/json", result_ ] :=
-    Developer`WriteRawJSONString[ result, "Compact" -> True ];
+    Developer`WriteRawJSONString[ sanitizeResponse @ result, "Compact" -> True ];
 makeResponseString[ "text/event-stream", result_ ] :=
-    "data: " <> Developer`WriteRawJSONString[ result, "Compact" -> True ] <> "\n\n";
+    "data: " <> Developer`WriteRawJSONString[ sanitizeResponse @ result, "Compact" -> True ] <> "\n\n";
 makeResponseString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)

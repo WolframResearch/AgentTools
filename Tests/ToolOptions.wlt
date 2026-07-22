@@ -38,7 +38,7 @@ VerificationTest[
 VerificationTest[
     Wolfram`AgentTools`Common`$defaultToolOptions[ "WolframLanguageEvaluator" ],
     KeyValuePattern @ {
-        "Method"            -> "Session",
+        "Method"            -> Automatic,
         "ImageExportMethod" -> None,
         "TimeConstraint"    -> 60
     },
@@ -80,7 +80,7 @@ VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$toolOptions = <| |> },
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
     ],
-    "Session",
+    Automatic,
     TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:79,1-85,2"
 ]
 

@@ -562,6 +562,7 @@ Include these environment variables for proper operation:
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
 | `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |
+| `WOLFRAM_CLOUDBASE` | Set to a cloud base URL (e.g. `"https://www.test.wolframcloud.com"`) to override `$CloudBase` for the server session; cloud URLs in [MCP Apps](mcp-apps.md) assets are rewritten to match (optional, primarily for internal purposes) |
 | `LLMKIT_ENABLED` | Set to `"false"` to make the context tools (`WolframContext`, etc.) behave as if the user has no LLMKit subscription, without emitting subscription warnings (optional) |
 | `MCP_TOOL_OPTIONS` | JSON string of tool option overrides, set automatically by `"ToolOptions"` (optional) |
 

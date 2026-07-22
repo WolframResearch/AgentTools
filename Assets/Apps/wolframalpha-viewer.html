@@ -283,6 +283,9 @@
         // auto-sized. The frame starts at this height; the user can drag to resize it.
         var NOTEBOOK_IFRAME_HEIGHT = 200;
 
+        // Default base URL for Wolfram Cloud.
+        var WOLFRAM_CLOUDBASE = "https://www.wolframcloud.com";
+
         // ---- Load WolframNotebookEmbedder dynamically ----
         var embedderLoaded = new Promise(function(resolve, reject) {
             var script = document.createElement("script");
@@ -367,7 +370,7 @@
                 if (item && item.type === "text" && typeof item.text === "string") {
                     var m = item.text.match(re);
                     if (m && m[1].trim()) {
-                        return "https://www.wolframcloud.com/obj/" + m[1].trim();
+                        return WOLFRAM_CLOUDBASE + "/obj/" + m[1].trim() + "?syntaxMethod=editor";
                     }
                 }
             }
@@ -481,12 +484,16 @@
 
         // ---- Restrict the eval-blocked iframe fallback to Wolfram Cloud URLs ----
         // The fallback frames the URL directly (see embedNotebookViaIframe), so only allow
-        // https Wolfram Cloud hosts. A tampered or attacker-controlled result then can't
-        // cause an arbitrary third-party page to load in the iframe. The embedder path is
-        // left unchanged; it still accepts inline notebooks and other targets.
+        // the configured WOLFRAM_CLOUDBASE origin and https Wolfram Cloud hosts. A tampered
+        // or attacker-controlled result then can't cause an arbitrary third-party page to
+        // load in the iframe. The embedder path is left unchanged; it still accepts inline
+        // notebooks and other targets.
         function isWolframCloudUrl(url) {
             try {
                 var u = new URL(url);
+                if (u.origin === new URL(WOLFRAM_CLOUDBASE).origin) {
+                    return true;
+                }
                 return u.protocol === "https:" &&
                     (u.hostname === "wolframcloud.com" || u.hostname.endsWith(".wolframcloud.com"));
             } catch (err) {

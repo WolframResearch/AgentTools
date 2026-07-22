@@ -817,13 +817,18 @@ safeString[ failure: Failure[ "AgentTools::Internal" | "General::ChatbookInterna
     ];
 
 safeString[ failure_Failure ] := With[ { s = failure[ "Message" ] }, "[Error] " <> safeString @ s /; StringQ @ s ];
+safeString[ string_String ] := convertPUACharacters @ string; (* avoid mangling due to StandardForm strings *)
 safeString[ arg_ ] := convertPUACharacters @ ToString @ Unevaluated @ arg;
 safeString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*convertPUACharacters*)
+(* Characters in the Unicode private use area (0xE000-0xF8FF) *)
+$$puaCharacter = RegularExpression[ "[\\x{E000}-\\x{F8FF}]" ];
+
 convertPUACharacters // beginDefinition;
+convertPUACharacters[ str_String ] /; StringFreeQ[ str, $$puaCharacter ] := str;
 convertPUACharacters[ str_String ] := StringJoin[ convertPUACharacters /@ ToCharacterCode @ str ];
 convertPUACharacters[ n_Integer ] /; 57344 <= n <= 63743 := toPrintableASCII @ FromCharacterCode @ n;
 convertPUACharacters[ n_Integer ] := FromCharacterCode @ n;
@@ -835,6 +840,20 @@ convertPUACharacters // endDefinition;
 toPrintableASCII // beginDefinition;
 toPrintableASCII[ expr_ ] := ToString[ Unevaluated @ expr, CharacterEncoding -> "PrintableASCII" ];
 toPrintableASCII // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*sanitizeResponse*)
+(* Applies convertPUACharacters to every string in an outgoing message (a response or a
+   server-to-client request) before it is encoded as JSON.
+   Sanitizing must happen before JSON encoding: the converted output can contain backslash
+   sequences or raw control characters, which would corrupt an already-encoded JSON document. *)
+sanitizeResponse // beginDefinition;
+sanitizeResponse[ response_Association ] := KeyMap[ sanitizeResponse, sanitizeResponse /@ response ];
+sanitizeResponse[ list_List ] := sanitizeResponse /@ list;
+sanitizeResponse[ string_String ] := convertPUACharacters @ string;
+sanitizeResponse[ other_ ] := other;
+sanitizeResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
