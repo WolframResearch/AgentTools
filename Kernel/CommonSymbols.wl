@@ -20,11 +20,13 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$thisPaclet;
 `addToMXInitialization;
 `beginDefinition;
+`binarySerializeWithDefinitions;
 `catchAlways;
 `catchMine;
 `catchTop;
 `catchTopAs;
 `chatbookVersionCheck;
+`cloudDeployDirectory;
 `defaultEnvironment;
 `delayedDisplay;
 `deployCloudNotebookForMCPApp;
@@ -34,12 +36,14 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `ensureDirectory;
 `ensureFilePath;
 `ensureMCPServerExists;
+`extendedFullDefinition;
 `fileNameJoin;
 `fileQ;
 `getLLMKitInfo;
 `getWolframCommand;
 `importResourceFunction;
 `initializeVectorDatabases;
+`llmKitEnabledQ;
 `llmKitSubscribedQ;
 `llmKitUsageLimitFailureQ;
 `llmKitUsageLimitMessage;
@@ -52,6 +56,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `messageFailure;
 `messagePrint;
 `mxInitialize;
+`readCloudWXF;
 `readRawJSONFile;
 `readWXFFile;
 `relatedDocumentation;
@@ -62,6 +67,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `throwTop;
 `toJSRegex;
 `validateMCPServerObjectData;
+`writeCloudWXF;
 `writeRawJSONFile;
 `writeWXFFile;
 
@@ -112,6 +118,15 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `writeError;
 `writeLog;
 
+(* MCP server dispatch (shared by the local and cloud transports): *)
+`handleMethod;
+`initializeServerState;
+`$preferredProtocolVersion;
+`$supportedProtocolVersions;
+
+(* Output sanitization: *)
+`sanitizeResponse;
+
 (* MCP client requests / server-to-client traffic: *)
 `$mcpClientRequests;
 `handleClientResponse;
@@ -134,6 +149,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `initializeUIResources;
 `listUIResources;
 `loadUIResource;
+`makeNotebookUIResult;
 `readUIResource;
 `toolUIMetadata;
 `withToolUIMetadata;

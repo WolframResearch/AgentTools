@@ -554,6 +554,15 @@ Notebook[
          },
          {
           Cell["      ", "ModInfo"],
+          "EnableLLMKit",
+          ButtonBox["Automatic", BaseStyle -> "Link"],
+          Cell[
+           "whether to use LLMKit features in the context tools",
+           "TableText"
+          ]
+         },
+         {
+          Cell["      ", "ModInfo"],
           "EnableMCPApps",
           ButtonBox["True", BaseStyle -> "Link"],
           Cell["whether to enable MCP Apps support", "TableText"]

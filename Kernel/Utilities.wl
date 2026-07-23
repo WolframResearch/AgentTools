@@ -8,16 +8,133 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Definition Utilities*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*binarySerializeWithDefinitions*)
+binarySerializeWithDefinitions // beginDefinition;
+
+binarySerializeWithDefinitions[ expr_, opts: OptionsPattern[ { BinarySerialize, Language`ExtendedFullDefinition } ] ] :=
+    Enclose[
+        Module[ { efdOpts, bsOpts, defList },
+
+            (* Separate options for ExtendedFullDefinition and BinarySerialize: *)
+            efdOpts = Sequence @@ FilterRules[ { opts }, Options @ Language`ExtendedFullDefinition ];
+            bsOpts  = Sequence @@ FilterRules[ { opts }, Options @ BinarySerialize                 ];
+
+            (* Generate the definition list: *)
+            defList = ConfirmMatch[ extendedFullDefinition[ expr, efdOpts ], _Language`DefinitionList, "Definitions" ];
+
+            (* Serialize the expression along with the definition list (if not empty): *)
+            ConfirmBy[
+                With[ { d = defList },
+                    If[ MatchQ[ d, Language`DefinitionList[ ] ],
+                        (* No dependent definitions, so just serialize normally: *)
+                        BinarySerialize[ Unevaluated[ expr ], bsOpts ],
+                        (* Otherwise, inject code to set the definitions upon deserialization: *)
+                        BinarySerialize[ Unevaluated[ Language`ExtendedFullDefinition[ ] = d; expr ], bsOpts ]
+                    ]
+                ],
+                ByteArrayQ,
+                "Result"
+            ]
+        ],
+        throwInternalFailure
+    ];
+
+binarySerializeWithDefinitions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*extendedFullDefinition*)
+(* Expressions like `LLMTool` and `LLMConfiguration` have the `NOENTRY` flag. This blocks the pattern matcher from
+   discovering symbols that are contained within them. Since `LLMTool` in particular typically contains user-defined
+   symbols, we need to remove this flag so that `ExtendedFullDefinition` finds them. This is an alternate version
+   of `ExtendedFullDefinition` that does this automatically by recursively unpacking NOENTRY subexpressions and
+   generating the definition list. *)
+extendedFullDefinition // beginDefinition;
+extendedFullDefinition // Attributes = { HoldFirst };
+
+extendedFullDefinition[ expression_, opts: OptionsPattern[ Language`ExtendedFullDefinition ] ] := Enclose[
+    ConfirmMatch[
+        FixedPoint[
+            Function[ expr, extendedFullDefinition0[ expr, opts ], HoldAllComplete ],
+            HoldComplete @ expression,
+            (* Set a maximum recursion depth as a safety measure: *)
+            Replace[ Quiet @ Ceiling[ $RecursionLimit / 4 ], Except[ _Integer? Positive ] -> 100 ]
+        ],
+        _Language`DefinitionList,
+        "DefinitionList"
+    ],
+    throwInternalFailure
+];
+
+extendedFullDefinition // endDefinition;
+
+
+extendedFullDefinition0 // beginDefinition;
+extendedFullDefinition0 // Attributes = { HoldAllComplete };
+
+extendedFullDefinition0[ expression_, opts: OptionsPattern[ Language`ExtendedFullDefinition ] ] :=
+    With[ { unpacked = unpackNoEntry @ expression },
+        Language`ExtendedFullDefinition[ unpacked, opts ]
+    ];
+
+extendedFullDefinition0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*unpackNoEntry*)
+(* This utility finds subexpressions with the `NOENTRY` flag and reconstructs them without evaluation so that the flag
+   does not get set. Note: The `expression` argument should usually be held to prevent re-evaluation. *)
+unpackNoEntry // beginDefinition;
+
+unpackNoEntry[ expression_ ] :=
+    Module[ { wrapper, unpacked },
+        (* A temporary wrapper is used to prevent re-evaluation of the subexpression: *)
+        SetAttributes[ wrapper, HoldAllComplete ];
+        (* Deconstruct the NOENTRY subexpressions and wrap the heads to prevent re-evaluation: *)
+        unpacked = expression //. e: f_[ a___ ] /; System`Private`HoldNoEntryQ @ e :> wrapper[ f ][ a ];
+        (* Remove the temporary wrapper and return the unpacked expression: *)
+        unpacked //. wrapper[ f_ ] :> f
+    ];
+
+unpackNoEntry // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*LLMKit Information*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*llmKitSubscribedQ*)
+(* The no-argument form additionally requires LLMKit to be enabled for this session
+   (see llmKitEnabledQ). When disabled via "EnableLLMKit" -> False, this returns False and
+   short-circuits before getLLMKitInfo[], so the context tools behave as though the user has
+   no subscription without any cloud lookup or subscription warning. *)
 llmKitSubscribedQ // beginDefinition;
-llmKitSubscribedQ[ ] := llmKitSubscribedQ @ getLLMKitInfo[ ];
+llmKitSubscribedQ[ ] := llmKitEnabledQ[ ] && llmKitSubscribedQ @ getLLMKitInfo[ ];
 llmKitSubscribedQ[ KeyValuePattern[ "userHasSubscription" -> bool: True|False ] ] := bool;
 llmKitSubscribedQ[ _ ] := False;
 llmKitSubscribedQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*llmKitEnabledQ*)
+
+(* Runtime check for the LLMKIT_ENABLED environment variable, which "EnableLLMKit" -> False sets to
+   "false" in the MCP config's env block. The value is interpreted as a Boolean: only a value that reads
+   as False (e.g. "false"/"no"/"0", case-insensitive) disables LLMKit; an unset variable, or any value
+   that does not interpret as False (including non-boolean strings like "maybe"), leaves it enabled. When
+   disabled, the context tools behave as if the user has no LLMKit subscription, but without emitting
+   subscription warnings. *)
+llmKitEnabledQ // beginDefinition;
+
+llmKitEnabledQ[ ] :=
+    Interpreter[ "Boolean" ][ Environment[ "LLMKIT_ENABLED" ] ] =!= False;
+
+llmKitEnabledQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

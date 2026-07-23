@@ -11,6 +11,7 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 (*Config*)
 $installClientName    = None;
 $enableMCPApps        = True;
+$enableLLMKit         = Automatic;
 $installToolOptions   = <| |>;
 $installMCPServerName = Automatic;
 
@@ -27,6 +28,7 @@ InstallMCPServer // beginDefinition;
 InstallMCPServer // Options = {
     "ApplicationName"    -> Automatic,
     "DevelopmentMode"    -> False,
+    "EnableLLMKit"       -> Automatic,
     "EnableMCPApps"      -> True,
     "MCPServerName"      -> Automatic,
     "ProcessEnvironment" -> Automatic,
@@ -52,6 +54,7 @@ InstallMCPServer[ target_File? fileQ, server0_String? pacletQualifiedNameQ, opts
                 {
                     $installClientName    = validateInstallClientName[ OptionValue[ "ApplicationName" ], target ],
                     $enableMCPApps        = OptionValue[ "EnableMCPApps" ],
+                    $enableLLMKit         = OptionValue[ "EnableLLMKit" ],
                     $installToolOptions   = validateToolOptions[ OptionValue[ "ToolOptions" ], server ],
                     $installMCPServerName = OptionValue[ "MCPServerName" ]
                 },
@@ -72,6 +75,7 @@ InstallMCPServer[ target_File? fileQ, server0_, opts: OptionsPattern[ ] ] :=
             {
                 $installClientName    = validateInstallClientName[ OptionValue[ "ApplicationName" ], target ],
                 $enableMCPApps        = OptionValue[ "EnableMCPApps" ],
+                $enableLLMKit         = OptionValue[ "EnableLLMKit" ],
                 $installToolOptions   = validateToolOptions[ OptionValue[ "ToolOptions" ], server ],
                 $installMCPServerName = OptionValue[ "MCPServerName" ]
             },
@@ -403,6 +407,12 @@ validatePacletServerDefinitions // endDefinition;
 (*checkLLMKitRequirements*)
 checkLLMKitRequirements // beginDefinition;
 
+(* When LLMKit is disabled for this installation ("EnableLLMKit" -> False), skip the requirement
+   check entirely so no "subscribe to LLMKit" message or failure is issued -- the server will run
+   with LLMKIT_ENABLED=false and the context tools will behave as if unsubscribed. *)
+checkLLMKitRequirements[ obj_MCPServerObject ] /; $enableLLMKit === False :=
+    None;
+
 checkLLMKitRequirements[ obj_MCPServerObject ] /; llmKitSubscribedQ[ ] :=
     None;
 
@@ -623,6 +633,7 @@ guessClientName[ file_? fileQ ] := Enclose[
             { __, ".amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".aws", "amazonq", "mcp.json" }, Throw[ "AmazonQ" ],
             { __, ".junie", "mcp", "mcp.json" }, Throw[ "Junie" ],
+            { __, ".qwen", "settings.json" }, Throw[ "QwenCode" ],
             { __, ".continue", "config.yaml" }, Throw[ "Continue" ],
             { __, ".continue", "mcpservers", _ }, Throw[ "Continue" ],
             { __, ".lmstudio", "mcp.json" }, Throw[ "LMStudio" ],
@@ -788,6 +799,10 @@ addEnvironmentVariables[ server0_Association, extraEnv0_Association ] := Enclose
         server = ConfirmBy[ server0, AssociationQ, "Server" ];
         env = ConfirmBy[ server[ "env" ], AssociationQ, "Environment" ];
         extraEnv = If[ $enableMCPApps === False, <| extraEnv0, "MCP_APPS_ENABLED" -> "false" |>, extraEnv0 ];
+
+        If[ $enableLLMKit === False,
+            extraEnv = <| extraEnv, "LLMKIT_ENABLED" -> "false" |>
+        ];
 
         If[ AssociationQ @ $installToolOptions && $installToolOptions =!= <| |>,
             extraEnv = <|

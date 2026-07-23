@@ -133,6 +133,7 @@ AgentTools can be installed into the following MCP client applications:
 | [LM Studio](https://lmstudio.ai) | `"LMStudio"` | No |
 | [OpenAI Codex](https://openai.com/codex) | `"Codex"` | Yes |
 | [OpenCode](https://opencode.ai) | `"OpenCode"` | Yes |
+| [Qwen Code](https://github.com/QwenLM/qwen-code) | `"QwenCode"` | Yes |
 | [Visual Studio Code](https://code.visualstudio.com) | `"VisualStudioCode"` | Yes |
 | [Windsurf](https://codeium.com/windsurf) | `"Windsurf"` | No |
 | [Zed](https://zed.dev) | `"Zed"` | Yes |
@@ -321,6 +322,7 @@ CreateMCPServer["My MCP Server", <|
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `"EnableLLMKit"` | `Automatic` | Enable or disable LLMKit features in the context tools; `False` sets `LLMKIT_ENABLED=false` so they behave as unsubscribed with no subscription warnings |
 | `"EnableMCPApps"` | `True` | Enable or disable [MCP Apps](docs/mcp-apps.md) UI resources |
 | `"DevelopmentMode"` | `False` | Use local source files instead of installed paclet |
 | `"MCPServerName"` | `Automatic` | Override the config file key for the server entry |

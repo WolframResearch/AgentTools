@@ -38,4 +38,5 @@ desktop.ini
 *.log
 
 # Private scratch files
+ignore/
 Scratch/

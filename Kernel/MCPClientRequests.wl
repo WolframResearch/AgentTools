@@ -30,7 +30,7 @@ sendClientRequest[ method_String, params_, handler_ ] :=
             "request" -> request,
             "handler" -> handler
         |>;
-        WriteLine[ "stdout", Developer`WriteRawJSONString[ request, "Compact" -> True ] ];
+        WriteLine[ "stdout", Developer`WriteRawJSONString[ sanitizeResponse @ request, "Compact" -> True ] ];
         writeLog[ "ClientRequest" -> request ];
         uuid
     ];

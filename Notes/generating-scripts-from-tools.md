@@ -9,7 +9,7 @@ Out[3]= LLMTool[...]
 
 In[4]:= data = tool["Data"]
 
-Out[4]= <|"Name" -> "TestReport", "DisplayName" -> "Test Report", "Description" -> "Runs Wolfram Language test files (.wlt) and returns a report of the results", "Function" -> Wolfram`AgentTools`Tools`TestReport`Private`testReport, "Options" -> {}, "Paramet ...  constraint (in bytes) for each test file", "Required" -> False|>, "newKernel" -> <|"Interpreter" -> "Boolean", "Help" -> "Whether to use a fresh kernel for running tests (default is true)", "Required" -> False|>}, "LLMPacletVersion" -> "2.2.10"|>
+Out[4]= <|"Name" -> "TestReport", "DisplayName" -> "Test Report", "Description" -> "Runs Wolfram Language test files (.wlt) and returns a report of the results", "Function" -> Wolfram`AgentTools`Tools`TestReport`Private`testReport, "Options" -> {}, "Parameters ...  constraint (in bytes) for each test file", "Required" -> False|>, "newKernel" -> <|"Interpreter" -> "Boolean", "Help" -> "Whether to use a fresh kernel for running tests (default is true)", "Required" -> False|>}, "LLMPacletVersion" -> "2.2.10"|>
 ```
 
 Script name:

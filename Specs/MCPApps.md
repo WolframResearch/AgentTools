@@ -1,3 +1,5 @@
+<!-- cspell: ignore iVBOR -->
+
 # MCP Apps - Design Specification
 
 ## Overview

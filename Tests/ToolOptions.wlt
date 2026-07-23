@@ -38,7 +38,7 @@ VerificationTest[
 VerificationTest[
     Wolfram`AgentTools`Common`$defaultToolOptions[ "WolframLanguageEvaluator" ],
     KeyValuePattern @ {
-        "Method"            -> "Session",
+        "Method"            -> Automatic,
         "ImageExportMethod" -> None,
         "TimeConstraint"    -> 60,
         "MaxCharacterCount" -> 10000
@@ -81,8 +81,8 @@ VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$toolOptions = <| |> },
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
     ],
-    "Session",
-    TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:80,1-86,2"
+    Automatic,
+    TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:79,1-85,2"
 ]
 
 VerificationTest[
@@ -176,35 +176,35 @@ VerificationTest[
 (* ::Section::Closed:: *)
 (*parseToolOptions*)
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ $Failed ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association? AssociationQ,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-Failed@@Tests/ToolOptions.wlt:178,1-183,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ $Failed ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-FailedReturnsAssociation@@Tests/ToolOptions.wlt:185,1-190,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ "" ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "" ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-EmptyString@@Tests/ToolOptions.wlt:192,1-197,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[ "invalid json" ],
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "invalid json" ],
     _Association,
     SameTest -> MatchQ,
     TestID   -> "ParseToolOptions-InvalidJSON@@Tests/ToolOptions.wlt:199,1-204,2"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":{\"Method\":\"Local\"}}"
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
@@ -213,7 +213,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":{\"ImageExportMethod\":\"None\",\"Method\":\"Automatic\"}}"
     ],
     KeyValuePattern[
@@ -224,7 +224,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":123,\"WolframAlphaContext\":{\"MaxItems\":3}}"
     ],
     <| "WolframAlphaContext" -> <| "MaxItems" -> 3 |> |>,
@@ -239,7 +239,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
         ]
@@ -252,7 +252,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
         ]
@@ -265,7 +265,7 @@ VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageContext", "MaxItems" ]
         ]
@@ -281,7 +281,7 @@ VerificationTest[
             "WolframLanguageContext"   -> <| "MaxItems" -> 20 |>
         |>;
         json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
-        parsed = Wolfram`AgentTools`StartMCPServer`Private`parseToolOptions @ json;
+        parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             {
                 Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ],
@@ -300,7 +300,7 @@ VerificationTest[
 (*InstallMCPServer with ToolOptions*)
 VerificationTest[
     Module[ { configFile, name, server, result, data, env },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts_", CreateUUID[] ];
         server = CreateMCPServer[
             name,
@@ -322,7 +322,7 @@ VerificationTest[
 
 VerificationTest[
     Module[ { configFile, name, server, result, data, env, toolOpts },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts2_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts2_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts2_", CreateUUID[] ];
         server = CreateMCPServer[
             name,
@@ -346,7 +346,7 @@ VerificationTest[
 
 VerificationTest[
     Module[ { configFile, name, server, result, data, env },
-        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolopts3_", CreateUUID[], ".json" ] };
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts3_", CreateUUID[], ".json" ] };
         name = StringJoin[ "TestServer_ToolOpts3_", CreateUUID[] ];
         server = CreateMCPServer[
             name,

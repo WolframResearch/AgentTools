@@ -94,7 +94,7 @@ $defaultMCPTools[ "WolframLanguageEvaluator" ] := LLMTool @ <|
 (* ::Subsection::Closed:: *)
 (*Default Tool Options*)
 $defaultToolOptions[ "WolframLanguageEvaluator" ] = <|
-    "Method"            -> "Session",
+    "Method"            -> Automatic,
     "ImageExportMethod" -> None,
     "TimeConstraint"    -> 60,
     "MaxCharacterCount" -> 10000,
@@ -154,12 +154,21 @@ evaluateWolframLanguage0[ code_String, timeConstraint_Integer ] :=
             "MaxCharacterCount"     -> $maxCharacterCount,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
-            "Method"                -> $evaluatorMethod,
+            "Method"                -> getEvaluatorMethod[ ],
             "TimeConstraint"        -> timeConstraint
         ]
     ];
 (* :!CodeAnalysis::EndBlock:: *)
 evaluateWolframLanguage0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*getEvaluatorMethod*)
+getEvaluatorMethod // beginDefinition;
+getEvaluatorMethod[ ] := getEvaluatorMethod @ $evaluatorMethod;
+getEvaluatorMethod[ Automatic ] := If[ $CloudEvaluation, "Cloud", "Session" ];
+getEvaluatorMethod[ other_ ] := other;
+getEvaluatorMethod // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -298,7 +307,7 @@ evaluateWolframLanguageForUI[ code_String, timeConstraint_Integer ] :=
             "MaxCharacterCount"     -> $maxCharacterCount,
             "AppendRetryNotice"     -> False,
             "AppendURIInstructions" -> False,
-            "Method"                -> $evaluatorMethod,
+            "Method"                -> getEvaluatorMethod[ ],
             "TimeConstraint"        -> timeConstraint
         ]
     ];
@@ -358,10 +367,10 @@ makeEvaluatorUIResult[
             "Deployed"
         ];
 
-        If[ StringQ @ deployed,
-            <| "Content" -> textContent, "_meta" -> <| "notebookUrl" -> deployed |> |>,
-            $Failed
-        ]
+        (* Build the UI result: notebookUrl in _meta (the UI-only channel), plus a <result uuid="...">
+           wrapper around the content as a fallback for hosts that drop _meta (ext-apps#696). See
+           makeNotebookUIResult. Returns $Failed if deployment failed. *)
+        makeNotebookUIResult[ textContent, deployed ]
     ],
     throwInternalFailure
 ];
@@ -427,7 +436,7 @@ useEvaluatorKernel // Attributes = { HoldAllComplete };
 
 (* Used for evaluations that need to be run in the same kernel as the evaluator tool (e.g. symbol definitions) *)
 useEvaluatorKernel[ eval_ ] :=
-    If[ $evaluatorMethod === "Local",
+    If[ getEvaluatorMethod[ ] === "Local",
         evaluateInLocalKernel @ eval,
         eval
     ];
@@ -676,7 +685,7 @@ syncEvalKernelLine // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 (* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
-syncEvalKernelLine[ line_Integer ] /; $evaluatorMethod === "Local" :=
+syncEvalKernelLine[ line_Integer ] /; getEvaluatorMethod[ ] === "Local" :=
     Block[ { Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False },
         With[ { n = line }, evaluateInLocalKernel0[ $Line = n ] ]
     ];
@@ -1020,10 +1029,10 @@ sessionInfoContentItem // endDefinition;
 sessionInfoText // beginDefinition;
 
 sessionInfoText[ id_String ] := StringJoin[
-    "\n\n<system-reminder>Wolfram session ID: ", id, ".",
-    If[ $sessionStatus === "reused", " (No saved state was found for this ID, so a new empty session was started.)", "" ],
-    " To continue this session (its definitions, line numbers, and history) in your next call to this tool, pass session=\"", id,
-    "\". Omit the session parameter only to start a new, empty session.</system-reminder>"
+    "\n\n<system-reminder>",
+    If[ $sessionStatus === "reused", "No saved state was found for the requested session ID, so a new empty session was started. ", "" ],
+    "Pass session=\"", id, "\" in future calls to this tool to continue this session.",
+    "</system-reminder>"
 ];
 
 sessionInfoText // endDefinition;

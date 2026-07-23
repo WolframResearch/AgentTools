@@ -52,7 +52,7 @@ VerificationTest[
 
 VerificationTest[
     StringContainsQ[
-        ToString[ Wolfram`AgentTools`StartMCPServer`Private`toolSchema @ $DefaultMCPTools[ "WolframLanguageEvaluator" ], InputForm ],
+        ToString[ Wolfram`AgentTools`Server`Shared`Private`toolSchema @ $DefaultMCPTools[ "WolframLanguageEvaluator" ], InputForm ],
         "session"
     ],
     True,
@@ -165,11 +165,11 @@ VerificationTest[
 (* ::Section::Closed:: *)
 (*cleanupSessions*)
 VerificationTest[
-    Module[ { root, sdir, result },
+    Module[ { root, sDir, result },
         root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsCleanup_" <> CreateUUID[ ] };
-        sdir = FileNameJoin @ { root, "Sessions" };
-        CreateDirectory[ sdir, CreateIntermediateDirectories -> True ];
-        Do[ Export[ FileNameJoin @ { sdir, "s" <> ToString[ i ] <> ".mx" }, i, "MX" ], { i, 5 } ];
+        sDir = FileNameJoin @ { root, "Sessions" };
+        CreateDirectory[ sDir, CreateIntermediateDirectories -> True ];
+        Do[ Export[ FileNameJoin @ { sDir, "s" <> ToString[ i ] <> ".mx" }, i, "MX" ], { i, 5 } ];
         Block[
             {
                 Wolfram`AgentTools`Common`$rootPath = root,
@@ -177,7 +177,7 @@ VerificationTest[
             },
             Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`cleanupSessions[ 3, Infinity, None ]
         ];
-        result = Length @ FileNames[ "*.mx", sdir ];
+        result = Length @ FileNames[ "*.mx", sDir ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         result
     ],
@@ -186,11 +186,11 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Module[ { root, sdir, result },
+    Module[ { root, sDir, result },
         root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsCleanup_" <> CreateUUID[ ] };
-        sdir = FileNameJoin @ { root, "Sessions" };
-        CreateDirectory[ sdir, CreateIntermediateDirectories -> True ];
-        Do[ Export[ FileNameJoin @ { sdir, "keep" <> ToString[ i ] <> ".mx" }, i, "MX" ], { i, 3 } ];
+        sDir = FileNameJoin @ { root, "Sessions" };
+        CreateDirectory[ sDir, CreateIntermediateDirectories -> True ];
+        Do[ Export[ FileNameJoin @ { sDir, "keep" <> ToString[ i ] <> ".mx" }, i, "MX" ], { i, 3 } ];
         Block[
             {
                 Wolfram`AgentTools`Common`$rootPath = root,
@@ -199,7 +199,7 @@ VerificationTest[
             (* maxCount 0 deletes every non-current file; the current session must survive *)
             Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`cleanupSessions[ 0, Infinity, None ]
         ];
-        result = FileBaseName /@ FileNames[ "*.mx", sdir ];
+        result = FileBaseName /@ FileNames[ "*.mx", sDir ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         result
     ],
@@ -274,7 +274,7 @@ VerificationTest[
         ]
     ],
     True,
-    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:269,1-278,2"
+    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:283,1-292,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -287,13 +287,13 @@ VerificationTest[
         Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLine[ 5 ]
     ],
     Null,
-    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:285,1-291,2"
+    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:299,1-305,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLineSafe[ "not an integer" ],
     Null,
-    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:293,1-297,2"
+    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:307,1-311,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -305,7 +305,7 @@ VerificationTest[
 (* Definitions in one session do not leak into another; switching back resumes the right state. *)
 VerificationTest[
     Module[ { root, tool, r3 },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -313,21 +313,21 @@ VerificationTest[
                 Wolfram`AgentTools`Common`$clientSupportsUI  = False,
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
             },
-            tool[ <| "code" -> "isoX = 42", "session" -> "IsoSessA" |> ];
-            tool[ <| "code" -> "isoX = 7",  "session" -> "IsoSessB" |> ];
-            r3 = tool[ <| "code" -> "isoX", "session" -> "IsoSessA" |> ]
+            tool[ <| "code" -> "isoX = 42", "session" -> "IsoSessionA" |> ];
+            tool[ <| "code" -> "isoX = 7",  "session" -> "IsoSessionB" |> ];
+            r3 = tool[ <| "code" -> "isoX", "session" -> "IsoSessionA" |> ]
         ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:306,1-325,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:320,1-339,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
 VerificationTest[
     Module[ { root, tool, r2, text },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -335,21 +335,21 @@ VerificationTest[
                 Wolfram`AgentTools`Common`$clientSupportsUI  = False,
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
             },
-            tool[ <| "code" -> "cy = 5", "session" -> "ContSess" |> ];
-            r2 = tool[ <| "code" -> "cy + 1", "session" -> "ContSess" |> ]
+            tool[ <| "code" -> "cy = 5", "session" -> "ContSession" |> ];
+            r2 = tool[ <| "code" -> "cy + 1", "session" -> "ContSession" |> ]
         ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         text = extractToolText @ r2;
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:328,1-347,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:342,1-361,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
 VerificationTest[
     Module[ { root, tool, r2 },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -357,23 +357,23 @@ VerificationTest[
                 Wolfram`AgentTools`Common`$clientSupportsUI  = False,
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
             },
-            tool[ <| "code" -> "restartY = 99", "session" -> "RestartSess" |> ];
+            tool[ <| "code" -> "restartY = 99", "session" -> "RestartSession" |> ];
             (* Simulate a server restart: drop the in-kernel session symbols and the live session pointer *)
-            Quiet @ Remove[ "Sessions`RestartSess`*" ];
+            Quiet @ Remove[ "Sessions`RestartSession`*" ];
             Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None;
-            r2 = tool[ <| "code" -> "restartY", "session" -> "RestartSess" |> ]
+            r2 = tool[ <| "code" -> "restartY", "session" -> "RestartSession" |> ]
         ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:350,1-371,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:364,1-385,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
 VerificationTest[
     Module[ { root, tool, r },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -381,19 +381,19 @@ VerificationTest[
                 Wolfram`AgentTools`Common`$clientSupportsUI  = False,
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
             },
-            r = tool[ <| "code" -> "1 + 1", "session" -> "AppendSess" |> ]
+            r = tool[ <| "code" -> "1 + 1", "session" -> "AppendSession" |> ]
         ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
-        StringContainsQ[ extractToolText @ r, "session=\"AppendSess\"" ]
+        StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:374,1-391,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:388,1-405,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
 VerificationTest[
     Module[ { root, tool, r },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -401,13 +401,13 @@ VerificationTest[
                 Wolfram`AgentTools`Common`$clientSupportsUI  = False,
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
             },
-            r = tool[ <| "code" -> "1 + 1", "session" -> "LineSess" |> ]
+            r = tool[ <| "code" -> "1 + 1", "session" -> "LineSession" |> ]
         ];
         Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:394,1-411,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:408,1-425,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -415,7 +415,7 @@ VerificationTest[
    test for the cross-session line-number bug. *)
 VerificationTest[
     Module[ { root, tool, r },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         Block[
             {
@@ -432,13 +432,13 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:416,1-436,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:430,1-450,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
 VerificationTest[
     Module[ { root, tool, text },
-        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSess_" <> CreateUUID[ ] };
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
         tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
         text = Block[
             {
@@ -452,7 +452,7 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:439,1-456,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:453,1-470,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

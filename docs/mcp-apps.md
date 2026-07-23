@@ -29,6 +29,8 @@ The server checks two conditions before enabling MCP Apps:
 - The client must advertise `io.modelcontextprotocol/ui` in `capabilities.extensions`
 - The `MCP_APPS_ENABLED` environment variable must not be set to `"false"`
 
+> **Cloud deployments.** MCP Apps are also supported by [cloud-deployed servers](cloud-deployment.md), whose stateless HTTP transport has no session store to hold `$clientSupportsUI` between requests. There, the negotiated capability is carried in a self-describing `Mcp-Session-Id` header that the client echoes on each request, re-establishing the same flag per request. If a client does not echo the session ID, MCP Apps simply stays off (fail-safe).
+
 ### UI Resources
 
 UI resources are HTML apps served via the MCP `resources/read` endpoint. Each resource is identified by a `ui://` URI (e.g., `ui://wolfram/wolframalpha-viewer`).
@@ -96,6 +98,51 @@ The same `notebookUrl` field carries both forms. Each viewer app (`evaluator-vie
 Inline embedding is **experimental and not yet the default**. Both methods currently require an active cloud connection, since the UI-enhanced path is gated on `$deployCloudNotebooks` regardless of the delivery method (the `"Inline"` branch only asserts the flag rather than deploying).
 
 When inline embedding is active, graphics can render empty in the embedded notebook. The `delayedDisplay` helper works around this for `WolframLanguageEvaluator` output: any output boxes containing `GraphicsBox`/`Graphics3DBox` are serialized and reconstructed asynchronously inside a `DynamicModule` (showing a progress indicator until ready). Outside inline mode, or for output without graphics, `delayedDisplay` returns the boxes unchanged.
+
+### Rendering the Notebook: Embedder vs. Cross-Origin Iframe
+
+`WolframNotebookEmbedder.embed` does **not** use an iframe. It fetches `wolframcloud.com/notebooks/embedding` and injects the cloud notebook engine's scripts (`mainScript` + `otherScripts`) directly into the **app document**, where the engine then runs. That engine uses `eval`/`new Function` and WebAssembly, all of which the browser gates on the app iframe's CSP `script-src 'unsafe-eval'` (WASM additionally on `'wasm-unsafe-eval'`).
+
+Strict MCP hosts build the app sandbox CSP **without** `'unsafe-eval'`, and there is no way for the server to add it. Goose, for example, constructs the CSP server-side (`crates/goose/src/acp/mcp_app_proxy.rs`) and runs every declared `csp` domain through a validator (`normalize_csp_source`) that rejects any entry containing a `'` (single quote) — so quoted keyword-sources like `'unsafe-eval'`/`'wasm-unsafe-eval'` are dropped, exactly as `data:` in `connectDomains` is dropped. Under such a CSP the injected engine throws `EvalError` and the notebook never renders, even though the embedder's `embed()` promise resolves.
+
+To render the notebook anyway, each embedding viewer (`evaluator-viewer`, `notebook-viewer`, `wolframalpha-viewer`) probes eval capability once at startup with `cspAllowsEval` (a synchronous `new Function("")`, which throws under a no-`'unsafe-eval'` policy):
+
+- **eval permitted** → use `WolframNotebookEmbedder` as before (in-document render, fit-to-content sizing).
+- **eval blocked** → `embedNotebookViaIframe` points a plain cross-origin `<iframe>` straight at the cloud notebook URL. The notebook then renders inside `wolframcloud.com`'s own origin under *its* CSP (which permits `unsafe-eval`), fully isolated from the app's CSP. The app's `frame-src` already allows `https://www.wolframcloud.com`, and the notebook is deployed chrome-free (`AppearanceElements -> None`), so the framed page shows just the notebook.
+
+The fallback is additive — nothing changes on eval-permitting hosts. Two constraints are worth noting:
+
+- **Sizing.** A cross-origin iframe can't be measured by the app, so it opens at a default height (`NOTEBOOK_IFRAME_HEIGHT`, 200 px; `notebook-viewer` uses a finite positive `maxHeight` tool argument when given) that the user can grow with a drag handle along the frame's bottom edge (`makeResizableFrame`), with internal scrolling, rather than the embedder's fit-to-content sizing. A native corner `resize` grip is avoided because the framed notebook's own scrollbar sits on top of it and swallows the clicks.
+- **Cloud URLs only.** Only an `http(s)` cloud URL can be framed. Inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry a serialized expression with no URL, so on an eval-blocked host they fall through to the text/image result — another reason inline delivery remains experimental.
+
+### Recovering the Notebook URL When `_meta` Is Dropped
+
+The `notebookUrl` is delivered to the app through `_meta`, which is meant to reach the app without entering model context. (The MCP Apps spec also defines `structuredContent` for this, but the server deliberately does **not** send it: some clients discard a tool result's `content` — text and images — entirely when `structuredContent` is present, which we do not want.) Some hosts, however, drop `_meta` from tool results ([ext-apps#696](https://github.com/modelcontextprotocol/ext-apps/issues/696)), so the app never receives the URL directly and can only render the text/image fallback. Those same hosts also do not forward app-initiated `resources/read` (they answer it with JSON-RPC `-32601 "Method not found"`), so the app cannot ask the server for the URL either.
+
+The one channel that does survive is the tool result's `content`. So for cloud-notebook results, `makeNotebookUIResult` wraps the content in a `<result uuid="…">…</result>` marker whose `uuid` identifies the deployed cloud notebook (a text item before and after the result text):
+
+```
+<result uuid="e0f29bea-667b-4780-b36b-59de225e660e">
+Out[1]= 2543568463
+</result>
+```
+
+Notebooks are deployed with `CloudObjectNameFormat -> "UUID"`, so the deployed URL is already `https://www.wolframcloud.com/obj/<uuid>` and the `uuid` is recovered from it with no extra round-trip (`cloudNotebookUUID`). When a viewer sees a result with no `notebookUrl` in `_meta`, it falls back to `extractNotebookUrlMarker`, which reads the `uuid` from the marker and reconstructs the same cloud URL as `https://www.wolframcloud.com/obj/<uuid>`. Both delivery paths carry a `syntaxMethod=editor` query parameter on the embedded-notebook URL: the server appends it to `notebookUrl` (`notebookEmbedURL`), and the viewers append the same parameter when reconstructing from the marker — the two must stay in sync. Each text-rendering viewer also strips the surrounding `<result>` tags (via `stripAgentOnlyText`), keeping the wrapped result text, so the tags never reach the user.
+
+This path applies only to cloud delivery: inline notebooks (`MCP_APPS_NOTEBOOK_METHOD="Inline"`) carry the whole serialized notebook, which is delivered via `_meta` only, so no wrapper is added. The `notebook-viewer` app normally receives its URL through the tool **input** (`arguments.url`), which is unaffected by the dropped-`_meta` issue; it applies the same marker recovery only as a fallback when a result arrives without a prior embed.
+
+### Custom Cloud Base
+
+All cloud URLs above assume the production cloud, `https://www.wolframcloud.com`. Setting the `WOLFRAM_CLOUDBASE` environment variable (primarily for internal purposes) points the server at a different cloud:
+
+```json
+"env": { "WOLFRAM_CLOUDBASE": "https://www.test.wolframcloud.com" }
+```
+
+At server startup, `setCloudBaseFromEnvironment` assigns the value to `$CloudBase`, so notebook deployments (and every other cloud operation) target that cloud. The static app assets are adjusted to match as they are loaded from disk (`loadUIResource`):
+
+- Each viewer declares the cloud base in a `var WOLFRAM_CLOUDBASE = "https://www.wolframcloud.com";` assignment, which it uses to reconstruct notebook URLs from `<result uuid="…">` markers and to accept the configured origin in the iframe-fallback URL check (`isWolframCloudUrl`). The sandboxed JavaScript cannot read environment variables, so `applyCloudBaseToHTML` rewrites this assignment via string replacement when the HTML is read.
+- The JSON metadata's CSP domain lists (`connectDomains`, `resourceDomains`, `frameDomains`) must also allow the custom cloud, so `applyCloudBaseToMeta` prepends the custom base to every list that allows the default base. The default entries are kept so production URLs remain reachable (e.g. `wolfr.am` frames can redirect to production).
 
 ## Available UI Resources
 
@@ -212,7 +259,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | File | Description |
 |------|-------------|
 | `Kernel/UIResources.wl` | UI resource registry, capability detection, tool-UI metadata |
-| `Kernel/StartMCPServer.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
+| `Kernel/Server/Shared.wl` | Protocol handling for `resources/list`, `resources/read`, and `_meta` forwarding |
 | `Kernel/CommonSymbols.wl` | Shared symbols for MCP Apps (`$clientSupportsUI`, `$uiResourceRegistry`, etc.) |
 | `Kernel/InstallMCPServer.wl` | `"EnableMCPApps"` option and `MCP_APPS_ENABLED` environment variable |
 | `Kernel/Messages.wl` | Error messages for UI resources |
@@ -231,6 +278,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
 | `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
 | `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
+| `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs wraps the content in a `<result uuid="…">…</result>` marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |
@@ -239,10 +287,15 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `readUIResource` | `Common` | Handles `resources/read` requests |
 | `toolUIMetadata` | `Common` | Returns `_meta.ui` for a tool name |
 | `withToolUIMetadata` | `Common` | Augments a tool list with UI metadata |
+| `notebookEmbedURL` | `UIResources` (private) | Appends the `syntaxMethod=editor` query parameter to a deployed notebook URL for `_meta.notebookUrl`; inline (non-URL) values pass through |
+| `setCloudBaseFromEnvironment` | `Server`Local` (private) | Applies the `WOLFRAM_CLOUDBASE` environment variable to `$CloudBase` at server startup |
+| `applyCloudBaseToHTML` | `UIResources` (private) | Rewrites a viewer's `var WOLFRAM_CLOUDBASE = "…"` assignment when a custom cloud base is in effect |
+| `applyCloudBaseToMeta` | `UIResources` (private) | Prepends a custom cloud base to the CSP domain lists in app JSON metadata |
 
 ## Related Documentation
 
 - [MCP Apps specification](https://modelcontextprotocol.io/docs/extensions/apps) - Official MCP Apps documentation
 - [tools.md](tools.md) - MCP tools system and how to add new tools
 - [servers.md](servers.md) - Predefined server configurations
+- [cloud-deployment.md](cloud-deployment.md) - Cloud deployment and MCP Apps over the stateless HTTP transport
 - [mcp-clients.md](mcp-clients.md) - Client support and `EnableMCPApps` option

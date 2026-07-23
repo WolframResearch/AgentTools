@@ -1,3 +1,5 @@
+<!-- cspell: ignore continuedev, asar -->
+
 # MCP Client Support in AgentTools
 
 This document explains how AgentTools supports different MCP client applications and how to install MCP servers into them.
@@ -31,6 +33,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | LM Studio | `"LMStudio"` | — | JSON | No | `"Wolfram"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
 | OpenCode | `"OpenCode"` | — | JSON | Yes | `"WolframLanguage"` |
+| Qwen Code | `"QwenCode"` | `"Qwen"` | JSON | Yes | `"WolframLanguage"` |
 | Visual Studio Code | `"VisualStudioCode"` | `"VSCode"` | JSON | Yes | `"WolframLanguage"` |
 | Windsurf | `"Windsurf"` | `"Codeium"` | JSON | No | `"WolframLanguage"` |
 | Zed | `"Zed"` | — | JSON | Yes | `"WolframLanguage"` |
@@ -260,6 +263,19 @@ Note: Copilot CLI requires the `tools` field to specify which tools to enable. `
 
 **Format:** Same as Claude Desktop (`mcpServers` key).
 
+### Qwen Code
+
+Qwen Code is Alibaba's terminal coding agent, forked from Gemini CLI. It reads MCP servers from the `mcpServers` key of its `settings.json`, at both user and project scope.
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.qwen/settings.json` |
+| Project | `.qwen/settings.json` (in project root) |
+
+**Format:** Same as Claude Desktop (`mcpServers` key).
+
+Note: Qwen Code shares Gemini CLI's config structure but, unlike Gemini CLI, also supports a project-scope `.qwen/settings.json`, so `InstallMCPServer[{"QwenCode", "/path/to/project"}]` installs a server for just that project. Qwen Code auto-migrates older `settings.json` layouts, but `mcpServers` remains a root-level key.
+
 ### Antigravity (IDE, desktop app, and CLI)
 
 A **single** `"Antigravity"` client entry covers the Antigravity IDE, the Antigravity 2.0 desktop app, and the Antigravity CLI (the terminal agent that replaces Gemini CLI for free / consumer tiers on **June 18, 2026**). `"AntigravityCLI"`, `"GoogleAntigravity"`, and `"GoogleAntigravityCLI"` are **aliases** of this entry — not separate clients. They share one global config file, so a single entry is required: two entries pointing at the same file would let `DeployAgentTools` create two deployments for one file and let `DeleteObject[AgentToolsDeployment[...]]` corrupt shared state.
@@ -276,7 +292,7 @@ A **single** `"Antigravity"` client entry covers the Antigravity IDE, the Antigr
 
 Notes:
 - **Do not** put a server in `~/.gemini/antigravity-cli/mcp_config.json` (the CLI's data dir holds skills/cache/settings only, not MCP config). The CLI reads `~/.gemini/config/mcp_config.json`; a stray server in the `antigravity-cli/` dir is reconciled against the real entry as a duplicate. If you have one, delete it.
-- The CLI's `/mcp` command reloads the config, which **stops** the running server first. The Wolfram MCP server exits cleanly when the CLI closes its stdin (the MCP stdio shutdown signal). Older paclet builds did not — on Windows the kernel kept spinning after stdin closed, the CLI force-killed it after a timeout, and Go's exec reported the kill as `failed to reload MCP config: failed to stop mcp instance: Wolfram: exit status 1`. Fixed in `StartMCPServer.wl` (`stdinShutdownQ`); update to the latest paclet build if you hit it.
+- The CLI's `/mcp` command reloads the config, which **stops** the running server first. The Wolfram MCP server exits cleanly when the CLI closes its stdin (the MCP stdio shutdown signal). Older paclet builds did not — on Windows the kernel kept spinning after stdin closed, the CLI force-killed it after a timeout, and Go's exec reported the kill as `failed to reload MCP config: failed to stop mcp instance: Wolfram: exit status 1`. Fixed in `Kernel/Server/Local.wl` (`stdinShutdownQ`); update to the latest paclet build if you hit it.
 - Workspace skills moved from Gemini CLI's `.gemini/skills/` to Antigravity CLI's `~/.gemini/antigravity-cli/skills/` (global) and `.agents/skills/` (workspace), and workspace MCP config moved from `.gemini/settings.json` to `.agents/mcp_config.json`.
 - Antigravity CLI renamed the HTTP-transport field from `"url"` (Gemini CLI) to `"serverUrl"`. The Wolfram MCP server is stdio (`command`/`args`), so this doesn't affect `InstallMCPServer` output — relevant only if you hand-edit an HTTP entry.
 
@@ -546,6 +562,8 @@ Include these environment variables for proper operation:
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
 | `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |
+| `WOLFRAM_CLOUDBASE` | Set to a cloud base URL (e.g. `"https://www.test.wolframcloud.com"`) to override `$CloudBase` for the server session; cloud URLs in [MCP Apps](mcp-apps.md) assets are rewritten to match (optional, primarily for internal purposes) |
+| `LLMKIT_ENABLED` | Set to `"false"` to make the context tools (`WolframContext`, etc.) behave as if the user has no LLMKit subscription, without emitting subscription warnings (optional) |
 | `MCP_TOOL_OPTIONS` | JSON string of tool option overrides, set automatically by `"ToolOptions"` (optional) |
 
 ### Getting the Configuration
@@ -593,6 +611,20 @@ By default, `InstallMCPServer` includes:
 - `WOLFRAM_BASE`
 - `WOLFRAM_USERBASE`
 - `APPDATA` (Windows only)
+
+### EnableLLMKit
+
+Controls whether the [LLMKit](https://www.wolfram.com/notebook-assistant-llm-kit)-backed features of the context tools (`WolframContext`, `WolframAlphaContext`, `WolframLanguageContext`) are enabled for the installed server:
+
+| Value | Behavior |
+|-------|----------|
+| `Automatic` (default) | Equivalent to `True` |
+| `True` | LLMKit features are enabled; the context tools use the LLMKit subscription when available |
+| `False` | LLMKit features are disabled; sets `LLMKIT_ENABLED=false` in the server environment. The context tools then behave as if the user has no LLMKit subscription, but no subscription warnings are shown, and the install-time subscription check is skipped |
+
+```wl
+InstallMCPServer["ClaudeDesktop", "EnableLLMKit" -> False]
+```
 
 ### EnableMCPApps
 

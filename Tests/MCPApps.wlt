@@ -233,7 +233,7 @@ VerificationTest[
 (*Extensions Included for UI Clients*)
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = True },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         ! MissingQ @ result[ "capabilities", "extensions", "io.modelcontextprotocol/ui" ]
@@ -245,7 +245,7 @@ VerificationTest[
 
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = True },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         result[ "capabilities", "extensions", "io.modelcontextprotocol/ui" ]
@@ -257,7 +257,7 @@ VerificationTest[
 
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = True },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         result[ "capabilities", "extensions", "io.modelcontextprotocol/ui", "mimeTypes" ]
@@ -272,7 +272,7 @@ VerificationTest[
 (*Extensions Omitted for Non-UI Clients*)
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = False },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         MissingQ @ result[ "capabilities", "extensions" ]
@@ -284,7 +284,7 @@ VerificationTest[
 
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         MissingQ @ result[ "capabilities", "extensions" ]
@@ -299,7 +299,7 @@ VerificationTest[
 (*Standard Response Fields*)
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = True },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         { KeyExistsQ[ result, "protocolVersion" ], KeyExistsQ[ result, "capabilities" ], KeyExistsQ[ result, "serverInfo" ] }
@@ -311,7 +311,7 @@ VerificationTest[
 
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = False },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }, <| |>
         ];
         result[ "serverInfo" ]
@@ -326,7 +326,7 @@ VerificationTest[
 (*Backward Compatibility*)
 VerificationTest[
     Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = False },
-        result = Wolfram`AgentTools`StartMCPServer`Private`initResponse[
+        result = Wolfram`AgentTools`Server`Shared`Private`initResponse[
             "TestServer", "1.0.0", { }, { }
         ];
         AssociationQ @ result && KeyExistsQ[ result, "protocolVersion" ]
@@ -701,7 +701,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleResourceRead[
+        Wolfram`AgentTools`Server`Shared`Private`handleResourceRead[
             <| "params" -> <| "uri" -> "ui://wolfram/wolframalpha-viewer" |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
         ]
@@ -724,7 +724,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleResourceRead[
+        Wolfram`AgentTools`Server`Shared`Private`handleResourceRead[
             <| "params" -> <| "uri" -> "ui://wolfram/nonexistent" |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 2 |>
         ]
@@ -747,7 +747,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        response = Wolfram`AgentTools`StartMCPServer`Private`handleResourceRead[
+        response = Wolfram`AgentTools`Server`Shared`Private`handleResourceRead[
             <| "params" -> <| "uri" -> "ui://wolfram/nonexistent" |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 5 |>
         ];
@@ -767,7 +767,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        response = Wolfram`AgentTools`StartMCPServer`Private`handleResourceRead[
+        response = Wolfram`AgentTools`Server`Shared`Private`handleResourceRead[
             <| "params" -> <| "uri" -> 999 |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 6 |>
         ];
@@ -787,7 +787,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        response = Wolfram`AgentTools`StartMCPServer`Private`handleResourceRead[
+        response = Wolfram`AgentTools`Server`Shared`Private`handleResourceRead[
             <| "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 7 |>
         ];
@@ -808,7 +808,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        Wolfram`AgentTools`Common`handleMethod[
             "resources/list",
             <| "method" -> "resources/list", "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
@@ -827,7 +827,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        Wolfram`AgentTools`Common`handleMethod[
             "resources/list",
             <| "method" -> "resources/list", "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
@@ -850,7 +850,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        Wolfram`AgentTools`Common`handleMethod[
             "resources/read",
             <| "method" -> "resources/read", "params" -> <| "uri" -> "ui://wolfram/wolframalpha-viewer" |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 2 |>
@@ -873,7 +873,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`$uiResourceRegistry
     },
         Wolfram`AgentTools`Common`initializeUIResources[ ];
-        Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        Wolfram`AgentTools`Common`handleMethod[
             "resources/read",
             <| "method" -> "resources/read", "params" -> <| "uri" -> "ui://wolfram/unknown" |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 3 |>
@@ -1084,12 +1084,12 @@ VerificationTest[
     Block[ {
         Wolfram`AgentTools`Common`$clientSupportsUI    = True,
         Wolfram`AgentTools`Common`$deployCloudNotebooks = True,
-        Wolfram`AgentTools`StartMCPServer`Private`$toolList = {
+        Wolfram`AgentTools`Server`$toolList = {
             <| "name" -> "WolframAlpha", "description" -> "test", "inputSchema" -> <| |> |>,
             <| "name" -> "OtherTool",    "description" -> "test", "inputSchema" -> <| |> |>
         }
     },
-        result = Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        result = Wolfram`AgentTools`Common`handleMethod[
             "tools/list",
             <| "method" -> "tools/list", "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
@@ -1106,12 +1106,12 @@ VerificationTest[
     Block[ {
         Wolfram`AgentTools`Common`$clientSupportsUI    = True,
         Wolfram`AgentTools`Common`$deployCloudNotebooks = True,
-        Wolfram`AgentTools`StartMCPServer`Private`$toolList = {
+        Wolfram`AgentTools`Server`$toolList = {
             <| "name" -> "WolframAlpha", "description" -> "test", "inputSchema" -> <| |> |>,
             <| "name" -> "OtherTool",    "description" -> "test", "inputSchema" -> <| |> |>
         }
     },
-        result = Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        result = Wolfram`AgentTools`Common`handleMethod[
             "tools/list",
             <| "method" -> "tools/list", "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
@@ -1127,11 +1127,11 @@ VerificationTest[
 VerificationTest[
     Block[ {
         Wolfram`AgentTools`Common`$clientSupportsUI = False,
-        Wolfram`AgentTools`StartMCPServer`Private`$toolList = {
+        Wolfram`AgentTools`Server`$toolList = {
             <| "name" -> "WolframAlpha", "description" -> "test", "inputSchema" -> <| |> |>
         }
     },
-        result = Wolfram`AgentTools`StartMCPServer`Private`handleMethod[
+        result = Wolfram`AgentTools`Common`handleMethod[
             "tools/list",
             <| "method" -> "tools/list", "params" -> <| |> |>,
             <| "jsonrpc" -> "2.0", "id" -> 1 |>
@@ -1264,6 +1264,153 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*makeNotebookUIResult*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Cloud URL Wraps Result In Marker*)
+VerificationTest[
+    Module[ { uuid, url, result, content, joined },
+        uuid    = "e0f29bea-667b-4780-b36b-59de225e660e";
+        url     = "https://www.wolframcloud.com/obj/" <> uuid;
+        result  = Wolfram`AgentTools`Common`makeNotebookUIResult[
+            { <| "type" -> "text", "text" -> "1 + 1 = 2" |> },
+            url
+        ];
+        content = result[ "Content" ];
+        joined  = StringJoin[ #[ "text" ] & /@ content ];
+        {
+            (* The single text item is wrapped by an opening and a closing tag item *)
+            Length @ content,
+            StringContainsQ[ joined, "<result uuid=\"" <> uuid <> "\">" ],
+            StringContainsQ[ joined, "</result>" ],
+            (* The original result text is preserved between the tags *)
+            StringContainsQ[ joined, "1 + 1 = 2" ],
+            result[ "_meta", "notebookUrl" ],
+            (* structuredContent must not be produced: some clients drop content when it is present *)
+            KeyExistsQ[ result, "StructuredContent" ]
+        }
+    ],
+    {
+        3,
+        True,
+        True,
+        True,
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e?syntaxMethod=editor",
+        False
+    },
+    SameTest -> MatchQ,
+    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult@@Tests/MCPApps.wlt:1272,1-1304,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Marker UUID Is Recoverable*)
+(* Mirrors the viewers' extraction: the uuid must sit inside <result uuid="..."> in the wrapped
+   content so the client regex <result uuid="(...)"> can recover it and rebuild the cloud URL as
+   https://www.wolframcloud.com/obj/<uuid>. *)
+VerificationTest[
+    Module[ { uuid, url, result, joined, recovered },
+        uuid      = "e0f29bea-667b-4780-b36b-59de225e660e";
+        url       = "https://www.wolframcloud.com/obj/" <> uuid;
+        result    = Wolfram`AgentTools`Common`makeNotebookUIResult[
+            { <| "type" -> "text", "text" -> "x" |> },
+            url
+        ];
+        joined    = StringJoin[ #[ "text" ] & /@ result[ "Content" ] ];
+        recovered = First[
+            StringCases[ joined, "<result uuid=\"" ~~ u: Except[ "\"" ].. ~~ "\">" :> u ],
+            None
+        ];
+        { recovered, "https://www.wolframcloud.com/obj/" <> recovered }
+    ],
+    {
+        "e0f29bea-667b-4780-b36b-59de225e660e",
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
+    },
+    SameTest -> MatchQ,
+    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable@@Tests/MCPApps.wlt:1312,1-1333,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookEmbedURL Appends the Syntax Method Parameter*)
+(* The parameter must match the one the viewers append when reconstructing a URL from the
+   <result uuid="..."> marker, so both delivery paths open the notebook the same way. *)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
+    ],
+    "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e?syntaxMethod=editor",
+    SameTest -> Equal,
+    TestID   -> "NotebookEmbedURL-AppendsParameter@@Tests/MCPApps.wlt:1340,1-1347,2"
+]
+
+(* A URL that already has a query string gets the parameter appended with & *)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "https://www.wolframcloud.com/obj/x?a=1" ],
+    "https://www.wolframcloud.com/obj/x?a=1&syntaxMethod=editor",
+    SameTest -> Equal,
+    TestID   -> "NotebookEmbedURL-AppendsToExistingQuery@@Tests/MCPApps.wlt:1350,1-1355,2"
+]
+
+(* Inline serialized notebooks are not URLs and pass through unchanged *)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "Notebook[{Cell[\"1 + 1\", \"Input\"]}]" ],
+    "Notebook[{Cell[\"1 + 1\", \"Input\"]}]",
+    SameTest -> Equal,
+    TestID   -> "NotebookEmbedURL-InlinePassthrough@@Tests/MCPApps.wlt:1358,1-1363,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudNotebookUUID Extracts UUID From Deployed URL*)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`cloudNotebookUUID[
+        "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
+    ],
+    "e0f29bea-667b-4780-b36b-59de225e660e",
+    SameTest -> MatchQ,
+    TestID   -> "CloudNotebookUUID-ExtractsUUID@@Tests/MCPApps.wlt:1368,1-1375,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Deployment Failure Returns $Failed*)
+VerificationTest[
+    Wolfram`AgentTools`Common`makeNotebookUIResult[
+        { <| "type" -> "text", "text" -> "x" |> },
+        $Failed
+    ],
+    $Failed,
+    SameTest -> MatchQ,
+    TestID   -> "MakeNotebookUIResult-DeployFailed@@Tests/MCPApps.wlt:1380,1-1388,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Inline (Non-http) Value Omits Marker*)
+(* Inline notebooks carry the whole serialized notebook, so no <result uuid="..."> wrapper is
+   added; the value is still carried in _meta. *)
+VerificationTest[
+    Module[ { serialized, result },
+        serialized = "Notebook[{Cell[\"1 + 1\", \"Input\"]}]";
+        result     = Wolfram`AgentTools`Common`makeNotebookUIResult[
+            { <| "type" -> "text", "text" -> "x" |> },
+            serialized
+        ];
+        { result[ "Content" ], result[ "_meta", "notebookUrl" ] }
+    ],
+    {
+        { <| "type" -> "text", "text" -> "x" |> },
+        "Notebook[{Cell[\"1 + 1\", \"Input\"]}]"
+    },
+    SameTest -> MatchQ,
+    TestID   -> "MakeNotebookUIResult-InlineNoMarker@@Tests/MCPApps.wlt:1395,1-1410,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*delayedDisplay*)
 
 (* ::**************************************************************************************************************:: *)
@@ -1275,7 +1422,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1272,1-1279,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1419,1-1426,2"
 ]
 
 VerificationTest[
@@ -1284,7 +1431,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1281,1-1288,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1428,1-1435,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1296,7 +1443,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1293,1-1300,2"
+    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1440,1-1447,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1308,7 +1455,7 @@ VerificationTest[
     ],
     RowBox @ { "1", "+", "1" },
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1305,1-1312,2"
+    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1452,1-1459,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1322,7 +1469,128 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1317,1-1326,2"
+    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1464,1-1473,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cross-Origin Iframe Fallback (Strict-CSP Hosts)*)
+
+(* Each notebook-embedding viewer must ship the eval-capability probe (cspAllowsEval) and the
+   cross-origin iframe fallback (embedNotebookViaIframe). WolframNotebookEmbedder injects the
+   cloud notebook engine (which needs eval/WebAssembly) into the app document; strict MCP hosts
+   such as Goose build a sandbox CSP with no 'unsafe-eval' and reject any attempt to add it, so
+   the engine can't run and the notebook never renders. When eval is blocked the viewer instead
+   points an iframe at the cloud URL, where the notebook renders under wolframcloud.com's own
+   eval-permitting CSP. These tests guard against silently dropping that fallback. *)
+
+VerificationTest[
+    Module[ { html }, Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/evaluator-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1487,1-1496,2"
+]
+
+VerificationTest[
+    Module[ { html }, Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/wolframalpha-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1498,1-1507,2"
+]
+
+VerificationTest[
+    Module[ { html }, Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        html = Wolfram`AgentTools`Common`$uiResourceRegistry[ "ui://wolfram/notebook-viewer", "html" ];
+        StringContainsQ[ html, "cspAllowsEval" ] && StringContainsQ[ html, "embedNotebookViaIframe" ]
+    ] ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1509,1-1518,2"
+]
+
+(* The eval-blocked iframe fallback can't be auto-sized, so each viewer must let the user
+   resize it via a drag handle rather than pin it to a single fixed height. A native corner
+   `resize` grip is unusable here because the framed notebook's own scrollbar covers it. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        AllTrue[
+            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+            StringContainsQ[
+                Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ],
+                "notebook-resize-handle"
+            ] &
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-IframeFallbackResizable@@Tests/MCPApps.wlt:1523,1-1537,2"
+]
+
+(* The resize drag's move/end listeners live on window, so each viewer must scope them to the
+   initiating pointer; otherwise a second finger on a multi-pointer device could resize the
+   frame or end the drag out from under the pointer that started it. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        AllTrue[
+            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+            StringContainsQ[
+                Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ],
+                "ev.pointerId !== activePointerId"
+            ] &
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-ResizeDragScopedToPointer@@Tests/MCPApps.wlt:1542,1-1556,2"
+]
+
+(* The embedder path must remain for hosts whose CSP does permit eval (fit-to-content sizing),
+   so the fallback is additive, not a replacement. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+        Wolfram`AgentTools`Common`initializeUIResources[ ];
+        AllTrue[
+            { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+            StringContainsQ[
+                Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ],
+                "WolframNotebookEmbedder"
+            ] &
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1560,1-1574,2"
+]
+
+(* Under strict CSP the fallback frames the notebook URL directly, so each viewer must
+   restrict that iframe to Wolfram Cloud hosts (parsed with new URL) instead of embedding
+   any http(s) URL; otherwise a tampered result could frame an arbitrary third-party page. *)
+VerificationTest[
+    Module[ { html },
+        Block[ { Wolfram`AgentTools`Common`$uiResourceRegistry },
+            Wolfram`AgentTools`Common`initializeUIResources[ ];
+            AllTrue[
+                { "ui://wolfram/evaluator-viewer", "ui://wolfram/wolframalpha-viewer", "ui://wolfram/notebook-viewer" },
+                ( html = Wolfram`AgentTools`Common`$uiResourceRegistry[ #, "html" ];
+                  StringContainsQ[ html, "!cspAllowsEval && isWolframCloudUrl" ] &&
+                  StringContainsQ[ html, ".wolframcloud.com" ] ) &
+            ]
+        ]
+    ],
+    True,
+    SameTest -> Equal,
+    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist@@Tests/MCPApps.wlt:1579,1-1594,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
