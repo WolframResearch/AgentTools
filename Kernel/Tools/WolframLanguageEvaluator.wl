@@ -825,13 +825,26 @@ saveSessionInKernel // endDefinition;
 writeSessionInfoFile // beginDefinition;
 
 writeSessionInfoFile[ path_String, info_Association ] :=
-    Module[ { tmp },
+    Module[ { tmp, written },
         tmp = path <> "." <> CreateUUID[ ] <> ".tmp";
-        Block[ { $sessionInfo = info },
-            DumpSave[ tmp, $sessionInfo, "SymbolAttributes" -> False ]
+        (* Same write discipline as saveSessionInKernel: verify the fresh temp file materialized
+           rather than trusting the destination, which a previous successful save may have left
+           behind (FileExistsQ @ path alone would report that stale file as success). *)
+        written = Quiet @ Check[
+            Block[ { $sessionInfo = info },
+                DumpSave[ tmp, $sessionInfo, "SymbolAttributes" -> False ]
+            ];
+            FileExistsQ @ tmp && (
+                RenameFile[ tmp, path, OverwriteTarget -> True ];
+                FileExistsQ @ path
+            ),
+            False
         ];
-        RenameFile[ tmp, path, OverwriteTarget -> True ];
-        FileExistsQ @ path
+        If[ TrueQ @ written,
+            True,
+            Quiet @ DeleteFile @ tmp; (* cleanupSessions only prunes *.mx, so orphaned temps would accumulate *)
+            False
+        ]
     ];
 
 writeSessionInfoFile // endDefinition;

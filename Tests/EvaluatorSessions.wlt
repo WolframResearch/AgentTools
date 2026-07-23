@@ -423,6 +423,28 @@ VerificationTest[
     TestID   -> "WriteSessionInfoFile-ResumeRoundTrip@@Tests/EvaluatorSessions.wlt:395,1-424,2"
 ]
 
+(* A failed fallback write must report False without emitting messages and must not leave orphaned
+   temp files behind. The rename target here exists as a directory, so the write fails while
+   FileExistsQ @ path stays True: trusting the destination instead of verifying the fresh write
+   would misreport this as success. *)
+VerificationTest[
+    Module[ { dir, path, res, temps },
+        dir  = CreateDirectory @ FileNameJoin @ { $TemporaryDirectory, "AgentToolsFbFail_" <> CreateUUID[ ] };
+        path = FileNameJoin @ { dir, "FbWriteFail.mx" };
+        CreateDirectory @ path;
+        res = Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`writeSessionInfoFile[
+            path,
+            <| "SessionID" -> "FbWriteFail" |>
+        ];
+        temps = FileNames[ "*.tmp", dir ];
+        Quiet @ DeleteDirectory[ dir, DeleteContents -> True ];
+        { res, temps }
+    ],
+    { False, { } },
+    SameTest -> MatchQ,
+    TestID   -> "WriteSessionInfoFile-FailureReportsFalseAndCleansUp@@Tests/EvaluatorSessions.wlt:430,1-446,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Integration: end-to-end session behavior*)
@@ -448,7 +470,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:433,1-452,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:455,1-474,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
@@ -470,7 +492,7 @@ VerificationTest[
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:455,1-474,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:477,1-496,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
@@ -494,7 +516,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:477,1-498,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:499,1-520,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
@@ -514,7 +536,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:501,1-518,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:523,1-540,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
@@ -534,7 +556,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:521,1-538,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:543,1-560,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -559,7 +581,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:543,1-563,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:565,1-585,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
@@ -579,7 +601,7 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:566,1-583,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:588,1-605,2"
 ]
 
 (* Context-path changes made inside a session (e.g. by Get) survive continued calls: the continuing
@@ -603,7 +625,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "{101, True}" ]
     ],
     True,
-    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:588,1-607,2"
+    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:610,1-629,2"
 ]
 
 (* Resuming a session saved by a different kernel process restores the saved state and warns that
@@ -633,7 +655,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:612,1-637,2"
+    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:634,1-659,2"
 ]
 
 (* Switching back to an earlier session within the same kernel process resumes silently: no
@@ -658,7 +680,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:641,1-662,2"
+    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:663,1-684,2"
 ]
 
 (* If the eval kernel loses its in-memory session state while the session is still current (e.g. the
@@ -689,7 +711,7 @@ VerificationTest[
     ],
     { True, True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:667,1-693,2"
+    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:689,1-715,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
