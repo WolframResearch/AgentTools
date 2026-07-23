@@ -236,6 +236,28 @@ VerificationTest[
 ]
 
 VerificationTest[
+    Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionStatus = "resumedNewKernel" },
+        With[ { text = Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`sessionInfoText[ "Abc123" ] },
+            {
+                StringContainsQ[ text, "kernel process for this session has changed" ],
+                StringContainsQ[ text, "session=\"Abc123\"" ]
+            }
+        ]
+    ],
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "SessionInfoText-ResumedNewKernelNotice@@Tests/EvaluatorSessions.wlt:238,1-250,2"
+]
+
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionStatus = "resumed" },
+        StringContainsQ[ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`sessionInfoText[ "Abc123" ], "kernel process" ]
+    ],
+    False,
+    TestID -> "SessionInfoText-SameKernelResumeHasNoKernelNotice@@Tests/EvaluatorSessions.wlt:252,1-258,2"
+]
+
+VerificationTest[
     Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionStatus = "new" },
         Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`appendSessionInfo[
             <| "Content" -> { <| "type" -> "text", "text" -> "hi" |> } |>,
@@ -249,7 +271,7 @@ VerificationTest[
         }
     ],
     SameTest -> MatchQ,
-    TestID   -> "AppendSessionInfo-AppendsToContent@@Tests/EvaluatorSessions.wlt:238,1-253,2"
+    TestID   -> "AppendSessionInfo-AppendsToContent@@Tests/EvaluatorSessions.wlt:260,1-275,2"
 ]
 
 VerificationTest[
@@ -263,7 +285,7 @@ VerificationTest[
         ]
     ],
     True,
-    TestID -> "AppendSessionInfo-PreservesMeta@@Tests/EvaluatorSessions.wlt:255,1-267,2"
+    TestID -> "AppendSessionInfo-PreservesMeta@@Tests/EvaluatorSessions.wlt:277,1-289,2"
 ]
 
 VerificationTest[
@@ -274,7 +296,7 @@ VerificationTest[
         ]
     ],
     True,
-    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:283,1-292,2"
+    TestID -> "AppendSessionInfo-String@@Tests/EvaluatorSessions.wlt:291,1-300,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -287,13 +309,140 @@ VerificationTest[
         Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLine[ 5 ]
     ],
     Null,
-    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:299,1-305,2"
+    TestID -> "SyncEvalKernelLine-NoOpForInProcess@@Tests/EvaluatorSessions.wlt:307,1-313,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLineSafe[ "not an integer" ],
     Null,
-    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:307,1-311,2"
+    TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:315,1-319,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*enterSessionContextInKernel*)
+(* Continuing a session restores the context state captured by the last save instead of resetting it,
+   so $ContextPath additions made by the session's own evaluations survive across calls. *)
+VerificationTest[
+    Internal`InheritedBlock[ { $Context, $ContextPath, $ContextAliases },
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = <|
+                    "SessionID"       -> "UnitCtxA",
+                    "KernelSessionID" -> 0,
+                    "$Context"        -> "Sessions`UnitCtxA`",
+                    "$ContextPath"    -> { "UnitCtxExtra`", "Sessions`UnitCtxA`", "System`" },
+                    "$ContextAliases" -> <| |>
+                |>
+            },
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`enterSessionContextInKernel[ "UnitCtxA" ],
+                $Context,
+                MemberQ[ $ContextPath, "UnitCtxExtra`" ]
+            }
+        ]
+    ],
+    { Null, "Sessions`UnitCtxA`", True },
+    SameTest -> MatchQ,
+    TestID   -> "EnterSessionContextInKernel-RestoresSavedContextState@@Tests/EvaluatorSessions.wlt:326,1-348,2"
+]
+
+(* Missing or foreign kernel-side state (e.g. the eval kernel restarted between calls) is reported as
+   $Failed so the caller can fall back to resuming from the session file. *)
+VerificationTest[
+    {
+        Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = $Failed },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`enterSessionContextInKernel[ "UnitCtxB" ]
+        ],
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = <|
+                    "SessionID"       -> "SomeOtherSession",
+                    "$Context"        -> "Sessions`SomeOtherSession`",
+                    "$ContextPath"    -> { "Sessions`SomeOtherSession`", "System`" },
+                    "$ContextAliases" -> <| |>
+                |>
+            },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`enterSessionContextInKernel[ "UnitCtxB" ]
+        ]
+    },
+    { $Failed, $Failed },
+    SameTest -> MatchQ,
+    TestID   -> "EnterSessionContextInKernel-FailsOnMissingOrForeignState@@Tests/EvaluatorSessions.wlt:352,1-372,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Session save fallback*)
+(* When the eval kernel cannot write the session file (e.g. the "Local" sandbox kernel blocks file
+   writes), saveSessionInKernel reports the failure by returning the session info instead of True,
+   with the injected line counter, so saveSession can persist it from the controlling kernel. *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = None },
+        Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`saveSessionInKernel[
+            "FbWriteSess",
+            FileNameJoin @ { $TemporaryDirectory, "AgentToolsNoSuchDir_" <> CreateUUID[ ], "x.mx" },
+            7
+        ]
+    ],
+    _Association? (#[ "SessionID" ] === "FbWriteSess" && #[ "$line" ] === 7 &),
+    SameTest -> MatchQ,
+    TestID   -> "SaveSessionInKernel-ReturnsInfoWhenWriteFails@@Tests/EvaluatorSessions.wlt:380,1-391,2"
+]
+
+(* A fallback-written file (info only, no session-context definitions) must round-trip through
+   resumeSessionInKernel: the line seed is recovered and a foreign KernelSessionID is reported. *)
+VerificationTest[
+    Module[ { dir, path, info, res },
+        dir  = CreateDirectory @ FileNameJoin @ { $TemporaryDirectory, "AgentToolsFbWrite_" <> CreateUUID[ ] };
+        path = FileNameJoin @ { dir, "FbRoundTrip.mx" };
+        info = <|
+            "SessionID"       -> "FbRoundTrip",
+            "KernelSessionID" -> -42,
+            "$Context"        -> "Sessions`FbRoundTrip`",
+            "$ContextPath"    -> { "Sessions`FbRoundTrip`", "System`" },
+            "$ContextAliases" -> <| |>,
+            "$Line"           -> 5,
+            "$line"           -> 5,
+            "In"              -> { },
+            "InString"        -> { },
+            "Out"             -> { },
+            "MessageList"     -> { }
+        |>;
+        Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`writeSessionInfoFile[ path, info ];
+        res = Internal`InheritedBlock[ { $Context, $ContextPath, $ContextAliases },
+            Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = None },
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`resumeSessionInKernel @ path
+            ]
+        ];
+        Quiet @ DeleteDirectory[ dir, DeleteContents -> True ];
+        res
+    ],
+    { 5, False },
+    SameTest -> MatchQ,
+    TestID   -> "WriteSessionInfoFile-ResumeRoundTrip@@Tests/EvaluatorSessions.wlt:395,1-424,2"
+]
+
+(* A failed fallback write must report False without emitting messages and must not leave orphaned
+   temp files behind. The rename target here exists as a directory, so the write fails while
+   FileExistsQ @ path stays True: trusting the destination instead of verifying the fresh write
+   would misreport this as success. *)
+VerificationTest[
+    Module[ { dir, path, res, temps },
+        dir  = CreateDirectory @ FileNameJoin @ { $TemporaryDirectory, "AgentToolsFbFail_" <> CreateUUID[ ] };
+        path = FileNameJoin @ { dir, "FbWriteFail.mx" };
+        CreateDirectory @ path;
+        res = Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`writeSessionInfoFile[
+            path,
+            <| "SessionID" -> "FbWriteFail" |>
+        ];
+        temps = FileNames[ "*.tmp", dir ];
+        Quiet @ DeleteDirectory[ dir, DeleteContents -> True ];
+        { res, temps }
+    ],
+    { False, { } },
+    SameTest -> MatchQ,
+    TestID   -> "WriteSessionInfoFile-FailureReportsFalseAndCleansUp@@Tests/EvaluatorSessions.wlt:430,1-446,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -321,7 +470,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:320,1-339,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:455,1-474,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
@@ -343,7 +492,7 @@ VerificationTest[
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:342,1-361,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:477,1-496,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
@@ -367,7 +516,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:364,1-385,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:499,1-520,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
@@ -387,7 +536,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:388,1-405,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:523,1-540,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
@@ -407,7 +556,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:408,1-425,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:543,1-560,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -432,7 +581,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:430,1-450,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:565,1-585,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
@@ -452,7 +601,117 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:453,1-470,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:588,1-605,2"
+]
+
+(* Context-path changes made inside a session (e.g. by Get) survive continued calls: the continuing
+   call restores the last save's $Context/$ContextPath instead of resetting them, so unqualified
+   references to symbols from a prepended context keep working. *)
+VerificationTest[
+    Module[ { root, tool, r2 },
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
+        tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
+        Block[
+            {
+                Wolfram`AgentTools`Common`$rootPath          = root,
+                Wolfram`AgentTools`Common`$clientSupportsUI  = False,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
+            },
+            tool[ <| "code" -> "CtxKeepTest`ctxKeepF[x_] := x + 100; PrependTo[$ContextPath, \"CtxKeepTest`\"];", "session" -> "CtxKeepSess" |> ];
+            r2 = tool[ <| "code" -> "{ctxKeepF[1], MemberQ[$ContextPath, \"CtxKeepTest`\"]}", "session" -> "CtxKeepSess" |> ]
+        ];
+        Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
+        Quiet @ Remove[ "CtxKeepTest`*", "Sessions`CtxKeepSess`*" ];
+        StringContainsQ[ extractToolText @ r2, "{101, True}" ]
+    ],
+    True,
+    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:610,1-629,2"
+]
+
+(* Resuming a session saved by a different kernel process restores the saved state and warns that
+   other kernel state (loaded packages, etc.) may be gone. The saving kernel is spoofed by Blocking
+   $kernelSessionID during the save. *)
+VerificationTest[
+    Module[ { root, tool, text },
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
+        tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
+        Block[
+            {
+                Wolfram`AgentTools`Common`$rootPath          = root,
+                Wolfram`AgentTools`Common`$clientSupportsUI  = False,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
+            },
+            Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$kernelSessionID = -1 },
+                tool[ <| "code" -> "nkVar = 123", "session" -> "NkResumeSess" |> ]
+            ];
+            (* Simulate a server restart: the live session pointer is gone, but the file (saved by
+               the spoofed "previous" kernel process) remains. *)
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None;
+            text = extractToolText @ tool[ <| "code" -> "nkVar", "session" -> "NkResumeSess" |> ]
+        ];
+        Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
+        Quiet @ Remove[ "Sessions`NkResumeSess`*" ];
+        { StringContainsQ[ text, "123" ], StringContainsQ[ text, "kernel process for this session has changed" ] }
+    ],
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:634,1-659,2"
+]
+
+(* Switching back to an earlier session within the same kernel process resumes silently: no
+   new-kernel warning is appended. *)
+VerificationTest[
+    Module[ { root, tool, text },
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
+        tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
+        Block[
+            {
+                Wolfram`AgentTools`Common`$rootPath          = root,
+                Wolfram`AgentTools`Common`$clientSupportsUI  = False,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
+            },
+            tool[ <| "code" -> "swVar = 1", "session" -> "SwCtrlA" |> ];
+            tool[ <| "code" -> "0", "session" -> "SwCtrlB" |> ];
+            text = extractToolText @ tool[ <| "code" -> "swVar", "session" -> "SwCtrlA" |> ]
+        ];
+        Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
+        Quiet @ Remove[ "Sessions`SwCtrlA`*", "Sessions`SwCtrlB`*" ];
+        { StringContainsQ[ text, "session=\"SwCtrlA\"" ], StringContainsQ[ text, "kernel process" ] }
+    ],
+    { True, False },
+    SameTest -> MatchQ,
+    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:663,1-684,2"
+]
+
+(* If the eval kernel loses its in-memory session state while the session is still current (e.g. the
+   subkernel restarted under the "Local" method), a continued call falls back to restoring from the
+   session file instead of silently resetting: state and line numbering both survive. *)
+VerificationTest[
+    Module[ { root, tool, text },
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
+        tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
+        Block[
+            {
+                Wolfram`AgentTools`Common`$rootPath          = root,
+                Wolfram`AgentTools`Common`$clientSupportsUI  = False,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
+            },
+            tool[ <| "code" -> "fbVar = 55", "session" -> "FbSess" |> ];
+            text = Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$sessionInfo = $Failed },
+                extractToolText @ tool[ <| "code" -> "fbVar", "session" -> "FbSess" |> ]
+            ]
+        ];
+        Quiet @ DeleteDirectory[ root, DeleteContents -> True ];
+        Quiet @ Remove[ "Sessions`FbSess`*" ];
+        {
+            StringContainsQ[ text, "55" ],
+            StringContainsQ[ text, "Out[2]" ],
+            StringContainsQ[ text, "No saved state" ]
+        }
+    ],
+    { True, True, False },
+    SameTest -> MatchQ,
+    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:689,1-715,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
