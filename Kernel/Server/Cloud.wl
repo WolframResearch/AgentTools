@@ -587,7 +587,83 @@ cloudDeployResult // endDefinition;
    cloud kernel restores them on each (stateless) request. Chatbook is deliberately not bundled: built-in
    tools that call into it rely on Wolfram/Chatbook being installed at cold start (via the shared
    bootstrapping in initializeServerState); a fully self-contained custom server needs no paclet present.
-   See Specs/CloudDeployment.md (Embedding the Server). *)
+
+   All of that is only necessary while the cloud kernel lacks a usable AgentTools paclet. When the user's
+   cloud account has Wolfram/AgentTools >= $cloudSupportPacletVersion installed (detected once per
+   session via cloudAgentToolsAvailableQ below), the payload builders skip the dev-bundling bridge
+   entirely: AgentTools resolves from the installed paclet (loaded by an explicit Needs in the deployed
+   expression), and only the user's custom tool functions are carried in the payload -- still gathered
+   with the NOENTRY-aware extendedFullDefinition, since mechanism 2 applies to user functions regardless
+   of where AgentTools comes from. See Specs/CloudDeployment.md (Embedding the Server). *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cloud Paclet Availability*)
+(* Detect whether the connected cloud account can run the MCP server from an installed Wolfram/AgentTools
+   paclet, so the payload builders can skip the heavy definition bundling. The check costs one
+   CloudEvaluate round trip, so a successful lookup is memoized on the session identity
+   ($CloudConnected, $CloudUserID, $CloudBase); an unsuccessful one is deliberately not cached, so a
+   paclet the user installs mid-session is picked up by the next deploy. (The converse -- uninstalling
+   the cloud paclet after a successful detection -- keeps serving the cached version for the rest of the
+   session; restart the kernel or clear the cache to force a re-check.) *)
+
+(* The earliest Wolfram/AgentTools version whose cloud-installed paclet can serve the deployed payloads.
+   This is a compatibility floor for the light payloads built below: they reference RunCloudMCPServer and
+   runCloudAdminAPI by name and embed the server object as data, so any breaking change to those entry
+   points (or to the payload/data format they consume) must bump this to the version introducing the
+   change -- older cloud paclets then fall back to the self-contained heavy payload. *)
+$cloudSupportPacletVersion = "2.1.40";
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*agentToolsCloudVersion*)
+(* The Wolfram/AgentTools version installed in the connected cloud account, as a version string, or
+   Missing["NotConnected"|"NotFound"]. Follows the getLLMKitInfo caching pattern (Utilities.wl): the
+   no-argument form dispatches on the live session identity, and only a successful lookup memoizes. *)
+agentToolsCloudVersion // beginDefinition;
+
+agentToolsCloudVersion[ ] := agentToolsCloudVersion[ $CloudConnected, $CloudUserID, $CloudBase ];
+
+(* Not connected: no cloud call is attempted (and nothing is cached). *)
+agentToolsCloudVersion[ False, _, _ ] := Missing[ "NotConnected" ];
+
+(* Connected: one CloudEvaluate lookup per (user, cloud base), memoized only when it yields a version. *)
+agentToolsCloudVersion[ True, user_, cloudBase_ ] :=
+    With[ { version = fetchAgentToolsCloudVersion[ ] },
+        If[ StringQ @ version,
+            agentToolsCloudVersion[ True, user, cloudBase ] = version,
+            Missing[ "NotFound" ]
+        ]
+    ];
+
+agentToolsCloudVersion // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*fetchAgentToolsCloudVersion*)
+(* The actual cloud lookup, isolated so tests can Block it. In the cloud kernel, PacletObject only sees
+   installed paclets (no remote fallback -- verified: a missing paclet gives Failure["PacletNotFound"],
+   whose "Version" property is a Missing), so a non-string result reliably means "not usable". The Quiet
+   covers both the relayed PacletObject::pcltni for a missing paclet and any CloudEvaluate connectivity
+   messages; either way the caller only cares whether a version string came back. *)
+fetchAgentToolsCloudVersion // beginDefinition;
+fetchAgentToolsCloudVersion[ ] := Quiet @ CloudEvaluate @ PacletObject[ "Wolfram/AgentTools" ][ "Version" ];
+fetchAgentToolsCloudVersion // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudAgentToolsAvailableQ*)
+(* True when the connected cloud account has Wolfram/AgentTools >= $cloudSupportPacletVersion installed,
+   i.e. when the light payloads can rely on the installed paclet instead of bundled definitions. Any
+   Missing (not connected, not installed, lookup failed) fails closed to the heavy payload. *)
+cloudAgentToolsAvailableQ // beginDefinition;
+
+cloudAgentToolsAvailableQ[ ] := cloudAgentToolsAvailableQ @ agentToolsCloudVersion[ ];
+cloudAgentToolsAvailableQ[ $cloudSupportPacletVersion ] := True;
+cloudAgentToolsAvailableQ[ version_String ] := TrueQ @ PacletNewerQ[ version, $cloudSupportPacletVersion ];
+cloudAgentToolsAvailableQ[ _Missing ] := False;
+
+cloudAgentToolsAvailableQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -596,15 +672,38 @@ cloudDeployResult // endDefinition;
    a pattern variable bound to the actual MCPServerObject, so its value is substituted into the held
    argument of the HoldFirst extendedFullDefinition before the hold takes effect -- placing the server's
    NOENTRY-flagged tools lexically inside the gathered expression so extendedFullDefinition can unpack
-   them. The gather runs inside withCapturableAgentToolsDefinitions so AgentTools's own definitions are
-   captured too (internal-contexts Block plus temporary removal of ReadProtected under MX loads);
-   RunCloudMCPServer is never evaluated here (it stays held inside Delayed). *)
+   them. RunCloudMCPServer is never evaluated here (it stays held inside Delayed).
+
+   The second argument is cloudAgentToolsAvailableQ[ ]: when the cloud paclet is available (True), the
+   gather runs WITHOUT withCapturableAgentToolsDefinitions, so AgentTools's own definitions stay stripped
+   (internal contexts under a source load, ReadProtected pruning under an MX load -- both prune the same
+   subtrees here) and only the user's custom tool functions are captured; the injected payload then loads
+   AgentTools from the installed paclet. Otherwise (False) the gather runs inside
+   withCapturableAgentToolsDefinitions so AgentTools's own definitions are captured too (internal-contexts
+   Block plus temporary removal of ReadProtected under MX loads), making the payload self-contained. *)
 cloudMCPServerPayload // beginDefinition;
 
 cloudMCPServerPayload[ server_MCPServerObject ] /; MatchQ[ server[ "Location" ], _File ] :=
     cloudMCPServerPayload @ removeLocalServerLocation @ server;
 
-cloudMCPServerPayload[ server_MCPServerObject ] := Enclose[
+cloudMCPServerPayload[ server_MCPServerObject ] :=
+    cloudMCPServerPayload[ server, cloudAgentToolsAvailableQ[ ] ];
+
+(* Cloud paclet available: skip the dev-bundling bridge; carry only the user's custom tool functions. *)
+cloudMCPServerPayload[ server_MCPServerObject, True ] := Enclose[
+    Module[ { defs },
+        defs = ConfirmMatch[
+            extendedFullDefinition[ Delayed @ RunCloudMCPServer @ server ],
+            _Language`DefinitionList,
+            "Definitions"
+        ];
+        injectLightServerDefinitions[ defs, server ]
+    ],
+    throwInternalFailure
+];
+
+(* No usable cloud paclet: bundle the full AgentTools definition closure (dev-bundling bridge). *)
+cloudMCPServerPayload[ server_MCPServerObject, False ] := Enclose[
     withCapturableAgentToolsDefinitions @ Module[ { defs },
         defs = ConfirmMatch[
             extendedFullDefinition[ Delayed @ RunCloudMCPServer @ server ],
@@ -723,6 +822,33 @@ injectServerDefinitions[ defs_Language`DefinitionList, server_ ] :=
     ];
 
 injectServerDefinitions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*injectLightServerDefinitions*)
+(* The light-payload analog of injectServerDefinitions, used when the cloud account has a usable
+   AgentTools paclet: the handler resolves from that paclet, loaded by an explicit Needs (the "-> None"
+   form loads without touching $ContextPath -- every symbol in the payload is fully qualified). The
+   DefinitionList here holds only the user's custom tool functions (AgentTools's own definitions were
+   left stripped by the gather), so an empty list needs no injection and a non-empty one is restored
+   after the paclet load. *)
+injectLightServerDefinitions // beginDefinition;
+
+injectLightServerDefinitions[ Language`DefinitionList[ ], server_ ] :=
+    With[ { o = server },
+        Delayed[ Needs[ "Wolfram`AgentTools`" -> None ]; RunCloudMCPServer[ o ] ]
+    ];
+
+injectLightServerDefinitions[ defs_Language`DefinitionList, server_ ] :=
+    With[ { d = defs, o = server },
+        Delayed[
+            Needs[ "Wolfram`AgentTools`" -> None ];
+            Language`ExtendedFullDefinition[ ] = d;
+            RunCloudMCPServer[ o ]
+        ]
+    ];
+
+injectLightServerDefinitions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -1032,14 +1158,30 @@ validKeyStringQ // endDefinition;
 (*cloudAdminAPIPayload*)
 (* Build the definition-bearing Delayed[runCloudAdminAPI[base]] expression to deploy at /api/admin (Task 8,
    forced Private). base is a pattern variable bound to the deployment directory CloudObject, so its value
-   is substituted into the gathered expression. As with cloudMCPServerPayload, the gather runs inside
-   withCapturableAgentToolsDefinitions so AgentTools's own definitions (runCloudAdminAPI and its dependency
-   closure) are captured rather than stripped -- including under MX loads, where ReadProtected top-level
-   symbols anywhere in the walk would otherwise silently prune their subtrees -- then injected so the cloud
-   kernel restores them on each request. *)
+   is substituted into the gathered expression.
+
+   The second argument is cloudAgentToolsAvailableQ[ ], as in cloudMCPServerPayload. The admin handler's
+   closure is pure AgentTools -- no user code can appear in it -- so the light payload needs no definition
+   gather at all: just load the installed paclet and call the handler. (runCloudAdminAPI is file-private,
+   which is safe here because the light payload only ever runs against a cloud paclet >=
+   $cloudSupportPacletVersion -- see the compatibility note on that constant.) Otherwise the gather runs
+   inside withCapturableAgentToolsDefinitions so AgentTools's own definitions (runCloudAdminAPI and its
+   dependency closure) are captured rather than stripped -- including under MX loads, where ReadProtected
+   top-level symbols anywhere in the walk would otherwise silently prune their subtrees -- then injected so
+   the cloud kernel restores them on each request. *)
 cloudAdminAPIPayload // beginDefinition;
 
-cloudAdminAPIPayload[ base_CloudObject ] := Enclose[
+cloudAdminAPIPayload[ base_CloudObject ] :=
+    cloudAdminAPIPayload[ base, cloudAgentToolsAvailableQ[ ] ];
+
+(* Cloud paclet available: the handler and its closure resolve from the installed paclet. *)
+cloudAdminAPIPayload[ base_CloudObject, True ] :=
+    With[ { o = base },
+        Delayed[ Needs[ "Wolfram`AgentTools`" -> None ]; runCloudAdminAPI[ o ] ]
+    ];
+
+(* No usable cloud paclet: bundle the handler's full definition closure (dev-bundling bridge). *)
+cloudAdminAPIPayload[ base_CloudObject, False ] := Enclose[
     withCapturableAgentToolsDefinitions @ Module[ { defs },
         defs = ConfirmMatch[
             extendedFullDefinition[ Delayed @ runCloudAdminAPI @ base ],
