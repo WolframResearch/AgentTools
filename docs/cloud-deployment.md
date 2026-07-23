@@ -262,6 +262,37 @@ There is no local registry to clean up; the cloud objects and their permissions 
 truth. To remove a deployment, `DeleteObject` the directory `CloudObject` and revoke any outstanding
 `PermissionsKey`s.
 
+## Server Embedding & the Cloud Paclet
+
+The deployed `/mcp` handler must reconstruct the server in a cloud kernel that, by default, has no
+AgentTools paclet. `CloudDeploy`/`CloudDeployMCPServer` therefore normally embed the full AgentTools
+definition closure into the deployed expression (several MB), alongside any custom tool functions —
+the self-contained "heavy" payload.
+
+**Installing the paclet into your cloud account makes deployments much lighter.** The cloud does not
+ship `Wolfram/AgentTools` yet, but you can install it for your own account:
+
+```wl
+CloudEvaluate @ PacletInstall[ "Wolfram/AgentTools" ]
+```
+
+At deploy time, AgentTools checks (once per session, via a cached `CloudEvaluate` lookup) whether the
+connected account has `Wolfram/AgentTools` at least at the cloud-support version
+(`$cloudSupportPacletVersion`, currently `2.1.40`). If so, the heavy embedding is skipped: the deployed
+expression simply loads the installed paclet, and only your custom tool functions are carried in the
+payload (a few KB). This makes deploys faster and lets the endpoint pick up the installed paclet's
+implementation.
+
+Notes:
+
+- The detection **fails closed**: not connected, paclet absent, or an older version all fall back to
+  the self-contained heavy payload, so deployment works either way.
+- A successful detection is cached for the session (per cloud user and cloud base). A paclet installed
+  mid-session is picked up by the next deploy (failed lookups are not cached), but *uninstalling* the
+  cloud paclet after a light deploy breaks that deployment until you redeploy or reinstall.
+- The endpoint's behavior then comes from the **cloud-installed** paclet version, so keep it reasonably
+  current: `CloudEvaluate @ PacletInstall[ "Wolfram/AgentTools", UpdatePacletSites -> True ]`.
+
 ## Stateless Evaluation Model
 
 The endpoint is **stateless**: each HTTP request (`initialize`, `tools/list`, `tools/call`, …) is a

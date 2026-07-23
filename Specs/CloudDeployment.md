@@ -687,12 +687,40 @@ accepts `None` for `"Location"`, and `mcpServerExistsQ[_, None]` reports it as e
 `MCPServerObject.wl`). Built-in servers (`"Location" -> "BuiltIn"`) and servers already built in memory
 need no such treatment.
 
+### Installed-paclet detection (light payload)
+
+Users can already install the latest `Wolfram/AgentTools` into their own cloud account
+(`CloudEvaluate @ PacletInstall[ … ]`), even though the cloud does not ship it by default. The deploy
+path detects this and skips the heavy bundling when possible:
+
+- `$cloudSupportPacletVersion` (`Kernel/Server/Cloud.wl`) is the earliest paclet version whose
+  cloud-installed copy can serve the deployed payloads — a compatibility floor. The light payloads
+  reference `RunCloudMCPServer` and the file-private `runCloudAdminAPI` by name and embed the server
+  object as data, so **any breaking change to those entry points (or the payload/data format they
+  consume) must bump this constant** to the version introducing the change; older cloud paclets then
+  fall back to the heavy payload.
+- `agentToolsCloudVersion[ ]` looks up the installed cloud version with one
+  `CloudEvaluate[ PacletObject[ "Wolfram/AgentTools" ][ "Version" ] ]`, memoized on
+  (`$CloudConnected`, `$CloudUserID`, `$CloudBase`). Only a successful lookup is cached, so a paclet
+  installed mid-session is picked up by the next deploy; when not connected it returns
+  `Missing[ "NotConnected" ]` without attempting a connection. (`PacletObject` sees only *installed*
+  paclets — a missing one yields a `Failure`, never a remote-repository version.)
+- `cloudAgentToolsAvailableQ[ ]` gates the payload builders: `True` iff the detected version is
+  `>= $cloudSupportPacletVersion`; anything `Missing` fails closed to the heavy payload.
+
+When available, both payload builders skip `withCapturableAgentToolsDefinitions` entirely: AgentTools's
+own definitions stay stripped (internal contexts under a source load, `ReadProtected` pruning under an
+MX load — both prune the same entry points), the deployed expression begins with
+``Needs[ "Wolfram`AgentTools`" -> None ]`` so the handler resolves from the installed paclet, and only
+the user's custom tool functions are carried (still gathered via the NOENTRY-aware serializer, since
+flag-based blocking applies to user functions regardless of where AgentTools comes from). This shrinks
+the `/mcp` payload from ~10 MB to a few KB; the `/api/admin` payload needs no definition gather at all.
+
 ### End state (future)
 
-Once a cloud-native `Wolfram/AgentTools` paclet is available by default in the Wolfram Cloud, drop the
-``Language`$InternalContexts`` block: `RunCloudMCPServer` and the built-in tools resolve from the
-installed paclet, and only the user's custom tool functions are carried in the payload (still via the
-NOENTRY-aware serializer). See [Future Work](#future-work).
+Once a cloud-native `Wolfram/AgentTools` paclet is available **by default** in the Wolfram Cloud, the
+detection above always succeeds and the dev-bundling bridge (`withCapturableAgentToolsDefinitions` and
+the heavy payload path) can be deleted outright. See [Future Work](#future-work).
 
 ### Evaluation Model
 
@@ -913,6 +941,10 @@ Deferred from v1, in rough priority order:
 - **Cloud-native AgentTools paclet** → drop the dev-bundling bridge
   (`withCapturableAgentToolsDefinitions`: the ``Language`$InternalContexts`` block and the temporary
   `ReadProtected` clearing); resolve `RunCloudMCPServer` and built-in tools from the installed paclet.
+  *Partially done:* deploys already detect a user-installed cloud paclet
+  (`>= $cloudSupportPacletVersion`) and skip the bridge in that case (see
+  [Installed-paclet detection](#installed-paclet-detection-light-payload)); the bridge itself remains
+  as the fallback until the cloud ships the paclet by default.
 - **`/logs/`** — capture per-request logs to a deployment log area, surfaced on the admin page.
 - **`/files/`** — per-deployment artifact area; route MCP-App notebooks/images here instead of the
   global `AgentTools/Notebooks` / `AgentTools/Images` locations.
