@@ -32,6 +32,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Activate Wolfram Engine
+      run: wolframscript -activate -entitlementid "$WOLFRAMSCRIPT_ENTITLEMENTID"
+
     - name: Build
       run: wolframscript -f Scripts/BuildPaclet.wls
 
