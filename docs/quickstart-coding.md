@@ -150,6 +150,30 @@ goose mcp list
 
 The output should indicate that the "Wolfram" extension is enabled. Both the Goose desktop app and CLI share the same `config.yaml`, so the server will be available in both.
 
+### MiMo Code
+
+Choose whether to install the server globally or project-level. Global installation is available in all projects, while project-level installation writes `.mimocode/mimocode.json` in the project root.
+
+Global installation:
+
+```wl
+InstallMCPServer["MimoCode", "WolframLanguage"]
+```
+
+Project-level installation:
+
+```wl
+InstallMCPServer[{"MimoCode", "/path/to/project"}, "WolframLanguage"]
+```
+
+To verify the installation from the command line:
+
+```shell
+mimocode mcp list
+```
+
+The output should indicate that the "WolframLanguage" server is connected. MiMo Code (Xiaomi) is built on OpenCode and uses the same `mcp` configuration format.
+
 ### OpenAI Codex
 
 Choose whether to install the server globally or for a single project. Project-level installation writes `.codex/config.toml` in the project root.

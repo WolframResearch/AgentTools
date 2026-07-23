@@ -131,6 +131,7 @@ AgentTools can be installed into the following MCP client applications:
 | [Google Antigravity](https://antigravity.google) | `"Antigravity"` | No |
 | [Junie](https://www.jetbrains.com/junie/) (JetBrains IDE plugin + CLI) | `"Junie"` | Yes |
 | [LM Studio](https://lmstudio.ai) | `"LMStudio"` | No |
+| [MiMo Code](https://github.com/XiaomiMiMo/MiMo-Code) | `"MimoCode"` | Yes |
 | [OpenAI Codex](https://openai.com/codex) | `"Codex"` | Yes |
 | [OpenCode](https://opencode.ai) | `"OpenCode"` | Yes |
 | [Qwen Code](https://github.com/QwenLM/qwen-code) | `"QwenCode"` | Yes |

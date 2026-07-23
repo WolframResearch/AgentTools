@@ -627,6 +627,7 @@ guessClientName[ file_? fileQ ] := Enclose[
         Switch[ split,
             { __, ".mcp.json" }, Throw[ "ClaudeCode" ],
             { __, "opencode.json" }, Throw[ "OpenCode" ],
+            { __, ".mimocode", "mimocode.json" }, Throw[ "MimoCode" ],
             { __, ".vscode", "settings.json" | "mcp.json" }, Throw[ "VisualStudioCode" ],
             { __, ".kiro", "settings", "mcp.json" }, Throw[ "Kiro" ],
             { __, ".zed", "settings.json" }, Throw[ "Zed" ],
