@@ -29,6 +29,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Goose | `"Goose"` | — | YAML | No | `"Wolfram"` |
 | Antigravity (IDE, desktop + CLI) | `"Antigravity"` | `"GoogleAntigravity"`, `"AntigravityCLI"`, `"GoogleAntigravityCLI"` | JSON | Yes | `"WolframLanguage"` |
 | Junie (IDE + CLI) | `"Junie"` | `"JetBrainsJunie"` | JSON | Yes | `"WolframLanguage"` |
+| Kimi Code | `"KimiCode"` | `"Kimi"`, `"KimiCLI"` | JSON | No | `"WolframLanguage"` |
 | Kiro | `"Kiro"` | — | JSON | Yes | `"WolframLanguage"` |
 | LM Studio | `"LMStudio"` | — | JSON | No | `"Wolfram"` |
 | Codex CLI | `"Codex"` | `"OpenAICodex"` | TOML | Yes | `"WolframLanguage"` |
@@ -398,6 +399,16 @@ Junie is JetBrains' AI coding agent. **A single `InstallMCPServer["Junie", ...]`
 - The user-scope file at `~/.junie/mcp/mcp.json` is shared across every JetBrains IDE that hosts the Junie plugin (IntelliJ IDEA, PyCharm, WebStorm, GoLand, PhpStorm, RubyMine, RustRover, Rider, etc.) **and** the standalone `junie` CLI. There is no per-IDE config split.
 - The project-scope file at `.junie/mcp/mcp.json` (in the project root) is designed to be checked into version control and is read by the same plugin and CLI.
 - Junie auto-reloads `mcp.json` changes, so no IDE restart is needed after running `InstallMCPServer`.
+
+### Kimi Code
+
+| Scope | Config Location |
+|-------|----------------|
+| Global | `~/.kimi/mcp.json` |
+
+**Format:** Same as Claude Desktop (`mcpServers` key).
+
+Kimi Code (also known as Kimi CLI) is Moonshot AI's terminal coding agent. It reads MCP servers from the `mcpServers` key of `~/.kimi/mcp.json` using the standard stdio entry shape (`command`, `args`, `env`). Only global installation is supported; there is no documented project-scope config file, so `InstallMCPServer["KimiCode", ...]` writes the user-level file. Verify the installation with `kimi mcp list` (or `kimi mcp test WolframLanguage`).
 
 ### Kiro
 

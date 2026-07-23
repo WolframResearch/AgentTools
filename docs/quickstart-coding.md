@@ -150,6 +150,20 @@ goose mcp list
 
 The output should indicate that the "Wolfram" extension is enabled. Both the Goose desktop app and CLI share the same `config.yaml`, so the server will be available in both.
 
+### Kimi Code
+
+```wl
+InstallMCPServer["KimiCode", "WolframLanguage"]
+```
+
+To verify the installation from the command line:
+
+```shell
+kimi mcp list
+```
+
+The output should indicate that the "WolframLanguage" server is configured. You can also run `kimi mcp test WolframLanguage` to confirm connectivity and list the available tools.
+
 ### OpenAI Codex
 
 Choose whether to install the server globally or for a single project. Project-level installation writes `.codex/config.toml` in the project root.

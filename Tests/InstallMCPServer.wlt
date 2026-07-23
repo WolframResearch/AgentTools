@@ -3838,14 +3838,14 @@ VerificationTest[
 
 VerificationTest[
     Length @ $SupportedMCPClients,
-    21,
+    22,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-Has21Clients@@Tests/InstallMCPServer.wlt:3839,1-3844,2"
+    TestID   -> "SupportedMCPClients-Has22Clients@@Tests/InstallMCPServer.wlt:3839,1-3844,2"
 ]
 
 VerificationTest[
     Keys @ $SupportedMCPClients,
-    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "Continue", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "Kiro", "LMStudio", "OpenCode", "QwenCode", "VisualStudioCode", "Windsurf", "Zed" },
+    { "AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", "Continue", "CopilotCLI", "Cursor", "GeminiCLI", "Goose", "Junie", "KimiCode", "Kiro", "LMStudio", "OpenCode", "QwenCode", "VisualStudioCode", "Windsurf", "Zed" },
     SameTest -> Equal,
     TestID   -> "SupportedMCPClients-KeysSorted@@Tests/InstallMCPServer.wlt:3846,1-3851,2"
 ]

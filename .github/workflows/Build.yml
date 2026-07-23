@@ -32,6 +32,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Activate WolframScript
+      run: wolframscript -activate
+      env:
+        WOLFRAMSCRIPT_ENTITLEMENTID: ${{ secrets.WOLFRAMSCRIPT_ENTITLEMENTID }}
+
     - name: Build
       run: wolframscript -f Scripts/BuildPaclet.wls
 
