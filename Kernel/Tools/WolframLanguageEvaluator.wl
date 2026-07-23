@@ -594,11 +594,14 @@ sessionFile // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Starting, Saving, and Resuming Sessions*)
-(* The *InKernel companions set up the kernel-side session state ($Context, In/Out history, $Line) via
-   useEvaluatorKernel and return the line seed; the outer functions update the MCP-side $currentSessionID
-   and the file-scoped $line. Note that under the "Local" method useEvaluatorKernel runs these in the
-   controlling kernel (which is what points its $Context at the session so the user's code parses into it);
-   the user's code itself runs in the eval subkernel, whose $Line is set separately via syncEvalKernelLine. *)
+(* The *InKernel companions set up the eval-kernel-side session state ($Context, In/Out history, $Line)
+   via useEvaluatorKernel and return the line seed; the outer functions update the MCP-side
+   $currentSessionID and the file-scoped $line. Under in-process methods parsing, evaluation, and session
+   state all live in this kernel. Under the "Local" method useEvaluatorKernel runs these in the persistent
+   eval subkernel alongside the user's evaluations, whose $Line is seeded separately via
+   syncEvalKernelLine. (Note: under "Local", Chatbook parses code strings in the controlling kernel, so
+   parse-time binding of unqualified new symbols does not see the eval kernel's session contexts \[LongDash]
+   a known limitation of that method.) *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -633,6 +636,15 @@ startSessionInKernel[ id_String ] := (
     DownValues[ Out ]         = { };
     DownValues[ MessageList ] = { };
     Protect[ In, InString, Out, MessageList ];
+    (* Seed $sessionInfo so a continuing call can restore this session's context state even if no
+       save has succeeded yet; every successful save overwrites it (see saveSessionInKernel). *)
+    $sessionInfo = <|
+        "SessionID"       -> id,
+        "KernelSessionID" -> $kernelSessionID,
+        "$Context"        -> $Context,
+        "$ContextPath"    -> $ContextPath,
+        "$ContextAliases" -> $ContextAliases
+    |>;
     $Line = 1; (* seed 1 -> first label Out[1]=, matching the original $line origin *)
     $Line
 );
@@ -642,14 +654,21 @@ startSessionInKernel // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*enterSessionContext*)
-(* Re-point the eval kernel at an already-live session's context (used when continuing the current
-   session). Unlike startSession it does NOT reset In/Out/$Line: the continuing session's history and
-   the file-scoped $line counter persist between calls. *)
+(* Re-point the eval kernel at an already-live session (used when continuing the current session).
+   Unlike startSession it does NOT reset In/Out/$Line: the continuing session's history and the
+   file-scoped $line counter persist between calls. $Context/$ContextPath/$ContextAliases are restored
+   from the state captured by the last save ($sessionInfo) rather than reset to defaults, so context
+   changes made by the session's own evaluations (e.g. Get prepending a package context to the path)
+   survive across calls. Returns $Failed without throwing when the kernel-side state is missing or
+   belongs to a different session (e.g. the eval kernel restarted between calls); the caller then falls
+   back to resuming from the session file. *)
 enterSessionContext // beginDefinition;
 
 enterSessionContext[ id_String ] := Enclose[
-    ConfirmMatch[ useEvaluatorKernel @ enterSessionContextInKernel @ id, Null, "Entered" ];
-    id,
+    Replace[
+        ConfirmMatch[ useEvaluatorKernel @ enterSessionContextInKernel @ id, Null | $Failed, "Entered" ],
+        Null :> id
+    ],
     throwInternalFailure
 ];
 
@@ -660,12 +679,16 @@ enterSessionContext // endDefinition;
 (*enterSessionContextInKernel*)
 enterSessionContextInKernel // beginDefinition;
 
-enterSessionContextInKernel[ id_String ] := (
-    $Context        = "Sessions`" <> id <> "`";
-    $ContextPath    = { $Context, "System`" };
-    $ContextAliases = <| |>;
-    Null
-);
+enterSessionContextInKernel[ id_String ] :=
+    With[ { info = $sessionInfo },
+        If[ AssociationQ @ info && info[ "SessionID" ] === id,
+            $Context        = info[ "$Context" ];
+            $ContextPath    = info[ "$ContextPath" ];
+            $ContextAliases = info[ "$ContextAliases" ];
+            Null,
+            $Failed
+        ]
+    ];
 
 enterSessionContextInKernel // endDefinition;
 
@@ -702,14 +725,42 @@ syncEvalKernelLineSafe // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*$kernelSessionID*)
+(* Identifies the kernel process on each side of the save/resume round-trip: a session file whose saved
+   KernelSessionID differs from the resuming kernel's was written by a kernel process that is gone, so
+   non-session kernel state (loaded packages, etc.) is gone with it and sessionInfoText warns about it.
+   Delayed on purpose: a plain assignment would bake the build kernel's $SessionID into the MX file. *)
+$kernelSessionID := $SessionID;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*saveSession*)
 saveSession // beginDefinition;
 
 saveSession[ id_String ] := Enclose[
-    Module[ { dir, file },
+    Module[ { dir, file, saved },
         dir  = ConfirmBy[ ensureDirectory @ sessionsPath[ ], directoryQ, "Directory" ];
         file = ConfirmBy[ sessionFile @ id, fileQ, "File" ];
-        ConfirmMatch[ useEvaluatorKernel @ saveSessionInKernel[ id, First @ file ], True, "Saved" ];
+        saved = ConfirmMatch[
+            (* With injects the evaluated path and line so the held call ships fully literal: under
+               the "Local" method the eval subkernel cannot resolve this kernel's Module variables
+               (a non-literal call would bounce back unevaluated and run here instead of in the eval
+               kernel, saving the wrong kernel's state), and its copy of the file-scoped $line is
+               meaningless, so the authoritative counter must be passed in. Same idiom as
+               syncEvalKernelLine. *)
+            With[ { path = First @ file, line = $line },
+                useEvaluatorKernel @ saveSessionInKernel[ id, path, line ]
+            ],
+            True | _Association,
+            "Saved"
+        ];
+        (* The eval kernel could not write the file itself (e.g. the "Local" sandbox kernel blocks
+           file writes) and returned its session info instead: persist it from this kernel. Such a
+           file carries no session-context definitions, only the state needed to resume metadata,
+           which is all the eval kernel could capture anyway. *)
+        If[ AssociationQ @ saved,
+            ConfirmMatch[ writeSessionInfoFile[ First @ file, saved ], True, "SavedFallback" ]
+        ];
         cleanupSessions[ ]; (* cleanup-after-write, mirrors Common.wl failure-log handling *)
         file
     ],
@@ -724,30 +775,66 @@ saveSession // endDefinition;
 saveSessionInKernel // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
-saveSessionInKernel[ id_String, path_String ] :=
-    Module[ { tmp },
+saveSessionInKernel[ id_String, path_String, line_Integer ] :=
+    Module[ { tmp, written },
         $sessionInfo = <|
+            "SessionID"       -> id, (* lets a continuing call verify $sessionInfo is its own; see enterSessionContextInKernel *)
+            "KernelSessionID" -> $kernelSessionID, (* identifies the saving kernel process; see resumeSessionInKernel *)
             "$Context"        -> $Context,
             "$ContextPath"    -> $ContextPath,
             "$ContextAliases" -> $ContextAliases,
             "$Line"           -> $Line, (* eval kernel's $Line, kept for reference / back-compat *)
-            "$line"           -> $line, (* authoritative per-session counter that drives resume *)
+            "$line"           -> line,  (* authoritative per-session counter that drives resume (injected by saveSession) *)
             "In"              -> DownValues[ In ],
             "InString"        -> DownValues[ InString ],
             "Out"             -> DownValues[ Out ],
             "MessageList"     -> DownValues[ MessageList ]
         |>;
-        tmp = path <> ".tmp";
+        tmp = path <> "." <> CreateUUID[ ] <> ".tmp"; (* unique per attempt, so its existence proves THIS write happened *)
         (* DumpSave the session $Context (all user symbols) plus the held $sessionInfo symbol; the With
-           injects the evaluated context string while DumpSave's HoldRest keeps $sessionInfo a symbol. *)
-        With[ { ctx = $Context },
-            DumpSave[ tmp, { ctx, $sessionInfo }, "SymbolAttributes" -> False ]
+           injects the evaluated context string while DumpSave's HoldRest keeps $sessionInfo a symbol.
+           Writes can fail in this kernel (e.g. the "Local" sandbox kernel blocks file writes) and can
+           do so silently, so verify that the fresh temp file materialized rather than trusting the
+           destination (which a previous successful write may have left behind). *)
+        written = Quiet @ Check[
+            With[ { ctx = $Context },
+                DumpSave[ tmp, { ctx, $sessionInfo }, "SymbolAttributes" -> False ]
+            ];
+            FileExistsQ @ tmp && (
+                RenameFile[ tmp, path, OverwriteTarget -> True ]; (* atomic-ish: never leave a half-written .mx *)
+                FileExistsQ @ path
+            ),
+            False
         ];
-        RenameFile[ tmp, path, OverwriteTarget -> True ]; (* atomic-ish: never leave a half-written .mx *)
-        True
+        If[ TrueQ @ written,
+            True,
+            (* Hand the state back so saveSession can persist it from the controlling kernel. *)
+            Quiet @ DeleteFile @ tmp; (* don't accumulate orphans when DumpSave wrote but the rename failed *)
+            $sessionInfo
+        ]
     ];
 (* :!CodeAnalysis::EndBlock:: *)
 saveSessionInKernel // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*writeSessionInfoFile*)
+(* Fallback writer for when the eval kernel cannot write files itself: persist the session info it
+   returned as the same DumpSave format resumeSessionInKernel reads (the Block gives the held
+   $sessionInfo symbol the eval kernel's value for the duration of the write). *)
+writeSessionInfoFile // beginDefinition;
+
+writeSessionInfoFile[ path_String, info_Association ] :=
+    Module[ { tmp },
+        tmp = path <> "." <> CreateUUID[ ] <> ".tmp";
+        Block[ { $sessionInfo = info },
+            DumpSave[ tmp, $sessionInfo, "SymbolAttributes" -> False ]
+        ];
+        RenameFile[ tmp, path, OverwriteTarget -> True ];
+        FileExistsQ @ path
+    ];
+
+writeSessionInfoFile // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -755,16 +842,28 @@ saveSessionInKernel // endDefinition;
 resumeSession // beginDefinition;
 
 resumeSession[ id_String ] := Enclose[
-    Module[ { file, seed },
+    Module[ { file, res },
         file = ConfirmBy[ sessionFile @ id, fileQ, "File" ];
-        seed = If[ FileExistsQ @ First @ file,
-                   useEvaluatorKernel @ resumeSessionInKernel @ First @ file,
+        res  = If[ FileExistsQ @ First @ file,
+                   (* Inject the literal path for the same reason as in saveSession. *)
+                   With[ { path = First @ file }, useEvaluatorKernel @ resumeSessionInKernel @ path ],
                    $Failed
                ];
-        If[ IntegerQ @ seed,
-            $currentSessionID = id; $line = seed; id,
-            (* Missing or corrupt session file: signal the caller to start fresh (no bug report). *)
-            $Failed
+        Replace[
+            res,
+            {
+                { seed_Integer, sameKernel: True|False } :> (
+                    (* A resume under a new kernel process restored the session's own definitions and
+                       history, but any other kernel state (loaded packages, etc.) died with the old
+                       process; record that so sessionInfoText can warn about it. *)
+                    If[ ! sameKernel, $sessionStatus = "resumedNewKernel" ];
+                    $currentSessionID = id;
+                    $line = seed;
+                    id
+                ),
+                (* Missing or corrupt session file: signal the caller to start fresh (no bug report). *)
+                _ :> $Failed
+            }
         ]
     ],
     throwInternalFailure
@@ -797,7 +896,9 @@ resumeSessionInKernel[ path_String ] :=
             DownValues[ Out ]         = info[ "Out" ];
             DownValues[ MessageList ] = info[ "MessageList" ];
             Protect[ In, InString, Out, MessageList ];
-            line,
+            (* The second element reports whether the file was saved by this same kernel process;
+               files saved before KernelSessionID existed conservatively count as a different kernel. *)
+            { line, info[ "KernelSessionID" ] === $kernelSessionID },
             (* else: malformed payload *)
             $Failed
         ]
@@ -880,10 +981,11 @@ sessionsOverByteBudget // endDefinition;
 (*Session Orchestration*)
 (* The single place that compares the incoming session to $currentSessionID. withSession scopes
    $Context/$ContextPath to the evaluation (Internal`InheritedBlock), so each call must (re-)point the
-   eval kernel at the session context: a continuing session re-enters its context (its definitions and
-   In/Out/$Line history persist in the kernel between calls); a different existing session is resumed
-   from disk; an unknown ID starts a fresh session reusing that ID. The outgoing session is not saved
-   here on a switch because every call already saves its session at the end (see withSession). *)
+   eval kernel at the session context: a continuing session restores its context state from the last
+   save's $sessionInfo (its definitions and In/Out/$Line history persist in the kernel between calls),
+   falling back to a disk resume if the kernel-side state is gone; a different existing session is
+   resumed from disk; an unknown ID starts a fresh session reusing that ID. The outgoing session is not
+   saved here on a switch because every call already saves its session at the end (see withSession). *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -953,7 +1055,10 @@ enterSessionContextSafe // beginDefinition;
 enterSessionContextSafe[ id_String ] :=
     Replace[
         Quiet @ catchAlways @ enterSessionContext @ id,
-        Except[ _String ] :> startSessionSafe @ id
+        (* Kernel-side state for the continuing session is unavailable (e.g. the eval kernel restarted
+           between calls): fall back to restoring from the session file; resumeSessionSafe falls back
+           further to a fresh start if the file is unusable too. *)
+        Except[ _String ] :> ( $sessionStatus = "resumed"; resumeSessionSafe @ id )
     ];
 
 enterSessionContextSafe // endDefinition;
@@ -1028,12 +1133,29 @@ sessionInfoText // beginDefinition;
 
 sessionInfoText[ id_String ] := StringJoin[
     "\n\n<system-reminder>",
-    If[ $sessionStatus === "reused", "No saved state was found for the requested session ID, so a new empty session was started. ", "" ],
+    sessionInfoStatusText @ $sessionStatus,
     "Pass session=\"", id, "\" in future calls to this tool to continue this session.",
     "</system-reminder>"
 ];
 
 sessionInfoText // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*sessionInfoStatusText*)
+sessionInfoStatusText // beginDefinition;
+
+sessionInfoStatusText[ "reused" ] := "\
+No saved state was found for the requested session ID, so a new empty session was started. ";
+
+sessionInfoStatusText[ "resumedNewKernel" ] := "\
+The kernel process for this session has changed (e.g. the server restarted), so the session \
+was restored from its last saved state. Session definitions and history were restored, but other \
+kernel state (e.g. packages loaded with Get or Needs) may be missing and might need to be reloaded. ";
+
+sessionInfoStatusText[ _ ] := "";
+
+sessionInfoStatusText // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
