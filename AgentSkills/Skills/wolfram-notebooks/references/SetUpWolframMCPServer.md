@@ -46,6 +46,7 @@ Replace `<ClientName>` with one of the supported clients:
 | Junie | `"Junie"` |
 | Kimi Code | `"KimiCode"` |
 | LM Studio | `"LMStudio"` |
+| MiMo Code | `"MiMoCode"` |
 | OpenCode | `"OpenCode"` |
 | Qwen Code | `"QwenCode"` |
 | VS Code | `"VisualStudioCode"` |
