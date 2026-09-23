@@ -210,6 +210,17 @@ $supportedMCPClients = <|
         "URL"             -> "https://lmstudio.ai",
         "InstallLocation" :> { $HomeDirectory, ".lmstudio", "mcp.json" }
     |>,
+    "MiMoCode" -> <|
+        "DisplayName"     -> "MiMo Code",
+        "DefaultToolset"  -> "WolframLanguage",
+        "Aliases"         -> { "Mimo", "MiMo", "MimoCode" },
+        "ConfigFormat"    -> "JSON",
+        "ConfigKey"       -> { "mcp" },
+        "ServerConverter" -> convertToOpenCodeFormat,
+        "URL"             -> "https://github.com/XiaomiMiMo/MiMo-Code",
+        "ProjectPath"     -> { ".mimocode", "mimocode.json" },
+        "InstallLocation" :> { $HomeDirectory, ".config", "mimocode", "mimocode.json" }
+    |>,
     "OpenCode" -> <|
         "DisplayName"     -> "OpenCode",
         "DefaultToolset"  -> "WolframLanguage",
