@@ -74,6 +74,57 @@ AgentTools::DeploymentNotFound              = "No deployment found with UUID \"`
 AgentTools::InvalidDeploymentData           = "Invalid deployment data: `1`.";
 AgentTools::InvalidDeployTarget             = "Invalid deployment target: `1`. Expected a client name string, {name, directory}, File[\[Ellipsis]], or All.";
 
+(* AgentToolsObject messages *)
+AgentTools::AgentToolsNotFound              = "No AgentToolsObject found for name \"`1`\".";
+AgentTools::InvalidAgentToolsObject         = "Invalid AgentToolsObject specification: `1`.";
+AgentTools::AgentToolsEmpty                 = "The agent tools \"`1`\" contain no MCP servers or agent skills to deploy.";
+AgentTools::AgentToolsBundleNameAmbiguous   = "The paclet \"`1`\" defines several agent tools bundles: `2`. Specify one of these names.";
+AgentTools::InvalidMCPServerNameOption      = "The \"MCPServerName\" option can only be a string when deploying a single MCP server; \"`1`\" has `2` servers.";
+AgentTools::DuplicateBundleConfigKey        = "The MCP servers `1` of \"`2`\" would all be installed with the configuration key \"`3`\".";
+
+(* Agent skills messages *)
+AgentTools::AgentSkillNotFound              = "No agent skill found for \"`1`\".";
+AgentTools::InvalidAgentSkill               = "Invalid agent skill specification: `1`.";
+AgentTools::InvalidAgentSkillName           = "Invalid agent skill name \"`1`\". Skill names must be 1 to 64 lowercase letters, digits, and hyphens, without leading, trailing, or consecutive hyphens.";
+AgentTools::InvalidAgentSkillDescription    = "The agent skill \"`1`\" needs a description of 1 to 1024 characters.";
+AgentTools::DuplicateAgentSkillName         = "Several skills named \"`1`\" were given.";
+AgentTools::InvalidSkillsDirectory          = "Invalid skills directory: `1`. Expected a directory that contains skill folders.";
+AgentTools::NoSkillsLocation                = "Unable to determine where to install agent skills for `1`. Use the \"SkillsDirectory\" option to specify a directory.";
+AgentTools::InvalidSkillsDirectoryOption    = "Invalid value for the \"SkillsDirectory\" option: `1`. Expected Automatic, None, or File[\[Ellipsis]].";
+AgentTools::AgentSkillExists                = "A different skill named \"`1`\" already exists at `2`. Use OverwriteTarget -> `3` to replace it.";
+AgentTools::AgentSkillModified              = "The skill \"`1`\" at `2` has been modified since it was installed. Use OverwriteTarget -> All to replace it.";
+AgentTools::AgentSkillConflict              = "A different skill named \"`1`\" is already installed at `2`. Use OverwriteTarget -> All to replace it.";
+AgentTools::AgentSkillUpdate                = "A different version of the skill \"`1`\" is installed at `2`. Use OverwriteTarget -> True to update it.";
+AgentTools::AgentSkillNewerVersionKept      = "The skill \"`1`\" at `2` was not replaced because the installed version (`3`) is newer than `4`.";
+AgentTools::AgentSkillReplacedNotRemoved    = "The skill \"`1`\" at `2` was replaced by a file or a broken link after it was installed, so it was not removed.";
+AgentTools::AgentSkillInUse                 = "The skill \"`1`\" at `2` was not removed because other agent tools deployments still use it.";
+AgentTools::AgentSkillNotRemoved            = "The skill \"`1`\" at `2` was modified after it was installed, so it was not removed. Evaluate `3` to remove it.";
+AgentTools::AgentSkillWriteFailed           = "Unable to write the agent skill \"`1`\" to `2`.";
+AgentTools::AgentSkillRemoveFailed          = "Unable to remove the agent skill \"`1`\" at `2`.";
+AgentTools::InstallAgentSkill               = "Successfully installed agent skill \"`1`\".";
+AgentTools::InstallAgentSkillNamed          = "Successfully installed agent skill \"`1`\" for `2`.";
+AgentTools::UninstallAgentSkill             = "Successfully uninstalled agent skill \"`1`\".";
+AgentTools::UninstallAgentSkillNamed        = "Successfully uninstalled agent skill \"`1`\" for `2`.";
+AgentTools::UnsupportedSkillsClient         = "No automatic agent skill installation support for client `1`.";
+AgentTools::UnsupportedSkillsClientProject  = "No automatic project-level agent skill installation support for client `1`.";
+AgentTools::UnknownSkillsLocation           = "Unable to determine the skills location for `1` on `2`. Use File[\[Ellipsis]] to specify a custom location.";
+AgentTools::AgentSkillsNotDeployed          = "Warning: The agent skills of \"`1`\" were not installed because `2` does not support agent skills for this target.";
+AgentTools::MCPServersNotDeployed           = "Warning: The MCP servers of \"`1`\" were not installed because `2` does not support MCP servers for this target.";
+AgentTools::AgentSkillsNotDeployedWarning   = "Warning: Agent skills were not installed for these clients, which do not support them: `1`.";
+AgentTools::AgentSkillConflictWarning       = "Warning: Some deployments were skipped because of conflicting agent skills. Use OverwriteTarget -> All to replace them.";
+AgentTools::MCPServerNotRemoved             = "The MCP server configuration \"`1`\" could not be removed from `2`.";
+AgentTools::DeploymentNotRemoved            = "Warning: The replaced deployment \"`1`\" could not be removed completely.";
+AgentTools::AgentSkillUnreadable            = "Unable to read the agent skill file `1`.";
+AgentTools::AgentSkillBackupNotRemoved      = "The agent skill \"`1`\" was removed, but its backup at `2` could not be deleted completely. Delete it manually.";
+AgentTools::AgentSkillsDisabled             = "The agent tools \"`1`\" contain only agent skills, but \"SkillsDirectory\" -> None disables installing them.";
+AgentTools::AgentToolsNothingToDeploy       = "Nothing from the agent tools \"`1`\" can be deployed to `2`.";
+AgentTools::DeploymentLockTimeout           = "Timed out waiting for another kernel to finish modifying agent tools deployments.";
+
+(* Paclet extension messages for bundles and agent skills *)
+AgentTools::PacletAgentToolsNotFound        = "Agent tools \"`1`\" not found in paclet \"`2`\".";
+AgentTools::PacletSkillNotFound             = "Agent skill \"`1`\" not found in paclet \"`2`\".";
+AgentTools::InvalidPacletSkillDefinition    = "Invalid agent skill definition in `1`.";
+
 (* PacletTools messages *)
 AgentTools::PacletToolsInvalidPath          = "The path \"`1`\" does not exist. Provide an absolute path to either the paclet root directory or the definition notebook (.nb) file.";
 AgentTools::PacletCICDLoadFailed            = "Could not load the Wolfram/PacletCICD paclet. Ensure it is installed or that you have internet access.";

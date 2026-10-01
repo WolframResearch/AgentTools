@@ -277,9 +277,12 @@ CreateMCPServer["My MCP Server", <|
 | `InstallMCPServer[client, server]` | Install a specific server for a client |
 | `UninstallMCPServer[client]` | Remove all servers from a client |
 | `UninstallMCPServer[client, name]` | Remove a specific server from a client |
-| `DetectedMCPClients[]` | Subset of `$SupportedMCPClients` whose config file exists on this machine |
+| `DetectedMCPClients[]` | Subset of `$SupportedClients` whose MCP config file exists on this machine |
 | `DeployAgentTools[target]` | Deploy tools to a client with tracked deployment management |
-| `DeployAgentTools[All]` | Deploy tools to every client in `$SupportedMCPClients` (see [docs/deploy-agent-tools.md](docs/deploy-agent-tools.md#deploying-to-all-clients)) |
+| `DeployAgentTools[target, tools]` | Deploy a bundle of MCP servers and agent skills (an `AgentToolsObject` or its name) to a client (see [docs/agent-tools-objects.md](docs/agent-tools-objects.md)) |
+| `InstallAgentSkills[client, skills]` | Copy agent skills into a client's skills directory (untracked) |
+| `UninstallAgentSkills[client, names]` | Remove agent skills from a client's skills directory (untracked) |
+| `DeployAgentTools[All]` | Deploy tools to every client in `$SupportedClients` (see [docs/deploy-agent-tools.md](docs/deploy-agent-tools.md#deploying-to-all-clients)) |
 | `ValidateAgentToolsPacletExtension[paclet]` | Validate an `"AgentTools"` paclet extension |
 | `DeployedAgentTools[]` | List all tracked deployments |
 | `CreatePreferencesContent[]` | Build the preferences panel UI for managing deployed Wolfram toolsets (see [docs/preferences-content.md](docs/preferences-content.md)) |
@@ -291,6 +294,14 @@ CreateMCPServer["My MCP Server", <|
 | `AgentToolsDeployment[...]` | Data structure representing a tracked tool deployment |
 | `DeployedAgentTools[]` | List all deployments |
 | `DeployedAgentTools[client]` | List deployments for a specific client |
+
+### Agent Tools Bundles
+
+| Symbol | Description |
+|--------|-------------|
+| `AgentToolsObject[...]` | A bundle of MCP servers and agent skills (built-in, paclet-defined, or ad hoc) |
+| `AgentToolsObjects[]` | List the bundles of installed paclets |
+| `$DefaultAgentTools` | The built-in bundles, one per built-in MCP server |
 
 ### Server Objects
 

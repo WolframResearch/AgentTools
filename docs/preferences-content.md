@@ -87,7 +87,7 @@ To add new strings or icons, edit `FrontEnd/Assets/AgentTools.wl` and reference 
 - `Kernel/Server/UsageData.wl` — `getGlobalUsageDataSetting` and `setGlobalUsageDataSetting`, the global setting behind `usageDataCheckbox` (stored in `GlobalSettings.wxf` by the helpers in `Kernel/Files.wl`)
 - `FrontEnd/Assets/AgentTools.wl` — Localized strings and graphics resources
 - `Kernel/DeployAgentTools.wl` — Deployment system used by the panel (see [deploy-agent-tools.md](deploy-agent-tools.md))
-- `Kernel/SupportedClients.wl` — Source of `$SupportedMCPClients` data shown for each client row
+- `Kernel/SupportedClients.wl` — Source of `$SupportedMCPClients` data shown for each client row (the clients of `$SupportedClients` that have an MCP install location)
 
 ## Related Documentation
 
