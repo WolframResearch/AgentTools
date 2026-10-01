@@ -125,13 +125,20 @@ The `TestResources/` directory contains mock paclets that simulate various exten
 |-------------|---------|
 | `MockMCPPacletTest` | Valid extension with per-item definition files (tools, servers, prompts) |
 | `MockMCPPacletCombined` | Valid extension using combined definition files (e.g., `Tools.wl`) |
+| `MockMCPPacletSkills` | Valid paclet with two applicable `"AgentTools"` entries (bundles `SkillsBundle` with the default root and `DevBundle` with root `DevTools`, which re-lists items of the first entry), two entries for other systems that share a bundle name, and agent skills in every form: a skill directory with `scripts/` and `references/` files, per-item `.wl` files (association and `LLMSkill`), the combined `AgentSkills.wl`, and serialized `LLMSkill`s (`.wxf`) whose `"Location"` is inside (honored) or outside (ignored) the extension roots |
 | `MockMCPPacletBadContents` | Definition files with invalid contents |
 | `MockMCPPacletBadCrossRef` | Server referencing non-existent tools/prompts |
 | `MockMCPPacletBadDecl` | Invalid declaration format in PacletInfo.wl |
+| `MockMCPPacletBadSkills` | Invalid agent skills: missing definition, skill directory plus definition file, definitions in two roots, name mismatches (including through a `"Location"`), invalid names and descriptions, and a definition that is not a skill |
+| `MockMCPPacletBadBundles` | Invalid entries and bundles: non-string `"Description"`, non-list declarations, item and bundle names with `/`, duplicate bundle names, a missing `"Root"`, servers with the same configuration key, and a bundle named after a server it does not contain |
 | `MockMCPPacletDupFiles` | Duplicate definition files (`.wl` + `.wxf`) |
 | `MockMCPPacletInvalidKeys` | Invalid keys in the extension block |
 | `MockMCPPacletMissingFiles` | Declared items with no corresponding definition files |
 | `MockMCPPacletNoRoot` | Extension without a root directory |
+
+The `.wxf` skill definitions in `MockMCPPacletSkills` and `MockMCPPacletBadSkills` contain `LLMSkill`s with a `"Location"`, which can only be created with the `LLMSkill` association constructor (for example, `LLMSkill[ Append[ data, "Location" -> File[ "../SkillSources/located-skill" ] ] ]` where `data` is the association inside `LLMSkill[ { name, description }, body ]`), written with ``Developer`WriteWXFFile``.
+
+Note that the PacletManager converts numbers in `PacletInfo.wl` to strings (e.g., `"Description" -> 42` becomes `"42"`), so use lists or associations to test values that must not be strings.
 
 ### Loading Mock Paclets in Tests
 

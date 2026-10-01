@@ -290,11 +290,10 @@ buildPacletServerMetadata // endDefinition;
 checkRemotePacletMCPServer // beginDefinition;
 
 checkRemotePacletMCPServer[ qualifiedName_String, pacletName_String, serverName_String ] :=
-    Module[ { remote, paclet, declaredServers, metadata },
-        remote = Quiet @ PacletFindRemote[ pacletName, <| "Extension" -> "AgentTools" |> ];
-        If[ ! MatchQ[ remote, { __PacletObject } ], throwFailure[ "MCPServerNotFound", qualifiedName ] ];
+    Module[ { paclet, declaredServers, metadata },
+        paclet = findRemoteAgentToolsPaclet @ pacletName;
+        If[ ! MatchQ[ paclet, _PacletObject ], throwFailure[ "MCPServerNotFound", qualifiedName ] ];
 
-        paclet = First @ remote;
         declaredServers = Quiet @ catchAlways @ getAgentToolsDeclaredItems[ paclet, "MCPServers" ];
         If[ ! MemberQ[ declaredServers, serverName ], throwFailure[ "MCPServerNotFound", qualifiedName ] ];
 
@@ -310,17 +309,10 @@ checkRemotePacletMCPServer // endDefinition;
 buildRemotePacletServerMetadata // beginDefinition;
 
 buildRemotePacletServerMetadata[ qualifiedName_String, paclet_PacletObject, serverName_String ] :=
-    Module[ { extData, serverDecl, tools, prompts, evaluator },
+    Module[ { serverDecl, tools, prompts, evaluator },
 
-        extData = Quiet @ getAgentToolsExtensionData @ paclet;
-
-        serverDecl = If[ AssociationQ @ extData,
-            SelectFirst[
-                Lookup[ extData, "MCPServers", { } ],
-                MatchQ[ #, serverName | { serverName, _ } | KeyValuePattern[ "Name" -> serverName ] ] &
-            ],
-            Missing[ "NotAvailable" ]
-        ];
+        (* The server's declaration from any of the paclet's AgentTools entries (the first occurrence wins) *)
+        serverDecl = Quiet @ catchAlways @ getAgentToolsItemDeclaration[ paclet, "MCPServers", serverName ];
 
         tools = If[ MatchQ[ serverDecl, _Association ] && KeyExistsQ[ serverDecl, "Tools" ],
             serverDecl[ "Tools" ],

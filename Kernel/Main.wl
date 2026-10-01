@@ -12,6 +12,7 @@ System`DeployAgentTools;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Exported Symbols*)
+`$DefaultAgentTools;
 `$DefaultMCPPrompts;
 `$DefaultMCPServers;
 `$DefaultMCPToolOptions;
@@ -22,14 +23,18 @@ System`DeployAgentTools;
 `$MCPTransport;
 `$StandaloneMCPServer;
 `$StandaloneMCPServerInformation;
+`$SupportedClients;
 `$SupportedMCPClients;
 `AgentTools;
+`AgentToolsObject;
+`AgentToolsObjects;
 `CloudDeployMCPServer;
 `CloudDeployMCPServerBundle;
 `CodeInspectorToolFunction;
 `CreateMCPServer;
 `CreatePreferencesContent;
 `DetectedMCPClients;
+`InstallAgentSkills;
 `InstallMCPServer;
 `ManageWelcomeScreenData;
 `MCPServerObject;
@@ -38,6 +43,7 @@ System`DeployAgentTools;
 `RunCloudMCPServer;
 `StartMCPServer;
 `TestReportToolFunction;
+`UninstallAgentSkills;
 `UninstallMCPServer;
 `ValidateAgentToolsPacletExtension;
 
@@ -68,6 +74,8 @@ GeneralUtilities`SetUsage[ AgentTools, "AgentTools is a symbol for miscellaneous
 (*Load Files*)
 $AgentToolsContexts = {
     "Wolfram`AgentTools`",
+    "Wolfram`AgentTools`AgentSkills`",
+    "Wolfram`AgentTools`AgentToolsObject`",
     "Wolfram`AgentTools`Common`",
     "Wolfram`AgentTools`CreateMCPServer`",
     "Wolfram`AgentTools`DefaultServers`",
@@ -106,6 +114,7 @@ $AgentToolsSymbolNames = $AgentToolsSymbolNames =
 (* ::Section::Closed:: *)
 (*Protected Symbols*)
 $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
+    "$DefaultAgentTools",
     "$DefaultMCPPrompts",
     "$DefaultMCPServers",
     "$DefaultMCPToolOptions",
@@ -116,14 +125,18 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "$MCPTransport",
     "$StandaloneMCPServer",
     "$StandaloneMCPServerInformation",
+    "$SupportedClients",
     "$SupportedMCPClients",
     "AgentTools",
+    "AgentToolsObject",
+    "AgentToolsObjects",
     "CloudDeployMCPServer",
     "CloudDeployMCPServerBundle",
     "CodeInspectorToolFunction",
     "CreateMCPServer",
     "CreatePreferencesContent",
     "DetectedMCPClients",
+    "InstallAgentSkills",
     "InstallMCPServer",
     "ManageWelcomeScreenData",
     "MCPServerObject",
@@ -132,6 +145,7 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "RunCloudMCPServer",
     "StartMCPServer",
     "TestReportToolFunction",
+    "UninstallAgentSkills",
     "UninstallMCPServer",
     "ValidateAgentToolsPacletExtension"
 };

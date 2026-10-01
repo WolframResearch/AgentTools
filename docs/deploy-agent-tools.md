@@ -14,7 +14,7 @@ Three symbols are provided, all in the `System` context:
 | `AgentToolsDeployment[...]` | Object representing a deployment |
 | `DeployedAgentTools[]` | List and query existing deployments |
 
-In the current phase, `DeployAgentTools` wraps `InstallMCPServer` to deploy MCP server configurations. Future phases will extend it to install agent skills, hooks, and other components as part of a single deployment.
+`DeployAgentTools` deploys an `AgentToolsObject` — a bundle of MCP servers and agent skills — as one deployment: it installs the MCP servers with `InstallMCPServer` and copies the agent skills into the client's skills directory. See [agent-tools-objects.md](agent-tools-objects.md) for bundles, agent skills, and how deployments share skill directories. Future phases may add hooks and other components.
 
 ## DeployAgentTools
 
@@ -22,24 +22,25 @@ In the current phase, `DeployAgentTools` wraps `InstallMCPServer` to deploy MCP 
 
 ```wl
 DeployAgentTools[target]
-DeployAgentTools[target, server]
-DeployAgentTools[target, server, opts]
+DeployAgentTools[target, tools]
+DeployAgentTools[target, tools, opts]
 DeployAgentTools[All]
-DeployAgentTools[All, server]
+DeployAgentTools[All, tools]
 ```
 
 ### Arguments
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `target` | `String`, `File[...]`, `{String, dir}`, or `All` | The client to deploy to (same target formats as `InstallMCPServer`). Pass `All` to deploy to every client in `$SupportedMCPClients` (see [Deploying to All Clients](#deploying-to-all-clients)). |
-| `server` | `MCPServerObject`, `String`, or `Automatic` | The MCP server to deploy. Defaults to `Automatic`, which resolves to the target client's default toolset (see [mcp-clients.md](mcp-clients.md#clients-with-installmcpserver-support)) — `"WolframLanguage"` for coding clients and `"Wolfram"` for chat clients. For `File[...]` targets the per-client default only applies when the path or content identifies a known client (or `"ApplicationName"` is supplied); otherwise it falls back to `"Wolfram"`. |
+| `target` | `String`, `File[...]`, `{String, dir}`, or `All` | The client to deploy to (same target formats as `InstallMCPServer`). Pass `All` to deploy to every client in `$SupportedClients` (see [Deploying to All Clients](#deploying-to-all-clients)). |
+| `tools` | `AgentToolsObject`, `MCPServerObject`, `String`, `Association`, or `Automatic` | The toolset to deploy. A name resolves to a user-created MCP server, a built-in bundle (`$DefaultAgentTools`), a paclet bundle, or a paclet MCP server, in that order (installing the paclet if necessary); an association is an ad hoc `AgentToolsObject`. Defaults to `Automatic`, which resolves to the target client's default toolset (see [mcp-clients.md](mcp-clients.md#clients-with-installmcpserver-support)) — `"WolframLanguage"` for coding clients and `"Wolfram"` for chat clients. For `File[...]` targets the per-client default only applies when the path or content identifies a known client (or `"ApplicationName"` is supplied); otherwise it falls back to `"Wolfram"`. |
 
 ### Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `OverwriteTarget` | `False` | If `True`, replace any existing deployment for the same target |
+| `OverwriteTarget` | `False` | `True` replaces conflicting deployments and updates unmodified agent skills from the same source; `All` also overwrites skill directories that were modified or belong to a different skill (see [agent-tools-objects.md](agent-tools-objects.md#overwritetarget)) |
+| `"SkillsDirectory"` | `Automatic` | Where to install agent skills: derived from the target (`Automatic`), a directory (`File[...]`), or not at all (`None`) |
 
 `DeployAgentTools` also accepts all `InstallMCPServer` options, which are passed through:
 
@@ -71,17 +72,17 @@ deps = DeployAgentTools[All]
 
 ### Behavior
 
-1. Validates the target specification; issues `AgentTools::InvalidDeployTarget` for unrecognized forms
-2. Resolves the target to a concrete config file path (same resolution as `InstallMCPServer`)
-3. For `{name, dir}` targets, the directory is expanded to an absolute `File[...]` path in the stored deployment record
-4. Checks for an existing deployment matching the config file; errors if one exists (unless `OverwriteTarget -> True`)
-5. Calls `InstallMCPServer` with the resolved target and filtered options
-6. Creates a persistent deployment record on disk
+1. Resolves the toolset to an `AgentToolsObject` (an `MCPServerObject` becomes a bundle with just that server)
+2. Validates the target specification (`AgentTools::InvalidDeployTarget` for unrecognized forms) and resolves the MCP config file and the skills directory; components that the target doesn't support are skipped with a warning, and the deployment fails if nothing can be deployed
+3. Runs the checks that `InstallMCPServer` would run (LLMKit, tool initialization) and prepares the skills, before taking a file lock that serializes deployments across kernels
+4. Checks for conflicting deployments — the same MCP config key in the same config file, or the same toolset for the same client and location — and fails (unless `OverwriteTarget -> True`)
+5. Checks every skill destination (see [agent-tools-objects.md](agent-tools-objects.md#shared-skill-directories)), then installs the MCP servers and agent skills, undoing everything if a step fails
+6. Creates a persistent deployment record on disk and removes the deployments it replaced
 7. Returns an `AgentToolsDeployment` object
 
 ### Deploying to All Clients
 
-`DeployAgentTools[All]` deploys to every client in `$SupportedMCPClients`. The server defaults to `Automatic` so each client receives its own configured default toolset (`"WolframLanguage"` for coding clients, `"Wolfram"` for chat clients); pass an explicit second argument to deploy the same server everywhere.
+`DeployAgentTools[All]` deploys to every client in `$SupportedClients`. The server defaults to `Automatic` so each client receives its own configured default toolset (`"WolframLanguage"` for coding clients, `"Wolfram"` for chat clients); pass an explicit second argument to deploy the same server everywhere.
 
 ```wl
 (* One default deployment per supported client *)
@@ -98,7 +99,8 @@ The return value is a list with one entry per client:
 
 - `AgentToolsDeployment[...]` for each newly created deployment
 - `Missing["DeploymentExists", target]` for any client that already had a deployment and was skipped (only when `OverwriteTarget -> False`)
-- `Missing["Unsupported", {target, $OperatingSystem}]` for any client that has no install location on the current operating system (e.g. clients with platform-specific config paths)
+- `Missing["Unsupported", {target, $OperatingSystem}]` for any client to which none of the toolset's components can be deployed: the client has no MCP install location on the current operating system (e.g. clients with platform-specific config paths), or, for a toolset with only agent skills, the client has no skills directory (e.g. Claude Desktop, LM Studio, Amazon Q)
+- `Missing["AgentSkillConflict", target]` for any client where an agent skill conflicts with an existing skill directory (use `OverwriteTarget -> All`)
 
 When at least one client is skipped because of an existing deployment, `AgentTools::DeploymentsExistWarning` is issued. Use `OverwriteTarget -> True` to replace existing deployments instead of skipping them. The warning is not issued for unsupported clients — those entries simply appear in the result list so callers can see which clients were skipped.
 
@@ -116,10 +118,14 @@ dep["MCP", "Options"]
 | Property | Returns |
 |----------|---------|
 | `"UUID"` | UUID string uniquely identifying the deployment |
+| `"ToolsetType"` | `"AgentToolsObject"` or `"MCPServerObject"` |
+| `"AgentToolsObject"` | The deployed bundle, resolved again by name (`Missing["NotAvailable"]` for ad hoc bundles); for an `MCPServerObject` deployment, the server's implicit bundle |
+| `"MCPServerNames"` / `"MCPServerObjects"` | The deployed MCP servers |
+| `"AgentSkills"` / `"SkillsDirectory"` | The installed agent skills and their directory |
 | `"ClientName"` | Canonical client name (e.g. `"ClaudeDesktop"`) |
 | `"Target"` | Original target specification |
-| `"Toolset"` | Toolset name string (e.g. `"WolframLanguage"`). The canonical name for the deployed MCP server. |
-| `"Server"` | Legacy shortcut for `data["MCP", "Server"]`. New deployments dual-write this alongside `"Toolset"`; prefer `"Toolset"` in new code. |
+| `"Toolset"` | The name of the deployed toolset: the bundle name (e.g. `"WolframLanguage"` or `"PublisherID/MyPaclet/MyPaclet"`), or the server name for an `MCPServerObject` deployment. For a bundle this is not necessarily a server name; use `"Server"`/`"MCPServerNames"` for server names. |
+| `"Server"` | The primary (first) MCP server name (`data["MCP", "Server"]`); `"MCPServerNames"` gives all of them. The raw record's top-level `"Toolset"` key also holds the primary server name, for compatibility with older versions. |
 | `"ConfigFile"` | `File[...]` pointing to the client's config file |
 | `"Timestamp"` | `DateObject` when the deployment was created |
 | `"PacletVersion"` | Paclet version at deployment time |
@@ -140,8 +146,9 @@ DeleteObject[dep]
 ```
 
 This:
-1. Calls `UninstallMCPServer` to remove the server configuration from the client
-2. Deletes the deployment record from disk
+1. Removes the recorded MCP config entries from the client's configuration (by their recorded keys — no server is resolved again, so this works after the paclet was updated or uninstalled)
+2. Releases the deployment's agent skills: a skill directory is deleted only when no other deployment uses it and it was not modified after it was installed (see [agent-tools-objects.md](agent-tools-objects.md#shared-skill-directories))
+3. Deletes the deployment record from disk
 
 ## DeployedAgentTools
 
@@ -175,7 +182,9 @@ Deployment records are stored as WXF files under:
 $UserBaseDirectory/ApplicationData/Wolfram/AgentTools/Deployments/<ClientName>/<UUID>/Deployment.wxf
 ```
 
-Deployments are grouped by canonical client name. There is no master index file — `DeployedAgentTools` scans the directory structure directly.
+Deployments are grouped by canonical client name. There is no master index file — `DeployedAgentTools` scans the directory structure directly. The same directory holds the skill registry (`.SkillRegistry/`) and the lock file (`.lock`); dot-prefixed entries are not deployments.
+
+Records written since agent skills were added use schema version 2, a superset of version 1: the `"MCP"` and top-level `"Toolset"` keys still describe the primary MCP server, so older AgentTools versions can list and remove such deployments. Version 1 records are still read, conflict-checked, and removable. See [Specs/AgentToolsObject.md](../Specs/AgentToolsObject.md#deployment-records-schema-v2).
 
 ## Related Files
 

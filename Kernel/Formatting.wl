@@ -107,6 +107,61 @@ niceLabel // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*AgentToolsObject*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*makeAgentToolsObjectBoxes*)
+makeAgentToolsObjectBoxes // beginDefinition;
+
+makeAgentToolsObjectBoxes[ obj_AgentToolsObject, fmt_ ] :=
+    BoxForm`ArrangeSummaryBox[
+        AgentToolsObject,
+        obj,
+        makeMCPServerIcon @ obj,
+        makeAgentToolsSummaryRows @ obj,
+        makeAgentToolsHiddenRows @ obj,
+        fmt
+    ];
+
+makeAgentToolsObjectBoxes // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeAgentToolsSummaryRows*)
+makeAgentToolsSummaryRows // beginDefinition;
+
+makeAgentToolsSummaryRows[ obj_ ] := Flatten @ {
+    summaryItem[ "Name"        , obj[ "Name" ] ],
+    summaryItem[ "MCP Servers" , nameList @ obj[ "MCPServerNames" ] ],
+    summaryItem[ "Agent Skills", nameList @ obj[ "AgentSkillNames" ] ]
+};
+
+makeAgentToolsSummaryRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeAgentToolsHiddenRows*)
+makeAgentToolsHiddenRows // beginDefinition;
+
+makeAgentToolsHiddenRows[ obj_ ] := Flatten @ {
+    summaryItem[ "Description", obj[ "Description" ] ],
+    summaryItem[ "Location"   , obj[ "Location" ] ]
+};
+
+makeAgentToolsHiddenRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*nameList*)
+nameList // beginDefinition;
+nameList[ { } ] := Style[ "None", Gray ];
+nameList[ names: { __ } ] := Row[ names, ", " ];
+nameList[ other_ ] := other;
+nameList // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*AgentToolsDeployment*)
 
 (* ::**************************************************************************************************************:: *)
@@ -151,7 +206,8 @@ makeDeploymentHiddenRows[ dep_ ] :=
         Flatten @ {
             summaryItem[ "Scope"     , dep[ "Scope"      ] ],
             summaryItem[ "ConfigFile", dep[ "ConfigFile" ] ],
-            toolItem
+            toolItem,
+            Replace[ dep[ "AgentSkills" ], { names: { __String } :> summaryItem[ "Agent Skills", Multicolumn[ names, 5 ] ], _ :> Nothing } ]
         }
     ];
 
