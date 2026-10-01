@@ -459,40 +459,33 @@ VerificationTest[
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Rollback*)
-(* A read-only parent directory makes writing skills fail after the MCP server has been installed (skill conflicts are
-   detected before anything is written, so they can't be used to test rolling back). Unix only. *)
-If[ $OperatingSystem =!= "Windows",
-    VerificationTest[
-        $rollbackProject = CreateDirectory[ ];
-        $readOnly = CreateDirectory @ FileNameJoin @ { $rollbackProject, "read-only" };
-        Run[ "chmod 555 '" <> $readOnly <> "'" ];
-        withTestEnvironment @ DeployAgentTools[
-            { "ClaudeCode", $rollbackProject },
-            $bundle,
-            "SkillsDirectory" -> File @ FileNameJoin @ { $readOnly, "skills" },
-            "VerifyLLMKit"    -> False
-        ],
-        _Failure,
-        { DeployAgentTools::AgentSkillWriteFailed },
-        SameTest -> MatchQ,
-        TestID   -> "Rollback-Fails@@Tests/DeployAgentToolsSkills.wlt:465,5-479,6"
-    ];
+(* A skills directory that can't be created (its parent is a file) makes writing skills fail after the MCP server has
+   been installed (skill conflicts are detected before anything is written, so they can't be used to test rolling back).
+   File permissions can't be used for this: they aren't enforced for root, which runs the tests in CI. *)
+VerificationTest[
+    $rollbackProject = CreateDirectory[ ];
+    $notADirectory = FileNameJoin @ { $rollbackProject, "not-a-directory" };
+    Export[ $notADirectory, "", "Text" ];
+    withTestEnvironment @ DeployAgentTools[
+        { "ClaudeCode", $rollbackProject },
+        $bundle,
+        "SkillsDirectory" -> File @ FileNameJoin @ { $notADirectory, "skills" },
+        "VerifyLLMKit"    -> False
+    ],
+    _Failure,
+    { DeployAgentTools::AgentSkillWriteFailed },
+    SameTest -> MatchQ,
+    TestID   -> "Rollback-Fails@@Tests/DeployAgentToolsSkills.wlt:465,1-479,2"
+]
 
-    VerificationTest[
-        {
-            FileExistsQ @ FileNameJoin @ { $rollbackProject, ".mcp.json" },
-            withTestEnvironment @ DeployedAgentTools[ "ClaudeCode" ],
-            registryEntries[ ]
-        },
-        { False, { }, { } },
-        TestID -> "Rollback-NothingLeft@@Tests/DeployAgentToolsSkills.wlt:481,5-489,6"
-    ];
-
-    VerificationTest[
-        Run[ "chmod 755 '" <> $readOnly <> "'" ],
-        0,
-        TestID -> "Rollback-Cleanup@@Tests/DeployAgentToolsSkills.wlt:491,5-495,6"
-    ]
+VerificationTest[
+    {
+        FileExistsQ @ FileNameJoin @ { $rollbackProject, ".mcp.json" },
+        withTestEnvironment @ DeployedAgentTools[ "ClaudeCode" ],
+        registryEntries[ ]
+    },
+    { False, { }, { } },
+    TestID -> "Rollback-NothingLeft@@Tests/DeployAgentToolsSkills.wlt:481,1-489,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -528,7 +521,7 @@ VerificationTest[
     withTestEnvironment[ $v1Dep /@ { "Toolset", "ToolsetType", "MCPServerNames", "AgentSkills", "Scope" } ],
     { "WolframLanguage", "MCPServerObject", { "WolframLanguage" }, { }, _Missing },
     SameTest -> MatchQ,
-    TestID   -> "V1-Normalized@@Tests/DeployAgentToolsSkills.wlt:501,1-532,2"
+    TestID   -> "V1-Normalized@@Tests/DeployAgentToolsSkills.wlt:494,1-525,2"
 ]
 
 VerificationTest[
@@ -536,14 +529,14 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::DeploymentExists },
     SameTest -> MatchQ,
-    TestID   -> "V1-ConflictDetected@@Tests/DeployAgentToolsSkills.wlt:534,1-540,2"
+    TestID   -> "V1-ConflictDetected@@Tests/DeployAgentToolsSkills.wlt:527,1-533,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ $v1Dep;
     KeyExistsQ[ readJSON @ $v1Config, "mcpServers" ] && ! KeyExistsQ[ readJSON[ $v1Config ][ "mcpServers" ], "Wolfram" ],
     True,
-    TestID -> "V1-Delete@@Tests/DeployAgentToolsSkills.wlt:542,1-547,2"
+    TestID -> "V1-Delete@@Tests/DeployAgentToolsSkills.wlt:535,1-540,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -557,7 +550,7 @@ VerificationTest[
     withTestEnvironment @ UninstallMCPServer[ $oldDep[ "Data" ][ "MCP", "ConfigFile" ], $oldDep[ "Data" ][ "Toolset" ] ],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "OldVersion-UninstallByRecordedToolset@@Tests/DeployAgentToolsSkills.wlt:554,1-561,2"
+    TestID   -> "OldVersion-UninstallByRecordedToolset@@Tests/DeployAgentToolsSkills.wlt:547,1-554,2"
 ]
 
 (* Simulate the old version deleting the record: the next sweep releases the orphaned skills *)
@@ -569,14 +562,14 @@ VerificationTest[
         DirectoryQ @ FileNameJoin @ { $oldProject, ".claude", "skills", "mem-skill" }
     },
     { False, False },
-    TestID -> "OldVersion-SweepReleasesOrphans@@Tests/DeployAgentToolsSkills.wlt:564,1-573,2"
+    TestID -> "OldVersion-SweepReleasesOrphans@@Tests/DeployAgentToolsSkills.wlt:557,1-566,2"
 ]
 
 VerificationTest[
     withTestEnvironment[ DeleteObject /@ DeployedAgentTools[ ] ];
     withTestEnvironment @ { DeployedAgentTools[ ], registryEntries[ ] },
     { { }, { } },
-    TestID -> "OldVersion-Cleanup@@Tests/DeployAgentToolsSkills.wlt:575,1-580,2"
+    TestID -> "OldVersion-Cleanup@@Tests/DeployAgentToolsSkills.wlt:568,1-573,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -590,19 +583,19 @@ VerificationTest[
     $pacletDep = withTestEnvironment @ DeployAgentTools[ { "ClaudeCode", $pacletProject }, "MockMCPPacletSkills/SkillsBundle", "VerifyLLMKit" -> False ],
     _AgentToolsDeployment? agentToolsDeploymentQ,
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-Deploy@@Tests/DeployAgentToolsSkills.wlt:588,1-594,2"
+    TestID   -> "PacletBundle-Deploy@@Tests/DeployAgentToolsSkills.wlt:581,1-587,2"
 ]
 
 VerificationTest[
     withTestEnvironment[ $pacletDep /@ { "Toolset", "ToolsetType", "MCPServerNames" } ],
     { "MockMCPPacletSkills/SkillsBundle", "AgentToolsObject", { "MockMCPPacletSkills/SkillsServer" } },
-    TestID -> "PacletBundle-Properties@@Tests/DeployAgentToolsSkills.wlt:596,1-600,2"
+    TestID -> "PacletBundle-Properties@@Tests/DeployAgentToolsSkills.wlt:589,1-593,2"
 ]
 
 VerificationTest[
     Sort @ withTestEnvironment @ $pacletDep[ "AgentSkills" ],
     Sort @ { "directory-skill", "assoc-skill", "llmskill-skill", "combined-skill", "located-skill", "foreign-skill" },
-    TestID -> "PacletBundle-Skills@@Tests/DeployAgentToolsSkills.wlt:602,1-606,2"
+    TestID -> "PacletBundle-Skills@@Tests/DeployAgentToolsSkills.wlt:595,1-599,2"
 ]
 
 VerificationTest[
@@ -613,7 +606,7 @@ VerificationTest[
         registryEntry[ "directory-skill" ][ "Version" ]
     },
     { True, True, "MockMCPPacletSkills/directory-skill", "1.0.0" },
-    TestID -> "PacletBundle-Installed@@Tests/DeployAgentToolsSkills.wlt:608,1-617,2"
+    TestID -> "PacletBundle-Installed@@Tests/DeployAgentToolsSkills.wlt:601,1-610,2"
 ]
 
 (* The second bundle shares directory-skill: it gets another reference *)
@@ -622,7 +615,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::DeploymentExists },
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-SharedServerConflicts@@Tests/DeployAgentToolsSkills.wlt:620,1-626,2"
+    TestID   -> "PacletBundle-SharedServerConflicts@@Tests/DeployAgentToolsSkills.wlt:613,1-619,2"
 ]
 
 VerificationTest[
@@ -634,14 +627,14 @@ VerificationTest[
         DirectoryQ @ FileNameJoin @ { $pacletProject, ".claude", "skills", "directory-skill" }
     },
     { { "dev-skill", "directory-skill" }, { withTestEnvironment @ $devDep[ "UUID" ] }, False, True },
-    TestID -> "PacletBundle-ReplaceKeepsSharedSkill@@Tests/DeployAgentToolsSkills.wlt:628,1-638,2"
+    TestID -> "PacletBundle-ReplaceKeepsSharedSkill@@Tests/DeployAgentToolsSkills.wlt:621,1-631,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ $devDep;
     { DirectoryQ @ FileNameJoin @ { $pacletProject, ".claude", "skills", "directory-skill" }, registryEntries[ ] },
     { False, { } },
-    TestID -> "PacletBundle-Delete@@Tests/DeployAgentToolsSkills.wlt:640,1-645,2"
+    TestID -> "PacletBundle-Delete@@Tests/DeployAgentToolsSkills.wlt:633,1-638,2"
 ]
 
 (* The paclet name refers to the paclet's bundles; it has several, so the name is ambiguous *)
@@ -650,7 +643,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::AgentToolsBundleNameAmbiguous },
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-PacletNameAmbiguous@@Tests/DeployAgentToolsSkills.wlt:648,1-654,2"
+    TestID   -> "PacletBundle-PacletNameAmbiguous@@Tests/DeployAgentToolsSkills.wlt:641,1-647,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -682,7 +675,7 @@ VerificationTest[
     { $remoteServerDep, $remoteInstallCalls },
     { _AgentToolsDeployment? agentToolsDeploymentQ, { "MockMCPPacletSkills" } },
     SameTest -> MatchQ,
-    TestID   -> "Remote-ServerObjectInstallsPaclet@@Tests/DeployAgentToolsSkills.wlt:679,1-686,2"
+    TestID   -> "Remote-ServerObjectInstallsPaclet@@Tests/DeployAgentToolsSkills.wlt:672,1-679,2"
 ]
 
 VerificationTest[
@@ -694,7 +687,7 @@ VerificationTest[
     { $remoteBundleDep, $remoteInstallCalls, FileExistsQ @ skillFile[ FileNameJoin @ { $remoteProject, ".claude", "skills" }, "directory-skill" ] },
     { _AgentToolsDeployment? agentToolsDeploymentQ, { "MockMCPPacletSkills" }, True },
     SameTest -> MatchQ,
-    TestID   -> "Remote-BundleInstallsPaclet@@Tests/DeployAgentToolsSkills.wlt:688,1-698,2"
+    TestID   -> "Remote-BundleInstallsPaclet@@Tests/DeployAgentToolsSkills.wlt:681,1-691,2"
 ]
 
 VerificationTest[
@@ -709,7 +702,7 @@ VerificationTest[
     },
     { _Failure, _Failure, _Failure, { } },
     SameTest -> MatchQ,
-    TestID   -> "Remote-WildcardsNeverInstall@@Tests/DeployAgentToolsSkills.wlt:700,1-713,2"
+    TestID   -> "Remote-WildcardsNeverInstall@@Tests/DeployAgentToolsSkills.wlt:693,1-706,2"
 ]
 
 VerificationTest[
@@ -717,7 +710,7 @@ VerificationTest[
     PacletFind[ "MockMCPPacletSkills" ],
     { __PacletObject },
     SameTest -> MatchQ,
-    TestID   -> "Remote-Restore@@Tests/DeployAgentToolsSkills.wlt:715,1-721,2"
+    TestID   -> "Remote-Restore@@Tests/DeployAgentToolsSkills.wlt:708,1-714,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -735,7 +728,7 @@ VerificationTest[
     $accentedDep = withTestEnvironment @ DeployAgentTools[ "Zed", <| "Name" -> "Accented", "AgentSkills" -> { File @ $accentedSkill } |> ],
     _AgentToolsDeployment? agentToolsDeploymentQ,
     SameTest -> MatchQ,
-    TestID   -> "Accented-Deploy@@Tests/DeployAgentToolsSkills.wlt:727,1-739,2"
+    TestID   -> "Accented-Deploy@@Tests/DeployAgentToolsSkills.wlt:720,1-732,2"
 ]
 
 VerificationTest[
@@ -745,14 +738,14 @@ VerificationTest[
         #[ "Description" ] & /@ AgentToolsObject[ <| "Name" -> "Accented", "AgentSkills" -> { File @ $accentedSkill } |> ][ "LLMSkills" ]
     },
     { True, { "cafe-skill" }, { "Caf\[EAcute] helper for the Schr\[ODoubleDot]dinger equation" } },
-    TestID -> "Accented-Properties@@Tests/DeployAgentToolsSkills.wlt:741,1-749,2"
+    TestID -> "Accented-Properties@@Tests/DeployAgentToolsSkills.wlt:734,1-742,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ $accentedDep;
     withTestEnvironment @ DirectoryQ @ FileNameJoin @ { $agentsSkills, "cafe-skill" },
     False,
-    TestID -> "Accented-Delete@@Tests/DeployAgentToolsSkills.wlt:751,1-756,2"
+    TestID -> "Accented-Delete@@Tests/DeployAgentToolsSkills.wlt:744,1-749,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -768,7 +761,7 @@ If[ $OperatingSystem =!= "Windows",
         $linkClaudeDep = withTestEnvironment @ DeployAgentTools[ "ClaudeCode", $skillsOnly, OverwriteTarget -> All ];
         Length @ registryEntries[ ],
         2,
-        TestID -> "PerSkillLink-TwoEntries@@Tests/DeployAgentToolsSkills.wlt:764,5-772,6"
+        TestID -> "PerSkillLink-TwoEntries@@Tests/DeployAgentToolsSkills.wlt:757,5-765,6"
     ];
 
     VerificationTest[
@@ -779,7 +772,7 @@ If[ $OperatingSystem =!= "Windows",
             registryEntries[ ]
         },
         { False, False, { } },
-        TestID -> "PerSkillLink-BothRemoved@@Tests/DeployAgentToolsSkills.wlt:774,5-783,6"
+        TestID -> "PerSkillLink-BothRemoved@@Tests/DeployAgentToolsSkills.wlt:767,5-776,6"
     ]
 ]
 
@@ -813,7 +806,7 @@ VerificationTest[
     { $pubDep, $pubInstallCalls },
     { _AgentToolsDeployment? agentToolsDeploymentQ, { "RvPubX/Tools" } },
     SameTest -> MatchQ,
-    TestID   -> "PublisherNamedPaclet-RemoteFound@@Tests/DeployAgentToolsSkills.wlt:791,1-817,2"
+    TestID   -> "PublisherNamedPaclet-RemoteFound@@Tests/DeployAgentToolsSkills.wlt:784,1-810,2"
 ]
 
 VerificationTest[
@@ -821,7 +814,7 @@ VerificationTest[
     PacletDirectoryUnload /@ { $pubPaclet, $toolsPaclet };
     Quiet @ DeleteDirectory[ $pubDirectory, DeleteContents -> True ],
     Null,
-    TestID -> "PublisherNamedPaclet-Cleanup@@Tests/DeployAgentToolsSkills.wlt:819,1-825,2"
+    TestID -> "PublisherNamedPaclet-Cleanup@@Tests/DeployAgentToolsSkills.wlt:812,1-818,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -837,14 +830,14 @@ VerificationTest[
     ];
     withTestEnvironment @ $relativeDep[ "SkillsDirectory" ],
     File @ FileNameJoin @ { $relativeParent, "relproj", ".claude", "skills" },
-    TestID -> "RelativeProject-AbsoluteSkillsDirectory@@Tests/DeployAgentToolsSkills.wlt:830,1-841,2"
+    TestID -> "RelativeProject-AbsoluteSkillsDirectory@@Tests/DeployAgentToolsSkills.wlt:823,1-834,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ $relativeDep;
     Quiet @ DeleteDirectory[ $relativeParent, DeleteContents -> True ],
     Null,
-    TestID -> "RelativeProject-Cleanup@@Tests/DeployAgentToolsSkills.wlt:843,1-848,2"
+    TestID -> "RelativeProject-Cleanup@@Tests/DeployAgentToolsSkills.wlt:836,1-841,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -856,7 +849,7 @@ VerificationTest[
         Wolfram`AgentTools`DeployAgentTools`Private`fileTargetLocation[ File[ "C:\\Users\\x\\.claude.json" ], "Unknown", Automatic ]
     ][ "Scope" ],
     "Global",
-    TestID -> "NativeSeparators-GlobalConfig@@Tests/DeployAgentToolsSkills.wlt:854,1-860,2"
+    TestID -> "NativeSeparators-GlobalConfig@@Tests/DeployAgentToolsSkills.wlt:847,1-853,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -871,32 +864,30 @@ VerificationTest[
     withTestEnvironment @ DeleteObject @ $replacedDep,
     Null,
     { AgentToolsDeployment::AgentSkillReplacedNotRemoved },
-    TestID -> "ReleaseMessages-ReplacedByFile@@Tests/DeployAgentToolsSkills.wlt:866,1-875,2"
+    TestID -> "ReleaseMessages-ReplacedByFile@@Tests/DeployAgentToolsSkills.wlt:859,1-868,2"
 ]
 
-(* Removing an unmodified skill fails (the skills root's parent is read-only, so it can't be moved to a backup) *)
-If[ $OperatingSystem =!= "Windows",
-    VerificationTest[
-        $lockedParent = CreateDirectory[ ];
-        $lockedRoot = FileNameJoin @ { $lockedParent, "skills" };
-        $lockedDep = withTestEnvironment @ DeployAgentTools[ "ClaudeCode", $skillsOnly, "SkillsDirectory" -> File @ $lockedRoot ];
-        Run[ "chmod a-w '" <> $lockedParent <> "'" ];
-        WithCleanup[
-            withTestEnvironment @ DeleteObject @ $lockedDep,
-            Run[ "chmod u+w '" <> $lockedParent <> "'" ]
-        ],
-        Null,
-        { AgentToolsDeployment::AgentSkillRemoveFailed },
-        TestID -> "ReleaseMessages-RemoveFailed@@Tests/DeployAgentToolsSkills.wlt:879,5-891,6"
-    ];
+(* Removing an unmodified skill fails because it can't be moved to a backup (e.g. a file in use on Windows, or a
+   read-only parent directory). Simulated, since file permissions aren't enforced for root, which runs the tests in CI. *)
+VerificationTest[
+    $lockedParent = CreateDirectory[ ];
+    $lockedRoot = FileNameJoin @ { $lockedParent, "skills" };
+    $lockedDep = withTestEnvironment @ DeployAgentTools[ "ClaudeCode", $skillsOnly, "SkillsDirectory" -> File @ $lockedRoot ];
+    withTestEnvironment @ Block[
+        { Wolfram`AgentTools`AgentSkills`Private`moveSkillEntry = False & },
+        DeleteObject @ $lockedDep
+    ],
+    Null,
+    { AgentToolsDeployment::AgentSkillRemoveFailed },
+    TestID -> "ReleaseMessages-RemoveFailed@@Tests/DeployAgentToolsSkills.wlt:872,1-883,2"
+]
 
-    (* The registry entry is kept, so the next sweep removes the directory *)
-    VerificationTest[
-        withTestEnvironment @ Wolfram`AgentTools`Common`sweepSkillRegistry[ ];
-        DirectoryQ @ FileNameJoin @ { $lockedRoot, "dir-skill" },
-        False,
-        TestID -> "ReleaseMessages-RemoveFailed-Retried@@Tests/DeployAgentToolsSkills.wlt:894,5-899,6"
-    ]
+(* The registry entry is kept, so the next sweep removes the directory *)
+VerificationTest[
+    withTestEnvironment @ Wolfram`AgentTools`Common`sweepSkillRegistry[ ];
+    DirectoryQ @ FileNameJoin @ { $lockedRoot, "dir-skill" },
+    False,
+    TestID -> "ReleaseMessages-RemoveFailed-Retried@@Tests/DeployAgentToolsSkills.wlt:886,1-891,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -915,7 +906,7 @@ If[ $OperatingSystem =!= "Windows",
         ];
         { Length @ registryEntries[ ], Length @ First[ registryEntries[ ] ][ "References" ] },
         { 1, 2 },
-        TestID -> "InstalledSource-OneEntry@@Tests/DeployAgentToolsSkills.wlt:908,5-919,6"
+        TestID -> "InstalledSource-OneEntry@@Tests/DeployAgentToolsSkills.wlt:899,5-910,6"
     ];
 
     VerificationTest[
@@ -926,14 +917,14 @@ If[ $OperatingSystem =!= "Windows",
             registryEntries[ ]
         },
         { False, { } },
-        TestID -> "InstalledSource-RemovedByLastDeployment@@Tests/DeployAgentToolsSkills.wlt:921,5-930,6"
+        TestID -> "InstalledSource-RemovedByLastDeployment@@Tests/DeployAgentToolsSkills.wlt:912,5-921,6"
     ];
 
     VerificationTest[
         withTestEnvironment @ Quiet @ DeleteFile @ FileNameJoin @ { $claudeSkills, "dir-skill" };
         withTestEnvironment @ FileExistsQ @ FileNameJoin @ { $claudeSkills, "dir-skill" },
         False,
-        TestID -> "InstalledSource-Cleanup@@Tests/DeployAgentToolsSkills.wlt:932,5-937,6"
+        TestID -> "InstalledSource-Cleanup@@Tests/DeployAgentToolsSkills.wlt:923,5-928,6"
     ]
 ]
 
@@ -959,7 +950,7 @@ If[ $OperatingSystem =!= "Windows",
         $viaLinkCodex  = withTestEnvironment @ DeployAgentTools[ "Codex", $viaLinkBundle ];
         withTestEnvironment @ First[ $viaLinkCodex[ "Skills" ][ "Installed" ] ][ "Directory" ],
         withTestEnvironment @ File @ FileNameJoin @ { $agentsSkills, "dir-skill" },
-        TestID -> "LinkedExternal-OwnDirectory@@Tests/DeployAgentToolsSkills.wlt:956,5-963,6"
+        TestID -> "LinkedExternal-OwnDirectory@@Tests/DeployAgentToolsSkills.wlt:947,5-954,6"
     ];
 
     VerificationTest[
@@ -967,7 +958,7 @@ If[ $OperatingSystem =!= "Windows",
         withTestEnvironment @ DeleteObject @ $viaLinkCodex;
         { withTestEnvironment @ DirectoryQ @ FileNameJoin @ { $agentsSkills, "dir-skill" }, registryEntries[ ] },
         { True, { } },
-        TestID -> "LinkedExternal-UserSkillKept@@Tests/DeployAgentToolsSkills.wlt:965,5-971,6"
+        TestID -> "LinkedExternal-UserSkillKept@@Tests/DeployAgentToolsSkills.wlt:956,5-962,6"
     ];
 
     (* The user replaced the external skill and another client's deployment then wrote its own copy there: whichever
@@ -980,21 +971,21 @@ If[ $OperatingSystem =!= "Windows",
         withTestEnvironment @ DeleteObject @ $aliasCodex,
         Null,
         { AgentToolsDeployment::AgentSkillInUse },
-        TestID -> "LinkedExternal-OwnerDeletedFirst@@Tests/DeployAgentToolsSkills.wlt:975,5-984,6"
+        TestID -> "LinkedExternal-OwnerDeletedFirst@@Tests/DeployAgentToolsSkills.wlt:966,5-975,6"
     ];
 
     VerificationTest[
         withTestEnvironment @ DeleteObject @ $aliasClaude;
         { withTestEnvironment @ DirectoryQ @ FileNameJoin @ { $agentsSkills, "dir-skill" }, registryEntries[ ] },
         { False, { } },
-        TestID -> "LinkedExternal-RemovedAfterAlias@@Tests/DeployAgentToolsSkills.wlt:986,5-991,6"
+        TestID -> "LinkedExternal-RemovedAfterAlias@@Tests/DeployAgentToolsSkills.wlt:977,5-982,6"
     ];
 
     VerificationTest[
         withTestEnvironment @ Quiet @ DeleteFile @ FileNameJoin @ { $claudeSkills, "dir-skill" };
         withTestEnvironment @ FileExistsQ @ FileNameJoin @ { $claudeSkills, "dir-skill" },
         False,
-        TestID -> "LinkedExternal-Cleanup@@Tests/DeployAgentToolsSkills.wlt:993,5-998,6"
+        TestID -> "LinkedExternal-Cleanup@@Tests/DeployAgentToolsSkills.wlt:984,5-989,6"
     ]
 ]
 
@@ -1006,7 +997,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::AgentSkillsDisabled },
     SameTest -> MatchQ,
-    TestID   -> "Invalid-SkillsOnlyWithoutSkills@@Tests/DeployAgentToolsSkills.wlt:1004,1-1010,2"
+    TestID   -> "Invalid-SkillsOnlyWithoutSkills@@Tests/DeployAgentToolsSkills.wlt:995,1-1001,2"
 ]
 
 VerificationTest[
@@ -1014,7 +1005,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::MCPServerNotFound },
     SameTest -> MatchQ,
-    TestID   -> "Invalid-MalformedName@@Tests/DeployAgentToolsSkills.wlt:1012,1-1018,2"
+    TestID   -> "Invalid-MalformedName@@Tests/DeployAgentToolsSkills.wlt:1003,1-1009,2"
 ]
 
 VerificationTest[
@@ -1022,7 +1013,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::MCPServerNotFound },
     SameTest -> MatchQ,
-    TestID   -> "Invalid-TrailingSlash@@Tests/DeployAgentToolsSkills.wlt:1020,1-1026,2"
+    TestID   -> "Invalid-TrailingSlash@@Tests/DeployAgentToolsSkills.wlt:1011,1-1017,2"
 ]
 
 VerificationTest[
@@ -1030,7 +1021,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "Invalid-DirectoryAsConfigFile@@Tests/DeployAgentToolsSkills.wlt:1028,1-1034,2"
+    TestID   -> "Invalid-DirectoryAsConfigFile@@Tests/DeployAgentToolsSkills.wlt:1019,1-1025,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1043,7 +1034,7 @@ VerificationTest[
     _Failure,
     { DeployAgentTools::DeploymentExists },
     SameTest -> MatchQ,
-    TestID   -> "BuiltInIdentity-Conflicts@@Tests/DeployAgentToolsSkills.wlt:1040,1-1047,2"
+    TestID   -> "BuiltInIdentity-Conflicts@@Tests/DeployAgentToolsSkills.wlt:1031,1-1038,2"
 ]
 
 VerificationTest[
@@ -1053,14 +1044,14 @@ VerificationTest[
         withTestEnvironment @ Length @ DeployedAgentTools[ "ClaudeCode" ]
     },
     { { "Wolfram" }, 1 },
-    TestID -> "BuiltInIdentity-Replaced@@Tests/DeployAgentToolsSkills.wlt:1049,1-1057,2"
+    TestID -> "BuiltInIdentity-Replaced@@Tests/DeployAgentToolsSkills.wlt:1040,1-1048,2"
 ]
 
 VerificationTest[
     withTestEnvironment[ DeleteObject /@ DeployedAgentTools[ "ClaudeCode" ] ];
     withTestEnvironment @ DeployedAgentTools[ "ClaudeCode" ],
     { },
-    TestID -> "BuiltInIdentity-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1059,1-1064,2"
+    TestID -> "BuiltInIdentity-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1050,1-1055,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1081,20 +1072,20 @@ VerificationTest[
     _AgentToolsDeployment? agentToolsDeploymentQ,
     { DeployAgentTools::AgentSkillNotRemoved },
     SameTest -> MatchQ,
-    TestID   -> "ReplacementWarnings-ModifiedSkillKept@@Tests/DeployAgentToolsSkills.wlt:1070,1-1085,2"
+    TestID   -> "ReplacementWarnings-ModifiedSkillKept@@Tests/DeployAgentToolsSkills.wlt:1061,1-1076,2"
 ]
 
 VerificationTest[
     DirectoryQ @ FileNameJoin @ { $warnProject, ".claude", "skills", "dir-skill" },
     True,
-    TestID -> "ReplacementWarnings-ModifiedSkillStillThere@@Tests/DeployAgentToolsSkills.wlt:1087,1-1091,2"
+    TestID -> "ReplacementWarnings-ModifiedSkillStillThere@@Tests/DeployAgentToolsSkills.wlt:1078,1-1082,2"
 ]
 
 VerificationTest[
     withTestEnvironment[ DeleteObject /@ DeployedAgentTools[ "ClaudeCode" ] ];
     withTestEnvironment @ DeployedAgentTools[ "ClaudeCode" ],
     { },
-    TestID -> "ReplacementWarnings-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1093,1-1098,2"
+    TestID -> "ReplacementWarnings-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1084,1-1089,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1109,13 +1100,13 @@ VerificationTest[
     ],
     _AgentToolsDeployment? agentToolsDeploymentQ,
     SameTest -> MatchQ,
-    TestID   -> "UserServerWithSlash-Deploys@@Tests/DeployAgentToolsSkills.wlt:1103,1-1113,2"
+    TestID   -> "UserServerWithSlash-Deploys@@Tests/DeployAgentToolsSkills.wlt:1094,1-1104,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ $teamDep,
     Null,
-    TestID -> "UserServerWithSlash-Delete@@Tests/DeployAgentToolsSkills.wlt:1115,1-1119,2"
+    TestID -> "UserServerWithSlash-Delete@@Tests/DeployAgentToolsSkills.wlt:1106,1-1110,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1132,27 +1123,27 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, _AgentToolsDeployment, _AgentToolsDeployment },
     SameTest -> MatchQ,
-    TestID   -> "All-SharedDirectory@@Tests/DeployAgentToolsSkills.wlt:1125,1-1136,2"
+    TestID   -> "All-SharedDirectory@@Tests/DeployAgentToolsSkills.wlt:1116,1-1127,2"
 ]
 
 VerificationTest[
     { Length @ registryEntry[ "dir-skill" ][ "References" ], withTestEnvironment @ FileExistsQ @ skillFile[ $agentsSkills, "dir-skill" ] },
     { 3, True },
-    TestID -> "All-SharedDirectory-ThreeReferences@@Tests/DeployAgentToolsSkills.wlt:1138,1-1142,2"
+    TestID -> "All-SharedDirectory-ThreeReferences@@Tests/DeployAgentToolsSkills.wlt:1129,1-1133,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ Quiet[ DeleteObject /@ Most @ $allResults, AgentToolsDeployment::AgentSkillInUse ];
     withTestEnvironment @ FileExistsQ @ skillFile[ $agentsSkills, "dir-skill" ],
     True,
-    TestID -> "All-SharedDirectory-StillInUse@@Tests/DeployAgentToolsSkills.wlt:1144,1-1149,2"
+    TestID -> "All-SharedDirectory-StillInUse@@Tests/DeployAgentToolsSkills.wlt:1135,1-1140,2"
 ]
 
 VerificationTest[
     withTestEnvironment @ DeleteObject @ Last @ $allResults;
     withTestEnvironment @ DirectoryQ @ FileNameJoin @ { $agentsSkills, "dir-skill" },
     False,
-    TestID -> "All-SharedDirectory-Removed@@Tests/DeployAgentToolsSkills.wlt:1151,1-1156,2"
+    TestID -> "All-SharedDirectory-Removed@@Tests/DeployAgentToolsSkills.wlt:1142,1-1147,2"
 ]
 
 VerificationTest[
@@ -1165,7 +1156,7 @@ VerificationTest[
     ],
     { _AgentToolsDeployment, Missing[ "Unsupported", { "LMStudio", _ } ] },
     SameTest -> MatchQ,
-    TestID   -> "All-UnsupportedClient@@Tests/DeployAgentToolsSkills.wlt:1158,1-1169,2"
+    TestID   -> "All-UnsupportedClient@@Tests/DeployAgentToolsSkills.wlt:1149,1-1160,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1226,7 +1217,7 @@ If[ $OperatingSystem =!= "Windows",
             True
         },
         SameTest -> MatchQ,
-        TestID   -> "SymbolicLinkRoot-OneEntry@@Tests/DeployAgentToolsSkills.wlt:1209,5-1230,6"
+        TestID   -> "SymbolicLinkRoot-OneEntry@@Tests/DeployAgentToolsSkills.wlt:1200,5-1221,6"
     ];
 
     VerificationTest[
@@ -1234,14 +1225,14 @@ If[ $OperatingSystem =!= "Windows",
         withEdgeEnvironment @ DirectoryQ @ FileNameJoin @ { $HomeDirectory, ".agents", "skills", "shared-skill" },
         True,
         { AgentToolsDeployment::AgentSkillInUse },
-        TestID -> "SymbolicLinkRoot-DeleteFirst-InUse@@Tests/DeployAgentToolsSkills.wlt:1232,5-1238,6"
+        TestID -> "SymbolicLinkRoot-DeleteFirst-InUse@@Tests/DeployAgentToolsSkills.wlt:1223,5-1229,6"
     ];
 
     VerificationTest[
         withEdgeEnvironment @ DeleteObject @ $linkDep2;
         { withEdgeEnvironment @ DirectoryQ @ FileNameJoin @ { $HomeDirectory, ".agents", "skills", "shared-skill" }, edgeRegistryEntries[ ] },
         { False, { } },
-        TestID -> "SymbolicLinkRoot-DeleteLast-Removed@@Tests/DeployAgentToolsSkills.wlt:1240,5-1245,6"
+        TestID -> "SymbolicLinkRoot-DeleteLast-Removed@@Tests/DeployAgentToolsSkills.wlt:1231,5-1236,6"
     ]
 ]
 
@@ -1261,33 +1252,33 @@ VerificationTest[
     { $sourceDepA, $sourceDepB },
     { _AgentToolsDeployment? agentToolsDeploymentQ, _AgentToolsDeployment? agentToolsDeploymentQ },
     SameTest -> MatchQ,
-    TestID   -> "ModifiedSource-Deploy@@Tests/DeployAgentToolsSkills.wlt:1253,1-1265,2"
+    TestID   -> "ModifiedSource-Deploy@@Tests/DeployAgentToolsSkills.wlt:1244,1-1256,2"
 ]
 
 VerificationTest[
     withEdgeEnvironment @ DeleteObject @ $sourceDepA,
     Null,
     { AgentToolsDeployment::AgentSkillInUse },
-    TestID -> "ModifiedSource-DeleteFirst-InUse@@Tests/DeployAgentToolsSkills.wlt:1267,1-1272,2"
+    TestID -> "ModifiedSource-DeleteFirst-InUse@@Tests/DeployAgentToolsSkills.wlt:1258,1-1263,2"
 ]
 
 VerificationTest[
     withEdgeEnvironment @ DeleteObject @ $sourceDepB,
     Null,
     { AgentToolsDeployment::AgentSkillNotRemoved },
-    TestID -> "ModifiedSource-DeleteLast-Kept@@Tests/DeployAgentToolsSkills.wlt:1274,1-1279,2"
+    TestID -> "ModifiedSource-DeleteLast-Kept@@Tests/DeployAgentToolsSkills.wlt:1265,1-1270,2"
 ]
 
 VerificationTest[
     { StringContainsQ[ ReadString @ FileNameJoin @ { $customSkillDir, "SKILL.md" }, "User customization." ], edgeRegistryEntries[ ] },
     { True, { } },
-    TestID -> "ModifiedSource-State@@Tests/DeployAgentToolsSkills.wlt:1281,1-1285,2"
+    TestID -> "ModifiedSource-State@@Tests/DeployAgentToolsSkills.wlt:1272,1-1276,2"
 ]
 
 VerificationTest[
     DeleteDirectory[ $customSkillDir, DeleteContents -> True ],
     Null,
-    TestID -> "ModifiedSource-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1287,1-1291,2"
+    TestID -> "ModifiedSource-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1278,1-1282,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1306,13 +1297,13 @@ If[ $permissionsEnforced,
         withEdgeEnvironment @ DeleteObject @ $lockedDep,
         Null,
         { AgentToolsDeployment::AgentSkillNotRemoved },
-        TestID -> "Unreadable-DeleteKeepsDirectory@@Tests/DeployAgentToolsSkills.wlt:1300,5-1310,6"
+        TestID -> "Unreadable-DeleteKeepsDirectory@@Tests/DeployAgentToolsSkills.wlt:1291,5-1301,6"
     ];
 
     VerificationTest[
         { FileExistsQ @ $lockedFile, withEdgeEnvironment @ DeployedAgentTools[ "ClaudeCode" ], edgeRegistryEntries[ ] },
         { True, { }, { } },
-        TestID -> "Unreadable-DeleteKeepsDirectory-State@@Tests/DeployAgentToolsSkills.wlt:1312,5-1316,6"
+        TestID -> "Unreadable-DeleteKeepsDirectory-State@@Tests/DeployAgentToolsSkills.wlt:1303,5-1307,6"
     ];
 
     VerificationTest[
@@ -1320,7 +1311,7 @@ If[ $permissionsEnforced,
         _Failure,
         { DeployAgentTools::AgentSkillExists },
         SameTest -> MatchQ,
-        TestID   -> "Unreadable-RedeployConflict@@Tests/DeployAgentToolsSkills.wlt:1318,5-1324,6"
+        TestID   -> "Unreadable-RedeployConflict@@Tests/DeployAgentToolsSkills.wlt:1309,5-1315,6"
     ];
 
     VerificationTest[
@@ -1328,7 +1319,7 @@ If[ $permissionsEnforced,
         { $lockedDep, StringContainsQ[ ReadString @ $lockedFile, "Locked." ] },
         { _AgentToolsDeployment? agentToolsDeploymentQ, True },
         SameTest -> MatchQ,
-        TestID   -> "Unreadable-RedeployOverwriteAll@@Tests/DeployAgentToolsSkills.wlt:1326,5-1332,6"
+        TestID   -> "Unreadable-RedeployOverwriteAll@@Tests/DeployAgentToolsSkills.wlt:1317,5-1323,6"
     ];
 
     (* the record is removed without releasing the skill (as an older AgentTools version would), and the skill file
@@ -1344,7 +1335,7 @@ If[ $permissionsEnforced,
         { $unrelatedDep, FileExistsQ @ $lockedFile, #[ "Name" ] & /@ edgeRegistryEntries[ ] },
         { _AgentToolsDeployment? agentToolsDeploymentQ, True, { "unrelated-skill" } },
         SameTest -> MatchQ,
-        TestID   -> "Unreadable-OrphanDoesNotBlockDeploys@@Tests/DeployAgentToolsSkills.wlt:1336,5-1348,6"
+        TestID   -> "Unreadable-OrphanDoesNotBlockDeploys@@Tests/DeployAgentToolsSkills.wlt:1327,5-1339,6"
     ];
 
     VerificationTest[
@@ -1354,7 +1345,7 @@ If[ $permissionsEnforced,
         Quiet @ DeleteDirectory[ $unrelatedProject, DeleteContents -> True ];
         { withEdgeEnvironment @ DeployedAgentTools[ "ClaudeCode" ], edgeRegistryEntries[ ] },
         { { }, { } },
-        TestID -> "Unreadable-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1350,5-1358,6"
+        TestID -> "Unreadable-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1341,5-1349,6"
     ]
 ]
 
@@ -1371,7 +1362,7 @@ If[ $permissionsEnforced,
         withEdgeEnvironment @ DeleteObject @ $backupDep,
         Null,
         { AgentToolsDeployment::AgentSkillBackupNotRemoved },
-        TestID -> "BackupNotRemoved-Reported@@Tests/DeployAgentToolsSkills.wlt:1367,5-1375,6"
+        TestID -> "BackupNotRemoved-Reported@@Tests/DeployAgentToolsSkills.wlt:1358,5-1366,6"
     ];
 
     VerificationTest[
@@ -1381,14 +1372,14 @@ If[ $permissionsEnforced,
             edgeRegistryEntries[ ]
         },
         { False, 1, { } },
-        TestID -> "BackupNotRemoved-State@@Tests/DeployAgentToolsSkills.wlt:1377,5-1385,6"
+        TestID -> "BackupNotRemoved-State@@Tests/DeployAgentToolsSkills.wlt:1368,5-1376,6"
     ];
 
     VerificationTest[
         RunProcess[ { "chmod", "-R", "u+rwX", $backupProject } ];
         DeleteDirectory[ $backupProject, DeleteContents -> True ],
         Null,
-        TestID -> "BackupNotRemoved-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1387,5-1392,6"
+        TestID -> "BackupNotRemoved-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1378,5-1383,6"
     ]
 ]
 
@@ -1398,7 +1389,7 @@ VerificationTest[
     Quiet @ Scan[ DeleteDirectory[ #, DeleteContents -> True ] &, { $edgeHome, $edgeRoot } ];
     { DirectoryQ @ $edgeHome, DirectoryQ @ $edgeRoot },
     { False, False },
-    TestID -> "EdgeCases-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1395,1-1402,2"
+    TestID -> "EdgeCases-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1386,1-1393,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1413,7 +1404,7 @@ VerificationTest[
     PacletDirectoryUnload @ $mockPacletDirectory;
     True,
     True,
-    TestID -> "Cleanup@@Tests/DeployAgentToolsSkills.wlt:1407,1-1417,2"
+    TestID -> "Cleanup@@Tests/DeployAgentToolsSkills.wlt:1398,1-1408,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
