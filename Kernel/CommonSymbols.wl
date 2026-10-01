@@ -219,6 +219,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `compareSkillManifest;
 `deleteSkillRegistryEntry;
 `deploymentUUIDExistsQ;
+`foldPathCase;
 `parseSkillMarkdown;
 `planSkillInstall;
 `readSkillRegistryEntry;

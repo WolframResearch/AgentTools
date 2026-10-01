@@ -771,7 +771,6 @@ overwriteLevel // endDefinition;
 (*validateSkillsDirectoryOption*)
 validateSkillsDirectoryOption // beginDefinition;
 validateSkillsDirectoryOption[ value: Automatic | None ] := value;
-validateSkillsDirectoryOption[ dir_String ] := File @ ExpandFileName @ dir;
 validateSkillsDirectoryOption[ File[ dir_String ] ] := File @ ExpandFileName @ dir;
 validateSkillsDirectoryOption[ other_ ] := throwFailure[ "InvalidSkillsDirectoryOption", other ];
 validateSkillsDirectoryOption // endDefinition;
@@ -1456,7 +1455,7 @@ fileTargetLocation[ configFile_File, clientName_String, appName_ ] := Enclose[
             With[ { path = Lookup[ $supportedClients[ # ], "ProjectPath", None ] },
                 MatchQ[ path, { __String } ] &&
                     Length @ split > Length @ path &&
-                    ToLowerCase @ Take[ split, -Length @ path ] === ToLowerCase @ path
+                    foldPathCase /@ Take[ split, -Length @ path ] === foldPathCase /@ path
             ] &,
             None
         ];
