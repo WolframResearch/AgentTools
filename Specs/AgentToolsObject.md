@@ -411,7 +411,7 @@ Same options and semantics as `MCPServerObjects`: installed paclet bundles by de
 
 A paclet may have several `{"AgentTools", ...}` entries. All applicable entries are used, everywhere (the current code only reads the first):
 
-- `getAgentToolsExtensions[ paclet ]` uses ``PacletTools`PacletExtensions[ paclet, "AgentTools" ]``, which filters entries by their `"SystemID"` qualifier for installed paclets (it does not filter `"WolframVersion"` in 15.0; neither does AgentTools). When that fails (it does for remote `PacletFindRemote` paclets, whose location is a URL), it falls back to the raw `paclet[ "Extensions" ]` and applies the `"SystemID"` qualifier itself.
+- `getAgentToolsExtensions[ paclet ]` uses ``PacletTools`PacletExtensions[ paclet, "AgentTools" ]``, which filters entries by their `"SystemID"` qualifier for installed paclets (it does not filter `"WolframVersion"` in 15.0; neither does AgentTools). When that fails (it does for remote `PacletFindRemote` paclets, whose location is a URL), it falls back to the raw `paclet[ "Extensions" ]` and applies the `"SystemID"` qualifier itself, with the same semantics (`All` matches every system; the string `"All"` is an ordinary system ID).
 - **Items are paclet-scoped.** A paclet's declared servers, tools, prompts, and skills are the union of all its entries' declarations (first occurrence wins for the declaration form). An entry may list an item declared in another entry of the same paclet (as in the example below, where the second bundle re-lists `MyPacletTools`).
 - **Definition lookup searches every entry's `Root`** (in entry order, without duplicates, skipping roots that don't exist): for each root, the item's per-item file, then the combined file (for skills, the skill directory first; see below). The first root that defines the item wins. The session cache key stays `{ pacletName, version, type, name }` (the search is deterministic). `ValidateAgentToolsPacletExtension` reports an item defined in two roots as `DuplicateDefinitionFiles`.
 - Item names in PacletInfo must not contain `/` (cross-paclet references belong in definition files, as today).
@@ -481,7 +481,7 @@ It fails with `PacletNotInstalled`, `PacletSkillNotFound` (not declared or no de
 ### Validation (`ValidateAgentToolsPacletExtension`)
 
 Extended checks:
-- Every entry is checked (structure, keys, declaration forms); `"Name"`/`"Description"` must be strings; names must not contain `/`.
+- Every entry is checked (structure, keys, declaration forms); `"Name"`/`"Description"`/`"WolframVersion"` must be strings; `"SystemID"` must be `All`, a string, or a non-empty list of strings (the forms ``PacletTools`PacletExtensions`` accepts); names must not contain `/`.
 - Duplicate bundle names (`DuplicateBundleName`) among entries that can be active on the same system (entries whose `"SystemID"` qualifiers are disjoint may share a name), including two entries without `"Name"`.
 - Declared item names must not contain `/` (`InvalidItemName`).
 - Each declared skill has a directory or definition file in some root (`MissingDefinitionFile`); a skill with both a directory and a per-item definition file, or defined in two roots, is `DuplicateDefinitionFiles`.

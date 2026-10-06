@@ -28,7 +28,8 @@ $defaultBundleName         = "AgentTools";
 $maxSkillDescriptionLength = 1024;
 $extensionPriority         = <| "mx" -> 1, "wxf" -> 2, "wl" -> 3 |>;
 
-$$declarationItem = _String | { _String, _String } | _Association? (KeyExistsQ[ #, "Name" ] &);
+$$declarationItem  = _String | { _String, _String } | _Association? (KeyExistsQ[ #, "Name" ] &);
+$$systemIDQualifier = All | _String | { __String };
 
 (* Combined definition files loaded during one validation, keyed by { root, type }: *)
 $combinedFileCache = <| |>;
@@ -240,7 +241,17 @@ checkEntryStructure[ data_Association, index_Integer, count_Integer ] :=
                     |> ]
                 ]
             ],
-            { "Root", "Description" }
+            { "Root", "Description", "WolframVersion" }
+        ];
+
+        (* Check the "SystemID" qualifier has a form that PacletTools accepts *)
+        If[ KeyExistsQ[ data, "SystemID" ] && ! MatchQ[ data[ "SystemID" ], $$systemIDQualifier ],
+            AppendTo[ errors, <|
+                "Type"    -> "InvalidExtensionValue",
+                "Entry"   -> index,
+                "Key"     -> "SystemID",
+                "Message" -> "The value of \"SystemID\"" <> label <> " must be All, a string, or a non-empty list of strings."
+            |> ]
         ];
 
         (* Check each declared item uses a valid form and a valid name *)
@@ -386,7 +397,7 @@ systemIDSet // beginDefinition;
 systemIDSet[ data_Association ] := Replace[
     Lookup[ data, "SystemID", All ],
     {
-        id_String /; id =!= "All" :> { id },
+        id_String :> { id },
         ids: { ___String } :> ids,
         _ :> All
     }

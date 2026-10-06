@@ -46,7 +46,7 @@ PacletObject[<|
 | `"Tools"` | List | No | `{}` | Declared tool definitions |
 | `"MCPPrompts"` | List | No | `{}` | Declared prompt definitions |
 | `"AgentSkills"` | List | No | `{}` | Declared agent skills |
-| `"SystemID"` | String or List | No | All systems | Standard paclet extension qualifier: the entry only applies on these systems |
+| `"SystemID"` | `All`, String, or List of Strings | No | All systems | Standard paclet extension qualifier: the entry only applies on these systems (a non-empty list; the string `"All"` is an ordinary system ID, as in `PacletTools`) |
 | `"WolframVersion"` | String | No | | Standard paclet extension qualifier |
 
 ### Declaration Formats
@@ -364,7 +364,7 @@ On failure, it returns `Failure["InvalidAgentToolsPacletExtension", <| "Errors" 
 | `NoAgentToolsExtension` | `PacletInfo.wl` has no `"AgentTools"` extension |
 | `MalformedExtension` | An entry is not a list of rules |
 | `InvalidExtensionKeys` | An entry has unknown keys |
-| `InvalidExtensionValue` | `"Root"` or `"Description"` is not a string, or a declaration list is not a list |
+| `InvalidExtensionValue` | `"Root"`, `"Description"`, or `"WolframVersion"` is not a string, `"SystemID"` is not `All`, a string, or a non-empty list of strings, or a declaration list is not a list |
 | `InvalidBundleName` | `"Name"` is not a non-empty string without `/` |
 | `InvalidDeclaration` | A declared item does not use one of the three declaration formats |
 | `InvalidItemName` | A declared item name is empty or contains `/` |

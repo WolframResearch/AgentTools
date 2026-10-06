@@ -181,10 +181,11 @@ systemIDApplicableQ // beginDefinition;
 systemIDApplicableQ[ data_Association ] := systemIDMatchQ @ Lookup[ data, "SystemID", All ];
 systemIDApplicableQ // endDefinition;
 
+(* Same semantics as PacletTools`PacletExtensions: "All" is an ordinary (non-matching) system ID. *)
 systemIDMatchQ // beginDefinition;
-systemIDMatchQ[ All | Automatic | "All" ] := True;
+systemIDMatchQ[ All ] := True;
 systemIDMatchQ[ id_String ] := id === $SystemID;
-systemIDMatchQ[ ids_List ] := MemberQ[ ids, $SystemID ];
+systemIDMatchQ[ ids: { __String } ] := MemberQ[ ids, $SystemID ];
 systemIDMatchQ[ _ ] := False;
 systemIDMatchQ // endDefinition;
 

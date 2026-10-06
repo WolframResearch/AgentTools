@@ -409,6 +409,48 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*checkEntryStructure*)
+(* Paclets built from in-memory data keep the qualifier values as given (installed paclets read from PacletInfo.wl
+   convert scalars to strings) *)
+VerificationTest[
+    Cases[
+        Wolfram`AgentTools`ValidateAgentToolsPacletExtension`Private`checkEntryStructure[
+            <| "WolframVersion" -> 15, "SystemID" -> { "Linux-x86-64", 1 }, "Tools" -> { "A" } |>,
+            1,
+            1
+        ],
+        KeyValuePattern @ { "Type" -> "InvalidExtensionValue", "Key" -> key_ } :> key
+    ],
+    { "WolframVersion", "SystemID" },
+    SameTest -> MatchQ,
+    TestID   -> "checkEntryStructure-InvalidQualifiers@@Tests/ValidateAgentToolsPacletExtension.wlt:415,1-427,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`ValidateAgentToolsPacletExtension`Private`checkEntryStructure[ #, 1, 1 ] & /@ {
+        <| "SystemID" -> All, "Tools" -> { "A" } |>,
+        <| "SystemID" -> "Linux-x86-64", "WolframVersion" -> "14.3+", "Tools" -> { "A" } |>,
+        <| "SystemID" -> { "Linux-x86-64", "MacOSX-ARM64" }, "Tools" -> { "A" } |>
+    },
+    { { }, { }, { } },
+    SameTest -> MatchQ,
+    TestID   -> "checkEntryStructure-ValidQualifiers@@Tests/ValidateAgentToolsPacletExtension.wlt:429,1-438,2"
+]
+
+(* Forms that PacletTools`PacletExtensions rejects *)
+VerificationTest[
+    Wolfram`AgentTools`ValidateAgentToolsPacletExtension`Private`checkEntryStructure[ #, 1, 1 ] & /@ {
+        <| "SystemID" -> { }, "Tools" -> { "A" } |>,
+        <| "SystemID" -> Automatic, "Tools" -> { "A" } |>,
+        <| "SystemID" -> { { "Linux-x86-64" } }, "Tools" -> { "A" } |>
+    },
+    ConstantArray[ { KeyValuePattern @ { "Type" -> "InvalidExtensionValue", "Key" -> "SystemID" } }, 3 ],
+    SameTest -> MatchQ,
+    TestID   -> "checkEntryStructure-RejectedSystemIDForms@@Tests/ValidateAgentToolsPacletExtension.wlt:441,1-450,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*checkDuplicateBundleNames*)
 VerificationTest[
     Wolfram`AgentTools`ValidateAgentToolsPacletExtension`Private`checkDuplicateBundleNames @ {
@@ -417,7 +459,7 @@ VerificationTest[
     },
     { },
     SameTest -> MatchQ,
-    TestID   -> "checkDuplicateBundleNames-DisjointSystemIDs@@Tests/ValidateAgentToolsPacletExtension.wlt:413,1-421,2"
+    TestID   -> "checkDuplicateBundleNames-DisjointSystemIDs@@Tests/ValidateAgentToolsPacletExtension.wlt:455,1-463,2"
 ]
 
 VerificationTest[
@@ -427,7 +469,7 @@ VerificationTest[
     },
     { KeyValuePattern @ { "Type" -> "DuplicateBundleName", "Name" -> "X", "Entries" -> { 1, 2 } } },
     SameTest -> MatchQ,
-    TestID   -> "checkDuplicateBundleNames-OverlappingSystemIDs@@Tests/ValidateAgentToolsPacletExtension.wlt:423,1-431,2"
+    TestID   -> "checkDuplicateBundleNames-OverlappingSystemIDs@@Tests/ValidateAgentToolsPacletExtension.wlt:465,1-473,2"
 ]
 
 VerificationTest[
@@ -437,7 +479,18 @@ VerificationTest[
     },
     { KeyValuePattern @ { "Type" -> "DuplicateBundleName", "Entries" -> { 1, 2 } } },
     SameTest -> MatchQ,
-    TestID   -> "checkDuplicateBundleNames-AllSystems@@Tests/ValidateAgentToolsPacletExtension.wlt:433,1-441,2"
+    TestID   -> "checkDuplicateBundleNames-AllSystems@@Tests/ValidateAgentToolsPacletExtension.wlt:475,1-483,2"
+]
+
+(* The string "All" is an ordinary system ID (as in PacletTools), not a wildcard *)
+VerificationTest[
+    Wolfram`AgentTools`ValidateAgentToolsPacletExtension`Private`checkDuplicateBundleNames @ {
+        <| "Name" -> "X", "SystemID" -> "All", "MCPServers" -> { "S" } |>,
+        <| "Name" -> "X", "SystemID" -> "MockSystem-A", "MCPServers" -> { "S" } |>
+    },
+    { },
+    SameTest -> MatchQ,
+    TestID   -> "checkDuplicateBundleNames-AllStringIsSystemID@@Tests/ValidateAgentToolsPacletExtension.wlt:486,1-494,2"
 ]
 
 (* Entries that declare no servers or skills define no bundle *)
@@ -449,7 +502,7 @@ VerificationTest[
     },
     { },
     SameTest -> MatchQ,
-    TestID   -> "checkDuplicateBundleNames-NoBundles@@Tests/ValidateAgentToolsPacletExtension.wlt:444,1-453,2"
+    TestID   -> "checkDuplicateBundleNames-NoBundles@@Tests/ValidateAgentToolsPacletExtension.wlt:497,1-506,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -461,7 +514,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "InvalidKeys-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:459,1-465,2"
+    TestID   -> "InvalidKeys-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:512,1-518,2"
 ]
 
 VerificationTest[
@@ -471,7 +524,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "InvalidKeys-HasInvalidKeysError@@Tests/ValidateAgentToolsPacletExtension.wlt:467,1-475,2"
+    TestID   -> "InvalidKeys-HasInvalidKeysError@@Tests/ValidateAgentToolsPacletExtension.wlt:520,1-528,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -483,7 +536,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "BadDecl-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:481,1-487,2"
+    TestID   -> "BadDecl-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:534,1-540,2"
 ]
 
 VerificationTest[
@@ -494,7 +547,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BadDecl-HasInvalidDeclarations@@Tests/ValidateAgentToolsPacletExtension.wlt:489,1-498,2"
+    TestID   -> "BadDecl-HasInvalidDeclarations@@Tests/ValidateAgentToolsPacletExtension.wlt:542,1-551,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -509,7 +562,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "NoExtension-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:504,1-513,2"
+    TestID   -> "NoExtension-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:557,1-566,2"
 ]
 
 VerificationTest[
@@ -520,7 +573,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "NoExtension-HasNoAgentToolsExtensionError@@Tests/ValidateAgentToolsPacletExtension.wlt:515,1-524,2"
+    TestID   -> "NoExtension-HasNoAgentToolsExtensionError@@Tests/ValidateAgentToolsPacletExtension.wlt:568,1-577,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -532,7 +585,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "NoRoot-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:530,1-536,2"
+    TestID   -> "NoRoot-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:583,1-589,2"
 ]
 
 VerificationTest[
@@ -542,7 +595,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "NoRoot-HasMissingRootError@@Tests/ValidateAgentToolsPacletExtension.wlt:538,1-546,2"
+    TestID   -> "NoRoot-HasMissingRootError@@Tests/ValidateAgentToolsPacletExtension.wlt:591,1-599,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -554,7 +607,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "MissingFiles-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:552,1-558,2"
+    TestID   -> "MissingFiles-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:605,1-611,2"
 ]
 
 VerificationTest[
@@ -566,7 +619,7 @@ VerificationTest[
     ],
     3,
     SameTest -> MatchQ,
-    TestID   -> "MissingFiles-ThreeMissingFiles@@Tests/ValidateAgentToolsPacletExtension.wlt:560,1-570,2"
+    TestID   -> "MissingFiles-ThreeMissingFiles@@Tests/ValidateAgentToolsPacletExtension.wlt:613,1-623,2"
 ]
 
 VerificationTest[
@@ -577,7 +630,7 @@ VerificationTest[
     ],
     { "MissingPrompt", "MissingServer", "MissingTool" },
     SameTest -> MatchQ,
-    TestID   -> "MissingFiles-CorrectItems@@Tests/ValidateAgentToolsPacletExtension.wlt:572,1-581,2"
+    TestID   -> "MissingFiles-CorrectItems@@Tests/ValidateAgentToolsPacletExtension.wlt:625,1-634,2"
 ]
 
 VerificationTest[
@@ -588,7 +641,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MissingFiles-HasExpectedPaths@@Tests/ValidateAgentToolsPacletExtension.wlt:583,1-592,2"
+    TestID   -> "MissingFiles-HasExpectedPaths@@Tests/ValidateAgentToolsPacletExtension.wlt:636,1-645,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -602,7 +655,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "DupFiles-HasDuplicateWarning@@Tests/ValidateAgentToolsPacletExtension.wlt:598,1-606,2"
+    TestID   -> "DupFiles-HasDuplicateWarning@@Tests/ValidateAgentToolsPacletExtension.wlt:651,1-659,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -614,7 +667,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "BadContents-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:612,1-618,2"
+    TestID   -> "BadContents-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:665,1-671,2"
 ]
 
 VerificationTest[
@@ -624,7 +677,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BadContents-BadToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:620,1-628,2"
+    TestID   -> "BadContents-BadToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:673,1-681,2"
 ]
 
 VerificationTest[
@@ -634,7 +687,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BadContents-IncompleteToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:630,1-638,2"
+    TestID   -> "BadContents-IncompleteToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:683,1-691,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -646,7 +699,7 @@ VerificationTest[
     _Failure,
     { ValidateAgentToolsPacletExtension::InvalidAgentToolsPacletExtension },
     SameTest -> MatchQ,
-    TestID   -> "BadCrossRef-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:644,1-650,2"
+    TestID   -> "BadCrossRef-ReturnsFailure@@Tests/ValidateAgentToolsPacletExtension.wlt:697,1-703,2"
 ]
 
 VerificationTest[
@@ -656,7 +709,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BadCrossRef-UndeclaredToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:652,1-660,2"
+    TestID   -> "BadCrossRef-UndeclaredToolDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:705,1-713,2"
 ]
 
 VerificationTest[
@@ -666,7 +719,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BadCrossRef-UndeclaredPromptDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:662,1-670,2"
+    TestID   -> "BadCrossRef-UndeclaredPromptDetected@@Tests/ValidateAgentToolsPacletExtension.wlt:715,1-723,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -677,7 +730,7 @@ VerificationTest[
     MatchQ[ ValidateAgentToolsPacletExtension[ $mockValid ], _Success ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "CrossRef-ShortNamesValid@@Tests/ValidateAgentToolsPacletExtension.wlt:676,1-681,2"
+    TestID   -> "CrossRef-ShortNamesValid@@Tests/ValidateAgentToolsPacletExtension.wlt:729,1-734,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -703,14 +756,14 @@ VerificationTest[
     ValidateAgentToolsPacletExtension @ $accentedPaclet,
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "AccentedSkill-Valid@@Tests/ValidateAgentToolsPacletExtension.wlt:687,1-707,2"
+    TestID   -> "AccentedSkill-Valid@@Tests/ValidateAgentToolsPacletExtension.wlt:740,1-760,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockAccentedSkills/accented-skill" ][ "Directory" ],
     _File,
     SameTest -> MatchQ,
-    TestID   -> "AccentedSkill-Resolves@@Tests/ValidateAgentToolsPacletExtension.wlt:709,1-714,2"
+    TestID   -> "AccentedSkill-Resolves@@Tests/ValidateAgentToolsPacletExtension.wlt:762,1-767,2"
 ]
 
 VerificationTest[
@@ -719,7 +772,7 @@ VerificationTest[
         Quiet @ DeleteDirectory[ dir, DeleteContents -> True ]
     ],
     Null,
-    TestID -> "AccentedSkill-Cleanup@@Tests/ValidateAgentToolsPacletExtension.wlt:716,1-723,2"
+    TestID -> "AccentedSkill-Cleanup@@Tests/ValidateAgentToolsPacletExtension.wlt:769,1-776,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -741,7 +794,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`clearPacletDefinitionCache[ ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "Cleanup@@Tests/ValidateAgentToolsPacletExtension.wlt:728,1-745,2"
+    TestID   -> "Cleanup@@Tests/ValidateAgentToolsPacletExtension.wlt:781,1-798,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

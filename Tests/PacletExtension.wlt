@@ -566,11 +566,28 @@ VerificationTest[
     TestID   -> "getAgentToolsExtensions-RemoteSystemIDFilter@@Tests/PacletExtension.wlt:562,1-567,2"
 ]
 
+(* The fallback applies "SystemID" like PacletTools`PacletExtensions, where "All" is an ordinary system ID *)
+VerificationTest[
+    Wolfram`AgentTools`PacletExtension`Private`systemIDApplicableQ /@ {
+        <| |>,
+        <| "SystemID" -> All |>,
+        <| "SystemID" -> $SystemID |>,
+        <| "SystemID" -> { "MockSystem-A", $SystemID } |>,
+        <| "SystemID" -> "All" |>,
+        <| "SystemID" -> "MockSystem-A" |>,
+        <| "SystemID" -> { } |>,
+        <| "SystemID" -> Automatic |>
+    },
+    { True, True, True, True, False, False, False, False },
+    SameTest -> MatchQ,
+    TestID   -> "getAgentToolsExtensions-FallbackSystemIDSemantics@@Tests/PacletExtension.wlt:570,1-584,2"
+]
+
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsExtension @ $mockPacletSkills,
     { "AgentTools", KeyValuePattern[ "Name" -> "SkillsBundle" ] },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtension-FirstEntry@@Tests/PacletExtension.wlt:569,1-574,2"
+    TestID   -> "getAgentToolsExtension-FirstEntry@@Tests/PacletExtension.wlt:586,1-591,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -580,14 +597,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $mockPacletSkills,
     { _String? DirectoryQ, _String? DirectoryQ },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtensionDirectories-MultipleRoots@@Tests/PacletExtension.wlt:579,1-584,2"
+    TestID   -> "getAgentToolsExtensionDirectories-MultipleRoots@@Tests/PacletExtension.wlt:596,1-601,2"
 ]
 
 VerificationTest[
     FileNameTake /@ Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $mockPacletSkills,
     { "AgentTools", "DevTools" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtensionDirectories-EntryOrder@@Tests/PacletExtension.wlt:586,1-591,2"
+    TestID   -> "getAgentToolsExtensionDirectories-EntryOrder@@Tests/PacletExtension.wlt:603,1-608,2"
 ]
 
 (* Six entries use the default root, one names a root that doesn't exist *)
@@ -595,21 +612,21 @@ VerificationTest[
     FileNameTake /@ Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $mockPacletBadBundles,
     { "AgentTools" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtensionDirectories-NoDuplicatesNoMissing@@Tests/PacletExtension.wlt:594,1-599,2"
+    TestID   -> "getAgentToolsExtensionDirectories-NoDuplicatesNoMissing@@Tests/PacletExtension.wlt:611,1-616,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $fakeRemotePaclet,
     { },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtensionDirectories-Remote@@Tests/PacletExtension.wlt:601,1-606,2"
+    TestID   -> "getAgentToolsExtensionDirectories-Remote@@Tests/PacletExtension.wlt:618,1-623,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $mockPacletTest,
     { _String? DirectoryQ },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsExtensionDirectories-SingleEntry@@Tests/PacletExtension.wlt:608,1-613,2"
+    TestID   -> "getAgentToolsExtensionDirectories-SingleEntry@@Tests/PacletExtension.wlt:625,1-630,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -619,14 +636,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $mockPacletSkills, "MCPServers" ],
     { "SkillsServer", "DevServer" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-Union-MCPServers@@Tests/PacletExtension.wlt:618,1-623,2"
+    TestID   -> "getAgentToolsDeclaredItems-Union-MCPServers@@Tests/PacletExtension.wlt:635,1-640,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $mockPacletSkills, "Tools" ],
     { "SkillsTool", "DevTool" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-Union-Tools@@Tests/PacletExtension.wlt:625,1-630,2"
+    TestID   -> "getAgentToolsDeclaredItems-Union-Tools@@Tests/PacletExtension.wlt:642,1-647,2"
 ]
 
 VerificationTest[
@@ -641,14 +658,14 @@ VerificationTest[
         "dev-skill"
     },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-AgentSkills@@Tests/PacletExtension.wlt:632,1-645,2"
+    TestID   -> "getAgentToolsDeclaredItems-AgentSkills@@Tests/PacletExtension.wlt:649,1-662,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $mockPacletTest, "AgentSkills" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-NoAgentSkills@@Tests/PacletExtension.wlt:647,1-652,2"
+    TestID   -> "getAgentToolsDeclaredItems-NoAgentSkills@@Tests/PacletExtension.wlt:664,1-669,2"
 ]
 
 (* Names that contain "/" are skipped *)
@@ -656,14 +673,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $mockPacletBadBundles, "Tools" ],
     { "GoodTool" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-InvalidNamesSkipped@@Tests/PacletExtension.wlt:655,1-660,2"
+    TestID   -> "getAgentToolsDeclaredItems-InvalidNamesSkipped@@Tests/PacletExtension.wlt:672,1-677,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $fakeRemotePaclet, "MCPServers" ],
     { "ServerA", "ServerC" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsDeclaredItems-Remote@@Tests/PacletExtension.wlt:662,1-667,2"
+    TestID   -> "getAgentToolsDeclaredItems-Remote@@Tests/PacletExtension.wlt:679,1-684,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -673,21 +690,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsItemDeclaration[ $mockPacletSkills, "AgentSkills", "assoc-skill" ],
     { "assoc-skill", "A skill defined by an association" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsItemDeclaration-ListForm@@Tests/PacletExtension.wlt:672,1-677,2"
+    TestID   -> "getAgentToolsItemDeclaration-ListForm@@Tests/PacletExtension.wlt:689,1-694,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsItemDeclaration[ $fakeRemotePaclet, "MCPServers", "ServerC" ],
     KeyValuePattern[ { "Name" -> "ServerC", "MCPServerName" -> "CustomKey" } ],
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsItemDeclaration-LaterEntry@@Tests/PacletExtension.wlt:679,1-684,2"
+    TestID   -> "getAgentToolsItemDeclaration-LaterEntry@@Tests/PacletExtension.wlt:696,1-701,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsItemDeclaration[ $mockPacletSkills, "MCPServers", "NonExistentServer" ],
     Missing[ "NotFound" ],
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsItemDeclaration-NotFound@@Tests/PacletExtension.wlt:686,1-691,2"
+    TestID   -> "getAgentToolsItemDeclaration-NotFound@@Tests/PacletExtension.wlt:703,1-708,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -706,7 +723,7 @@ VerificationTest[
         "LLMEvaluator"  -> KeyValuePattern[ "Tools" -> { "FakeRemoteAgentToolsPaclet/ToolC" } ]
     },
     SameTest -> MatchQ,
-    TestID   -> "buildRemotePacletServerMetadata-LaterEntry@@Tests/PacletExtension.wlt:698,1-710,2"
+    TestID   -> "buildRemotePacletServerMetadata-LaterEntry@@Tests/PacletExtension.wlt:715,1-727,2"
 ]
 
 VerificationTest[
@@ -720,7 +737,7 @@ VerificationTest[
         "LLMEvaluator"  -> KeyValuePattern[ "Tools" -> { "FakeRemoteAgentToolsPaclet/ToolA" } ]
     },
     SameTest -> MatchQ,
-    TestID   -> "buildRemotePacletServerMetadata-NameOnly@@Tests/PacletExtension.wlt:712,1-724,2"
+    TestID   -> "buildRemotePacletServerMetadata-NameOnly@@Tests/PacletExtension.wlt:729,1-741,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -730,7 +747,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`findInstalledPaclet[ "MockMCPPacletSkills" ],
     _PacletObject? (#[ "Name" ] === "MockMCPPacletSkills" &),
     SameTest -> MatchQ,
-    TestID   -> "findInstalledPaclet-ExactName@@Tests/PacletExtension.wlt:729,1-734,2"
+    TestID   -> "findInstalledPaclet-ExactName@@Tests/PacletExtension.wlt:746,1-751,2"
 ]
 
 (* PacletFind treats "*" as a wildcard, but paclet names must match exactly *)
@@ -738,7 +755,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`findInstalledPaclet[ "MockMCPPacletSkill*" ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "findInstalledPaclet-NoWildcards@@Tests/PacletExtension.wlt:737,1-742,2"
+    TestID   -> "findInstalledPaclet-NoWildcards@@Tests/PacletExtension.wlt:754,1-759,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -748,7 +765,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`clearPacletDefinitionCache[ ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-ClearCache@@Tests/PacletExtension.wlt:747,1-752,2"
+    TestID   -> "MultiRoot-ClearCache@@Tests/PacletExtension.wlt:764,1-769,2"
 ]
 
 (* Defined in the second root *)
@@ -756,14 +773,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "MCPServers", "DevServer" ],
     KeyValuePattern[ { "Name" -> "DevServer", "MCPServerName" -> "MockSkillsDev" } ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-SecondRootServer@@Tests/PacletExtension.wlt:755,1-760,2"
+    TestID   -> "MultiRoot-SecondRootServer@@Tests/PacletExtension.wlt:772,1-777,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "Tools", "DevTool" ],
     KeyValuePattern[ { "Name" -> "DevTool", "Description" -> "A tool in the second root" } ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-SecondRootTool@@Tests/PacletExtension.wlt:762,1-767,2"
+    TestID   -> "MultiRoot-SecondRootTool@@Tests/PacletExtension.wlt:779,1-784,2"
 ]
 
 (* Defined in the first root *)
@@ -771,7 +788,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "Tools", "SkillsTool" ],
     KeyValuePattern[ { "Name" -> "SkillsTool", "Description" -> "A tool in the first root" } ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-FirstRootTool@@Tests/PacletExtension.wlt:770,1-775,2"
+    TestID   -> "MultiRoot-FirstRootTool@@Tests/PacletExtension.wlt:787,1-792,2"
 ]
 
 (* Defined in both roots: the first root wins *)
@@ -779,7 +796,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletBadSkills, "AgentSkills", "two-roots-skill" ],
     KeyValuePattern[ "Body" -> "# First Root" ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-FirstRootWins@@Tests/PacletExtension.wlt:778,1-783,2"
+    TestID   -> "MultiRoot-FirstRootWins@@Tests/PacletExtension.wlt:795,1-800,2"
 ]
 
 (* Skill directories load as the LLMSkill parsed from SKILL.md *)
@@ -787,14 +804,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "AgentSkills", "directory-skill" ],
     HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "directory-skill" ] ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-SkillDirectory@@Tests/PacletExtension.wlt:786,1-791,2"
+    TestID   -> "MultiRoot-SkillDirectory@@Tests/PacletExtension.wlt:803,1-808,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "AgentSkills", "combined-skill" ],
     KeyValuePattern[ "Name" -> "combined-skill" ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-CombinedSkill@@Tests/PacletExtension.wlt:793,1-798,2"
+    TestID   -> "MultiRoot-CombinedSkill@@Tests/PacletExtension.wlt:810,1-815,2"
 ]
 
 VerificationTest[
@@ -804,21 +821,21 @@ VerificationTest[
     ],
     HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "llmskill-skill" ] ],
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-LLMSkillCached@@Tests/PacletExtension.wlt:800,1-808,2"
+    TestID   -> "MultiRoot-LLMSkillCached@@Tests/PacletExtension.wlt:817,1-825,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`PacletExtension`Private`cacheableResultQ @ LLMSkill[ { "some-skill", "A skill" }, "Body" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "cacheableResultQ-LLMSkill@@Tests/PacletExtension.wlt:810,1-815,2"
+    TestID   -> "cacheableResultQ-LLMSkill@@Tests/PacletExtension.wlt:827,1-832,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`loadPacletDefinitionFile[ $mockPacletSkills, "AgentSkills", "no-such-skill" ],
     $Failed,
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-NotFound@@Tests/PacletExtension.wlt:817,1-822,2"
+    TestID   -> "MultiRoot-NotFound@@Tests/PacletExtension.wlt:834,1-839,2"
 ]
 
 (* Servers combine tools from both roots *)
@@ -826,7 +843,7 @@ VerificationTest[
     withTemporaryRoot @ MCPServerObject[ "MockMCPPacletSkills/DevServer" ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-MCPServerObject@@Tests/PacletExtension.wlt:825,1-830,2"
+    TestID   -> "MultiRoot-MCPServerObject@@Tests/PacletExtension.wlt:842,1-847,2"
 ]
 
 VerificationTest[
@@ -835,14 +852,14 @@ VerificationTest[
     ],
     { "MockSkillsDev", { "SkillsTool", "DevTool" } },
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-MCPServerObject-Tools@@Tests/PacletExtension.wlt:832,1-839,2"
+    TestID   -> "MultiRoot-MCPServerObject-Tools@@Tests/PacletExtension.wlt:849,1-856,2"
 ]
 
 VerificationTest[
     withTemporaryRoot[ #[ "Name" ] & /@ MCPServerObjects[ "MockMCPPacletSkills/*" ] ],
     { "MockMCPPacletSkills/SkillsServer", "MockMCPPacletSkills/DevServer" },
     SameTest -> MatchQ,
-    TestID   -> "MultiRoot-MCPServerObjects@@Tests/PacletExtension.wlt:841,1-846,2"
+    TestID   -> "MultiRoot-MCPServerObjects@@Tests/PacletExtension.wlt:858,1-863,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -877,14 +894,14 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-MultipleEntries@@Tests/PacletExtension.wlt:855,1-881,2"
+    TestID   -> "getAgentToolsBundles-MultipleEntries@@Tests/PacletExtension.wlt:872,1-898,2"
 ]
 
 VerificationTest[
     KeyExistsQ[ Last @ Wolfram`AgentTools`Common`getAgentToolsBundles @ $mockPacletSkills, "Description" ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-NoDescription@@Tests/PacletExtension.wlt:883,1-888,2"
+    TestID   -> "getAgentToolsBundles-NoDescription@@Tests/PacletExtension.wlt:900,1-905,2"
 ]
 
 (* An entry without "Name" defines the bundle "AgentTools" *)
@@ -898,7 +915,7 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-DefaultName@@Tests/PacletExtension.wlt:891,1-902,2"
+    TestID   -> "getAgentToolsBundles-DefaultName@@Tests/PacletExtension.wlt:908,1-919,2"
 ]
 
 (* Entries that only declare tools and prompts define no bundle *)
@@ -906,7 +923,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsBundles @ $mockPacletCombined,
     { },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-ToolsOnly@@Tests/PacletExtension.wlt:905,1-910,2"
+    TestID   -> "getAgentToolsBundles-ToolsOnly@@Tests/PacletExtension.wlt:922,1-927,2"
 ]
 
 (* Invalid names are skipped and the first of several entries with the same name wins *)
@@ -918,14 +935,14 @@ VerificationTest[
         { "MockMCPPacletBadBundles/AgentTools", { "MockMCPPacletBadBundles/ServerA" } }
     },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-InvalidAndDuplicateNames@@Tests/PacletExtension.wlt:913,1-922,2"
+    TestID   -> "getAgentToolsBundles-InvalidAndDuplicateNames@@Tests/PacletExtension.wlt:930,1-939,2"
 ]
 
 VerificationTest[
     Lookup[ Wolfram`AgentTools`Common`getAgentToolsBundles @ $fakeRemotePaclet, "Name" ],
     { "FakeRemoteAgentToolsPaclet/Everywhere", "FakeRemoteAgentToolsPaclet/ThisSystem" },
     SameTest -> MatchQ,
-    TestID   -> "getAgentToolsBundles-Remote@@Tests/PacletExtension.wlt:924,1-929,2"
+    TestID   -> "getAgentToolsBundles-Remote@@Tests/PacletExtension.wlt:941,1-946,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -939,14 +956,14 @@ VerificationTest[
         "MCPServers" -> { "MockMCPPacletSkills/SkillsServer", "MockMCPPacletSkills/DevServer" }
     },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletBundle-Installed@@Tests/PacletExtension.wlt:934,1-943,2"
+    TestID   -> "resolvePacletBundle-Installed@@Tests/PacletExtension.wlt:951,1-960,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletBundle[ "MockMCPPacletSkills/NoSuchBundle" ],
     Missing[ "NotFound" ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletBundle-MissingBundle@@Tests/PacletExtension.wlt:945,1-950,2"
+    TestID   -> "resolvePacletBundle-MissingBundle@@Tests/PacletExtension.wlt:962,1-967,2"
 ]
 
 (* A server name is not a bundle name *)
@@ -954,21 +971,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletBundle[ "MockMCPPacletSkills/DevServer" ],
     Missing[ "NotFound" ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletBundle-ServerName@@Tests/PacletExtension.wlt:953,1-958,2"
+    TestID   -> "resolvePacletBundle-ServerName@@Tests/PacletExtension.wlt:970,1-975,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletBundle[ "NotAQualifiedName" ],
     Missing[ "NotFound" ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletBundle-NotQualified@@Tests/PacletExtension.wlt:960,1-965,2"
+    TestID   -> "resolvePacletBundle-NotQualified@@Tests/PacletExtension.wlt:977,1-982,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletBundle[ "NonExistentPaclet12345/SomeBundle" ],
     Missing[ "NotFound" ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletBundle-UnknownPaclet@@Tests/PacletExtension.wlt:967,1-972,2"
+    TestID   -> "resolvePacletBundle-UnknownPaclet@@Tests/PacletExtension.wlt:984,1-989,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -989,14 +1006,14 @@ VerificationTest[
         "Directory"     -> File[ _String? (FileExistsQ @ FileNameJoin @ { #, "scripts", "run.wls" } &) ]
     },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-Directory@@Tests/PacletExtension.wlt:981,1-993,2"
+    TestID   -> "resolvePacletSkill-Directory@@Tests/PacletExtension.wlt:998,1-1010,2"
 ]
 
 VerificationTest[
     Keys @ Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/directory-skill" ],
     { "Type", "Name", "QualifiedName", "PacletName", "PacletVersion", "Directory" },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-Directory-Keys@@Tests/PacletExtension.wlt:995,1-1000,2"
+    TestID   -> "resolvePacletSkill-Directory-Keys@@Tests/PacletExtension.wlt:1012,1-1017,2"
 ]
 
 VerificationTest[
@@ -1011,21 +1028,21 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-Association@@Tests/PacletExtension.wlt:1002,1-1015,2"
+    TestID   -> "resolvePacletSkill-Association@@Tests/PacletExtension.wlt:1019,1-1032,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/llmskill-skill" ],
     KeyValuePattern[ "Definition" -> HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "llmskill-skill" ] ] ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-LLMSkill@@Tests/PacletExtension.wlt:1017,1-1022,2"
+    TestID   -> "resolvePacletSkill-LLMSkill@@Tests/PacletExtension.wlt:1034,1-1039,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/combined-skill" ],
     KeyValuePattern[ "Definition" -> KeyValuePattern[ "Name" -> "combined-skill" ] ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-CombinedFile@@Tests/PacletExtension.wlt:1024,1-1029,2"
+    TestID   -> "resolvePacletSkill-CombinedFile@@Tests/PacletExtension.wlt:1041,1-1046,2"
 ]
 
 (* An LLMSkill whose relative "Location" is a skill directory inside an extension root uses that directory *)
@@ -1033,7 +1050,7 @@ VerificationTest[
     Lookup[ Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/located-skill" ], "Directory" ],
     File[ _String? (Take[ FileNameSplit @ #, -2 ] === { "SkillSources", "located-skill" } &) ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-HonoredLocation@@Tests/PacletExtension.wlt:1032,1-1037,2"
+    TestID   -> "resolvePacletSkill-HonoredLocation@@Tests/PacletExtension.wlt:1049,1-1054,2"
 ]
 
 (* A "Location" outside of the extension roots is ignored, even if it names an existing skill directory *)
@@ -1041,14 +1058,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/foreign-skill" ],
     KeyValuePattern[ "Definition" -> _Association? (! KeyExistsQ[ #, "Location" ] && #[ "Name" ] === "foreign-skill" &) ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-IgnoredLocation@@Tests/PacletExtension.wlt:1040,1-1045,2"
+    TestID   -> "resolvePacletSkill-IgnoredLocation@@Tests/PacletExtension.wlt:1057,1-1062,2"
 ]
 
 VerificationTest[
     KeyExistsQ[ Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/foreign-skill" ], "Directory" ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-IgnoredLocation-NoDirectory@@Tests/PacletExtension.wlt:1047,1-1052,2"
+    TestID   -> "resolvePacletSkill-IgnoredLocation-NoDirectory@@Tests/PacletExtension.wlt:1064,1-1069,2"
 ]
 
 (* A skill directory in the second root *)
@@ -1056,7 +1073,7 @@ VerificationTest[
     Lookup[ Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletSkills/dev-skill" ], "Directory" ],
     File[ _String? (Take[ FileNameSplit @ #, -3 ] === { "DevTools", "AgentSkills", "dev-skill" } &) ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-SecondRoot@@Tests/PacletExtension.wlt:1055,1-1060,2"
+    TestID   -> "resolvePacletSkill-SecondRoot@@Tests/PacletExtension.wlt:1072,1-1077,2"
 ]
 
 (* The skill directory is checked before definition files *)
@@ -1064,21 +1081,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletBadSkills/dup-skill" ],
     KeyValuePattern[ "Directory" -> File[ _String ] ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-DirectoryFirst@@Tests/PacletExtension.wlt:1063,1-1068,2"
+    TestID   -> "resolvePacletSkill-DirectoryFirst@@Tests/PacletExtension.wlt:1080,1-1085,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ "MockMCPPacletBadSkills/two-roots-skill" ],
     KeyValuePattern[ "Definition" -> KeyValuePattern[ "Body" -> "# First Root" ] ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-FirstRootWins@@Tests/PacletExtension.wlt:1070,1-1075,2"
+    TestID   -> "resolvePacletSkill-FirstRootWins@@Tests/PacletExtension.wlt:1087,1-1092,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`resolvePacletSkill[ $mockPacletSkills, "dev-skill" ],
     KeyValuePattern[ { "QualifiedName" -> "MockMCPPacletSkills/dev-skill", "Directory" -> File[ _String ] } ],
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-PacletForm@@Tests/PacletExtension.wlt:1077,1-1082,2"
+    TestID   -> "resolvePacletSkill-PacletForm@@Tests/PacletExtension.wlt:1094,1-1099,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1089,7 +1106,7 @@ VerificationTest[
     _Failure,
     { AgentTools::PacletSkillNotFound },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-NotDeclared@@Tests/PacletExtension.wlt:1087,1-1093,2"
+    TestID   -> "resolvePacletSkill-NotDeclared@@Tests/PacletExtension.wlt:1104,1-1110,2"
 ]
 
 (* Declared skills of other types are not skills *)
@@ -1098,7 +1115,7 @@ VerificationTest[
     _Failure,
     { AgentTools::PacletSkillNotFound },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-ServerName@@Tests/PacletExtension.wlt:1096,1-1102,2"
+    TestID   -> "resolvePacletSkill-ServerName@@Tests/PacletExtension.wlt:1113,1-1119,2"
 ]
 
 VerificationTest[
@@ -1106,7 +1123,7 @@ VerificationTest[
     _Failure,
     { AgentTools::PacletSkillNotFound },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-NoDefinition@@Tests/PacletExtension.wlt:1104,1-1110,2"
+    TestID   -> "resolvePacletSkill-NoDefinition@@Tests/PacletExtension.wlt:1121,1-1127,2"
 ]
 
 VerificationTest[
@@ -1114,7 +1131,7 @@ VerificationTest[
     _Failure,
     { AgentTools::PacletNotInstalled },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-PacletNotInstalled@@Tests/PacletExtension.wlt:1112,1-1118,2"
+    TestID   -> "resolvePacletSkill-PacletNotInstalled@@Tests/PacletExtension.wlt:1129,1-1135,2"
 ]
 
 VerificationTest[
@@ -1122,7 +1139,7 @@ VerificationTest[
     _Failure,
     { AgentTools::AgentSkillNotFound },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-NotQualified@@Tests/PacletExtension.wlt:1120,1-1126,2"
+    TestID   -> "resolvePacletSkill-NotQualified@@Tests/PacletExtension.wlt:1137,1-1143,2"
 ]
 
 (* SKILL.md declares a different name *)
@@ -1131,7 +1148,7 @@ VerificationTest[
     _Failure,
     { AgentTools::InvalidPacletSkillDefinition },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-NameMismatch@@Tests/PacletExtension.wlt:1129,1-1135,2"
+    TestID   -> "resolvePacletSkill-NameMismatch@@Tests/PacletExtension.wlt:1146,1-1152,2"
 ]
 
 VerificationTest[
@@ -1139,7 +1156,7 @@ VerificationTest[
     _Failure,
     { AgentTools::InvalidPacletSkillDefinition },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-InvalidContents@@Tests/PacletExtension.wlt:1137,1-1143,2"
+    TestID   -> "resolvePacletSkill-InvalidContents@@Tests/PacletExtension.wlt:1154,1-1160,2"
 ]
 
 (* The honored "Location" names a skill directory with a different name *)
@@ -1148,7 +1165,7 @@ VerificationTest[
     _Failure,
     { AgentTools::InvalidPacletSkillDefinition },
     SameTest -> MatchQ,
-    TestID   -> "resolvePacletSkill-LocationNameMismatch@@Tests/PacletExtension.wlt:1146,1-1152,2"
+    TestID   -> "resolvePacletSkill-LocationNameMismatch@@Tests/PacletExtension.wlt:1163,1-1169,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1164,14 +1181,14 @@ VerificationTest[
     },
     { True, True, False, False, False },
     SameTest -> MatchQ,
-    TestID   -> "pathInsideDirectoryQ@@Tests/PacletExtension.wlt:1157,1-1168,2"
+    TestID   -> "pathInsideDirectoryQ@@Tests/PacletExtension.wlt:1174,1-1185,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`PacletExtension`Private`absolutePathQ /@ { "/a/b", "C:\\a", "~/a", "a/b", "../a" },
     { True, True, True, False, False },
     SameTest -> MatchQ,
-    TestID   -> "absolutePathQ@@Tests/PacletExtension.wlt:1170,1-1175,2"
+    TestID   -> "absolutePathQ@@Tests/PacletExtension.wlt:1187,1-1192,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1191,35 +1208,35 @@ VerificationTest[
     PacletObjectQ @ $remotePaclet,
     True,
     SameTest -> MatchQ,
-    TestID -> "RemotePacletFallback-Setup@@Tests/PacletExtension.wlt:1182,1-1195,2"
+    TestID -> "RemotePacletFallback-Setup@@Tests/PacletExtension.wlt:1199,1-1212,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $remotePaclet, "MCPServers" ],
     { "SampleServer" },
     SameTest -> MatchQ,
-    TestID -> "RemotePacletFallback-MCPServers@@Tests/PacletExtension.wlt:1197,1-1202,2"
+    TestID -> "RemotePacletFallback-MCPServers@@Tests/PacletExtension.wlt:1214,1-1219,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $remotePaclet, "Tools" ],
     { "Identity", "PrimeFinder" },
     SameTest -> MatchQ,
-    TestID -> "RemotePacletFallback-Tools@@Tests/PacletExtension.wlt:1204,1-1209,2"
+    TestID -> "RemotePacletFallback-Tools@@Tests/PacletExtension.wlt:1221,1-1226,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsDeclaredItems[ $remotePaclet, "MCPPrompts" ],
     { },
     SameTest -> MatchQ,
-    TestID -> "RemotePacletFallback-EmptyPrompts@@Tests/PacletExtension.wlt:1211,1-1216,2"
+    TestID -> "RemotePacletFallback-EmptyPrompts@@Tests/PacletExtension.wlt:1228,1-1233,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`getAgentToolsExtensionDirectories @ $remotePaclet,
     { },
     SameTest -> MatchQ,
-    TestID   -> "RemotePacletFallback-NoDirectories@@Tests/PacletExtension.wlt:1218,1-1223,2"
+    TestID   -> "RemotePacletFallback-NoDirectories@@Tests/PacletExtension.wlt:1235,1-1240,2"
 ]
 
 VerificationTest[
@@ -1233,7 +1250,7 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "RemotePacletFallback-Bundles@@Tests/PacletExtension.wlt:1225,1-1237,2"
+    TestID   -> "RemotePacletFallback-Bundles@@Tests/PacletExtension.wlt:1242,1-1254,2"
 ]
 
 (* Installed if available, otherwise remote metadata (never installs) *)
@@ -1245,7 +1262,7 @@ VerificationTest[
         "MCPServers" -> { "SamplePublisher/SamplePaclet/SampleServer" }
     },
     SameTest -> MatchQ,
-    TestID   -> "RemotePacletFallback-resolvePacletBundle@@Tests/PacletExtension.wlt:1240,1-1249,2"
+    TestID   -> "RemotePacletFallback-resolvePacletBundle@@Tests/PacletExtension.wlt:1257,1-1266,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1257,14 +1274,14 @@ VerificationTest[
     Head @ $remoteServer,
     MCPServerObject,
     SameTest -> MatchQ,
-    TestID -> "RemoteServerResolution-NoFailure@@Tests/PacletExtension.wlt:1255,1-1261,2"
+    TestID -> "RemoteServerResolution-NoFailure@@Tests/PacletExtension.wlt:1272,1-1278,2"
 ]
 
 VerificationTest[
     $remoteServer[ "ToolNames" ],
     { "SamplePublisher/SamplePaclet/Identity", "SamplePublisher/SamplePaclet/PrimeFinder" },
     SameTest -> MatchQ,
-    TestID -> "RemoteServerResolution-ToolNames@@Tests/PacletExtension.wlt:1263,1-1268,2"
+    TestID -> "RemoteServerResolution-ToolNames@@Tests/PacletExtension.wlt:1280,1-1285,2"
 ]
 
 (* If paclet is installed, we get a list of LLMTools, otherwise we should get a Failure *)
@@ -1275,7 +1292,7 @@ VerificationTest[
         Failure[ "MCPServerObject::PacletNotInstalled", _ ]
     ],
     SameTest -> MatchQ,
-    TestID -> "RemoteServerResolution-Tools@@Tests/PacletExtension.wlt:1271,1-1279,2"
+    TestID -> "RemoteServerResolution-Tools@@Tests/PacletExtension.wlt:1288,1-1296,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1290,7 +1307,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`clearPacletDefinitionCache[ ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "MockPacletCleanup@@Tests/PacletExtension.wlt:1284,1-1294,2"
+    TestID   -> "MockPacletCleanup@@Tests/PacletExtension.wlt:1301,1-1311,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
