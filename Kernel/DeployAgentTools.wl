@@ -289,7 +289,7 @@ normalizeDeploymentData[ data: KeyValuePattern[ "AgentTools" -> _Association ] ]
     <|
         "Scope"  -> Missing[ "Unknown" ],
         data,
-        "Skills" -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { }, Lookup[ data, "Skills", <| |> ] |>
+        "Skills" -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { }, "NotInstalled" -> { }, Lookup[ data, "Skills", <| |> ] |>
     |>;
 
 normalizeDeploymentData[ data: KeyValuePattern[ "MCP" -> mcp_Association ] ] := Enclose[
@@ -309,7 +309,7 @@ normalizeDeploymentData[ data: KeyValuePattern[ "MCP" -> mcp_Association ] ] := 
             "Scope"       -> scope,
             "LocationKey" -> locationKey[ scope, configFile ],
             "MCPServers"  -> { <| "Name" -> server, "ConfigKey" -> configKey, "ConfigFile" -> configFile |> },
-            "Skills"      -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { } |>
+            "Skills"      -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { }, "NotInstalled" -> { } |>
         |>
     ],
     throwInternalFailure
@@ -582,7 +582,7 @@ exactPacletNameQ // endDefinition;
 deployAllAgentTools // beginDefinition;
 
 deployAllAgentTools[ tools0_, opts: $$deployAgentToolsOptions ] := Enclose[
-    Module[ { clients, tools, results, skipped },
+    Module[ { clients, tools, results, skipped, notInstalled },
         clients = ConfirmMatch[ Keys @ $SupportedClients, { __String }, "Clients" ];
 
         (* Resolve an explicit toolset once, so that paclets are installed at most once *)
@@ -612,10 +612,23 @@ deployAllAgentTools[ tools0_, opts: $$deployAgentToolsOptions ] := Enclose[
             messagePrint[ "AgentSkillConflictWarning" ]
         ];
 
-        (* Clients whose skills were skipped because they don't support skills (not because of "SkillsDirectory" -> None) *)
-        skipped = Cases[ results, dep_AgentToolsDeployment /; dep[ "Skills" ][ "Skipped" ] =!= { } :> dep[ "ClientName" ] ];
+        (* Clients whose skills were skipped because they don't support skills (not because of "SkillsDirectory" -> None),
+           except for built-in bundles (see deployAgentTools) *)
+        skipped = Cases[
+            results,
+            dep_AgentToolsDeployment /; dep[ "Skills" ][ "Skipped" ] =!= { } && ! builtInDeploymentQ @ dep :> dep[ "ClientName" ]
+        ];
         If[ skipped =!= { } && OptionValue[ DeployAgentTools, FilterRules[ { opts }, Options @ DeployAgentTools ], "SkillsDirectory" ] =!= None,
             messagePrint[ "AgentSkillsNotDeployedWarning", StringRiffle[ installDisplayName /@ skipped, ", " ] ]
+        ];
+
+        (* Clients where skills of a built-in bundle were left out because of conflicting skill directories *)
+        notInstalled = Cases[
+            results,
+            dep_AgentToolsDeployment /; Lookup[ dep[ "Skills" ], "NotInstalled", { } ] =!= { } :> dep[ "ClientName" ]
+        ];
+        If[ notInstalled =!= { },
+            messagePrint[ "AgentSkillsNotInstalledWarning", StringRiffle[ installDisplayName /@ notInstalled, ", " ] ]
         ];
 
         results
@@ -681,7 +694,8 @@ deployAgentToolsQuietly[ target_, tools_, opts: $$deployAgentToolsOptions ] :=
             DeployAgentTools::AgentSkillConflict,
             DeployAgentTools::AgentSkillModified,
             DeployAgentTools::AgentSkillExists,
-            DeployAgentTools::AgentSkillUpdate
+            DeployAgentTools::AgentSkillUpdate,
+            DeployAgentTools::AgentSkillNotInstalled
         }
     ];
 
@@ -731,7 +745,9 @@ deployAgentTools[ target_, bundle_AgentToolsObject, opts0: $$deployAgentToolsOpt
 
         displayName = Replace[ installDisplayName @ resolved[ "ClientName" ], Except[ _String ] -> resolved[ "ClientName" ] ];
         If[ servers =!= { } && ! deployMCP, messagePrint[ "MCPServersNotDeployed", toolsetName, displayName ] ];
-        If[ skillSpecs =!= { } && ! deploySkills && skillsDirectory =!= None,
+        (* The skills of a built-in bundle complement its MCP server, so clients without skills support (e.g. Claude
+           Desktop) get the server without a warning *)
+        If[ skillSpecs =!= { } && ! deploySkills && skillsDirectory =!= None && ! builtInToolsetQ @ bundle,
             messagePrint[ "AgentSkillsNotDeployed", toolsetName, displayName ]
         ];
 
@@ -796,6 +812,24 @@ toolsetSource[ _File     ] := <| "Location" -> "User" |>;
 toolsetSource[ _         ] := <| "Location" -> None |>;
 
 toolsetSource // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*builtInToolsetQ*)
+(* Built-in bundles (see $defaultAgentTools) skip their skills without a warning on targets that don't support skills,
+   and leave conflicting skill directories alone instead of failing. *)
+builtInToolsetQ // beginDefinition;
+builtInToolsetQ[ bundle_AgentToolsObject ] := bundle[ "Location" ] === "BuiltIn";
+builtInToolsetQ // endDefinition;
+
+builtInToolsetSourceQ // beginDefinition;
+builtInToolsetSourceQ[ source_Association ] := Lookup[ source, "Location" ] === "BuiltIn";
+builtInToolsetSourceQ[ _ ] := False;
+builtInToolsetSourceQ // endDefinition;
+
+builtInDeploymentQ // beginDefinition;
+builtInDeploymentQ[ dep_AgentToolsDeployment ] := builtInToolsetSourceQ @ Lookup[ dep[ "Data" ], "AgentTools", None ];
+builtInDeploymentQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -943,8 +977,8 @@ setDefaultSkillIdentifier // endDefinition;
 deployLocked // beginDefinition;
 
 deployLocked[ context_Association ] := Enclose[
-    Module[ { resolved, overwrite, existing, identity, conflicts, replaced, uuid, plan, success, mcpResult,
-              skillResult, record, dep },
+    Module[ { resolved, overwrite, existing, identity, conflicts, replaced, uuid, plan, notInstalled, success,
+              mcpResult, skillResult, record, dep },
 
         resolved  = context[ "Resolved" ];
         overwrite = context[ "Overwrite" ];
@@ -960,7 +994,9 @@ deployLocked[ context_Association ] := Enclose[
 
         uuid = ConfirmBy[ CreateUUID[ ], StringQ, "UUID" ];
 
-        (* Skill preflight: conflicts fail the deployment before anything has been changed *)
+        (* Skill preflight: conflicts fail the deployment before anything has been changed. The skills of a built-in
+           bundle complement its MCP server, so their conflicting directories are left alone (and reported) instead, and
+           everything else is still deployed. *)
         plan = If[ ListQ @ context[ "Skills" ],
                    ConfirmBy[
                        planSkillInstall[ context[ "Skills" ], resolved[ "SkillsDirectory" ], uuid, replaced, overwrite ],
@@ -969,7 +1005,18 @@ deployLocked[ context_Association ] := Enclose[
                    ],
                    None
                ];
-        If[ AssociationQ @ plan, throwSkillConflicts @ plan[ "Conflicts" ] ];
+        notInstalled = { };
+        If[ AssociationQ @ plan,
+            If[ builtInToolsetSourceQ @ context[ "ToolsetSource" ],
+                (* ... unless that would leave nothing to deploy *)
+                If[ ! AssociationQ @ context[ "MCP" ] && plan[ "Decisions" ] === { },
+                    throwSkillConflicts @ plan[ "Conflicts" ]
+                ];
+                notInstalled = plan[ "Conflicts" ];
+                plan = <| plan, "Conflicts" -> { } |>,
+                throwSkillConflicts @ plan[ "Conflicts" ]
+            ]
+        ];
 
         (* Apply all changes, undoing them if anything fails or the evaluation is aborted *)
         success = False;
@@ -977,6 +1024,7 @@ deployLocked[ context_Association ] := Enclose[
             WithCleanup[
                 mcpResult   = If[ AssociationQ @ context[ "MCP" ], installMCPServers[ context ], { } ];
                 skillResult = If[ AssociationQ @ plan, applySkills[ plan, uuid ], $noSkillResult ];
+                skillResult = <| skillResult, "NotInstalled" -> notInstalledSkillNames @ notInstalled |>;
                 record      = buildDeploymentRecord[ context, uuid, mcpResult, skillResult ];
                 writeDeploymentRecord @ record;
                 success     = True
@@ -992,6 +1040,7 @@ deployLocked[ context_Association ] := Enclose[
         Scan[ removeReplacedDeployment[ #, record ] &, conflicts ];
 
         issueSkillMessages @ Lookup[ skillResult, "Messages", { } ];
+        issueSkillMessages @ notInstalledSkillMessages @ notInstalled;
 
         dep = ConfirmMatch[ AgentToolsDeployment @ record, _AgentToolsDeployment, "Deployment" ];
         ConfirmAssert[ agentToolsDeploymentQ @ dep, "DeploymentValid" ];
@@ -1004,6 +1053,25 @@ deployLocked // endDefinition;
 
 
 $noSkillResult = <| "Installed" -> { }, "Undo" -> { }, "Finalize" -> { }, "Messages" -> { } |>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notInstalledSkillNames*)
+(* The names of the skills whose conflicts were skipped (the first parameter of each conflict) *)
+notInstalledSkillNames // beginDefinition;
+notInstalledSkillNames[ conflicts: { ___Association } ] := First @ #[ "Parameters" ] & /@ conflicts;
+notInstalledSkillNames // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notInstalledSkillMessages*)
+(* One AgentSkillNotInstalled warning per skipped conflict, naming the skill and its existing directory *)
+notInstalledSkillMessages // beginDefinition;
+
+notInstalledSkillMessages[ conflicts: { ___Association } ] :=
+    <| "Tag" -> "AgentSkillNotInstalled", "Parameters" -> Take[ #[ "Parameters" ], 2 ] |> & /@ conflicts;
+
+notInstalledSkillMessages // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1282,8 +1350,9 @@ buildDeploymentRecord[ context_Association, uuid_String, servers_List, skillResu
             "MCPServers"    -> servers,
             "Skills"        -> <|
                 "Directory" -> If[ ListQ @ context[ "Skills" ], resolved[ "SkillsDirectory" ], None ],
-                "Installed" -> ConfirmMatch[ Lookup[ skillResult, "Installed", { } ], { ___Association }, "Installed" ],
-                "Skipped"   -> context[ "SkippedSkills" ]
+                "Installed"    -> ConfirmMatch[ Lookup[ skillResult, "Installed", { } ], { ___Association }, "Installed" ],
+                "Skipped"      -> context[ "SkippedSkills" ],
+                "NotInstalled" -> ConfirmMatch[ Lookup[ skillResult, "NotInstalled", { } ], { ___String }, "NotInstalled" ]
             |>,
             "Hooks"         -> <| |>,
             "Meta"          -> <| |>

@@ -84,6 +84,7 @@ AgentTools::DuplicateBundleConfigKey        = "The MCP servers `1` of \"`2`\" wo
 
 (* Agent skills messages *)
 AgentTools::AgentSkillNotFound              = "No agent skill found for \"`1`\".";
+AgentTools::BuiltInAgentSkillMissing        = "The built-in agent skill \"`1`\" is missing from the installed AgentTools paclet. Reinstall the paclet with PacletInstall[\"Wolfram/AgentTools\", ForceVersionInstall -> True].";
 AgentTools::InvalidAgentSkill               = "Invalid agent skill specification: `1`.";
 AgentTools::InvalidAgentSkillName           = "Invalid agent skill name \"`1`\". Skill names must be 1 to 64 lowercase letters, digits, and hyphens, without leading, trailing, or consecutive hyphens.";
 AgentTools::InvalidAgentSkillDescription    = "The agent skill \"`1`\" needs a description of 1 to 1024 characters.";
@@ -112,6 +113,8 @@ AgentTools::AgentSkillsNotDeployed          = "Warning: The agent skills of \"`1
 AgentTools::MCPServersNotDeployed           = "Warning: The MCP servers of \"`1`\" were not installed because `2` does not support MCP servers for this target.";
 AgentTools::AgentSkillsNotDeployedWarning   = "Warning: Agent skills were not installed for these clients, which do not support them: `1`.";
 AgentTools::AgentSkillConflictWarning       = "Warning: Some deployments were skipped because of conflicting agent skills. Use OverwriteTarget -> All to replace them.";
+AgentTools::AgentSkillNotInstalled          = "Warning: The agent skill \"`1`\" was not installed because a different or modified skill with that name already exists at `2`. Use OverwriteTarget -> All to replace it.";
+AgentTools::AgentSkillsNotInstalledWarning  = "Warning: Some agent skills were not installed for these clients because different or modified skills with the same names already exist: `1`. Use OverwriteTarget -> All to replace them.";
 AgentTools::MCPServerNotRemoved             = "The MCP server configuration \"`1`\" could not be removed from `2`.";
 AgentTools::DeploymentNotRemoved            = "Warning: The replaced deployment \"`1`\" could not be removed completely.";
 AgentTools::AgentSkillUnreadable            = "Unable to read the agent skill file `1`.";

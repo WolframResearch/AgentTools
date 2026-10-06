@@ -5,6 +5,22 @@
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Usage*)
+(*
+    Builds the agent skills defined in AgentSkills/ into Assets/AgentSkills (the paclet's "AgentSkills" asset) using
+    Scripts/Resources/AgentSkillsBuilder.wl.
+
+    wolframscript -f Scripts/BuildAgentSkills.wls
+        Rebuilds Assets/AgentSkills with the current paclet version and updates the version in
+        .claude-plugin/marketplace.json.
+
+    wolframscript -f Scripts/BuildAgentSkills.wls --check
+        Builds into a temporary directory using the version found in the committed Assets/AgentSkills, compares the
+        result with Assets/AgentSkills, and exits with code 1 if it is out of date. Nothing is modified.
+*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Initialization*)
 If[ ! PacletObjectQ @ PacletObject[ "Wolfram/PacletCICD" ],
     PacletInstall[ "https://github.com/WolframResearch/PacletCICD/releases/download/v0.36.2/Wolfram__PacletCICD-0.36.2.paclet" ]
@@ -13,377 +29,228 @@ Needs[ "Wolfram`PacletCICD`" -> "cicd`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Arguments*)
+arguments = Rest @ Replace[ $ScriptCommandLine, { } :> { "" } ];
+
+If[ ! SubsetQ[ { "--check" }, arguments ],
+    cicd`ConsoleError @ SequenceForm[
+        "Unknown arguments: ",
+        Complement[ arguments, { "--check" } ],
+        ". Usage: wolframscript -f Scripts/BuildAgentSkills.wls [--check]"
+    ];
+    Exit[ 1 ]
+];
+
+checkMode = MemberQ[ arguments, "--check" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*Paths*)
-pacletDir     = cicd`ScriptConfirmBy[ DirectoryName[ $InputFileName, 2 ], DirectoryQ ];
-agentSkillDir = cicd`ScriptConfirmBy[ GeneralUtilities`EnsureDirectory @ { pacletDir, "AgentSkills" }, DirectoryQ ];
-skillsDir     = cicd`ScriptConfirmBy[ GeneralUtilities`EnsureDirectory @ { agentSkillDir, "Skills" }, DirectoryQ ];
-refsDir       = cicd`ScriptConfirmBy[ FileNameJoin @ { agentSkillDir, "References" }, DirectoryQ ];
-manifestFile  = cicd`ScriptConfirmBy[ FileNameJoin @ { agentSkillDir, "Manifest.wl" }, FileExistsQ ];
-manifest      = cicd`ScriptConfirmBy[ Get @ manifestFile, AssociationQ ];
-templateFile  = cicd`ScriptConfirmBy[ FileNameJoin @ { pacletDir, "Scripts", "Resources", "SkillScriptTemplate.wls" }, FileExistsQ ];
-tempBuildDir  = CreateDirectory[ ];
+pacletDir       = cicd`ScriptConfirmBy[ FileNameDrop[ ExpandFileName @ $InputFileName, -2 ], DirectoryQ ];
+skillsDir       = FileNameJoin @ { pacletDir, "Assets", "AgentSkills" };
+marketplaceFile = cicd`ScriptConfirmBy[ FileNameJoin @ { pacletDir, ".claude-plugin", "marketplace.json" }, FileExistsQ ];
+builderFile     = cicd`ScriptConfirmBy[ FileNameJoin @ { pacletDir, "Scripts", "Resources", "AgentSkillsBuilder.wl" }, FileExistsQ ];
+stagingDir      = FileNameJoin @ { $TemporaryDirectory, "AgentSkillsBuild-" <> CreateUUID[ ] };
+
+$marketplaceSource = "./Assets/AgentSkills";
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Load Paclet*)
 cicd`ScriptConfirmBy[ PacletDirectoryLoad @ pacletDir, MemberQ @ pacletDir ];
+
+(* Make sure an installed copy of AgentTools cannot shadow the source being built: *)
+cicd`ScriptConfirmAssert[
+    StringQ @ FindFile[ "Wolfram`AgentTools`" ] &&
+        StringStartsQ[ ExpandFileName @ FindFile[ "Wolfram`AgentTools`" ], pacletDir <> $PathnameSeparator ],
+    TemplateApply[
+        "AgentTools context points to \"`1`\" which is not contained in the expected paclet directory \"`2`\".",
+        { FindFile[ "Wolfram`AgentTools`" ], pacletDir }
+    ]
+];
+
 cicd`ScriptConfirmMatch[ Get[ "Wolfram`AgentTools`" ], Null ];
+pacletVersion = cicd`ScriptConfirmBy[ PacletObject[ File @ pacletDir ][ "Version" ], StringQ ];
+cicd`ScriptConfirmMatch[ Get @ builderFile, Null ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*Script Generation*)
+(*Definitions*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*Collect Unique Tool Names*)
-allToolNames = Union @@ Map[ Lookup[ "Scripts" ], Values @ manifest ];
-cicd`ConsoleLog @ SequenceForm[ "Tools to generate scripts for: ", allToolNames ];
+(*Exiting*)
+(* The staging directory is removed before every exit after this point. *)
+exitWith[ code_Integer ] := (
+    If[ DirectoryQ @ stagingDir, DeleteDirectory[ stagingDir, DeleteContents -> True ] ];
+    Exit[ code ]
+);
+
+abort[ message__ ] := (
+    cicd`ConsoleError @ SequenceForm @ message;
+    exitWith[ 1 ]
+);
+
+failureMessage[ failure_Failure ] := Replace[ failure[ "Message" ], Except[ _String ] :> ToString[ failure, InputForm ] ];
+failureMessage[ other_ ] := ToString[ other, InputForm ];
+
+confirmResult[ result_, context_String ] := If[ FailureQ @ result, abort[ context, ": ", failureMessage @ result ], result ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*Extract Tool Metadata*)
-getToolMetadata[ toolName_String ] := Module[ { tool, data, params },
-    tool = $DefaultMCPTools[ toolName ];
-    If[ ! MatchQ[ tool, _LLMTool ],
-        cicd`ConsoleError @ SequenceForm[ "Tool not found in $DefaultMCPTools: ", toolName ];
-        Exit[ 1 ]
-    ];
-    data = tool[ "Data" ];
-    params = Association @ data[ "Parameters" ];
-    <|
-        "Name"        -> convertPUACharacters @ data[ "Name" ],
-        "Description" -> convertPUACharacters @ data[ "Description" ],
-        "Required"    -> Select[ params, TrueQ @ #[ "Required" ] & ],
-        "Optional"    -> Select[ params, ! TrueQ @ #[ "Required" ] & ]
-    |>
-];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*Convert Private Use Area Characters to Printable ASCII*)
-convertPUACharacters[ str_String ] := StringJoin[ convertPUACharacters /@ ToCharacterCode @ str ];
-convertPUACharacters[ n_Integer ] /; 57344 <= n <= 63743 := toPrintableASCII @ FromCharacterCode @ n;
-convertPUACharacters[ n_Integer ] := FromCharacterCode @ n;
-
-toPrintableASCII[ expr_ ] := ToString[ Unevaluated @ expr, CharacterEncoding -> "PrintableASCII" ];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*Generate Usage Code*)
-generateUsageCode[ toolName_String, reqNames_List, optNames_List ] := Module[
-    { usageParts, usageStr },
-    usageParts = Join[
-        Map[ "<" <> # <> ">" &, reqNames ],
-        Map[ "[--" <> # <> " value]" &, optNames ]
-    ];
-    usageStr = "wolframscript -f " <> toolName <> ".wls " <> StringRiffle[ usageParts, " " ];
-    "$usage = \"" <> StringReplace[ usageStr, "\"" -> "\\\"" ] <> "\";"
-];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*Generate Help Text Code*)
-$escapeRules = { "\\" -> "\\\\", "\"" -> "\\\"", "\n" -> "\\n" };
-
-generateHelpLines[ meta_Association, reqNames_List, optNames_List ] := Join[
-    Map[
-        Function[ name,
-            "  " <> name <> " (required): " <>
-                Replace[ meta[ "Required" ][ name ][ "Help" ], Except[ _String ] -> "No description" ]
-        ],
-        reqNames
-    ],
-    Map[
-        Function[ name,
-            "  --" <> name <> ": " <>
-                Replace[ meta[ "Optional" ][ name ][ "Help" ], Except[ _String ] -> "No description" ]
-        ],
-        optNames
+(*buildSkills*)
+buildSkills[ version_String ] := (
+    cicd`ConsoleLog @ SequenceForm[ "Building agent skills (version ", version, ") in ", stagingDir ];
+    confirmResult[
+        Wolfram`AgentSkillsBuilder`buildAgentSkills[ pacletDir, stagingDir, version, "LogFunction" -> cicd`ConsoleLog ],
+        "Failed to build agent skills"
     ]
-];
+);
 
-generateHelpTextCode[ meta_Association, helpLines_List ] := StringJoin[
-    "$helpText = StringJoin[\n",
-    "    \"Usage: \", $usage, \"\\n\\n\",\n",
-    "    \"", StringReplace[ meta[ "Description" ], $escapeRules ], "\\n\\n\",\n",
-    If[ helpLines === { },
-        "    \"No arguments.\\n\"\n",
-        "    \"Arguments:\\n\",\n" <>
-        StringRiffle[
-            Map[ "    \"" <> StringReplace[ #, $escapeRules ] <> "\\n\"" &, helpLines ],
-            ",\n"
-        ] <> "\n"
-    ],
-    "];"
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*readMarketplace*)
+readMarketplace[ ] := Replace[
+    Quiet @ Import[ marketplaceFile, "RawJSON" ],
+    Except[ KeyValuePattern[ "metadata" -> _Association ] ] :>
+        abort[ "Failed to read ", marketplaceFile, " as a JSON object with a \"metadata\" object." ]
 ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*Generate Argument Parsing Code*)
-generateArgParsingCode[ reqNames_List, optNames_List ] := Module[
-    { code },
-
-    code = "";
-
-    (* Validate required positional arguments *)
-    If[ reqNames =!= { },
-        code = code <> StringJoin[
-            "    (* Validate required arguments *)\n",
-            "    If[ Length @ positional < ", ToString @ Length @ reqNames, ",\n",
-            "        WriteString[ \"stderr\", \"[Error] Missing required argument(s).\\n\\n\" <> $helpText ];\n",
-            "        Exit[ 1 ]\n",
-            "    ];\n",
-            "\n"
-        ]
-    ];
-
-    (* Assign required positional args *)
-    MapIndexed[
-        Function[ { name, idx },
-            code = code <> "    $parsedArgs[ \"" <> name <> "\" ] = positional[[ " <> ToString @ First @ idx <> " ]];\n"
-        ],
-        reqNames
-    ];
-
-    (* Assign optional flag args *)
-    Map[
-        Function[ name,
-            code = code <> "    If[ KeyExistsQ[ flags, \"" <> name <> "\" ], $parsedArgs[ \"" <> name <> "\" ] = flags[ \"" <> name <> "\" ] ];\n"
-        ],
-        optNames
-    ];
-
-    StringReplace[ code, "\n" ~~ EndOfString -> "" ]
+(*marketplaceProblems*)
+(* Problems with the plugin definitions of the marketplace data, checked against the built skill tree in dir. *)
+marketplaceProblems[ data_Association, dir_String ] := Flatten @ Replace[
+    Lookup[ data, "plugins" ],
+    {
+        plugins: { __Association } :> Map[ pluginProblems[ #, dir ] &, plugins ],
+        _ :> { "\"plugins\" must be a nonempty list of plugin objects." }
+    }
 ];
 
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*Generate Script Source*)
-generateScript[ toolName_String ] := Module[
-    { meta, reqNames, optNames, helpLines, usageCode, helpTextCode, parsingCode, sourceTemplate },
-
-    meta     = getToolMetadata[ toolName ];
-    reqNames = Keys @ meta[ "Required" ];
-    optNames = Keys @ meta[ "Optional" ];
-
-    helpLines    = generateHelpLines[ meta, reqNames, optNames ];
-    usageCode    = generateUsageCode[ toolName, reqNames, optNames ];
-    helpTextCode = generateHelpTextCode[ meta, helpLines ];
-    parsingCode  = generateArgParsingCode[ reqNames, optNames ];
-
-    sourceTemplate = ReadString[ templateFile ];
-
-    StringReplace[
-        sourceTemplate,
-        {
-            "(*<<Usage>>*)"           -> usageCode,
-            "(*<<HelpText>>*)"        -> helpTextCode,
-            "(*<<ArgumentParsing>>*)" -> parsingCode,
-            "(*<<ToolName>>*)"        -> toolName
-        }
-    ]
-];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*Generate Scripts.md Reference*)
-
-(* Build a usage line for markdown display *)
-scriptUsageLine[ toolName_String, reqNames_List, optNames_List ] := Module[ { parts },
-    parts = Join[
-        Map[ "<" <> # <> ">" &, reqNames ],
-        Map[ "[--" <> # <> " value]" &, optNames ]
-    ];
-    "wolframscript -f scripts/" <> toolName <> ".wls " <> StringRiffle[ parts, " " ]
-];
-
-(* Build a markdown argument table for a single tool *)
-escapeMdTableCell[ s_String ] := StringReplace[ s, "|" -> "\\|" ];
-
-scriptArgTable[ meta_Association, reqNames_List, optNames_List ] := Module[ { rows },
-    rows = Join[
-        Map[
-            Function[ name,
-                "| `" <> name <> "` | Yes | " <>
-                    escapeMdTableCell @ Replace[ meta[ "Required" ][ name ][ "Help" ], Except[ _String ] -> "No description" ] <> " |"
+pluginProblems[ plugin_Association, dir_String ] := Module[ { name, skills },
+    name   = Lookup[ plugin, "name", "(unnamed)" ];
+    skills = Lookup[ plugin, "skills" ];
+    {
+        If[ Lookup[ plugin, "source" ] =!= $marketplaceSource,
+            TemplateApply[
+                "Plugin \"`1`\" has source `2`, but it must be \"`3`\".",
+                { name, Lookup[ plugin, "source" ], $marketplaceSource }
             ],
-            reqNames
+            { }
         ],
-        Map[
-            Function[ name,
-                "| `--" <> name <> "` | No | " <>
-                    escapeMdTableCell @ Replace[ meta[ "Optional" ][ name ][ "Help" ], Except[ _String ] -> "No description" ] <> " |"
-            ],
-            optNames
+        If[ MatchQ[ skills, { __String } ],
+            skillProblems[ name, #, dir ] & /@ skills,
+            TemplateApply[ "Plugin \"`1`\" must list its skills as a nonempty list of strings.", { name } ]
+        ]
+    }
+];
+
+skillProblems[ plugin_, skill_String, dir_String ] :=
+    If[ StringMatchQ[ skill, "./" ~~ Except[ "/" ].. ] &&
+            FileType @ FileNameJoin @ { dir, StringDrop[ skill, 2 ], "SKILL.md" } === File,
+        { },
+        TemplateApply[
+            "Plugin \"`1`\" lists skill \"`2`\", which is not a built skill directory with a SKILL.md.",
+            { plugin, skill }
         ]
     ];
-    If[ rows === { },
-        "This script has no arguments.\n",
-        StringJoin[
-            "| Argument | Required | Description |\n",
-            "| --- | --- | --- |\n",
-            StringRiffle[ rows, "\n" ], "\n"
+
+reportProblems[ list_List ] := cicd`ConsoleError[ marketplaceFile <> ": " <> # ] & /@ list;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Check Mode*)
+If[ checkMode,
+    Module[ { committedVersion, differences, marketplace, problems, stale },
+
+        committedVersion = confirmResult[
+            Wolfram`AgentSkillsBuilder`agentSkillsVersion @ skillsDir,
+            "Cannot determine the version of the committed skills in " <> skillsDir
+        ];
+
+        buildSkills @ committedVersion;
+
+        differences = confirmResult[
+            Wolfram`AgentSkillsBuilder`agentSkillsDifferences[ stagingDir, skillsDir ],
+            "Failed to compare agent skills"
+        ];
+
+        KeyValueMap[
+            Function[ { key, paths },
+                cicd`ConsoleError[ key <> " in Assets/AgentSkills: " <> # ] & /@ paths
+            ],
+            differences
+        ];
+
+        marketplace = readMarketplace[ ];
+        problems = marketplaceProblems[ marketplace, skillsDir ];
+        If[ marketplace[ "metadata", "version" ] =!= committedVersion,
+            AppendTo[
+                problems,
+                TemplateApply[
+                    "metadata.version is `1`, but the committed skills have version \"`2`\".",
+                    { marketplace[ "metadata", "version" ], committedVersion }
+                ]
+            ]
+        ];
+        reportProblems @ problems;
+
+        stale = ! AllTrue[ differences, # === { } & ] || problems =!= { };
+        If[ stale,
+            cicd`ConsoleError[ "Agent skills are out of date. Run: wolframscript -f Scripts/BuildAgentSkills.wls" ];
+            exitWith[ 1 ],
+            cicd`ConsoleLog @ SequenceForm[ "Agent skills are up to date (version ", committedVersion, ")." ];
+            exitWith[ 0 ]
         ]
     ]
 ];
 
-(* Build a markdown section for a single tool *)
-scriptMdSection[ toolName_String ] := Module[ { meta, reqNames, optNames },
-    meta     = getToolMetadata[ toolName ];
-    reqNames = Keys @ meta[ "Required" ];
-    optNames = Keys @ meta[ "Optional" ];
-    StringJoin[
-        "## ", toolName, ".wls\n\n",
-        meta[ "Description" ], "\n\n",
-        "**Usage:**\n\n",
-        "```\n",
-        scriptUsageLine[ toolName, reqNames, optNames ], "\n",
-        "```\n\n",
-        "**Arguments:**\n\n",
-        scriptArgTable[ meta, reqNames, optNames ]
-    ]
-];
-
-(* Build the full Scripts.md content for a skill *)
-generateScriptsMd[ scriptNames_List ] := StringJoin[
-    "# Script Reference\n\n",
-    "Auto-generated reference for bundled scripts. Pass `--usage` to any\n",
-    "script for the latest argument documentation.\n\n",
-    StringRiffle[ Map[ scriptMdSection, scriptNames ], "\n---\n\n" ],
-    "\n"
-];
-
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*Build Agent Skill Scripts*)
+(*Build Mode*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*Generate All Scripts to Temp Directory*)
-cicd`ConsoleLog[ "Generating scripts..." ];
+(*Build Skills*)
+buildSkills @ pacletVersion;
 
-Map[
-    Function[ toolName,
-        Module[ { source, outFile },
-            source  = generateScript[ toolName ];
-            outFile = FileNameJoin @ { tempBuildDir, toolName <> ".wls" };
-            Export[ outFile, source, "String" ];
-            cicd`ConsoleLog @ SequenceForm[ "  Generated: ", toolName <> ".wls" ];
-        ]
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Validate Marketplace*)
+marketplaceData = readMarketplace[ ];
+marketplaceIssues = marketplaceProblems[ marketplaceData, stagingDir ];
+If[ marketplaceIssues =!= { }, reportProblems @ marketplaceIssues; exitWith[ 1 ] ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Replace Assets/AgentSkills*)
+cicd`ConsoleLog @ SequenceForm[ "Replacing ", skillsDir ];
+If[ FileExistsQ @ skillsDir, DeleteDirectory[ skillsDir, DeleteContents -> True ] ];
+If[ FileExistsQ @ skillsDir, abort[ "Failed to delete ", skillsDir ] ];
+If[ ! DirectoryQ @ CopyDirectory[ stagingDir, skillsDir ], abort[ "Failed to copy ", stagingDir, " to ", skillsDir ] ];
+
+If[ ! AllTrue[
+        confirmResult[
+            Wolfram`AgentSkillsBuilder`agentSkillsDifferences[ stagingDir, skillsDir ],
+            "Failed to compare agent skills"
+        ],
+        # === { } &
     ],
-    allToolNames
+    abort[ "The copied skills in ", skillsDir, " do not match the build output." ]
 ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*Distribute Scripts and References to Each Skill*)
-cicd`ConsoleLog[ "Distributing scripts and references to skills..." ];
-
-KeyValueMap[
-    Function[ { skillName, skillDef },
-        Module[ { skillDir, scriptDir, refDir, scriptNames, refNames },
-
-            skillDir  = GeneralUtilities`EnsureDirectory @ { skillsDir, skillName };
-            scriptDir = GeneralUtilities`EnsureDirectory @ { skillDir, "scripts" };
-            refDir    = GeneralUtilities`EnsureDirectory @ { skillDir, "references" };
-
-            (* Copy generated scripts *)
-            scriptNames = Lookup[ skillDef, "Scripts", { } ];
-            Map[
-                Function[ scriptName,
-                    Module[ { src, dst },
-                        src = FileNameJoin @ { tempBuildDir, scriptName <> ".wls" };
-                        dst = FileNameJoin @ { scriptDir, scriptName <> ".wls" };
-                        If[ FileExistsQ @ src,
-                            CopyFile[ src, dst, OverwriteTarget -> True ];
-                            cicd`ConsoleLog @ SequenceForm[ "  ", skillName, "/scripts/", scriptName <> ".wls" ],
-                            cicd`ConsoleError @ SequenceForm[ "  Missing script: ", src ];
-                            Exit[ 1 ]
-                        ]
-                    ]
-                ],
-                scriptNames
-            ];
-
-            (* Copy reference files *)
-            refNames = Lookup[ skillDef, "References", { } ];
-            Map[
-                Function[ refName,
-                    Module[ { src, dst },
-                        src = FileNameJoin @ { refsDir, refName <> ".md" };
-                        dst = FileNameJoin @ { refDir, refName <> ".md" };
-                        If[ FileExistsQ @ src,
-                            CopyFile[ src, dst, OverwriteTarget -> True ];
-                            cicd`ConsoleLog @ SequenceForm[ "  ", skillName, "/references/", refName <> ".md" ],
-                            cicd`ConsoleError @ SequenceForm[ "  Missing reference: ", src ];
-                            Exit[ 1 ]
-                        ]
-                    ]
-                ],
-                refNames
-            ];
-
-            (* Generate Scripts.md reference *)
-            Module[ { scriptsMd, scriptsMdFile },
-                scriptsMd = generateScriptsMd[ scriptNames ];
-                scriptsMdFile = FileNameJoin @ { refDir, "Scripts.md" };
-                Export[ scriptsMdFile, scriptsMd, "String" ];
-                cicd`ConsoleLog @ SequenceForm[ "  ", skillName, "/references/Scripts.md" ];
-            ];
-
-            cicd`ConsoleLog @ SequenceForm[ "  Completed skill: ", skillName ];
-        ]
-    ],
-    manifest
-];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Section::Closed:: *)
 (*Update Marketplace Version*)
 cicd`ConsoleLog[ "Updating marketplace version..." ];
-marketplaceFile = cicd`ScriptConfirmBy[ FileNameJoin @ { pacletDir, ".claude-plugin", "marketplace.json" }, FileExistsQ ];
-marketplaceData = cicd`ScriptConfirmBy[ Import[ marketplaceFile, "RawJSON" ], AssociationQ ];
-paclet = cicd`ScriptConfirmBy[ PacletObject @ File @ pacletDir, PacletObjectQ ];
-version = cicd`ScriptConfirmBy[ paclet[ "Version" ], StringQ ];
-marketplaceData[ "metadata", "version" ] = version;
-json = StringReplace[ cicd`ScriptConfirmBy[ Developer`WriteRawJSONString @ marketplaceData, StringQ ], "\\/" -> "/" ];
-cicd`ScriptConfirmBy[ Export[ marketplaceFile, StringToByteArray @ json, "Binary" ], FileExistsQ ];
-cicd`ScriptConfirmAssert[ Import[ marketplaceFile, "RawJSON" ] === marketplaceData ];
-cicd`ConsoleLog[ "Marketplace version updated." ];
+marketplaceData[ "metadata", "version" ] = pacletVersion;
+json = StringReplace[ Developer`WriteRawJSONString @ marketplaceData, "\\/" -> "/" ];
+If[ ! StringQ @ json, abort[ "Failed to serialize the marketplace data." ] ];
+If[ ! StringQ @ Export[ marketplaceFile, StringToByteArray @ json, "Binary" ], abort[ "Failed to write ", marketplaceFile ] ];
+If[ Import[ marketplaceFile, "RawJSON" ] =!= marketplaceData, abort[ "Failed to verify ", marketplaceFile ] ];
 
-(* ::**************************************************************************************************************:: *)
-(* ::Section::Closed:: *)
-(*Update Skill Versions*)
-cicd`ConsoleLog[ "Updating skill versions..." ];
-
-Map[
-    Function[ skillName,
-        Module[ { skillMdFile, content, updated },
-            skillMdFile = FileNameJoin @ { skillsDir, skillName, "SKILL.md" };
-            If[ ! FileExistsQ @ skillMdFile,
-                cicd`ConsoleError @ SequenceForm[ "  Missing SKILL.md: ", skillMdFile ];
-                Exit[ 1 ]
-            ];
-            content = ReadString @ skillMdFile;
-            updated = StringReplace[ content, "  version: " ~~ Except[ "\n" ].. ~~ "\n" :> "  version: " <> version <> "\n", 1 ];
-            If[ updated === content,
-                cicd`ConsoleLog @ SequenceForm[ "  ", skillName, "/SKILL.md (already up to date)" ],
-                Export[ skillMdFile, updated, "String" ];
-                cicd`ConsoleLog @ SequenceForm[ "  ", skillName, "/SKILL.md -> ", version ]
-            ]
-        ]
-    ],
-    Keys @ manifest
-];
-
-cicd`ConsoleLog[ "Skill versions updated." ];
-
-(* ::**************************************************************************************************************:: *)
-(* ::Section::Closed:: *)
-(*Cleanup*)
-cicd`ConsoleLog[ "Cleaning up temporary build directory..." ];
-DeleteDirectory[ tempBuildDir, DeleteContents -> True ];
-
-cicd`ConsoleLog[ "Build complete." ];
+cicd`ConsoleLog @ SequenceForm[ "Build complete: ", skillsDir, " (version ", pacletVersion, ")." ];
+exitWith[ 0 ];
 
 (* :!CodeAnalysis::EndBlock:: *)

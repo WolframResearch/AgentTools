@@ -31,9 +31,8 @@ This spec supersedes the "Phase 2 Outline → Skills Component" section of [Depl
 
 ## Non-Goals (this pass)
 
-- Built-in default skills. `$DefaultAgentTools` entries have `"AgentSkills" -> {}`; the internal built-in skill registry exists but is empty. (Note for later: `AgentSkills/Skills` is not part of the built paclet today; shipping it requires an `"Asset"` entry and running `Scripts/BuildAgentSkills.wls` before the build.)
 - Persisted user-defined bundles (no `CreateAgentTools`). Ad hoc `AgentToolsObject[<|...|>]` values can be deployed.
-- Preferences UI changes. The UI keeps working because built-in bundles carry no skills, records keep the fields the UI reads, and `OverwriteTarget -> True` never clobbers modified or foreign skill files. (Known limitation: the UI identifies Wolfram deployments by toolset name, so an ad hoc bundle that contains a built-in server is not shown as "configured".)
+- Preferences UI changes. The UI keeps working: the built-in bundles it deploys now carry skills, which are installed with the server where the client supports skills (only the server, without a warning, where it doesn't, and conflicting skill directories are left alone; see [Built-in skills](#built-in-skills)), records keep the fields the UI reads, and `OverwriteTarget -> True` never clobbers modified or foreign skill files. (Known limitation: the UI identifies Wolfram deployments by toolset name, so an ad hoc bundle that contains a built-in server is not shown as "configured".)
 - Reference documentation notebooks for the new symbols.
 - Honoring client environment-variable overrides (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `COPILOT_HOME`, `XDG_CONFIG_HOME`, `KIRO_HOME`, ...). Locations are home-relative for both MCP and skills, consistent with existing MCP behavior. The override mechanisms are `File[...]` / `{client, dir}` targets and the `"SkillsDirectory"` option of `DeployAgentTools`.
 - Refreshing other copies of a skill (e.g. in other clients' directories) when one client's copy is upgraded. Redeploying to every client refreshes every copy.
@@ -104,7 +103,7 @@ Wherever a skill is accepted (`InstallAgentSkills`, an `AgentToolsObject`'s `"Ag
 | `LLMSkill[...]` | An `LLMSkill` object. If its `"Location"` is an existing directory containing `SKILL.md`, that directory is the source (all bundled files are copied). Otherwise a `SKILL.md` is generated from its fields. |
 | `File[dir]` | A skill directory in Agent Skills format (contains `SKILL.md`). Parsed with `LLMSkill[File[dir]]` for its name and description. |
 | `"Publisher/Paclet/skill-name"`, `"Paclet/skill-name"` | A paclet-defined skill (see [Paclet Extension](#paclet-extension)). |
-| `"skill-name"` | A built-in skill (internal registry `$defaultAgentSkills`; empty in this pass → `AgentSkillNotFound`). |
+| `"skill-name"` | A built-in skill (internal registry `$defaultAgentSkills`: `wolfram-alpha`, `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`; see [Built-in skills](#built-in-skills)). Other names → `AgentSkillNotFound`. |
 
 AgentTools never calls ``LLMSkillQ`` or other LLMFunctions internals; it reads an `LLMSkill`'s data association directly (`HoldPattern[LLMSkill][as_Association]`), which also works for deserialized skills. To *create* `LLMSkill`s it uses only the public constructors `LLMSkill[File[dir]]` and `LLMSkill[{name, description}, body]` (the association constructor requires LLMFunctions internals).
 
@@ -117,7 +116,7 @@ All forms normalize (`toAgentSkillSource[ spec ]`, or `toAgentSkillSource[ spec,
     "Name"        -> "using-my-paclet",          (* validated skill name; the installed directory name *)
     "Description" -> "...",                      (* validated description *)
     "Identifier"  -> "Pub/MyPaclet/using-my-paclet" | "File:/canonical/source/dir" | "AgentToolsObject:MyBundle/using-my-paclet" | None,
-    "Version"     -> "1.2.0" | Missing[ ],        (* paclet version for paclet skills *)
+    "Version"     -> "1.2.0" | Missing[ ],        (* paclet version for paclet skills; AgentTools version for built-in skills *)
     "Files"       -> <| "SKILL.md" -> source, "scripts/run.wls" -> source, ... |>,  (* KeySort'ed *)
     "Manifest"    -> <| "SKILL.md" -> "ab12...", ... |>                              (* see Hashing *)
 |>
@@ -125,7 +124,7 @@ All forms normalize (`toAgentSkillSource[ spec ]`, or `toAgentSkillSource[ spec,
 
 - `"Files"` maps relative paths (always `/`-separated) to either `File[absoluteSourcePath]` or a `String` (generated UTF-8 content).
 - `"Identifier"` is the source identity used for upgrade decisions:
-  - paclet (and future built-in) skills: the qualified name;
+  - paclet skills: the qualified name; built-in skills: the skill name (e.g. `"wolfram-language"`);
   - directory sources (`File[dir]`, and any `LLMSkill` whose `"Location"` is used): `"File:" <> canonicalPath[ dir ]`;
   - in-memory `LLMSkill`s: the `defaultIdentifier` given by the caller — `DeployAgentTools` passes `"<ToolsetType>:<toolset name>/<skill name>"`, so redeploying an edited in-memory skill of the same bundle is an upgrade of the same source; `InstallAgentSkills` passes `None` (it keeps no registry).
 - Directory sources are listed recursively, skipping ignored entries (see [Hashing](#hashing)). Symbolic links inside a skill are followed when copying.
@@ -277,7 +276,7 @@ For incoming source `S` (manifest `Min`), destination `D = root/name`, registry 
 | `"Directory"`, `E` exists, not external, disk `"Unmodified"` vs `E.Hashes` | `Min == E.Hashes` | Add reference. |
 | 〃 | `live` is empty (only replaced deployments used it) | **Owned by the replacement**: replace with `S`; set `Hashes`, `Identifier`, `Version`. No force needed. |
 | 〃 | same string `Identifier`, `S.Version` older than `E.Version` (both known) | Keep the newer installed copy; add reference; record the installed version; issue `AgentSkillNewerVersionKept`. |
-| 〃 | same string `Identifier` otherwise | **Upgrade**: requires upgrade level, else conflict `AgentSkillUpdate`. Replace with `S`, update `Hashes`/`Version`, add reference. All referencing deployments now share the new version. |
+| 〃 | same string `Identifier` otherwise | **Upgrade**: requires upgrade level (not needed for built-in skills, which only change with the paclet), else conflict `AgentSkillUpdate`. Replace with `S`, update `Hashes`/`Version`, add reference. All referencing deployments now share the new version. |
 | 〃 | different or unknown `Identifier` | Conflict `AgentSkillConflict`. Force: replace, `E.Identifier = S.Identifier`, add reference. |
 | `"Directory"`, `E` exists, not external, disk `"Modified"` | disk manifest `== Min` | Adopt the change as baseline (`Hashes = Min`), add reference. |
 | 〃 | otherwise | Conflict `AgentSkillModified`. Force: replace, add reference. |
@@ -294,7 +293,7 @@ Registry entries are found by key and, failing that, by skill directory (the ski
 
 Unreadable files: in an installed directory they make it `"Modified"`; in a skill source they fail with `AgentSkillUnreadable`.
 
-Version comparison uses numeric dotted-version order. All decisions for all skills of a deployment are computed before anything is written (preflight). Any unforced conflict fails the whole deployment with the conflict message(s); nothing is changed.
+Version comparison uses numeric dotted-version order. All decisions for all skills of a deployment are computed before anything is written (preflight). Any unforced conflict fails the whole deployment with the conflict message(s); nothing is changed. Built-in bundles are the exception: a conflicting skill is left out instead (see [Built-in skills](#built-in-skills)).
 
 ### Release decision (deployment removal)
 
@@ -369,19 +368,32 @@ Formatting: summary box (name, server names, skill names; hidden: location, desc
 
 ### `$DefaultAgentTools`
 
-One built-in bundle per default MCP server, with the same name:
+One built-in bundle per default MCP server, with the same name, plus the built-in skills that go with it:
 
 ```wl
 $defaultAgentTools[ "Wolfram" ] = <|
     "Name"        -> "Wolfram",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "Wolfram" },
-    "AgentSkills" -> { }
+    "AgentSkills" -> { "wolfram-language", "wolfram-alpha" }
 |>;
-(* likewise "WolframAlpha", "WolframLanguage", "WolframPacletDevelopment" *)
+(* likewise "WolframAlpha" -> { "wolfram-alpha" },
+   "WolframLanguage" and "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" } *)
 ```
 
-`$DefaultAgentTools := AgentToolsObject /@ KeySort @ $defaultAgentTools` (self-caching and protected, like `$DefaultMCPServers`; skill specs are names only, resolved lazily at deploy time, so nothing machine-specific is baked into the MX).
+`$DefaultAgentTools := AgentToolsObject /@ KeySort @ $defaultAgentTools` (self-caching and protected, like `$DefaultMCPServers`; skill specs are names only, resolved lazily when they are used, so nothing machine-specific is baked into the MX).
+
+### Built-in skills
+
+The built-in skills are the skill directories in the paclet's `"AgentSkills"` asset (`Assets/AgentSkills/`, built from `AgentSkills/` by `Scripts/BuildAgentSkills.wls` and committed; see [docs/agent-skills.md](../docs/agent-skills.md)). `$defaultAgentSkills` maps each name to `builtInSkillDirectory[ name ]` with `RuleDelayed`, which gives `File[ <$thisPaclet AssetLocation "AgentSkills">/<name> ]`, or `Missing[ "NotAvailable", name ]` if the loaded paclet lacks it:
+
+- `builtInSkillDefinition[ name ]` gives the definition; unknown names fail with `AgentSkillNotFound`, a missing directory with `BuiltInAgentSkillMissing`. `toLLMSkill[ name ]` (the `"AgentSkills"` property) and `toAgentSkillSource[ name, _ ]` use it for bare names.
+- `builtInSkillSource[ name ]` adds `"Identifier" -> name` and `"Version" -> $pacletVersion` (the loaded AgentTools version, not the `metadata.version` of the built `SKILL.md`), so redeploying after a paclet update is an upgrade of the same source. Because built-in skills only change with the paclet, the upgrade needs no `OverwriteTarget` (`builtInSkillSourceQ` in the [install decision](#install-decision-deployment)); the "keep the newer installed copy" rule still runs first, so a directory that other deployments use is never downgraded.
+
+Deploying a built-in bundle (`"Location" -> "BuiltIn"`, recorded as `"AgentTools"/"Location" -> "BuiltIn"`) differs from other bundles in two ways, because its skills complement its MCP server:
+
+- A target without a skills root gets only the server, without `AgentSkillsNotDeployed` (see [Targets, scope, and partial support](#targets-scope-and-partial-support)).
+- Skill conflicts (`AgentSkillExists`, `AgentSkillModified`, `AgentSkillConflict`, `AgentSkillUpdate`) don't fail the deployment. The conflicting skills are left untouched and dropped from the plan, everything else is deployed, `AgentSkillNotInstalled` (skill name, `File[ dir ]`) is issued per skipped skill, and the record lists them in `"Skills"/"NotInstalled"`. If that would leave nothing to deploy (no MCP server for the target and no remaining skill decision), the conflicts fail the deployment as before, so no empty deployment is recorded. `OverwriteTarget -> All` still replaces them. Ad hoc and paclet bundles keep failing on conflicts.
 
 ### `AgentToolsObjects`
 
@@ -538,7 +550,7 @@ An `MCPServerObject` (given directly or found above) is wrapped in an implicit s
 
 `"LocationKey"` identifies *where* a deployment lives for conflict detection: the scope when it is known, otherwise the canonical config file.
 
-A component is deployed if the bundle has it and the target supports it. If some component can't be deployed, the rest is deployed and one warning is issued (`MCPServersNotDeployed` / `AgentSkillsNotDeployed`, naming the bundle and the client). If nothing can be deployed, the deployment fails: with the MCP failure (`UnknownInstallLocation`, `UnsupportedMCPClient`, `UnsupportedMCPClientProject`) when the bundle has servers, otherwise with the skills failure (`UnsupportedSkillsClient`, `UnsupportedSkillsClientProject`, `UnknownSkillsLocation`, or `NoSkillsLocation` for a `File` target without a skills root), and `AgentToolsNothingToDeploy` if neither applies. An empty bundle fails with `AgentToolsEmpty`, and a skills-only bundle with `"SkillsDirectory" -> None` with `AgentSkillsDisabled` (checked before the target, so `DeployAgentTools[All, ...]` fails once instead of per client).
+A component is deployed if the bundle has it and the target supports it. If some component can't be deployed, the rest is deployed and one warning is issued (`MCPServersNotDeployed` / `AgentSkillsNotDeployed`, naming the bundle and the client). Built-in bundles (`"Location" -> "BuiltIn"`) never issue `AgentSkillsNotDeployed`: their skills complement the server, and several default targets (Claude Desktop, LM Studio, Amazon Q Developer) have no skills directory. The record still lists the skills under `"Skipped"`. If nothing can be deployed, the deployment fails: with the MCP failure (`UnknownInstallLocation`, `UnsupportedMCPClient`, `UnsupportedMCPClientProject`) when the bundle has servers, otherwise with the skills failure (`UnsupportedSkillsClient`, `UnsupportedSkillsClientProject`, `UnknownSkillsLocation`, or `NoSkillsLocation` for a `File` target without a skills root), and `AgentToolsNothingToDeploy` if neither applies. An empty bundle fails with `AgentToolsEmpty`, and a skills-only bundle with `"SkillsDirectory" -> None` with `AgentSkillsDisabled` (checked before the target, so `DeployAgentTools[All, ...]` fails once instead of per client).
 
 ### Conflicts
 
@@ -557,7 +569,7 @@ Before the lock:
 
 Under the lock:
 4. Sweep the registry. Find conflicting deployments; with `OverwriteTarget -> False`, fail with `DeploymentExists`.
-5. Skill preflight: compute install decisions for all skills (excluding the replaced deployments' references, see above). Unforced conflicts fail (`AgentSkillConflict` / `AgentSkillModified` / `AgentSkillExists` / `AgentSkillUpdate`).
+5. Skill preflight: compute install decisions for all skills (excluding the replaced deployments' references, see above). Unforced conflicts fail (`AgentSkillConflict` / `AgentSkillModified` / `AgentSkillExists` / `AgentSkillUpdate`), except for built-in bundles, whose conflicting skills are removed from the plan and recorded under `"NotInstalled"`; one `AgentSkillNotInstalled` warning per skipped skill is issued in step 9.
 6. Apply, recording an undo action for every change, inside `WithCleanup` so aborts also roll back:
    - before each `InstallMCPServer` call, snapshot the config file (raw bytes, or "did not exist") and the server's `Installations.wxf` (and those of the other built-in servers, which `clearStaleBuiltInRecords` may touch); after the call, record the config file's hash;
    - `InstallMCPServer[ target, server, opts ]` for each server (with `"VerifyLLMKit" -> False`; the check ran in step 3);
@@ -579,7 +591,7 @@ Iterates over `Keys @ $SupportedClients` (taking the lock per client). Per-clien
 | `Missing[ "Unsupported", { client, $OperatingSystem } ]` | `UnknownInstallLocation`, `UnsupportedMCPClient`, `UnsupportedMCPClientProject`, `UnsupportedSkillsClient`, `UnsupportedSkillsClientProject`, `UnknownSkillsLocation`, `NoSkillsLocation` |
 | `Missing[ "AgentSkillConflict", client ]` | `AgentSkillConflict`, `AgentSkillModified`, `AgentSkillExists`, `AgentSkillUpdate` |
 
-Per-client messages for these tags and for `AgentSkillsNotDeployed`/`MCPServersNotDeployed` are quieted and summarized once: `DeploymentsExistWarning` (existing), `AgentSkillsNotDeployedWarning` (lists the clients whose skills were skipped), `AgentSkillConflictWarning`. Other failures still propagate.
+Per-client messages for these tags and for `AgentSkillsNotDeployed`/`MCPServersNotDeployed`/`AgentSkillNotInstalled` are quieted and summarized once: `DeploymentsExistWarning` (existing), `AgentSkillsNotDeployedWarning` (lists the clients whose skills were skipped, excluding built-in bundles), `AgentSkillConflictWarning`, `AgentSkillsNotInstalledWarning` (lists the clients where a built-in bundle was deployed without some of its skills). Other failures still propagate.
 
 ---
 
@@ -621,7 +633,8 @@ Per-client messages for these tags and for `AgentSkillsNotDeployed`/`MCPServersN
             <| "Name" -> "using-my-paclet", "Directory" -> File[ ... ], "RegistryKey" -> "...", "Identifier" -> ..., "Version" -> ... |>,
             ...
         },
-        "Skipped"   -> { "using-my-paclet", ... }     (* skills not deployed because the target lacks support *)
+        "Skipped"   -> { "using-my-paclet", ... },    (* skills not deployed because the target lacks support *)
+        "NotInstalled" -> { "wolfram-language", ... } (* skills of a built-in bundle left out because of conflicts; usually { } *)
     |>,
     "Hooks"         -> <| |>,
     "Meta"          -> <| |>
@@ -630,7 +643,7 @@ Per-client messages for these tags and for `AgentSkillsNotDeployed`/`MCPServersN
 
 - **Compatible with older AgentTools versions.** Older versions match records against the v1 pattern (extra keys are ignored) and remove a deployment with `UninstallMCPServer[ dep["ConfigFile"], dep["Toolset"] ]`. Because top-level `"Toolset"` is the primary *server* name and `"MCP"` keeps its v1 shape, they list the deployment, detect config-file conflicts, and remove the primary server's entry. They don't remove other servers or release skills; registry entries left without references are released by the next [sweep](#stale-references-and-garbage-collection). Skills-only deployments have no `"MCP"`/`"Toolset"` key and are invisible to older versions. The preferences UI's direct reads (`#["MCP"]["Server"]`, `#["MCP"]["ConfigFile"]`, `#["Server"]`) keep working.
 - **Snapshots, not re-resolution.** Removal and conflict checks use only recorded data: config keys, config files, skill registry keys. `DeleteObject` never resolves servers or bundles by name and makes no network calls.
-- **v1 records** are normalized in memory on read (never rewritten): top-level `"ClientName"`/`"Target"`/`"Scope"` from `"MCP"`; `"LocationKey"` from the scope or the config file; `"AgentTools" -> <| "Type" -> "MCPServerObject", "Name" -> server, ... |>`; `"MCPServers" -> { <| "Name" -> server, "ConfigKey" -> key, "ConfigFile" -> file |> }`; `"Skills" -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { } |>`. The config key is derived **locally** (`localMCPServerConfigKey`): the recorded `"MCPServerName"` option if it is a string; else the `"MCPServerName"` (or `"Name"`) of the server if it resolves without network access (built-in server, user server file, or installed paclet); else the last `/`-segment of the name.
+- **v1 records** are normalized in memory on read (never rewritten): top-level `"ClientName"`/`"Target"`/`"Scope"` from `"MCP"`; `"LocationKey"` from the scope or the config file; `"AgentTools" -> <| "Type" -> "MCPServerObject", "Name" -> server, ... |>`; `"MCPServers" -> { <| "Name" -> server, "ConfigKey" -> key, "ConfigFile" -> file |> }`; `"Skills" -> <| "Directory" -> None, "Installed" -> { }, "Skipped" -> { }, "NotInstalled" -> { } |>`. The config key is derived **locally** (`localMCPServerConfigKey`): the recorded `"MCPServerName"` option if it is a string; else the `"MCPServerName"` (or `"Name"`) of the server if it resolves without network access (built-in server, user server file, or installed paclet); else the last `/`-segment of the name.
 - **Validation pattern.** `"UUID"`, `"Version"`, `"Timestamp"`, `"PacletVersion"`, `"CreatedBy"`, `"Skills"`, `"Hooks"`, `"Meta"` are required as before; `"MCP"` is required for v1 and optional for v2; v2 additionally requires `"AgentTools"`, `"ClientName"`, `"Target"`, `"LocationKey"`, `"MCPServers"`.
 
 ### `DeployedAgentTools`
@@ -675,6 +688,7 @@ New (in `Kernel/Messages.wl`; most already added in the scaffolding):
 | `PacletSkillNotFound` | ``Agent skill "`1`" not found in paclet "`2`".`` |
 | `InvalidPacletSkillDefinition` | ``Invalid agent skill definition in `1`.`` |
 | `AgentSkillNotFound` | ``No agent skill found for "`1`".`` |
+| `BuiltInAgentSkillMissing` | ``The built-in agent skill "`1`" is missing from the installed AgentTools paclet. Reinstall the paclet with PacletInstall["Wolfram/AgentTools", ForceVersionInstall -> True].`` |
 | `InvalidAgentSkill` | ``Invalid agent skill specification: `1`.`` |
 | `InvalidAgentSkillName` | ``Invalid agent skill name "`1`". Skill names must be 1 to 64 lowercase letters, digits, and hyphens, without leading, trailing, or consecutive hyphens.`` |
 | `InvalidAgentSkillDescription` | ``The agent skill "`1`" needs a description of 1 to 1024 characters.`` |
@@ -697,6 +711,8 @@ New (in `Kernel/Messages.wl`; most already added in the scaffolding):
 | `MCPServersNotDeployed` | ``Warning: The MCP servers of "`1`" were not installed because `2` does not support MCP servers for this target.`` |
 | `AgentSkillsNotDeployedWarning` | ``Warning: Agent skills were not installed for these clients, which do not support them: `1`.`` |
 | `AgentSkillConflictWarning` | ``Warning: Some deployments were skipped because of conflicting agent skills. Use OverwriteTarget -> All to replace them.`` |
+| `AgentSkillNotInstalled` | ``Warning: The agent skill "`1`" was not installed because a different or modified skill with that name already exists at `2`. Use OverwriteTarget -> All to replace it.`` |
+| `AgentSkillsNotInstalledWarning` | ``Warning: Some agent skills were not installed for these clients because different or modified skills with the same names already exist: `1`. Use OverwriteTarget -> All to replace them.`` |
 | `InvalidMCPServerNameOption` | ``The "MCPServerName" option can only be a string when deploying a single MCP server; "`1`" has `2` servers.`` |
 | `InvalidSkillsDirectoryOption` | ``Invalid value for the "SkillsDirectory" option: `1`. Expected Automatic, None, or File[…].`` |
 | `DuplicateBundleConfigKey` | ``The MCP servers `1` of "`2`" would all be installed with the configuration key "`3`".`` |
@@ -722,13 +738,14 @@ Existing tags reused: `DeploymentExists`, `DeploymentsExistWarning`, `PacletNotI
 | `Kernel/PacletExtension.wl` | Multiple entries; multi-root lookup; `"AgentSkills"` resolution; bundles; new helpers. |
 | `Kernel/ValidateAgentToolsPacletExtension.wl` | Checks listed above. |
 | `Kernel/MCPServerObject.wl` | `buildRemotePacletServerMetadata` searches all entries; `mcpServerExistsQ` unchanged (already matches any entry). |
-| `Kernel/AgentSkills.wl` (new, ``Wolfram`AgentTools`AgentSkills` ``) | Skill specs → sources, `SKILL.md` generation, writing/replacing/removing, hashing, `canonicalPath`, `skillDirectoryState`, `InstallAgentSkills`, `UninstallAgentSkills`, the skill registry (sweep, install/release decisions), built-in skill registry (empty). |
+| `Kernel/AgentSkills.wl` (new, ``Wolfram`AgentTools`AgentSkills` ``) | Skill specs → sources, `SKILL.md` generation, writing/replacing/removing, hashing, `canonicalPath`, `skillDirectoryState`, `InstallAgentSkills`, `UninstallAgentSkills`, the skill registry (sweep, install/release decisions), built-in skill registry (`$defaultAgentSkills`, resolved from the paclet's `"AgentSkills"` asset). |
 | `Kernel/AgentToolsObject.wl` (new, ``Wolfram`AgentTools`AgentToolsObject` ``) | `AgentToolsObject`, `AgentToolsObjects`, `$DefaultAgentTools`, `toAgentToolsObject`. |
 | `Kernel/DeployAgentTools.wl` | Schema v2, v1 normalization, tools resolution, target resolution, conflicts, plan/apply/undo, lock, `DeleteObject`, new properties, `All` aggregation. |
 | `Kernel/Formatting.wl` | `AgentToolsObject` boxes; deployment hidden rows gain skills. |
 | `Kernel/Files.wl` | `$skillRegistryPath` (`$deploymentsPath/.SkillRegistry`), `$deploymentLockFile` (`$deploymentsPath/.lock`). |
 | `Kernel/CommonSymbols.wl`, `Kernel/Messages.wl`, `Kernel/Main.wl`, `PacletInfo.wl` | Shared symbols, messages, exports, contexts (mostly done in the scaffolding). |
-| `Tests/` | New `AgentSkills.wlt`, `AgentToolsObject.wlt`; extend `SupportedClients.wlt`, `DeployAgentTools.wlt`, `PacletExtension.wlt`, `ValidateAgentToolsPacletExtension.wlt`, `InstallMCPServer.wlt`/`UninstallMCPServer.wlt` (refactor); update `Block`s of `$SupportedMCPClients`. |
+| `Assets/AgentSkills/`, `Scripts/BuildAgentSkills.wls`, `Scripts/Resources/AgentSkillsBuilder.wl` | The built-in skills (committed build output, declared as the `"AgentSkills"` asset in `PacletInfo.wl`) and their build; see [docs/agent-skills.md](../docs/agent-skills.md). |
+| `Tests/` | New `AgentSkills.wlt`, `AgentToolsObject.wlt`, `AgentSkillsBuild.wlt`, `DeployAgentToolsSkills.wlt`; extend `SupportedClients.wlt`, `DeployAgentTools.wlt`, `PacletExtension.wlt`, `ValidateAgentToolsPacletExtension.wlt`, `InstallMCPServer.wlt`/`UninstallMCPServer.wlt` (refactor); update `Block`s of `$SupportedMCPClients`. |
 | `TestResources/` | `MockMCPPacletSkills` (two entries, skills as directory / `.wl` / combined file, a `scripts/` file). |
 | Docs | `docs/agent-tools-objects.md` (new), `docs/deploy-agent-tools.md`, `docs/paclet-extensions.md`, `docs/mcp-clients.md` (skill locations), `AGENTS.md`, `Specs/DeployAgentTools.md` (point Phase 2 to this spec), `Specs/PacletExtension.md`. |
 
@@ -737,7 +754,7 @@ Existing tags reused: `DeploymentExists`, `DeploymentsExistWarning`, `PacletNotI
 - `InstallAgentSkills`/`UninstallAgentSkills` with every target and skill form; name and description validation; uninstall never deletes the root or anything outside it; link, dangling-link, and file entries; junk and VCS entries; deterministic generated `SKILL.md`; CRLF-normalized comparison; executable bits; source equal to destination; rollback of a partially failed multi-skill install.
 - Deployment reference counting: two clients sharing a root (CopilotCLI + VisualStudioCode, Codex + Goose + Zed); two bundles sharing a skill; removal order permutations; modified skill kept with warning; external (pre-existing) skill adopted and kept; upgrade after a source update requires `True`; an older version keeps the newer copy; different-source conflict requires `All`; `True` never clobbers; redeploying an edited in-memory skill with `True`; the sweep releases entries whose deployments vanished.
 - Conflicts: two different bundles on one client coexist; built-in variants replace each other; same bundle twice → `DeploymentExists`; one toolset to two custom config files coexists; replacement keeps shared skills and config keys without delete-and-recopy.
-- Partial support: bundle with skills to LMStudio (MCP only + warning); `{ "Cursor", dir }` (skills only + warning); skills-only bundle to LMStudio → failure / `Missing[ "Unsupported", ... ]` under `All`; `"SkillsDirectory"` option.
+- Partial support: bundle with skills to LMStudio (MCP only + warning); built-in bundle to LMStudio/ClaudeDesktop (MCP only, no warning); built-in bundle with a conflicting skill directory (deployed without that skill + `AgentSkillNotInstalled`); `{ "Cursor", dir }` (skills only + warning); skills-only bundle to LMStudio → failure / `Missing[ "Unsupported", ... ]` under `All`; `"SkillsDirectory"` option.
 - v1 records: listed, removable (including paclet servers with a custom `"MCPServerName"`), conflict-checked against v2 deployments; the preferences UI accessors work on v2 records; an older-version-style removal (`UninstallMCPServer[ configFile, toolset ]`) of a v2 record removes the primary server.
 - Rollback: a failure in the second server of a bundle restores config files, `Installations.wxf`, skill directories, and the registry; a config file changed by someone else during the deploy is not restored.
 - Paclet extension: multiple entries, multi-root lookup, skill forms, validation errors, `AgentToolsObjects` discovery, exact-paclet-name bundle lookup.

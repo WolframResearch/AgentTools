@@ -10,8 +10,15 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 (* ::Section::Closed:: *)
 (*Config*)
 
-(* The built-in skill registry (name -> skill definition). Empty in this version; see Specs/AgentToolsObject.md. *)
-$defaultAgentSkills = <| |>;
+(* The built-in skill registry (name -> skill definition): the skills in the paclet's "AgentSkills" asset
+   (Assets/AgentSkills, built by Scripts/BuildAgentSkills.wls). The values are delayed so that each directory is resolved
+   in the paclet that is actually loaded, and nothing machine-specific is stored in the MX file. *)
+$defaultAgentSkills = <|
+    "wolfram-alpha"     :> builtInSkillDirectory[ "wolfram-alpha"     ],
+    "wolfram-language"  :> builtInSkillDirectory[ "wolfram-language"  ],
+    "wolfram-notebooks" :> builtInSkillDirectory[ "wolfram-notebooks" ],
+    "wolfram-paclets"   :> builtInSkillDirectory[ "wolfram-paclets"   ]
+|>;
 
 (* Entries that are never copied, hashed, or counted as modifications (compared case-insensitively): *)
 $junkFileNames      = { ".ds_store", "thumbs.db", "desktop.ini" };
@@ -195,17 +202,63 @@ usableSkillLocation // endDefinition;
 (*builtInSkillSource*)
 builtInSkillSource // beginDefinition;
 
+(* Built-in skills are identified by their name and versioned by the AgentTools version, so redeploying them after a
+   paclet update is an update of the same source. *)
 builtInSkillSource[ name_String ] := Enclose[
     Module[ { definition, source },
-        definition = Lookup[ $defaultAgentSkills, name, Missing[ "NotFound" ] ];
-        If[ MissingQ @ definition, throwFailure[ "AgentSkillNotFound", name ] ];
+        definition = builtInSkillDefinition @ name;
         source = ConfirmBy[ toAgentSkillSource[ definition, name ], AssociationQ, "Source" ];
-        <| source, "Identifier" -> name |>
+        ConfirmAssert[ source[ "Name" ] === name, "Name" ];
+        <| source, "Identifier" -> name, "Version" -> $pacletVersion |>
     ],
     throwInternalFailure
 ];
 
 builtInSkillSource // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*builtInSkillDefinition*)
+(* The definition of a built-in skill (a skill directory); fails with AgentSkillNotFound for other names. *)
+builtInSkillDefinition // beginDefinition;
+
+builtInSkillDefinition[ name_String ] :=
+    Replace[
+        Lookup[ $defaultAgentSkills, name, Missing[ "NotFound" ] ],
+        {
+            Missing[ "NotFound" ] :> throwFailure[ "AgentSkillNotFound", name ],
+            _Missing              :> throwFailure[ "BuiltInAgentSkillMissing", name ]
+        }
+    ];
+
+builtInSkillDefinition // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*builtInSkillDirectory*)
+(* The directory of a built-in skill in the loaded paclet, or Missing[ "NotAvailable", name ] if the paclet does not
+   contain it. This never fails, since evaluating Values[ $defaultAgentSkills ] resolves every skill. *)
+builtInSkillDirectory // beginDefinition;
+
+builtInSkillDirectory[ name_String ] :=
+    Module[ { root, dir },
+        root = Quiet @ $thisPaclet[ "AssetLocation", "AgentSkills" ];
+        dir  = If[ StringQ @ root, FileNameJoin @ { root, name }, None ];
+        If[ skillDirectoryQ @ dir, File @ dir, Missing[ "NotAvailable", name ] ]
+    ];
+
+builtInSkillDirectory // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*builtInSkillSourceQ*)
+(* Only built-in skill sources have a bare skill name as their identifier (see toAgentSkillSource). *)
+builtInSkillSourceQ // beginDefinition;
+
+builtInSkillSourceQ[ source_Association ] :=
+    With[ { id = Lookup[ source, "Identifier" ] }, StringQ @ id && KeyExistsQ[ $defaultAgentSkills, id ] ];
+
+builtInSkillSourceQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -1927,8 +1980,10 @@ skillInstallAction[ source_, dest_, "Directory", entry_Association, live_List, o
                             |>
                         }
                     |>,
+                (* Built-in skills only change with the paclet, so they are updated without OverwriteTarget (the
+                   KeepNewer case above makes sure that a directory that others still use is never downgraded) *)
                 sameIdentifier,
-                    If[ MatchQ[ overwrite, True | All ],
+                    If[ MatchQ[ overwrite, True | All ] || builtInSkillSourceQ @ source,
                         <| "Action" -> "Replace", "External" -> False |>,
                         skillConflict[ "AgentSkillUpdate", source, dest ]
                     ],

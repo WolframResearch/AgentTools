@@ -43,8 +43,9 @@ $agentToolsProperties = {
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*$DefaultAgentTools*)
-(* The built-in bundles: one per default MCP server, with the same name. Skills are given by name only and resolved
-   at deploy time, so nothing machine-specific is baked into the MX file. *)
+(* The built-in bundles: one per default MCP server, with the same name, plus the built-in skills that go with it.
+   Skills are given by name only ($defaultAgentSkills) and resolved when they are used, so nothing machine-specific is
+   baked into the MX file. *)
 $DefaultAgentTools := WithCleanup[
     Unprotect @ $DefaultAgentTools,
     $DefaultAgentTools = AgentToolsObject /@ KeySort @ $defaultAgentTools,
@@ -61,7 +62,7 @@ $defaultAgentTools[ "Wolfram" ] = <|
     "Description" -> "Tools for general computation and knowledge",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "Wolfram" },
-    "AgentSkills" -> { }
+    "AgentSkills" -> { "wolfram-language", "wolfram-alpha" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -72,7 +73,7 @@ $defaultAgentTools[ "WolframAlpha" ] = <|
     "Description" -> "Tools for Wolfram|Alpha natural language queries",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframAlpha" },
-    "AgentSkills" -> { }
+    "AgentSkills" -> { "wolfram-alpha" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -83,7 +84,7 @@ $defaultAgentTools[ "WolframLanguage" ] = <|
     "Description" -> "Tools for Wolfram Language development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframLanguage" },
-    "AgentSkills" -> { }
+    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -94,7 +95,7 @@ $defaultAgentTools[ "WolframPacletDevelopment" ] = <|
     "Description" -> "Tools for Wolfram Paclet development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframPacletDevelopment" },
-    "AgentSkills" -> { }
+    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -400,7 +401,7 @@ toLLMSkill[ file_File ] := checkLLMSkill[ skillDirectoryLLMSkill @ file, file ];
 toLLMSkill[ as: KeyValuePattern[ "Type" -> "PacletSkill" ] ] := toLLMSkill[ as, "PacletSkill" ];
 toLLMSkill[ as_Association ] := checkLLMSkill[ Quiet @ LLMSkill[ { as[ "Name" ], as[ "Description" ] }, Lookup[ as, "Body", "" ] ], as ];
 toLLMSkill[ name_String ] /; pacletQualifiedNameQ @ name := toLLMSkill @ resolvePacletSkill @ name;
-toLLMSkill[ name_String ] := throwFailure[ "AgentSkillNotFound", name ];
+toLLMSkill[ name_String ] := toLLMSkill @ builtInSkillDefinition @ name;
 
 toLLMSkill[ as_Association, "PacletSkill" ] := Which[
     MatchQ[ as[ "Directory" ], _File ], toLLMSkill @ as[ "Directory" ],

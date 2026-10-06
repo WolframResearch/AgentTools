@@ -13,7 +13,7 @@ An **`AgentToolsObject`** is a named bundle of MCP servers and agent skills. `De
 | `AgentToolsObject[name]` | A built-in or paclet-defined bundle |
 | `AgentToolsObject[<\|...\|>]` | An ad hoc bundle |
 | `AgentToolsObjects[]` | List bundles of installed paclets (options as for `MCPServerObjects`) |
-| `$DefaultAgentTools` | The built-in bundles |
+| `$DefaultAgentTools` | The built-in bundles (each built-in MCP server with its built-in agent skills) |
 | `InstallAgentSkills[target, skills]` | Copy skills into a client's skills directory (untracked) |
 | `UninstallAgentSkills[target, names]` | Remove skills from a client's skills directory (untracked) |
 | `$SupportedClients` | All supported clients; each entry includes its skill locations |
@@ -22,12 +22,28 @@ An **`AgentToolsObject`** is a named bundle of MCP servers and agent skills. `De
 
 ### Built-in bundles
 
-`$DefaultAgentTools` has one bundle per built-in MCP server, with the same name (`"Wolfram"`, `"WolframAlpha"`, `"WolframLanguage"`, `"WolframPacletDevelopment"`). They currently contain no skills, so deploying them is the same as deploying the corresponding server.
+`$DefaultAgentTools` has one bundle per built-in MCP server, with the same name. Each bundle also contains built-in agent skills, which ship with the paclet (its `"AgentSkills"` asset, built into `Assets/AgentSkills/`; see [agent-skills.md](agent-skills.md#built-in-skills)):
+
+| Bundle | MCP server | Agent skills |
+|--------|------------|--------------|
+| `"Wolfram"` | `Wolfram` | wolfram-language, wolfram-alpha |
+| `"WolframAlpha"` | `WolframAlpha` | wolfram-alpha |
+| `"WolframLanguage"` | `WolframLanguage` | wolfram-language, wolfram-notebooks, wolfram-paclets |
+| `"WolframPacletDevelopment"` | `WolframPacletDevelopment` | wolfram-language, wolfram-notebooks, wolfram-paclets |
 
 ```wl
 AgentToolsObject["WolframLanguage"]["MCPServerNames"]
 (* {"WolframLanguage"} *)
+
+AgentToolsObject["WolframLanguage"]["AgentSkillNames"]
+(* {"wolfram-language", "wolfram-notebooks", "wolfram-paclets"} *)
 ```
+
+The skills of a built-in bundle complement its MCP server, so `DeployAgentTools` treats them differently from the skills of other bundles:
+
+- On a target without a skills directory (Claude Desktop, LM Studio, Amazon Q Developer, or a `File[...]` configuration that isn't a known client's), only the MCP server is installed, without an `AgentSkillsNotDeployed` warning. The record still lists the skills under `"Skipped"`.
+- A conflicting skill directory (`AgentSkillExists`, `AgentSkillModified`, or `AgentSkillConflict`) does not fail the deployment. That skill is left untouched, everything else is deployed, `DeployAgentTools::AgentSkillNotInstalled` names the skill and its directory, and the record lists the skill under `"NotInstalled"`. If nothing else could be deployed (no MCP server for this target and no other skill to install), the conflict fails the deployment as for other bundles. Use `OverwriteTarget -> All` to replace such directories.
+- Built-in skills are versioned by the AgentTools version, so unmodified copies installed by earlier deployments are updated without `OverwriteTarget` (see [OverwriteTarget](#overwritetarget)).
 
 ### Paclet bundles
 
@@ -62,6 +78,7 @@ Ad hoc names may not contain `/` or equal a built-in bundle name.
 | `LLMSkill[...]` | If its `"Location"` is a skill directory, that directory is copied (including bundled files); otherwise a `SKILL.md` is generated from its fields |
 | `File[dir]` | A skill directory |
 | `"Publisher/Paclet/skill-name"` | A paclet-defined skill |
+| `"skill-name"` | A built-in skill (`"wolfram-alpha"`, `"wolfram-language"`, `"wolfram-notebooks"`, `"wolfram-paclets"`); other names fail with `AgentSkillNotFound` |
 
 Skill names must be 1–64 lowercase letters, digits, and hyphens (no leading, trailing, or consecutive hyphens), and skills need a description of 1–1024 characters.
 
@@ -104,18 +121,18 @@ The toolset argument can be a bundle, a bundle or server name, an `MCPServerObje
 | `{"Client", dir}` | the client's project MCP configuration | the client's project skills directory |
 | `File[config]` | that file | the matching skills directory if the file is a client's global or project configuration file; otherwise none |
 
-If the target supports only some components, the rest is deployed and a warning is issued (`AgentSkillsNotDeployed`, `MCPServersNotDeployed`); if nothing can be deployed, `DeployAgentTools` fails. Use the `"SkillsDirectory"` option to choose the skills directory explicitly (`File[dir]`) or to skip skills (`None`).
+If the target supports only some components, the rest is deployed and a warning is issued (`AgentSkillsNotDeployed`, `MCPServersNotDeployed`; built-in bundles skip their skills without a warning); if nothing can be deployed, `DeployAgentTools` fails. Use the `"SkillsDirectory"` option to choose the skills directory explicitly (`File[dir]`) or to skip skills (`None`).
 
 ### Several deployments per client
 
-Different bundles can be deployed to the same client side by side. A deployment conflicts with an existing one when both write the same MCP configuration key into the same file (the built-in bundles all use the key `"Wolfram"`, so they replace each other), or when the same bundle is deployed again to the same client and location.
+Different bundles can be deployed to the same client side by side. A deployment conflicts with an existing one when both write the same MCP configuration key into the same file (the built-in bundles all use the key `"Wolfram"`, so they replace each other), or when the same bundle is deployed again to the same client and location. When one built-in bundle replaces another, the skills they share stay in place and the others are released.
 
 ### OverwriteTarget
 
 | Value | Effect |
 |-------|--------|
 | `False` (default) | Fail with `DeploymentExists` on a conflicting deployment |
-| `True` | Replace conflicting deployments; update skills from the same source that haven't been modified (e.g. after `PacletUpdate`) |
+| `True` | Replace conflicting deployments; update skills from the same source that haven't been modified (e.g. after `PacletUpdate`). Built-in skills are updated this way even without `OverwriteTarget` |
 | `All` | Also overwrite skill directories that were modified since they were installed, or that belong to a different skill with the same name |
 
 ### Shared skill directories
@@ -130,7 +147,7 @@ Several clients read the same directory (Copilot CLI and VS Code share `~/.copil
 
 ### Skill locations
 
-See [mcp-clients.md](mcp-clients.md) for the skills directory of each client. Skills go to each client's own directory; the shared `~/.agents/skills` is used only for clients whose primary location it is. Claude Desktop (its Chat and Cowork tabs only see skills uploaded to claude.ai), LM Studio, and Amazon Q Developer have no skills directory.
+See [mcp-clients.md](mcp-clients.md) for the skills directory of each client. Skills go to each client's own directory; the shared `~/.agents/skills` is used only for clients whose primary location it is. Claude Desktop (its Chat and Cowork tabs only see skills uploaded to claude.ai), LM Studio, and Amazon Q Developer have no skills directory; deploying a built-in bundle to them installs only its MCP server.
 
 ## InstallAgentSkills / UninstallAgentSkills
 
@@ -154,8 +171,9 @@ Deployment records (schema version 2) store everything needed to remove a deploy
 ## Related Files
 
 - `Kernel/AgentToolsObject.wl` — `AgentToolsObject`, `AgentToolsObjects`, `$DefaultAgentTools`
-- `Kernel/AgentSkills.wl` — skill sources, `InstallAgentSkills`, `UninstallAgentSkills`, the skill registry
+- `Kernel/AgentSkills.wl` — skill sources, the built-in skills (`$defaultAgentSkills`), `InstallAgentSkills`, `UninstallAgentSkills`, the skill registry
+- `Assets/AgentSkills/` — the built-in skills (built by `Scripts/BuildAgentSkills.wls`; see [agent-skills.md](agent-skills.md))
 - `Kernel/DeployAgentTools.wl` — deployments
 - `Kernel/SupportedClients.wl` — client skill locations
 - `Kernel/PacletExtension.wl` — paclet bundles and skills
-- `Tests/AgentToolsObject.wlt`, `Tests/AgentSkills.wlt`, `Tests/DeployAgentToolsSkills.wlt`
+- `Tests/AgentToolsObject.wlt`, `Tests/AgentSkills.wlt`, `Tests/DeployAgentToolsSkills.wlt`, `Tests/AgentSkillsBuild.wlt`

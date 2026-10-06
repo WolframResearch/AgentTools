@@ -214,6 +214,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `agentSkillName;
 `agentSkillNameQ;
 `applySkillInstallPlan;
+`builtInSkillDefinition;
 `canonicalPath;
 `canonicalPathKey;
 `compareSkillManifest;

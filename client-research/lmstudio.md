@@ -92,7 +92,7 @@ Add one entry to `$supportedMCPClients` in [`Kernel/SupportedClients.wl`](../Ker
 2. **Tests** ([`Tests/InstallMCPServer.wlt`](../Tests/InstallMCPServer.wlt)): follow the Cursor / Junie pattern — `installLocation` per OS, path-shape check (`{".lmstudio", "mcp.json"}`), `toInstallName`, `installDisplayName`, install/uninstall round-trip, standard-format check (no Cline `disabled`/`autoApprove`, no Copilot `tools`), path-based auto-detection, `$SupportedMCPClients` metadata, and the supported-client count bump + sorted-keys update.
 3. **Docs** ([`docs/mcp-clients.md`](../docs/mcp-clients.md)): table row + a short "LM Studio" section with the path table and the macOS stray-copy note.
 4. **README.md**: supported-clients table row.
-5. **AgentSkills** ([`AgentSkills/References/SetUpWolframMCPServer.md`](../AgentSkills/References/SetUpWolframMCPServer.md)): add a row to the **source** reference file only, then run `Scripts/BuildAgentSkills.wls` to regenerate the four `AgentSkills/Skills/*/references/` copies — do **not** edit the generated copies by hand.
+5. **AgentSkills** ([`AgentSkills/References/SetUpWolframMCPServer.md`](../AgentSkills/References/SetUpWolframMCPServer.md)): add a row to the **source** reference file only, then run `Scripts/BuildAgentSkills.wls` to regenerate the four built copies in `Assets/AgentSkills/*/references/` — do **not** edit the generated copies by hand.
 6. **`TODO/more-mcp-clients.md`**: mark the implementation checkbox done.
 
 No changes to `PacletInfo.wl` or `Kernel/Main.wl` are required.

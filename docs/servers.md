@@ -4,7 +4,7 @@ This document describes the predefined MCP servers available in AgentTools and h
 
 ## Overview
 
-AgentTools provides four predefined server configurations, each tailored for different use cases. These are available via `$DefaultMCPServers` and can be installed into MCP clients using `InstallMCPServer`.
+AgentTools provides four predefined server configurations, each tailored for different use cases. These are available via `$DefaultMCPServers` and can be installed into MCP clients using `InstallMCPServer`. Each also has a built-in bundle of the same name in `$DefaultAgentTools` that adds agent skills; `DeployAgentTools[client, name]` installs both (see [agent-tools-objects.md](agent-tools-objects.md#built-in-bundles)).
 
 | Server | Primary Use Case |
 |--------|------------------|
@@ -168,6 +168,12 @@ InstallMCPServer["ClaudeCode", "WolframLanguage"]
 
 (* Install to a project directory *)
 InstallMCPServer[{"ClaudeCode", "/path/to/project"}, "WolframPacletDevelopment"]
+```
+
+To install a server together with its built-in agent skills as a tracked deployment, use `DeployAgentTools` instead (see [deploy-agent-tools.md](deploy-agent-tools.md)):
+
+```wl
+DeployAgentTools["ClaudeCode", "WolframLanguage"]
 ```
 
 See [mcp-clients.md](mcp-clients.md) for details on supported clients and installation options.

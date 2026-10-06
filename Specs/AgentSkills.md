@@ -8,6 +8,8 @@ When the Wolfram MCP server is available, skills instruct the agent to prefer th
 
 For distribution via Claude Code specifically, skills are packaged as two plugins (**wolfram-language-development** and **wolfram-alpha**) within a single marketplace called **wolfram-agent-skills**.
 
+The built skills also ship with the AgentTools paclet (the `"AgentSkills"` asset, `Assets/AgentSkills/`) and are deployed by `DeployAgentTools` as part of the built-in bundles (see [AgentToolsObject.md](AgentToolsObject.md#built-in-skills)).
+
 ---
 
 ## Goals
@@ -16,13 +18,13 @@ For distribution via Claude Code specifically, skills are packaged as two plugin
 - Follow the open [Agent Skills specification](https://agentskills.io/specification) for maximum portability across agent products.
 - Support dual-mode operation: prefer MCP tools when available, fall back to bundled scripts.
 - Generate standalone `.wls` scripts automatically from existing `$DefaultMCPTools` definitions.
-- Package skills as installable Claude Code plugins (other distribution methods can be added later).
+- Package skills as installable Claude Code plugins, and ship them with the paclet so that `DeployAgentTools` can install them into any client with a skills directory.
 
 ---
 
 ## Skills
 
-Three skills are defined in `AgentSkills/Manifest.wl`:
+Four skills are defined in `AgentSkills/Manifest.wl`:
 
 ### wolfram-language
 
@@ -35,6 +37,16 @@ Full Wolfram Language development environment.
 | `SymbolDefinition.wls` | SymbolDefinition | Retrieve readable symbol definitions |
 | `TestReport.wls` | TestReport | Run `.wlt` test files and return results |
 | `CodeInspector.wls` | CodeInspector | Inspect code for issues |
+
+### wolfram-paclets
+
+Paclet development, packaging, and submission workflows.
+
+| Script | Source Tool | Description |
+| --- | --- | --- |
+| `CheckPaclet.wls` | CheckPaclet | Check a paclet for issues before build or submit |
+| `BuildPaclet.wls` | BuildPaclet | Build a `.paclet` archive from a paclet directory |
+| `SubmitPaclet.wls` | SubmitPaclet | Submit a paclet to the Wolfram Language Paclet Repository |
 
 ### wolfram-alpha
 
@@ -72,9 +84,10 @@ description: >
 compatibility: Requires the Wolfram MCP server or wolframscript on PATH
 metadata:
   author: Wolfram Research
-  version: "<paclet-version>"
 ---
 ```
+
+The source `SKILL.md` has no `version`. The build adds `version: <paclet-version>` as the last entry of `metadata` in the built copy (`Assets/AgentSkills/<skill-name>/SKILL.md`).
 
 Required fields (per the [spec](https://agentskills.io/specification)):
 - `name` — Lowercase letters, numbers, and hyphens only. Max 64 characters. Must not start/end with a hyphen or contain consecutive hyphens. Must match the parent directory name.
@@ -83,7 +96,7 @@ Required fields (per the [spec](https://agentskills.io/specification)):
 Optional fields:
 - `compatibility` — Environment requirements (max 500 characters). Used to indicate `wolframscript` dependency.
 - `license` — License name or reference to a bundled license file.
-- `metadata` — Arbitrary key-value pairs (e.g., author, version).
+- `metadata` — Arbitrary key-value pairs (e.g., author; `version` is added by the build).
 - `allowed-tools` — Space-delimited list of pre-approved tools (experimental; support varies by agent).
 
 ### Content Structure
@@ -104,7 +117,7 @@ skill directory) for installation instructions.
 ### With MCP Server (preferred)
 
 If you have Wolfram Language MCP tools available (check your tool list for
-tools like `mcp__WolframLanguage__*`), use them directly. They provide
+tools like `mcp__Wolfram__*`), use them directly. They provide
 richer integration and better performance.
 
 If you do not have Wolfram MCP tools but would like to set them up,
@@ -129,7 +142,7 @@ For detailed usage, arguments, and invocation syntax for each script, see
 
 ### Prerequisites Section
 
-Rather than duplicating installation instructions in every SKILL.md, a single source file at `AgentSkills/References/GetWolframEngine.md` contains full installation guidance for `wolframscript`. The build system copies this file into each skill's `references/` subdirectory so that every skill is self-contained. Each SKILL.md includes a brief prerequisites section that directs the agent to read that file if `wolframscript` is not available:
+Rather than duplicating installation instructions in every SKILL.md, a single source file at `AgentSkills/References/GetWolframEngine.md` contains full installation guidance for `wolframscript`. The build system copies this file into each built skill's `references/` subdirectory (`Assets/AgentSkills/<skill-name>/references/`) so that every skill is self-contained. Each SKILL.md includes a brief prerequisites section that directs the agent to read that file if `wolframscript` is not available:
 
 ```markdown
 ## Prerequisites
@@ -147,10 +160,10 @@ A second shared reference file at `AgentSkills/References/SetUpWolframMCPServer.
 
 The file covers two paths:
 
-1. **Local server via `InstallMCPServer`** — If `wolframscript` is available, the user can install the Wolfram MCP server paclet and run `InstallMCPServer["<ClientName>", "<ServerName>"]` from a Wolfram Language session. This configures the MCP server for any supported client (Claude Code, Claude Desktop, Cursor, VS Code, Gemini CLI, etc.).
-2. **Remote Wolfram MCP Service** — If no local Wolfram Engine is available, the user can subscribe to the [Wolfram MCP Service](https://www.wolfram.com/artificial-intelligence/mcp-service) and configure their client to connect to the remote server at `https://services.wolfram.com/api/mcp` using streamable HTTP transport with an API key.
+1. **Local server via `DeployAgentTools`** — If `wolframscript` is available, the user can install the AgentTools paclet and run `DeployAgentTools["<ClientName>", "<ToolsetName>"]`, which installs the MCP server for any supported client (Claude Code, Claude Desktop, Cursor, VS Code, Gemini CLI, etc.), together with the matching agent skills where the client supports skills. `InstallMCPServer` remains the choice when only the MCP server should be installed. The reference also explains how to configure other clients by hand (command, arguments, environment variables).
+2. **Remote Wolfram Cloud MCP** — If no local Wolfram Engine is available, the user can configure their client to connect to the free [Wolfram Cloud MCP](https://www.wolfram.com/artificial-intelligence/mcp/cloud/wolfram-mcp-cloud) server at `https://agenttools.wolfram.com/mcp` (streamable HTTP; no subscription or API key). See <https://support.wolfram.com/75237>.
 
-The build system copies this file into each skill's `references/` subdirectory alongside `GetWolframEngine.md`. Each SKILL.md includes a note directing the agent to this file:
+The build system copies this file into each built skill's `references/` subdirectory alongside `GetWolframEngine.md`. Each SKILL.md includes a note directing the agent to this file:
 
 ```markdown
 For a richer experience, consider setting up the Wolfram MCP server.
@@ -266,39 +279,40 @@ See [generating-scripts-from-tools](../Notes/generating-scripts-from-tools.md) f
 
 ## Build System
 
-`Scripts/BuildAgentSkills.wls` orchestrates skill generation:
+`Scripts/BuildAgentSkills.wls` is the command-line build. The build itself is implemented in `Scripts/Resources/AgentSkillsBuilder.wl` (context `` Wolfram`AgentSkillsBuilder` ``), a self-contained file that is loaded with `Get` and is also used by `Tests/AgentSkillsBuild.wlt`. It reads every source relative to an explicit source directory (the repository root), never the location of the loaded paclet, so it works when AgentTools is loaded from an MX build without `Scripts/` or `AgentSkills/`.
 
 ### Inputs
 
-- `AgentSkills/Manifest.wl` — Maps skill names to their tool lists.
+- `AgentSkills/Manifest.wl` — Maps skill names to their tool lists and references.
+- `AgentSkills/References/*.md` — Shared reference files.
+- `AgentSkills/Skills/<skill-name>/SKILL.md` — The hand-authored skill instructions (the only file in each source skill directory).
+- `Scripts/Resources/SkillScriptTemplate.wls` — Template for the generated scripts.
 - `$DefaultMCPTools` — Registry of all MCP tool definitions (loaded from the paclet).
 
 ### Process
 
-1. **Load paclet** — `PacletDirectoryLoad` + ``Get["Wolfram`AgentTools`"]``.
-2. **Read manifest** — Parse `Manifest.wl` into an Association.
-3. **Generate scripts** — For each tool name referenced across all skills:
-   - Look up the tool in `$DefaultMCPTools`.
-   - Extract parameter metadata (name, required, interpreter type, help text).
-   - Generate a `.wls` script with CLI argument parsing and tool invocation.
-   - Write to a temporary build directory.
-4. **Distribute to skills** — For each skill in the manifest:
-   - Copy the relevant generated scripts into `AgentSkills/Skills/<skill-name>/scripts/`.
-   - Copy shared reference files from `AgentSkills/References/` into `AgentSkills/Skills/<skill-name>/references/`.
-   - Generate a `Scripts.md` reference from the skill's tool metadata and write it to `AgentSkills/Skills/<skill-name>/references/Scripts.md`.
-5. **Update marketplace version** — Update the `metadata.version` field in `.claude-plugin/marketplace.json` to match the current paclet version.
-6. **Update skill versions** — Update the `version` field in each `SKILL.md` frontmatter to match the current paclet version.
-7. **Clean up** — Remove the temporary build directory.
+1. **Load paclet** — `PacletDirectoryLoad` + ``Get["Wolfram`AgentTools`"]`` from the checkout (failing if the context resolves to another copy of AgentTools), then load the builder.
+2. **Build into a staging directory** — `buildAgentSkills[ repoDir, stagingDir, pacletVersion ]`:
+   - Validate the manifest and the source skill directories (every manifest skill has a directory that contains only `SKILL.md`, whose frontmatter `name` matches; no other entries in `AgentSkills/Skills/`; operating system metadata files such as `.DS_Store`, `Thumbs.db`, and `desktop.ini` are ignored here and when comparing skill trees).
+   - For each tool name referenced across all skills, look up the tool in `$DefaultMCPTools`, extract its parameter metadata (name, required, help text), and generate a `.wls` script with CLI argument parsing and tool invocation.
+   - For each skill, assemble `scripts/` (the skill's generated scripts), `references/` (the shared references and a `Scripts.md` generated from the skill's tool metadata), and `SKILL.md` (the source with `metadata.version` set to the paclet version).
+   - All inputs are validated and all content is generated before anything is written.
+3. **Validate the marketplace** — Every plugin in `.claude-plugin/marketplace.json` has the source `./Assets/AgentSkills` and lists only built skills.
+4. **Replace `Assets/AgentSkills/`** — Replace the directory with the staging directory and verify the copy.
+5. **Update marketplace version** — Set the `metadata.version` field in `.claude-plugin/marketplace.json` to the current paclet version.
+6. **Clean up** — Remove the staging directory.
+
+`wolframscript -f Scripts/BuildAgentSkills.wls --check` builds into a temporary directory with the version of the committed skills, compares the result with `Assets/AgentSkills/` (ignoring line-ending differences) and checks the marketplace, and exits with code 1 if anything is out of date, without modifying anything. The test `CommittedSkills-UpToDate` in `Tests/AgentSkillsBuild.wlt` makes the same comparison.
 
 ### Outputs
 
-Generated scripts are placed in each skill's `scripts/` directory. The shared reference files (`GetWolframEngine.md`, `SetUpWolframMCPServer.md`) are copied into each skill's `references/` directory, and a `Scripts.md` reference is generated into each skill's `references/` directory from tool metadata. SKILL.md files are **not** generated — they are hand-authored. However, the build script does update the `version` field in each SKILL.md frontmatter and the `metadata.version` field in `.claude-plugin/marketplace.json` to match the current paclet version.
+Complete skill directories in `Assets/AgentSkills/<skill-name>/`, committed to the repository and shipped with the paclet as the `"AgentSkills"` asset (declared in `PacletInfo.wl`): `SKILL.md` (with `metadata.version`), the generated scripts in `scripts/`, and in `references/` the shared reference files (`GetWolframEngine.md`, `SetUpWolframMCPServer.md`) plus a `Scripts.md` generated from tool metadata. SKILL.md content is **not** generated — it is hand-authored. The build also updates the `metadata.version` field in `.claude-plugin/marketplace.json`.
 
 ### What the Build Script Does NOT Do
 
-- Does not generate or modify SKILL.md content — those are hand-authored. (It does update the `version` field in the frontmatter.)
+- Does not generate SKILL.md content — those are hand-authored. It copies them and only adds `metadata.version`.
 - Does not create new plugins or restructure `marketplace.json` — it only updates the version field.
-- Does not install or publish skills.
+- Does not install or publish skills. `DeployAgentTools` installs the built skills from the paclet, and Claude Code plugins read them from the repository.
 
 ---
 
@@ -306,10 +320,10 @@ Generated scripts are placed in each skill's `scripts/` directory. The shared re
 
 The skills themselves follow the open Agent Skills standard and are portable. For distribution via **Claude Code** specifically, skills are packaged into two plugins within a single marketplace named **wolfram-agent-skills**:
 
-- **wolfram-language-development** — Bundles the `wolfram-language` and `wolfram-notebooks` skills for a full Wolfram Language development environment.
+- **wolfram-language-development** — Bundles the `wolfram-language`, `wolfram-notebooks`, and `wolfram-paclets` skills for a full Wolfram Language development environment.
 - **wolfram-alpha** — Bundles the `wolfram-alpha` skill for Wolfram|Alpha queries and context retrieval.
 
-The marketplace is defined by `.claude-plugin/marketplace.json` in the MCPServer repository root. Skills are referenced via relative paths from the `source` directory.
+The marketplace is defined by `.claude-plugin/marketplace.json` in the repository root. Plugins point their `source` at the built skills (`./Assets/AgentSkills`), and skills are referenced via relative paths from that directory.
 
 ### marketplace.json
 
@@ -330,17 +344,18 @@ The marketplace file lives at `.claude-plugin/marketplace.json` in the repositor
     {
       "name": "wolfram-language-development",
       "description": "A full Wolfram Language development environment with code evaluation, documentation search, symbol inspection, static analysis, and test execution.",
-      "source": "./AgentSkills/Skills",
+      "source": "./Assets/AgentSkills",
       "strict": false,
       "skills": [
         "./wolfram-language",
-        "./wolfram-notebooks"
+        "./wolfram-notebooks",
+        "./wolfram-paclets"
       ]
     },
     {
       "name": "wolfram-alpha",
       "description": "Wolfram|Alpha queries and context retrieval.",
-      "source": "./AgentSkills/Skills",
+      "source": "./Assets/AgentSkills",
       "strict": false,
       "skills": [
         "./wolfram-alpha"
@@ -366,7 +381,7 @@ Alternatively, a project can pre-configure the marketplace in `.claude/settings.
 
 ## Source Directory Structure
 
-Within the MCPServer repository:
+Within the AgentTools repository, the sources are hand-authored:
 
 ```
 AgentSkills/
@@ -374,41 +389,55 @@ AgentSkills/
 ├── References/
 │   ├── GetWolframEngine.md               # Single source (hand-authored)
 │   └── SetUpWolframMCPServer.md          # Single source (hand-authored)
-├── Skills/
-│   ├── wolfram-language/
-│   │   ├── SKILL.md                      # Hand-authored
-│   │   ├── references/                   # Copied/generated by build
-│   │   │   ├── GetWolframEngine.md
-│   │   │   ├── Scripts.md                # Generated by build
-│   │   │   └── SetUpWolframMCPServer.md
-│   │   └── scripts/                      # Generated by build
-│   │       ├── WolframLanguageContext.wls
-│   │       ├── WolframLanguageEvaluator.wls
-│   │       ├── SymbolDefinition.wls
-│   │       ├── TestReport.wls
-│   │       └── CodeInspector.wls
-│   ├── wolfram-alpha/
-│   │   ├── SKILL.md                      # Hand-authored
-│   │   ├── references/                   # Copied/generated by build
-│   │   │   ├── GetWolframEngine.md
-│   │   │   ├── Scripts.md                # Generated by build
-│   │   │   └── SetUpWolframMCPServer.md
-│   │   └── scripts/                      # Generated by build
-│   │       ├── WolframAlphaContext.wls
-│   │       └── WolframAlpha.wls
-│   └── wolfram-notebooks/
-│       ├── SKILL.md                      # Hand-authored
-│       ├── references/                   # Copied/generated by build
-│       │   ├── GetWolframEngine.md
-│       │   ├── Scripts.md                # Generated by build
-│       │   └── SetUpWolframMCPServer.md
-│       └── scripts/                      # Generated by build
-│           ├── ReadNotebook.wls
-│           └── WriteNotebook.wls
-└── Scripts/                              # Reserved for shared build utilities (future)
+└── Skills/
+    ├── wolfram-alpha/
+    │   └── SKILL.md                      # Hand-authored; the only file in each source skill directory
+    ├── wolfram-language/
+    │   └── SKILL.md
+    ├── wolfram-notebooks/
+    │   └── SKILL.md
+    └── wolfram-paclets/
+        └── SKILL.md
 ```
 
-`Scripts/BuildAgentSkills.wls` lives in the top-level `Scripts/` directory alongside other build scripts.
+The build writes the complete skills (committed, and shipped as the paclet's `"AgentSkills"` asset):
+
+```
+Assets/AgentSkills/
+├── wolfram-alpha/
+│   ├── SKILL.md                          # Source SKILL.md with metadata.version added by build
+│   ├── references/                       # Copied/generated by build
+│   │   ├── GetWolframEngine.md
+│   │   ├── Scripts.md                    # Generated by build
+│   │   └── SetUpWolframMCPServer.md
+│   └── scripts/                          # Generated by build
+│       ├── WolframAlphaContext.wls
+│       └── WolframAlpha.wls
+├── wolfram-language/
+│   ├── SKILL.md
+│   ├── references/                       # The same three files in every skill
+│   └── scripts/
+│       ├── WolframLanguageContext.wls
+│       ├── WolframLanguageEvaluator.wls
+│       ├── SymbolDefinition.wls
+│       ├── TestReport.wls
+│       └── CodeInspector.wls
+├── wolfram-notebooks/
+│   ├── SKILL.md
+│   ├── references/
+│   └── scripts/
+│       ├── ReadNotebook.wls
+│       └── WriteNotebook.wls
+└── wolfram-paclets/
+    ├── SKILL.md
+    ├── references/
+    └── scripts/
+        ├── CheckPaclet.wls
+        ├── BuildPaclet.wls
+        └── SubmitPaclet.wls
+```
+
+`Scripts/BuildAgentSkills.wls` lives in the top-level `Scripts/` directory alongside other build scripts, and the builder it uses in `Scripts/Resources/AgentSkillsBuilder.wl`.
 
 ---
 
@@ -433,9 +462,9 @@ Script correctness (valid output, error handling, `--usage` flag) is covered by 
 
 ## Future Considerations
 
-- **wolfram-paclet-development skill** — A fourth skill bundling CreateSymbolDoc, EditSymbolDoc, and EditSymbolDocExamples alongside the wolfram-language tools. Deferred to a later phase.
+- **Documentation tools skill** — The `wolfram-paclets` skill covers CheckPaclet, BuildPaclet, and SubmitPaclet. A skill for CreateSymbolDoc, EditSymbolDoc, and EditSymbolDocExamples is deferred to a later phase.
 - **Marketplace submission** — Submit the wolfram plugin to the official Claude Code marketplace once skills are stable.
-- **Additional distribution channels** — Since skills follow the open standard, they can also be distributed as standalone skill directories for agents that don't use Claude Code plugins (e.g., Cursor, Gemini CLI, VS Code).
-- **Versioning** — Plugin version should track `$pacletVersion` for consistency with the MCP server. The `metadata.version` field in each SKILL.md frontmatter should also track this.
+- **Additional distribution channels** — Done: the built skills ship with the paclet, and `DeployAgentTools` installs them into each client's native skills directory as part of the built-in bundles (see [AgentToolsObject.md](AgentToolsObject.md#built-in-skills)).
+- **Versioning** — Implemented: the build stamps the paclet version into `marketplace.json` and into `metadata.version` of each built `SKILL.md`. For upgrade decisions, deployments use the version of the loaded AgentTools paclet as the version of a built-in skill.
 - **Standalone mode** — Scripts currently require the AgentTools paclet to be loadable. A future enhancement could generate fully self-contained scripts that embed the tool logic directly, removing the paclet dependency.
 - **Validation** — Use the [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) reference library to validate skill directories (`skills-ref validate ./my-skill`).

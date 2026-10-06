@@ -8,12 +8,12 @@ This document describes the system preferences UI provided by AgentTools for man
 
 The panel exposes two toolsets to the user:
 
-| UI Label | Underlying Server | Description |
-|----------|-------------------|-------------|
+| UI Label | Underlying Toolset | Description |
+|----------|--------------------|-------------|
 | **Computation Tools** | `Wolfram` | Tools for general computation and knowledge |
 | **Development Tools** | `WolframLanguage` | Tools for Wolfram Language development |
 
-Selecting a toolset for a client calls `DeployAgentTools[client, server, OverwriteTarget -> True]`. Selecting "No toolset" removes any existing global deployment (`Wolfram` or `WolframLanguage`) for that client.
+Selecting a toolset for a client calls `DeployAgentTools[client, toolset, OverwriteTarget -> True]`, which deploys the built-in bundle of that name: the MCP server and, for clients that support agent skills, its built-in skills (`Wolfram`: wolfram-language and wolfram-alpha; `WolframLanguage`: wolfram-language, wolfram-notebooks, and wolfram-paclets). Clients without a skills directory get only the MCP server, and skill directories that conflict with existing ones are left alone with an `AgentSkillNotInstalled` warning (see [agent-tools-objects.md](agent-tools-objects.md#built-in-bundles)). Selecting "No toolset" removes any existing global deployment (`Wolfram` or `WolframLanguage`) for that client, including the skills it installed (subject to the [shared skill directory](agent-tools-objects.md#shared-skill-directories) rules).
 
 > **Note:** The UI label/server name mapping is currently hard-coded in `clientControls`. See the comment block in `Kernel/PreferencesContent.wl` near `clientControls` for context. Once the predefined server names are aligned with the UX, the mapping should be removed.
 
@@ -46,7 +46,7 @@ Each client row contains:
 
 - The client name, hyperlinked to the client's website
 - A `PopupMenu` to pick `"Computation Tools"`, `"Development Tools"`, or `"No toolset"`
-- An info icon that, when hovered, shows the on-disk install location for the deployed toolset
+- An info icon that, when hovered, shows the on-disk install location for the deployed toolset (its MCP configuration file)
 - A per-directory settings list (when applicable) showing project-level deployments
 
 ### Usage Data Checkbox

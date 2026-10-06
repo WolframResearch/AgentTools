@@ -39,7 +39,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Windsurf | `"Windsurf"` | `"Codeium"` | JSON | No | `"WolframLanguage"` |
 | Zed | `"Zed"` | — | JSON | Yes | `"WolframLanguage"` |
 
-The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose, LM Studio) default to `"Wolfram"`.
+The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). `DeployAgentTools` deploys the built-in bundle of the same name, which adds the matching agent skills for clients that support them (see [agent-tools-objects.md](agent-tools-objects.md#built-in-bundles)). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose, LM Studio) default to `"Wolfram"`.
 
 ## Usage
 
@@ -588,6 +588,9 @@ Several clients share a skills directory (Codex, Goose, and Zed; Copilot CLI and
 `DeployAgentTools` deploys the MCP servers and agent skills of an `AgentToolsObject` together as one tracked unit that `DeleteObject` removes again; it uses the user skills directory for a `"ClientName"` target and the project skills directory for a `{"ClientName", dir}` target. `InstallAgentSkills` and `UninstallAgentSkills` are the low-level functions that copy skills into (or remove them from) a skills directory without any tracking:
 
 ```wl
+(* Deploy a built-in toolset: the WolframLanguage MCP server plus the wolfram-language, wolfram-notebooks, and wolfram-paclets skills *)
+DeployAgentTools["ClaudeCode", "WolframLanguage"]
+
 (* Deploy a bundle of MCP servers and agent skills *)
 DeployAgentTools["ClaudeCode", "PublisherID/MyPaclet/MyPaclet"]
 
@@ -602,7 +605,7 @@ InstallAgentSkills[File["path/to/skills"], File["path/to/my-skill"]]
 UninstallAgentSkills["Cursor", "my-skill"]
 ```
 
-Clients without skills support (Amazon Q Developer, Claude Desktop, and LM Studio) fail with `UnsupportedSkillsClient` (or `UnsupportedSkillsClientProject` for a project target). See [agent-tools-objects.md](agent-tools-objects.md) for skill specifications, bundles, and how deployments track and remove skills.
+Clients without skills support (Amazon Q Developer, Claude Desktop, and LM Studio) fail with `UnsupportedSkillsClient` (or `UnsupportedSkillsClientProject` for a project target). `DeployAgentTools` installs only the MCP server of a built-in toolset on these clients, without a warning. See [agent-tools-objects.md](agent-tools-objects.md) for skill specifications, bundles, and how deployments track and remove skills.
 
 ## Using Other MCP Clients
 
@@ -615,7 +618,7 @@ The basic configuration requires:
 | Field | Value |
 |-------|-------|
 | Command | `/full/path/to/wolfram` (or `wolfram.exe` on Windows) |
-| Arguments | ``-run PacletSymbol["Wolfram/AgentTools","StartMCPServer"][] -noinit -noprompt`` |
+| Arguments | ``-run PacletSymbol["Wolfram/AgentTools","Wolfram`AgentTools`StartMCPServer"][] -noinit -noprompt`` |
 
 ### Environment Variables
 
@@ -626,6 +629,7 @@ Include these environment variables for proper operation:
 | `MCP_SERVER_NAME` | Name of the MCP server to run (e.g. `"WolframLanguage"`, optional) |
 | `WOLFRAM_BASE` | Path to Wolfram base directory (`$BaseDirectory`) |
 | `WOLFRAM_USERBASE` | Path to user's Wolfram files (`$UserBaseDirectory`) |
+| `WOLFRAM_LOCALBASE` | Path to `LocalObject` storage (the directory of `$LocalBase`) |
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
 | `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |

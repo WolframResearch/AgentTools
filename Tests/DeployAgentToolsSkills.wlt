@@ -1457,6 +1457,543 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Built-In Bundles*)
+(* The built-in bundles deploy the skills in the "AgentSkills" asset of the loaded paclet. These tests use their own
+   temporary home directory and AgentTools root, so the registry only holds the skills deployed here. *)
+$builtInHome = CreateDirectory[ ];
+$builtInRoot = CreateDirectory[ ];
+
+withBuiltInEnvironment // Attributes = { HoldFirst };
+withBuiltInEnvironment[ eval_ ] :=
+    Block[ { Wolfram`AgentTools`Common`$rootPath = $builtInRoot, $HomeDirectory = $builtInHome }, eval ];
+
+(* DeployAgentTools[All, ...] for a few clients only *)
+withBuiltInClients // Attributes = { HoldRest };
+withBuiltInClients[ clients_List, eval_ ] := withBuiltInEnvironment @ Block[
+    {
+        Wolfram`AgentTools`$SupportedClients    = KeyTake[ Wolfram`AgentTools`$SupportedClients, clients ],
+        Wolfram`AgentTools`$SupportedMCPClients = KeyTake[ Wolfram`AgentTools`$SupportedClients, clients ]
+    },
+    eval
+];
+
+builtInRegistryEntries[ ] := withBuiltInEnvironment @ If[ DirectoryQ @ $skillRegistryPath,
+    Developer`ReadWXFFile /@ FileNames[ "*.wxf", $skillRegistryPath ],
+    { }
+];
+
+builtInRegistryEntry[ name_String ] :=
+    SelectFirst[ builtInRegistryEntries[ ], #[ "Name" ] === name &, Missing[ "NotFound" ] ];
+
+(* The skill directories and the version of the loaded paclet *)
+$builtInSkillsAsset := Wolfram`AgentTools`Common`$thisPaclet[ "AssetLocation", "AgentSkills" ];
+$builtInVersion     := Wolfram`AgentTools`Common`$thisPaclet[ "Version" ];
+
+$languageSkills = { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
+
+(* Relative path -> bytes of every file in a directory *)
+directoryContents[ dir_String ] := Association @ Map[
+    FileNameDrop[ #, FileNameDepth @ dir ] -> ReadByteArray @ # &,
+    Select[ FileNames[ All, dir, Infinity ], ! DirectoryQ @ # & ]
+];
+
+builtInSkillContents[ name_String ] := directoryContents @ FileNameJoin @ { $builtInSkillsAsset, name };
+
+(* Rewrites a UTF-8 text file with f applied to its contents *)
+rewriteFile[ file_String, f_ ] :=
+    With[ { text = ByteArrayToString[ ReadByteArray @ file, "UTF-8" ] },
+        With[ { stream = OpenWrite[ file, BinaryFormat -> True ] },
+            BinaryWrite[ stream, StringToByteArray[ f @ text, "UTF-8" ] ];
+            Close @ stream
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Global Deployment*)
+VerificationTest[
+    $builtInDep = withBuiltInEnvironment @ DeployAgentTools[ "ClaudeCode", "WolframLanguage", "VerifyLLMKit" -> False ],
+    _AgentToolsDeployment? agentToolsDeploymentQ,
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Global-Deploy@@Tests/DeployAgentToolsSkills.wlt:1514,1-1519,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ {
+        $builtInDep[ "AgentSkills" ],
+        $builtInDep[ "SkillsDirectory" ],
+        $builtInDep[ "Skills" ][ "Skipped" ],
+        $builtInDep[ "Skills" ][ "NotInstalled" ],
+        $builtInDep[ "MCPServerNames" ],
+        $builtInDep[ "Data" ][ "AgentTools", "Location" ]
+    },
+    withBuiltInEnvironment @ { $languageSkills, File @ $claudeSkills, { }, { }, { "WolframLanguage" }, "BuiltIn" },
+    TestID -> "BuiltIn-Global-Record@@Tests/DeployAgentToolsSkills.wlt:1521,1-1532,2"
+]
+
+(* The installed skills are exact copies of the paclet's skill directories *)
+VerificationTest[
+    withBuiltInEnvironment @ Table[
+        FileExistsQ @ skillFile[ $claudeSkills, name ] &&
+            directoryContents @ FileNameJoin @ { $claudeSkills, name } === builtInSkillContents @ name,
+        { name, $languageSkills }
+    ],
+    { True, True, True },
+    TestID -> "BuiltIn-Global-SkillFiles@@Tests/DeployAgentToolsSkills.wlt:1535,1-1543,2"
+]
+
+(* Built-in skills are identified by their name and versioned by the AgentTools version *)
+VerificationTest[
+    SortBy[ KeyTake[ #, { "Name", "Identifier", "Version", "External", "References" } ] & /@ builtInRegistryEntries[ ], #[ "Name" ] & ],
+    Table[
+        <|
+            "Name"       -> name,
+            "Identifier" -> name,
+            "Version"    -> $builtInVersion,
+            "External"   -> False,
+            "References" -> { $builtInDep[ "UUID" ] }
+        |>,
+        { name, $languageSkills }
+    ],
+    TestID -> "BuiltIn-Global-RegistryEntries@@Tests/DeployAgentToolsSkills.wlt:1546,1-1559,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ DeleteObject @ $builtInDep,
+    Null,
+    TestID -> "BuiltIn-Global-Delete@@Tests/DeployAgentToolsSkills.wlt:1561,1-1565,2"
+]
+
+VerificationTest[
+    {
+        withBuiltInEnvironment[ DirectoryQ @ FileNameJoin @ { $claudeSkills, # } & /@ $languageSkills ],
+        builtInRegistryEntries[ ],
+        withBuiltInEnvironment @ KeyExistsQ[ readJSON[ FileNameJoin @ { $HomeDirectory, ".claude.json" } ][ "mcpServers" ], "Wolfram" ]
+    },
+    { { False, False, False }, { }, False },
+    TestID -> "BuiltIn-Global-Delete-State@@Tests/DeployAgentToolsSkills.wlt:1567,1-1575,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Targets Without Skills*)
+(* The skills of a built-in bundle complement its MCP server: targets without skills support get the server without a
+   warning, and the record lists the skills that were skipped (ad hoc bundles still warn, see Partial-NoSkillsSupport) *)
+VerificationTest[
+    $builtInLMStudio = withBuiltInEnvironment @ DeployAgentTools[ "LMStudio", "Wolfram", "VerifyLLMKit" -> False ];
+    withBuiltInEnvironment @ {
+        $builtInLMStudio[ "MCPServerNames" ],
+        $builtInLMStudio[ "AgentSkills" ],
+        $builtInLMStudio[ "Skills" ][ "Skipped" ],
+        $builtInLMStudio[ "Skills" ][ "NotInstalled" ],
+        KeyExistsQ[ readJSON[ $builtInLMStudio[ "ConfigFile" ] ][ "mcpServers" ], "Wolfram" ]
+    },
+    { { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha" }, { }, True },
+    TestID -> "BuiltIn-NoSkillsSupport-Client@@Tests/DeployAgentToolsSkills.wlt:1582,1-1593,2"
+]
+
+(* Amazon Q has project MCP servers but no skills *)
+VerificationTest[
+    $builtInAmazonQProject = CreateDirectory[ ];
+    $builtInAmazonQ = withBuiltInEnvironment @ DeployAgentTools[ { "AmazonQ", $builtInAmazonQProject }, "WolframLanguage", "VerifyLLMKit" -> False ];
+    withBuiltInEnvironment @ {
+        $builtInAmazonQ[ "MCPServerNames" ],
+        $builtInAmazonQ[ "AgentSkills" ],
+        $builtInAmazonQ[ "Skills" ][ "Skipped" ],
+        KeyExistsQ[ readJSON[ FileNameJoin @ { $builtInAmazonQProject, ".amazonq", "mcp.json" } ][ "mcpServers" ], "Wolfram" ]
+    },
+    { { "WolframLanguage" }, { }, $languageSkills, True },
+    TestID -> "BuiltIn-NoSkillsSupport-Project@@Tests/DeployAgentToolsSkills.wlt:1596,1-1607,2"
+]
+
+(* A config file that belongs to no client *)
+VerificationTest[
+    $builtInFileTarget = File @ FileNameJoin @ { CreateDirectory[ ], "custom_mcp.json" };
+    $builtInFileDep = withBuiltInEnvironment @ DeployAgentTools[ $builtInFileTarget, "WolframAlpha", "VerifyLLMKit" -> False ];
+    withBuiltInEnvironment @ {
+        $builtInFileDep[ "MCPServerNames" ],
+        $builtInFileDep[ "AgentSkills" ],
+        $builtInFileDep[ "Skills" ][ "Skipped" ],
+        KeyExistsQ[ readJSON[ $builtInFileTarget ][ "mcpServers" ], "Wolfram" ]
+    },
+    { { "WolframAlpha" }, { }, { "wolfram-alpha" }, True },
+    TestID -> "BuiltIn-NoSkillsSupport-FileTarget@@Tests/DeployAgentToolsSkills.wlt:1610,1-1621,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment[ DeleteObject /@ { $builtInLMStudio, $builtInAmazonQ, $builtInFileDep } ];
+    { withBuiltInEnvironment @ DeployedAgentTools[ ], builtInRegistryEntries[ ] },
+    { { }, { } },
+    TestID -> "BuiltIn-NoSkillsSupport-Delete@@Tests/DeployAgentToolsSkills.wlt:1623,1-1628,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*DeployAgentTools[All, ...] Without Skills Support*)
+VerificationTest[
+    $builtInAll = withBuiltInClients[ { "Codex", "LMStudio" }, DeployAgentTools[ All, "Wolfram", "VerifyLLMKit" -> False ] ];
+    withBuiltInEnvironment[ { #[ "ClientName" ], #[ "MCPServerNames" ], #[ "AgentSkills" ], #[ "Skills" ][ "Skipped" ] } & /@ $builtInAll ],
+    {
+        { "Codex"   , { "Wolfram" }, { "wolfram-language", "wolfram-alpha" }, { } },
+        { "LMStudio", { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha" } }
+    },
+    TestID -> "BuiltIn-All-NoSkillsWarning@@Tests/DeployAgentToolsSkills.wlt:1633,1-1641,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment[ DeleteObject /@ $builtInAll ];
+    $adHocAll = withBuiltInClients[ { "Codex", "LMStudio" }, DeployAgentTools[ All, $bundle, "VerifyLLMKit" -> False ] ],
+    { _AgentToolsDeployment? agentToolsDeploymentQ, _AgentToolsDeployment? agentToolsDeploymentQ },
+    { DeployAgentTools::AgentSkillsNotDeployedWarning },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-All-AdHocBundleWarns@@Tests/DeployAgentToolsSkills.wlt:1643,1-1650,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment[ DeleteObject /@ $adHocAll ];
+    { withBuiltInEnvironment @ DeployedAgentTools[ ], builtInRegistryEntries[ ] },
+    { { }, { } },
+    TestID -> "BuiltIn-All-Delete@@Tests/DeployAgentToolsSkills.wlt:1652,1-1657,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Conflicting Skill Directories*)
+(* A different skill with the name of a built-in skill is left alone: the rest of a built-in bundle is deployed, and the
+   skill that was not installed is reported and recorded. Ad hoc bundles still fail, even with the built-in skills. *)
+VerificationTest[
+    $userSkill = withBuiltInEnvironment @ makeSkillDirectory[ $claudeSkills, "wolfram-language", "The user's own Wolfram Language skill." ];
+    $userSkillContents = directoryContents @ $userSkill;
+    withBuiltInEnvironment @ DeployAgentTools[
+        "ClaudeCode",
+        <| "Name" -> "AdHocWolframLanguage", "MCPServers" -> { "WolframLanguage" }, "AgentSkills" -> $languageSkills |>,
+        "VerifyLLMKit" -> False
+    ],
+    _Failure,
+    { DeployAgentTools::AgentSkillExists },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Clash-AdHocBundleFails@@Tests/DeployAgentToolsSkills.wlt:1664,1-1676,2"
+]
+
+VerificationTest[
+    {
+        directoryContents @ $userSkill === $userSkillContents,
+        withBuiltInEnvironment @ DeployedAgentTools[ ],
+        withBuiltInEnvironment @ FileNames[ All, $claudeSkills ],
+        builtInRegistryEntries[ ]
+    },
+    { True, { }, { $userSkill }, { } },
+    TestID -> "BuiltIn-Clash-AdHocBundleFails-NothingChanged@@Tests/DeployAgentToolsSkills.wlt:1678,1-1687,2"
+]
+
+VerificationTest[
+    $clashDep = withBuiltInEnvironment @ DeployAgentTools[ "ClaudeCode", "WolframLanguage", "VerifyLLMKit" -> False ],
+    _AgentToolsDeployment? agentToolsDeploymentQ,
+    { DeployAgentTools::AgentSkillNotInstalled },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Clash-SkillNotInstalled@@Tests/DeployAgentToolsSkills.wlt:1689,1-1695,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ {
+        directoryContents @ $userSkill === $userSkillContents,
+        $clashDep[ "AgentSkills" ],
+        $clashDep[ "Skills" ][ "NotInstalled" ],
+        directoryContents @ FileNameJoin @ { $claudeSkills, "wolfram-notebooks" } === builtInSkillContents[ "wolfram-notebooks" ],
+        directoryContents @ FileNameJoin @ { $claudeSkills, "wolfram-paclets" } === builtInSkillContents[ "wolfram-paclets" ],
+        $clashDep[ "MCPServerNames" ],
+        KeyExistsQ[ readJSON[ FileNameJoin @ { $HomeDirectory, ".claude.json" } ][ "mcpServers" ], "Wolfram" ],
+        Sort[ #[ "Name" ] & /@ builtInRegistryEntries[ ] ]
+    },
+    {
+        True,
+        { "wolfram-notebooks", "wolfram-paclets" },
+        { "wolfram-language" },
+        True,
+        True,
+        { "WolframLanguage" },
+        True,
+        { "wolfram-notebooks", "wolfram-paclets" }
+    },
+    TestID -> "BuiltIn-Clash-SkillNotInstalled-State@@Tests/DeployAgentToolsSkills.wlt:1697,1-1719,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ DeleteObject @ $clashDep;
+    {
+        directoryContents @ $userSkill === $userSkillContents,
+        withBuiltInEnvironment @ FileNames[ All, $claudeSkills ],
+        builtInRegistryEntries[ ]
+    },
+    { True, { $userSkill }, { } },
+    TestID -> "BuiltIn-Clash-DeleteKeepsUserSkill@@Tests/DeployAgentToolsSkills.wlt:1721,1-1730,2"
+]
+
+(* If skipping the conflicting skills would leave nothing to deploy (here: a project target whose client has no project
+   MCP support), the conflict fails the deployment as for other bundles, so no empty deployment is recorded *)
+VerificationTest[
+    $clashProject   = CreateDirectory[ ];
+    $clashUserSkill = makeSkillDirectory[ FileNameJoin @ { $clashProject, ".cursor", "skills" }, "wolfram-alpha", "The user's own Wolfram|Alpha skill." ];
+    $clashUserSkillContents = directoryContents @ $clashUserSkill;
+    withBuiltInEnvironment @ DeployAgentTools[ { "Cursor", $clashProject }, "WolframAlpha", "VerifyLLMKit" -> False ],
+    Failure[ "DeployAgentTools::AgentSkillExists", _ ],
+    { DeployAgentTools::MCPServersNotDeployed, DeployAgentTools::AgentSkillExists },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Clash-NothingLeftToDeploy@@Tests/DeployAgentToolsSkills.wlt:1734,1-1743,2"
+]
+
+VerificationTest[
+    { directoryContents @ $clashUserSkill === $clashUserSkillContents, withBuiltInEnvironment @ DeployedAgentTools[ ], builtInRegistryEntries[ ] },
+    { True, { }, { } },
+    TestID -> "BuiltIn-Clash-NothingLeftToDeploy-NothingRecorded@@Tests/DeployAgentToolsSkills.wlt:1745,1-1749,2"
+]
+
+(* Once the user's skill is gone, the same deployment installs the built-in skill (no empty record blocks it) *)
+VerificationTest[
+    DeleteDirectory[ $clashUserSkill, DeleteContents -> True ];
+    $clashProjectDep = withBuiltInEnvironment @ DeployAgentTools[ { "Cursor", $clashProject }, "WolframAlpha", "VerifyLLMKit" -> False ];
+    { $clashProjectDep[ "AgentSkills" ], $clashProjectDep[ "MCPServerNames" ], $clashProjectDep[ "Skills" ][ "NotInstalled" ] },
+    { { "wolfram-alpha" }, { }, { } },
+    { DeployAgentTools::MCPServersNotDeployed },
+    TestID -> "BuiltIn-Clash-NothingLeftToDeploy-Retry@@Tests/DeployAgentToolsSkills.wlt:1752,1-1759,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ DeleteObject @ $clashProjectDep;
+    DeleteDirectory[ $clashProject, DeleteContents -> True ];
+    { builtInRegistryEntries[ ], withBuiltInEnvironment @ DeployedAgentTools[ ] },
+    { { }, { } },
+    TestID -> "BuiltIn-Clash-NothingLeftToDeploy-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1761,1-1767,2"
+]
+
+(* In DeployAgentTools[All, ...] the client with the conflict is still deployed, with a single warning *)
+VerificationTest[
+    $clashAll = withBuiltInClients[ { "ClaudeCode", "Codex" }, DeployAgentTools[ All, "WolframLanguage", "VerifyLLMKit" -> False ] ],
+    { _AgentToolsDeployment? agentToolsDeploymentQ, _AgentToolsDeployment? agentToolsDeploymentQ },
+    { DeployAgentTools::AgentSkillsNotInstalledWarning },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-All-Clash@@Tests/DeployAgentToolsSkills.wlt:1770,1-1776,2"
+]
+
+VerificationTest[
+    {
+        withBuiltInEnvironment[ { #[ "ClientName" ], #[ "MCPServerNames" ], #[ "AgentSkills" ], #[ "Skills" ][ "NotInstalled" ] } & /@ $clashAll ],
+        directoryContents @ $userSkill === $userSkillContents
+    },
+    {
+        {
+            { "ClaudeCode", { "WolframLanguage" }, { "wolfram-notebooks", "wolfram-paclets" }, { "wolfram-language" } },
+            { "Codex"     , { "WolframLanguage" }, $languageSkills, { } }
+        },
+        True
+    },
+    TestID -> "BuiltIn-All-Clash-State@@Tests/DeployAgentToolsSkills.wlt:1778,1-1791,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment[ DeleteObject /@ $clashAll ];
+    {
+        withBuiltInEnvironment @ FileNames[ All, $claudeSkills ],
+        withBuiltInEnvironment @ FileNames[ All, $agentsSkills ],
+        builtInRegistryEntries[ ]
+    },
+    { { $userSkill }, { }, { } },
+    TestID -> "BuiltIn-All-Clash-Delete@@Tests/DeployAgentToolsSkills.wlt:1793,1-1802,2"
+]
+
+(* OverwriteTarget -> All still replaces a conflicting directory *)
+VerificationTest[
+    $overwriteAllDep = withBuiltInEnvironment @ DeployAgentTools[ "ClaudeCode", "WolframLanguage", OverwriteTarget -> All, "VerifyLLMKit" -> False ];
+    withBuiltInEnvironment @ {
+        $overwriteAllDep[ "AgentSkills" ],
+        $overwriteAllDep[ "Skills" ][ "NotInstalled" ],
+        directoryContents @ $userSkill === builtInSkillContents[ "wolfram-language" ],
+        builtInRegistryEntry[ "wolfram-language" ][ "External" ]
+    },
+    { $languageSkills, { }, True, False },
+    TestID -> "BuiltIn-Clash-OverwriteAll@@Tests/DeployAgentToolsSkills.wlt:1805,1-1815,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Modified Built-In Skill*)
+(* Replacing a deployment whose built-in skill the user modified: the replaced deployment keeps the modified directory
+   (AgentSkillNotRemoved), and the new deployment leaves it alone (AgentSkillNotInstalled) *)
+VerificationTest[
+    appendToFile[ FileNameJoin @ { $userSkill, "SKILL.md" }, "\nUser notes.\n" ];
+    $modifiedContents = directoryContents @ $userSkill;
+    $modifiedDep = withBuiltInEnvironment @ DeployAgentTools[ "ClaudeCode", "WolframLanguage", OverwriteTarget -> True, "VerifyLLMKit" -> False ],
+    _AgentToolsDeployment? agentToolsDeploymentQ,
+    { DeployAgentTools::AgentSkillNotRemoved, DeployAgentTools::AgentSkillNotInstalled },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Modified-Replace@@Tests/DeployAgentToolsSkills.wlt:1822,1-1830,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ {
+        StringContainsQ[ ReadString @ skillFile[ $claudeSkills, "wolfram-language" ], "User notes." ],
+        directoryContents @ $userSkill === $modifiedContents,
+        $modifiedDep[ "AgentSkills" ],
+        $modifiedDep[ "Skills" ][ "NotInstalled" ],
+        FileExistsQ @ First @ $overwriteAllDep[ "Location" ],
+        builtInRegistryEntry[ "wolfram-language" ],
+        Union @ Flatten[ #[ "References" ] & /@ builtInRegistryEntries[ ] ]
+    },
+    {
+        True,
+        True,
+        { "wolfram-notebooks", "wolfram-paclets" },
+        { "wolfram-language" },
+        False,
+        Missing[ "NotFound" ],
+        { $modifiedDep[ "UUID" ] }
+    },
+    TestID -> "BuiltIn-Modified-Replace-State@@Tests/DeployAgentToolsSkills.wlt:1832,1-1852,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ DeleteObject @ $modifiedDep;
+    {
+        directoryContents @ $userSkill === $modifiedContents,
+        withBuiltInEnvironment @ FileNames[ All, $claudeSkills ],
+        builtInRegistryEntries[ ]
+    },
+    { True, { $userSkill }, { } },
+    TestID -> "BuiltIn-Modified-DeleteKeepsSkill@@Tests/DeployAgentToolsSkills.wlt:1854,1-1863,2"
+]
+
+VerificationTest[
+    DeleteDirectory[ $userSkill, DeleteContents -> True ];
+    { withBuiltInEnvironment @ DeployedAgentTools[ ], withBuiltInEnvironment @ FileNames[ All, $claudeSkills ] },
+    { { }, { } },
+    TestID -> "BuiltIn-Modified-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1865,1-1870,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Updates in a Shared Skills Root*)
+(* Codex, Goose, and Zed all use ~/.agents/skills. An older AgentTools version is simulated with a paclet that has a
+   lower version and different contents in its built-in skills. *)
+$olderVersion = "1.0.0";
+
+withOlderAgentTools // Attributes = { HoldFirst };
+withOlderAgentTools[ eval_ ] := Block[ { Wolfram`AgentTools`Common`$thisPaclet = $olderPaclet }, eval ];
+
+olderSkillContents[ name_String ] := directoryContents @ FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills", name };
+
+olderSkillMarkdown[ markdown_String ] :=
+    StringReplace[ markdown, "version: " <> $builtInVersion -> "version: " <> $olderVersion ] <>
+        "\nInstructions of an older AgentTools version.\n";
+
+VerificationTest[
+    $olderPacletDirectory = CreateDirectory[ ];
+    Export[
+        FileNameJoin @ { $olderPacletDirectory, "PacletInfo.wl" },
+        "PacletObject[<|\"Name\" -> \"Wolfram/AgentTools\", \"Version\" -> \"" <> $olderVersion <> "\", \"Extensions\" -> {{\"Asset\", \"Assets\" -> {{\"AgentSkills\", \"Assets/AgentSkills\"}}}}|>]",
+        "Text"
+    ];
+    CreateDirectory @ FileNameJoin @ { $olderPacletDirectory, "Assets" };
+    CopyDirectory[ $builtInSkillsAsset, FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills" } ];
+    Scan[
+        rewriteFile[ FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills", #, "SKILL.md" }, olderSkillMarkdown ] &,
+        { "wolfram-alpha", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
+    ];
+    $olderPaclet = PacletObject @ File @ $olderPacletDirectory;
+    withOlderAgentTools @ { Wolfram`AgentTools`Common`$pacletVersion, Wolfram`AgentTools`Common`builtInSkillDefinition[ "wolfram-language" ] },
+    { $olderVersion, File @ FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills", "wolfram-language" } },
+    TestID -> "BuiltIn-OlderVersion-Setup@@Tests/DeployAgentToolsSkills.wlt:1888,1-1905,2"
+]
+
+VerificationTest[
+    $olderCodex = withOlderAgentTools @ withBuiltInEnvironment @ DeployAgentTools[ "Codex", "WolframLanguage", "VerifyLLMKit" -> False ];
+    {
+        $olderCodex,
+        withBuiltInEnvironment @ Table[ directoryContents @ FileNameJoin @ { $agentsSkills, name } === olderSkillContents @ name, { name, $languageSkills } ],
+        builtInRegistryEntry[ # ][ "Version" ] & /@ $languageSkills
+    },
+    { _AgentToolsDeployment? agentToolsDeploymentQ, { True, True, True }, { $olderVersion, $olderVersion, $olderVersion } },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Update-OlderVersionDeployed@@Tests/DeployAgentToolsSkills.wlt:1907,1-1917,2"
+]
+
+(* The current version updates the shared skills without OverwriteTarget, although another deployment still uses them *)
+VerificationTest[
+    $newerGoose = withBuiltInEnvironment @ DeployAgentTools[ "Goose", "WolframLanguage", "VerifyLLMKit" -> False ],
+    _AgentToolsDeployment? agentToolsDeploymentQ,
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Update-NewerVersionReplaces@@Tests/DeployAgentToolsSkills.wlt:1920,1-1925,2"
+]
+
+VerificationTest[
+    {
+        withBuiltInEnvironment @ Table[ directoryContents @ FileNameJoin @ { $agentsSkills, name } === builtInSkillContents @ name, { name, $languageSkills } ],
+        Table[
+            With[ { entry = builtInRegistryEntry @ name }, { entry[ "Version" ], Sort @ entry[ "References" ], entry[ "External" ] } ],
+            { name, $languageSkills }
+        ],
+        withBuiltInEnvironment @ $newerGoose[ "AgentSkills" ]
+    },
+    {
+        { True, True, True },
+        ConstantArray[ { $builtInVersion, Sort @ { $olderCodex[ "UUID" ], $newerGoose[ "UUID" ] }, False }, 3 ],
+        $languageSkills
+    },
+    TestID -> "BuiltIn-Update-NewerVersionReplaces-State@@Tests/DeployAgentToolsSkills.wlt:1927,1-1942,2"
+]
+
+(* An older version never downgrades a skill that another deployment uses; its other skills are still installed *)
+VerificationTest[
+    $olderZed = withOlderAgentTools @ withBuiltInEnvironment @ DeployAgentTools[ "Zed", "Wolfram", "VerifyLLMKit" -> False ],
+    _AgentToolsDeployment? agentToolsDeploymentQ,
+    { DeployAgentTools::AgentSkillNewerVersionKept },
+    SameTest -> MatchQ,
+    TestID   -> "BuiltIn-Update-OlderVersionKeepsNewer@@Tests/DeployAgentToolsSkills.wlt:1945,1-1951,2"
+]
+
+VerificationTest[
+    {
+        withBuiltInEnvironment @ directoryContents @ FileNameJoin @ { $agentsSkills, "wolfram-language" } === builtInSkillContents[ "wolfram-language" ],
+        builtInRegistryEntry[ "wolfram-language" ][ "Version" ],
+        Sort @ builtInRegistryEntry[ "wolfram-language" ][ "References" ],
+        withBuiltInEnvironment @ directoryContents @ FileNameJoin @ { $agentsSkills, "wolfram-alpha" } === olderSkillContents[ "wolfram-alpha" ],
+        builtInRegistryEntry[ "wolfram-alpha" ][ "Version" ],
+        withBuiltInEnvironment @ $olderZed[ "AgentSkills" ]
+    },
+    {
+        True,
+        $builtInVersion,
+        Sort @ { $olderCodex[ "UUID" ], $newerGoose[ "UUID" ], $olderZed[ "UUID" ] },
+        True,
+        $olderVersion,
+        { "wolfram-language", "wolfram-alpha" }
+    },
+    TestID -> "BuiltIn-Update-OlderVersionKeepsNewer-State@@Tests/DeployAgentToolsSkills.wlt:1953,1-1971,2"
+]
+
+VerificationTest[
+    withBuiltInEnvironment @ Quiet[ DeleteObject /@ { $olderCodex, $olderZed }, AgentToolsDeployment::AgentSkillInUse ];
+    withBuiltInEnvironment @ DeleteObject @ $newerGoose;
+    {
+        withBuiltInEnvironment @ FileNames[ All, $agentsSkills ],
+        builtInRegistryEntries[ ],
+        withBuiltInEnvironment @ DeployedAgentTools[ ]
+    },
+    { { }, { }, { } },
+    TestID -> "BuiltIn-Update-Delete@@Tests/DeployAgentToolsSkills.wlt:1973,1-1983,2"
+]
+
+VerificationTest[
+    Quiet @ Scan[
+        DeleteDirectory[ #, DeleteContents -> True ] &,
+        { $builtInHome, $builtInRoot, $builtInAmazonQProject, DirectoryName @ First @ $builtInFileTarget, $olderPacletDirectory }
+    ];
+    DirectoryQ /@ { $builtInHome, $builtInRoot, $olderPacletDirectory },
+    { False, False, False },
+    TestID -> "BuiltIn-Cleanup@@Tests/DeployAgentToolsSkills.wlt:1985,1-1993,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Cleanup*)
 VerificationTest[
     withTestEnvironment[ Quiet[ DeleteObject /@ DeployedAgentTools[ ] ] ];
@@ -1467,7 +2004,7 @@ VerificationTest[
     PacletDirectoryUnload @ $mockPacletDirectory;
     True,
     True,
-    TestID -> "Cleanup@@Tests/DeployAgentToolsSkills.wlt:1461,1-1471,2"
+    TestID -> "Cleanup@@Tests/DeployAgentToolsSkills.wlt:1998,1-2008,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
