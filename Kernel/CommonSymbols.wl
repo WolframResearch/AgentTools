@@ -149,6 +149,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$supportedProtocolVersions;
 
 (* Output sanitization: *)
+`convertPUACharacters;
 `sanitizeResponse;
 
 (* MCP client requests / server-to-client traffic: *)

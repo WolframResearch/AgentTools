@@ -1072,7 +1072,7 @@ VerificationTest[
 (* Strings without PUA characters are returned unchanged. *)
 VerificationTest[
     With[ { s = "plain ASCII text" },
-        Wolfram`AgentTools`Server`Shared`Private`convertPUACharacters @ s === s
+        Wolfram`AgentTools`Common`convertPUACharacters @ s === s
     ],
     True,
     SameTest -> MatchQ,
