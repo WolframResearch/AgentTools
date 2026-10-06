@@ -990,6 +990,44 @@ VerificationTest[
     TestID   -> "InstallAgentSkills-EmptyList@@Tests/AgentSkills.wlt:986,1-991,2"
 ]
 
+(* A bundle installs and removes its skills, using the stored specifications (its "AgentSkills" property would drop
+   frontmatter such as the license) *)
+VerificationTest[
+    Module[ { src, root, bundle },
+        src    = makeTestSkill[ skillTestDirectory[ ], "bundle-dir-skill", "Body", <| "scripts/tool.txt" -> "tool" |> ];
+        root   = FileNameJoin @ { skillTestDirectory[ ], "skills" };
+        bundle = AgentToolsObject @ <|
+            "Name"        -> "SkillBundle",
+            "AgentSkills" -> {
+                File @ src,
+                <| "Name" -> "bundle-assoc-skill", "Description" -> "In memory", "Body" -> "Body", "License" -> "MIT" |>
+            }
+        |>;
+        {
+            InstallAgentSkills[ File @ root, bundle ],
+            readTestFile @ FileNameJoin @ { root, "bundle-dir-skill", "scripts", "tool.txt" },
+            StringContainsQ[ readTestFile @ FileNameJoin @ { root, "bundle-assoc-skill", "SKILL.md" }, "license: MIT\n" ],
+            UninstallAgentSkills[ File @ root, bundle ],
+            FileNames[ All, root ]
+        }
+    ],
+    {
+        {
+            Success[ "InstallAgentSkills", KeyValuePattern[ "Name" -> "bundle-dir-skill" ] ],
+            Success[ "InstallAgentSkills", KeyValuePattern[ "Name" -> "bundle-assoc-skill" ] ]
+        },
+        "tool",
+        True,
+        {
+            Success[ "UninstallAgentSkills", KeyValuePattern[ "Name" -> "bundle-dir-skill" ] ],
+            Success[ "UninstallAgentSkills", KeyValuePattern[ "Name" -> "bundle-assoc-skill" ] ]
+        },
+        { }
+    },
+    SameTest -> MatchQ,
+    TestID   -> "InstallAgentSkills-AgentToolsObject@@Tests/AgentSkills.wlt:995,1-1029,2"
+]
+
 (* Junk and version-control entries are never copied *)
 VerificationTest[
     Module[ { src, root },
@@ -1005,7 +1043,7 @@ VerificationTest[
     ],
     { "keep.txt", "SKILL.md" },
     SameTest -> SameQ,
-    TestID   -> "InstallAgentSkills-SkipsJunkAndVCS@@Tests/AgentSkills.wlt:994,1-1009,2"
+    TestID   -> "InstallAgentSkills-SkipsJunkAndVCS@@Tests/AgentSkills.wlt:1032,1-1047,2"
 ]
 
 (* Files that are executable in the source or start with "#!" are made executable *)
@@ -1026,7 +1064,7 @@ ifSymlinks @ VerificationTest[
     ],
     { True, True, False },
     SameTest -> SameQ,
-    TestID   -> "InstallAgentSkills-ExecutableFiles@@Tests/AgentSkills.wlt:1012,14-1030,2"
+    TestID   -> "InstallAgentSkills-ExecutableFiles@@Tests/AgentSkills.wlt:1050,14-1068,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -1038,7 +1076,7 @@ ifSymlinks @ VerificationTest[
     ],
     0,
     SameTest -> SameQ,
-    TestID   -> "InstallAgentSkills-GeneratedNotExecutable@@Tests/AgentSkills.wlt:1032,14-1042,2"
+    TestID   -> "InstallAgentSkills-GeneratedNotExecutable@@Tests/AgentSkills.wlt:1070,14-1080,2"
 ]
 
 (* Symbolic links inside a skill are followed when copying *)
@@ -1062,7 +1100,7 @@ ifSymlinks @ VerificationTest[
     ],
     { "Directory", "shared", "shared", True },
     SameTest -> SameQ,
-    TestID   -> "InstallAgentSkills-FollowsLinks@@Tests/AgentSkills.wlt:1045,14-1066,2"
+    TestID   -> "InstallAgentSkills-FollowsLinks@@Tests/AgentSkills.wlt:1083,14-1104,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1092,7 +1130,7 @@ VerificationTest[
         "a\r\nb\r\n"
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-IdenticalNoOp@@Tests/AgentSkills.wlt:1073,1-1096,2"
+    TestID   -> "InstallAgentSkills-IdenticalNoOp@@Tests/AgentSkills.wlt:1111,1-1134,2"
 ]
 
 VerificationTest[
@@ -1114,7 +1152,7 @@ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-ExistsFails@@Tests/AgentSkills.wlt:1098,1-1118,2"
+    TestID   -> "InstallAgentSkills-ExistsFails@@Tests/AgentSkills.wlt:1136,1-1156,2"
 ]
 
 VerificationTest[
@@ -1141,7 +1179,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-Overwrite@@Tests/AgentSkills.wlt:1120,1-1145,2"
+    TestID   -> "InstallAgentSkills-Overwrite@@Tests/AgentSkills.wlt:1158,1-1183,2"
 ]
 
 (* Preflight: a conflict anywhere fails the whole call before anything is written *)
@@ -1161,7 +1199,7 @@ VerificationTest[
     { Failure[ "InstallAgentSkills::AgentSkillExists", _ ], False },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-PreflightNothingWritten@@Tests/AgentSkills.wlt:1148,1-1165,2"
+    TestID   -> "InstallAgentSkills-PreflightNothingWritten@@Tests/AgentSkills.wlt:1186,1-1203,2"
 ]
 
 VerificationTest[
@@ -1185,7 +1223,7 @@ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-FileEntry@@Tests/AgentSkills.wlt:1167,1-1189,2"
+    TestID   -> "InstallAgentSkills-FileEntry@@Tests/AgentSkills.wlt:1205,1-1227,2"
 ]
 
 (* A link is replaced as a link: its target is never written through *)
@@ -1214,7 +1252,7 @@ ifSymlinks @ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-LinkEntry@@Tests/AgentSkills.wlt:1192,14-1218,2"
+    TestID   -> "InstallAgentSkills-LinkEntry@@Tests/AgentSkills.wlt:1230,14-1256,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -1234,7 +1272,7 @@ ifSymlinks @ VerificationTest[
     ],
     { Success[ "InstallAgentSkills", _ ], Success[ "InstallAgentSkills", _ ], "Link" },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-LinkToIdentical@@Tests/AgentSkills.wlt:1220,14-1238,2"
+    TestID   -> "InstallAgentSkills-LinkToIdentical@@Tests/AgentSkills.wlt:1258,14-1276,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -1252,7 +1290,7 @@ ifSymlinks @ VerificationTest[
     { Failure[ "InstallAgentSkills::AgentSkillExists", _ ], Success[ "InstallAgentSkills", _ ], "Directory", { } },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-DanglingEntry@@Tests/AgentSkills.wlt:1240,14-1256,2"
+    TestID   -> "InstallAgentSkills-DanglingEntry@@Tests/AgentSkills.wlt:1278,14-1294,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1269,7 +1307,7 @@ VerificationTest[
     ],
     { Success[ "InstallAgentSkills", KeyValuePattern[ "Name" -> "in-place-skill" ] ], True, { } },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-SourceIsDestination@@Tests/AgentSkills.wlt:1263,1-1273,2"
+    TestID   -> "InstallAgentSkills-SourceIsDestination@@Tests/AgentSkills.wlt:1301,1-1311,2"
 ]
 
 VerificationTest[
@@ -1281,7 +1319,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::InvalidAgentSkill", _ ],
     { InstallAgentSkills::InvalidAgentSkill },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-NestedSource@@Tests/AgentSkills.wlt:1275,1-1285,2"
+    TestID   -> "InstallAgentSkills-NestedSource@@Tests/AgentSkills.wlt:1313,1-1323,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1295,7 +1333,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::InvalidSkillsDirectory", _ ],
     { InstallAgentSkills::InvalidSkillsDirectory },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-RootIsSkillDirectory@@Tests/AgentSkills.wlt:1290,1-1299,2"
+    TestID   -> "InstallAgentSkills-RootIsSkillDirectory@@Tests/AgentSkills.wlt:1328,1-1337,2"
 ]
 
 VerificationTest[
@@ -1306,7 +1344,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::InvalidSkillsDirectory", _ ],
     { InstallAgentSkills::InvalidSkillsDirectory },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-RootIsFile@@Tests/AgentSkills.wlt:1301,1-1310,2"
+    TestID   -> "InstallAgentSkills-RootIsFile@@Tests/AgentSkills.wlt:1339,1-1348,2"
 ]
 
 VerificationTest[
@@ -1314,7 +1352,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::InvalidSkillsDirectory", _ ],
     { InstallAgentSkills::InvalidSkillsDirectory },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-InvalidTarget@@Tests/AgentSkills.wlt:1312,1-1318,2"
+    TestID   -> "InstallAgentSkills-InvalidTarget@@Tests/AgentSkills.wlt:1350,1-1356,2"
 ]
 
 VerificationTest[
@@ -1322,7 +1360,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::InvalidAgentSkill", _ ],
     { InstallAgentSkills::InvalidAgentSkill },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-InvalidSkill@@Tests/AgentSkills.wlt:1320,1-1326,2"
+    TestID   -> "InstallAgentSkills-InvalidSkill@@Tests/AgentSkills.wlt:1358,1-1364,2"
 ]
 
 VerificationTest[
@@ -1339,7 +1377,7 @@ VerificationTest[
     { Failure[ "InstallAgentSkills::DuplicateAgentSkillName", KeyValuePattern[ "MessageParameters" :> { "twice" } ] ], { } },
     { InstallAgentSkills::DuplicateAgentSkillName },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-DuplicateNames@@Tests/AgentSkills.wlt:1328,1-1343,2"
+    TestID   -> "InstallAgentSkills-DuplicateNames@@Tests/AgentSkills.wlt:1366,1-1381,2"
 ]
 
 VerificationTest[
@@ -1347,7 +1385,7 @@ VerificationTest[
     _Failure,
     { InstallAgentSkills::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-InvalidArgumentCount@@Tests/AgentSkills.wlt:1345,1-1351,2"
+    TestID   -> "InstallAgentSkills-InvalidArgumentCount@@Tests/AgentSkills.wlt:1383,1-1389,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1389,7 +1427,7 @@ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillWriteFailed },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-Rollback@@Tests/AgentSkills.wlt:1359,1-1393,2"
+    TestID   -> "InstallAgentSkills-Rollback@@Tests/AgentSkills.wlt:1397,1-1431,2"
 ]
 
 (* If the existing entry can't be moved out of the way (e.g. a file in use on Windows), nothing is changed *)
@@ -1408,7 +1446,7 @@ VerificationTest[
     { Failure[ "InstallAgentSkills::AgentSkillRemoveFailed", _ ], True },
     { InstallAgentSkills::AgentSkillRemoveFailed },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-MoveFails@@Tests/AgentSkills.wlt:1396,1-1412,2"
+    TestID   -> "InstallAgentSkills-MoveFails@@Tests/AgentSkills.wlt:1434,1-1450,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1433,7 +1471,7 @@ ifPermissions @ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillUnreadable },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-UnreadableSource@@Tests/AgentSkills.wlt:1419,17-1437,2"
+    TestID   -> "InstallAgentSkills-UnreadableSource@@Tests/AgentSkills.wlt:1457,17-1475,2"
 ]
 
 (* An existing directory with a file that can't be read is different content: a conflict, or replaced when
@@ -1465,7 +1503,7 @@ ifPermissions @ VerificationTest[
     },
     { InstallAgentSkills::AgentSkillExists },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-UnreadableDestination@@Tests/AgentSkills.wlt:1441,17-1469,2"
+    TestID   -> "InstallAgentSkills-UnreadableDestination@@Tests/AgentSkills.wlt:1479,17-1507,2"
 ]
 
 (* Write errors are detected (a full device accepts the write and fails when the data is flushed) *)
@@ -1484,7 +1522,7 @@ conditionalTest[ $OperatingSystem =!= "Windows" && FileExistsQ[ "/dev/full" ] ] 
     ],
     { False, False, True, "content", True, 0 },
     SameTest -> SameQ,
-    TestID   -> "WriteBytes-WriteErrors@@Tests/AgentSkills.wlt:1472,83-1488,2"
+    TestID   -> "WriteBytes-WriteErrors@@Tests/AgentSkills.wlt:1510,83-1526,2"
 ]
 
 (* A replaced directory whose backup can't be deleted completely (e.g. a read-only subdirectory) is reported *)
@@ -1509,7 +1547,7 @@ ifPermissions @ VerificationTest[
     { Success[ "InstallAgentSkills", _ ], True, 1 },
     { InstallAgentSkills::AgentSkillBackupNotRemoved },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-BackupNotRemoved@@Tests/AgentSkills.wlt:1491,17-1513,2"
+    TestID   -> "InstallAgentSkills-BackupNotRemoved@@Tests/AgentSkills.wlt:1529,17-1551,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1541,7 +1579,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-Single@@Tests/AgentSkills.wlt:1518,1-1545,2"
+    TestID   -> "UninstallAgentSkills-Single@@Tests/AgentSkills.wlt:1556,1-1583,2"
 ]
 
 VerificationTest[
@@ -1562,7 +1600,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-List@@Tests/AgentSkills.wlt:1547,1-1566,2"
+    TestID   -> "UninstallAgentSkills-List@@Tests/AgentSkills.wlt:1585,1-1604,2"
 ]
 
 VerificationTest[
@@ -1573,14 +1611,14 @@ VerificationTest[
     ],
     { Success[ "UninstallAgentSkills", KeyValuePattern[ "Name" -> "llm-uninstall" ] ], { } },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-LLMSkill@@Tests/AgentSkills.wlt:1568,1-1577,2"
+    TestID   -> "UninstallAgentSkills-LLMSkill@@Tests/AgentSkills.wlt:1606,1-1615,2"
 ]
 
 VerificationTest[
     UninstallAgentSkills[ File @ skillTestDirectory[ ], "never-installed" ],
     Missing[ "NotInstalled", File[ _String? (StringEndsQ[ "never-installed" ]) ] ],
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-NotInstalled@@Tests/AgentSkills.wlt:1579,1-1584,2"
+    TestID   -> "UninstallAgentSkills-NotInstalled@@Tests/AgentSkills.wlt:1617,1-1622,2"
 ]
 
 (* Names are validated before any path is built, so the root (or anything outside it) is never removed *)
@@ -1620,7 +1658,7 @@ VerificationTest[
         True
     },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-InvalidNames@@Tests/AgentSkills.wlt:1587,1-1624,2"
+    TestID   -> "UninstallAgentSkills-InvalidNames@@Tests/AgentSkills.wlt:1625,1-1662,2"
 ]
 
 VerificationTest[
@@ -1631,7 +1669,7 @@ VerificationTest[
     { Failure[ "UninstallAgentSkills::InvalidAgentSkillName", KeyValuePattern[ "MessageParameters" :> { ".." } ] ], True },
     { UninstallAgentSkills::InvalidAgentSkillName },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-InvalidName-Message@@Tests/AgentSkills.wlt:1626,1-1635,2"
+    TestID   -> "UninstallAgentSkills-InvalidName-Message@@Tests/AgentSkills.wlt:1664,1-1673,2"
 ]
 
 (* Only directories that contain SKILL.md (or links to one) are removed *)
@@ -1649,7 +1687,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", _File ], Missing[ "NotInstalled", _File ], True, True },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-NotSkillDirectory@@Tests/AgentSkills.wlt:1638,1-1653,2"
+    TestID   -> "UninstallAgentSkills-NotSkillDirectory@@Tests/AgentSkills.wlt:1676,1-1691,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -1673,7 +1711,7 @@ ifSymlinks @ VerificationTest[
         True
     },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-Links@@Tests/AgentSkills.wlt:1655,14-1677,2"
+    TestID   -> "UninstallAgentSkills-Links@@Tests/AgentSkills.wlt:1693,14-1715,2"
 ]
 
 VerificationTest[
@@ -1691,7 +1729,7 @@ VerificationTest[
     { Failure[ "UninstallAgentSkills::AgentSkillRemoveFailed", _ ], True },
     { UninstallAgentSkills::AgentSkillRemoveFailed },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-RemoveFails@@Tests/AgentSkills.wlt:1679,1-1695,2"
+    TestID   -> "UninstallAgentSkills-RemoveFails@@Tests/AgentSkills.wlt:1717,1-1733,2"
 ]
 
 VerificationTest[
@@ -1699,7 +1737,7 @@ VerificationTest[
     Failure[ "UninstallAgentSkills::InvalidSkillsDirectory", _ ],
     { UninstallAgentSkills::InvalidSkillsDirectory },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-InvalidTarget@@Tests/AgentSkills.wlt:1697,1-1703,2"
+    TestID   -> "UninstallAgentSkills-InvalidTarget@@Tests/AgentSkills.wlt:1735,1-1741,2"
 ]
 
 (* The skill has left the root, but its backup can't be deleted completely (a read-only subdirectory): the leftover
@@ -1723,7 +1761,7 @@ ifPermissions @ VerificationTest[
         UninstallAgentSkills::AgentSkillBackupNotRemoved
     },
     SameTest -> MatchQ,
-    TestID   -> "UninstallAgentSkills-BackupNotRemoved@@Tests/AgentSkills.wlt:1707,17-1727,2"
+    TestID   -> "UninstallAgentSkills-BackupNotRemoved@@Tests/AgentSkills.wlt:1745,17-1765,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1740,7 +1778,7 @@ VerificationTest[
     },
     { True, True },
     SameTest -> SameQ,
-    TestID   -> "SkillRegistry-Location@@Tests/AgentSkills.wlt:1736,1-1744,2"
+    TestID   -> "SkillRegistry-Location@@Tests/AgentSkills.wlt:1774,1-1782,2"
 ]
 
 VerificationTest[
@@ -1758,7 +1796,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "SkillRegistryKey@@Tests/AgentSkills.wlt:1746,1-1762,2"
+    TestID   -> "SkillRegistryKey@@Tests/AgentSkills.wlt:1784,1-1800,2"
 ]
 
 VerificationTest[
@@ -1781,7 +1819,7 @@ VerificationTest[
     ],
     { Missing[ "NotFound" ], True, True, Missing[ "Invalid", _File ], Missing[ "NotFound" ] },
     SameTest -> MatchQ,
-    TestID   -> "SkillRegistry-ReadWriteDelete@@Tests/AgentSkills.wlt:1764,1-1785,2"
+    TestID   -> "SkillRegistry-ReadWriteDelete@@Tests/AgentSkills.wlt:1802,1-1823,2"
 ]
 
 (* A registry entry that doesn't read back (e.g. truncated by a full disk although the write reported success) fails
@@ -1803,7 +1841,7 @@ VerificationTest[
     { Failure[ "AgentTools::Internal", _ ], False },
     { General::AgentToolsInternal },
     SameTest -> MatchQ,
-    TestID   -> "SkillRegistry-WriteReadBack@@Tests/AgentSkills.wlt:1789,1-1807,2"
+    TestID   -> "SkillRegistry-WriteReadBack@@Tests/AgentSkills.wlt:1827,1-1845,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1835,7 +1873,7 @@ VerificationTest[
         "Invalid"     -> { False, False, False }
     |>,
     SameTest -> SameQ,
-    TestID   -> "DeploymentUUIDExistsQ@@Tests/AgentSkills.wlt:1812,1-1839,2"
+    TestID   -> "DeploymentUUIDExistsQ@@Tests/AgentSkills.wlt:1850,1-1877,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1890,7 +1928,7 @@ VerificationTest[
         "Unmodified"
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Missing-Create@@Tests/AgentSkills.wlt:1848,1-1894,2"
+    TestID   -> "InstallDecision-Missing-Create@@Tests/AgentSkills.wlt:1886,1-1932,2"
 ]
 
 (* The directory was deleted by hand: it is created again and the live references are kept *)
@@ -1910,7 +1948,7 @@ VerificationTest[
     ],
     { "Create", True, { "uuid-1", "uuid-2" }, True },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-Missing-KeepsReferences@@Tests/AgentSkills.wlt:1897,1-1914,2"
+    TestID   -> "InstallDecision-Missing-KeepsReferences@@Tests/AgentSkills.wlt:1935,1-1952,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1945,7 +1983,7 @@ ifSymlinks @ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Link@@Tests/AgentSkills.wlt:1919,14-1949,2"
+    TestID   -> "InstallDecision-Link@@Tests/AgentSkills.wlt:1957,14-1987,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -1969,7 +2007,7 @@ ifSymlinks @ VerificationTest[
         { "Directory", "Directory" }
     },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-DanglingAndFile@@Tests/AgentSkills.wlt:1951,14-1973,2"
+    TestID   -> "InstallDecision-DanglingAndFile@@Tests/AgentSkills.wlt:1989,14-2011,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1989,7 +2027,7 @@ VerificationTest[
     ],
     { "AddReference", 1, { "uuid-1", "uuid-2" }, { } },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-SameContent-AddReference@@Tests/AgentSkills.wlt:1978,1-1993,2"
+    TestID   -> "InstallDecision-SameContent-AddReference@@Tests/AgentSkills.wlt:2016,1-2031,2"
 ]
 
 (* A directory used only by the deployments being replaced is owned by the replacement: no force needed. The replaced
@@ -2020,7 +2058,7 @@ VerificationTest[
         { "uuid-2" }
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-OwnedByReplacement@@Tests/AgentSkills.wlt:1997,1-2024,2"
+    TestID   -> "InstallDecision-OwnedByReplacement@@Tests/AgentSkills.wlt:2035,1-2062,2"
 ]
 
 (* If a replacing deploy is interrupted after its skills were applied but before its deployment record was written
@@ -2059,7 +2097,7 @@ VerificationTest[
         { True, True }
     },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-ReplacedReferencesKept@@Tests/AgentSkills.wlt:2028,1-2063,2"
+    TestID   -> "InstallDecision-ReplacedReferencesKept@@Tests/AgentSkills.wlt:2066,1-2101,2"
 ]
 
 (* Stale references don't keep a directory alive *)
@@ -2076,7 +2114,7 @@ VerificationTest[
     ],
     { "Replace", { "uuid-1" } },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-StaleReferences@@Tests/AgentSkills.wlt:2066,1-2080,2"
+    TestID   -> "InstallDecision-StaleReferences@@Tests/AgentSkills.wlt:2104,1-2118,2"
 ]
 
 VerificationTest[
@@ -2108,7 +2146,7 @@ VerificationTest[
         True
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-KeepNewerVersion@@Tests/AgentSkills.wlt:2082,1-2112,2"
+    TestID   -> "InstallDecision-KeepNewerVersion@@Tests/AgentSkills.wlt:2120,1-2150,2"
 ]
 
 VerificationTest[
@@ -2133,7 +2171,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Upgrade@@Tests/AgentSkills.wlt:2114,1-2137,2"
+    TestID   -> "InstallDecision-Upgrade@@Tests/AgentSkills.wlt:2152,1-2175,2"
 ]
 
 (* Redeploying an edited in-memory skill of the same bundle is an upgrade of the same source *)
@@ -2153,7 +2191,7 @@ VerificationTest[
     ],
     { { "Conflict", "AgentSkillUpdate", _ }, "Replace" },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-EditedInMemorySkill@@Tests/AgentSkills.wlt:2140,1-2157,2"
+    TestID   -> "InstallDecision-EditedInMemorySkill@@Tests/AgentSkills.wlt:2178,1-2195,2"
 ]
 
 VerificationTest[
@@ -2178,7 +2216,7 @@ VerificationTest[
         <| "Identifier" -> "AgentToolsObject:B/contested-skill", "References" -> { "uuid-1", "uuid-2" }, "External" -> False |>
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-DifferentSource@@Tests/AgentSkills.wlt:2159,1-2182,2"
+    TestID   -> "InstallDecision-DifferentSource@@Tests/AgentSkills.wlt:2197,1-2220,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2204,7 +2242,7 @@ VerificationTest[
     ],
     { "AdoptChange", True, { "uuid-1", "uuid-2" }, True },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-Modified-AdoptChange@@Tests/AgentSkills.wlt:2187,1-2208,2"
+    TestID   -> "InstallDecision-Modified-AdoptChange@@Tests/AgentSkills.wlt:2225,1-2246,2"
 ]
 
 VerificationTest[
@@ -2228,7 +2266,7 @@ VerificationTest[
         "Replace"
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Modified-Conflict@@Tests/AgentSkills.wlt:2210,1-2232,2"
+    TestID   -> "InstallDecision-Modified-Conflict@@Tests/AgentSkills.wlt:2248,1-2270,2"
 ]
 
 (* A repository inside a skill directory makes it "Modified" *)
@@ -2241,7 +2279,7 @@ VerificationTest[
     ],
     { "Conflict", "AgentSkillModified", _ },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Modified-VCS@@Tests/AgentSkills.wlt:2235,1-2245,2"
+    TestID   -> "InstallDecision-Modified-VCS@@Tests/AgentSkills.wlt:2273,1-2283,2"
 ]
 
 (* A file that can't be read makes a directory "Modified" (a conflict, not an internal failure) *)
@@ -2266,7 +2304,7 @@ ifPermissions @ VerificationTest[
         "Replace"
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Modified-Unreadable@@Tests/AgentSkills.wlt:2248,17-2270,2"
+    TestID   -> "InstallDecision-Modified-Unreadable@@Tests/AgentSkills.wlt:2286,17-2308,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2295,7 +2333,7 @@ VerificationTest[
         <| "External" -> True, "References" -> { "uuid-1", "uuid-2" } |>
     },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-External-SameContent@@Tests/AgentSkills.wlt:2275,1-2299,2"
+    TestID   -> "InstallDecision-External-SameContent@@Tests/AgentSkills.wlt:2313,1-2337,2"
 ]
 
 VerificationTest[
@@ -2318,7 +2356,7 @@ VerificationTest[
         <| "External" -> False, "References" -> { "uuid-1", "uuid-2" } |>
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-External-DifferentContent@@Tests/AgentSkills.wlt:2301,1-2322,2"
+    TestID   -> "InstallDecision-External-DifferentContent@@Tests/AgentSkills.wlt:2339,1-2360,2"
 ]
 
 VerificationTest[
@@ -2340,7 +2378,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Foreign-DifferentContent@@Tests/AgentSkills.wlt:2324,1-2344,2"
+    TestID   -> "InstallDecision-Foreign-DifferentContent@@Tests/AgentSkills.wlt:2362,1-2382,2"
 ]
 
 (* A foreign directory with a file that can't be read is not identical content: a normal conflict *)
@@ -2360,7 +2398,7 @@ ifPermissions @ VerificationTest[
     ],
     { { "Conflict", "AgentSkillExists", { "foreign-unreadable", File[ _String ], All } }, "Replace" },
     SameTest -> MatchQ,
-    TestID   -> "InstallDecision-Foreign-Unreadable@@Tests/AgentSkills.wlt:2347,17-2364,2"
+    TestID   -> "InstallDecision-Foreign-Unreadable@@Tests/AgentSkills.wlt:2385,17-2402,2"
 ]
 
 (* A source directory that is the destination itself is already installed: it is adopted, nothing is written *)
@@ -2377,7 +2415,7 @@ VerificationTest[
     ],
     { "AddReference", 1, True },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-SourceIsDestination@@Tests/AgentSkills.wlt:2367,1-2381,2"
+    TestID   -> "InstallDecision-SourceIsDestination@@Tests/AgentSkills.wlt:2405,1-2419,2"
 ]
 
 (* A directory that a deployment installed and the user then modified is the source of another deployment: the
@@ -2403,7 +2441,7 @@ VerificationTest[
     ],
     { "AddReference", { True, False, { "uuid-1", "uuid-2" } }, "InUse", "KeptModified", True },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-SourceIsDestination-Modified@@Tests/AgentSkills.wlt:2386,1-2407,2"
+    TestID   -> "InstallDecision-SourceIsDestination-Modified@@Tests/AgentSkills.wlt:2424,1-2445,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2437,7 +2475,7 @@ ifSymlinks @ VerificationTest[
     ],
     { True, "AddReference", True, { "uuid-1", "uuid-2" }, Missing[ "NotFound" ], "InUse", True, "Removed", False },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-SymbolicLinkRoot@@Tests/AgentSkills.wlt:2415,14-2441,2"
+    TestID   -> "InstallDecision-SymbolicLinkRoot@@Tests/AgentSkills.wlt:2453,14-2479,2"
 ]
 
 (* The entry of a directory that was removed by hand is found by its directory too, so its references are kept *)
@@ -2457,7 +2495,7 @@ ifSymlinks @ VerificationTest[
     ],
     { "Create", True, { "uuid-1", "uuid-2" } },
     SameTest -> SameQ,
-    TestID   -> "InstallDecision-SymbolicLinkRoot-Missing@@Tests/AgentSkills.wlt:2444,14-2461,2"
+    TestID   -> "InstallDecision-SymbolicLinkRoot-Missing@@Tests/AgentSkills.wlt:2482,14-2499,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2489,7 +2527,7 @@ VerificationTest[
     },
     { AgentTools::AgentSkillConflict },
     SameTest -> MatchQ,
-    TestID   -> "PlanSkillInstall-Conflicts@@Tests/AgentSkills.wlt:2466,1-2493,2"
+    TestID   -> "PlanSkillInstall-Conflicts@@Tests/AgentSkills.wlt:2504,1-2531,2"
 ]
 
 VerificationTest[
@@ -2503,7 +2541,7 @@ VerificationTest[
     Failure[ "AgentTools::DuplicateAgentSkillName", _ ],
     { AgentTools::DuplicateAgentSkillName },
     SameTest -> MatchQ,
-    TestID   -> "PlanSkillInstall-DuplicateNames@@Tests/AgentSkills.wlt:2495,1-2507,2"
+    TestID   -> "PlanSkillInstall-DuplicateNames@@Tests/AgentSkills.wlt:2533,1-2545,2"
 ]
 
 VerificationTest[
@@ -2514,14 +2552,14 @@ VerificationTest[
     Failure[ "AgentTools::InvalidSkillsDirectory", _ ],
     { AgentTools::InvalidSkillsDirectory },
     SameTest -> MatchQ,
-    TestID   -> "PlanSkillInstall-InvalidRoot@@Tests/AgentSkills.wlt:2509,1-2518,2"
+    TestID   -> "PlanSkillInstall-InvalidRoot@@Tests/AgentSkills.wlt:2547,1-2556,2"
 ]
 
 VerificationTest[
     versionOlderQ @@@ { { "1.0.0", "2.0.0" }, { "1.9.0", "1.10.0" }, { "1.10.0", "1.9.0" }, { "1.0", "1.0.0" }, { "1.0.0", "1.0.1" }, { "1.0.0", Missing[ ] }, { "dev", "1.0.0" } },
     { True, True, False, False, True, False, False },
     SameTest -> SameQ,
-    TestID   -> "VersionOlderQ@@Tests/AgentSkills.wlt:2520,1-2525,2"
+    TestID   -> "VersionOlderQ@@Tests/AgentSkills.wlt:2558,1-2563,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2550,7 +2588,7 @@ VerificationTest[
     ],
     { 1, True, True, True, False, Missing[ "NotFound" ], { } },
     SameTest -> SameQ,
-    TestID   -> "ApplySkillInstallPlan-Undo@@Tests/AgentSkills.wlt:2530,1-2554,2"
+    TestID   -> "ApplySkillInstallPlan-Undo@@Tests/AgentSkills.wlt:2568,1-2592,2"
 ]
 
 VerificationTest[
@@ -2565,7 +2603,7 @@ VerificationTest[
     ],
     { 1, { } },
     SameTest -> SameQ,
-    TestID   -> "ApplySkillInstallPlan-Finalize@@Tests/AgentSkills.wlt:2556,1-2569,2"
+    TestID   -> "ApplySkillInstallPlan-Finalize@@Tests/AgentSkills.wlt:2594,1-2607,2"
 ]
 
 (* A failure midway rolls back the changes already made by the plan and propagates *)
@@ -2609,7 +2647,7 @@ VerificationTest[
     },
     { AgentTools::AgentSkillWriteFailed },
     SameTest -> MatchQ,
-    TestID   -> "ApplySkillInstallPlan-Rollback@@Tests/AgentSkills.wlt:2572,1-2613,2"
+    TestID   -> "ApplySkillInstallPlan-Rollback@@Tests/AgentSkills.wlt:2610,1-2651,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2645,7 +2683,7 @@ VerificationTest[
         { }
     },
     SameTest -> MatchQ,
-    TestID   -> "ReleaseSkillReference-InUseThenRemoved@@Tests/AgentSkills.wlt:2618,1-2649,2"
+    TestID   -> "ReleaseSkillReference-InUseThenRemoved@@Tests/AgentSkills.wlt:2656,1-2687,2"
 ]
 
 VerificationTest[
@@ -2658,7 +2696,7 @@ VerificationTest[
     ],
     { "KeptModified", True, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-KeptModified@@Tests/AgentSkills.wlt:2651,1-2662,2"
+    TestID   -> "ReleaseSkillReference-KeptModified@@Tests/AgentSkills.wlt:2689,1-2700,2"
 ]
 
 VerificationTest[
@@ -2671,7 +2709,7 @@ VerificationTest[
     ],
     { "KeptModified", True },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-KeptVCS@@Tests/AgentSkills.wlt:2664,1-2675,2"
+    TestID   -> "ReleaseSkillReference-KeptVCS@@Tests/AgentSkills.wlt:2702,1-2713,2"
 ]
 
 VerificationTest[
@@ -2684,7 +2722,7 @@ VerificationTest[
     ],
     { "KeptExternal", True, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-KeptExternal@@Tests/AgentSkills.wlt:2677,1-2688,2"
+    TestID   -> "ReleaseSkillReference-KeptExternal@@Tests/AgentSkills.wlt:2715,1-2726,2"
 ]
 
 VerificationTest[
@@ -2698,7 +2736,7 @@ VerificationTest[
     ],
     { "Missing", Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-Missing@@Tests/AgentSkills.wlt:2690,1-2702,2"
+    TestID   -> "ReleaseSkillReference-Missing@@Tests/AgentSkills.wlt:2728,1-2740,2"
 ]
 
 ifSymlinks @ VerificationTest[
@@ -2719,7 +2757,7 @@ ifSymlinks @ VerificationTest[
     ],
     { "KeptLink", "Link", "Link", True, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-KeptLink@@Tests/AgentSkills.wlt:2704,14-2723,2"
+    TestID   -> "ReleaseSkillReference-KeptLink@@Tests/AgentSkills.wlt:2742,14-2761,2"
 ]
 
 VerificationTest[
@@ -2734,7 +2772,7 @@ VerificationTest[
     ],
     { "NoEntry", True },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-NoEntry@@Tests/AgentSkills.wlt:2725,1-2738,2"
+    TestID   -> "ReleaseSkillReference-NoEntry@@Tests/AgentSkills.wlt:2763,1-2776,2"
 ]
 
 (* Stale references are pruned when releasing *)
@@ -2748,7 +2786,7 @@ VerificationTest[
     ],
     "Removed",
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-PrunesStale@@Tests/AgentSkills.wlt:2741,1-2752,2"
+    TestID   -> "ReleaseSkillReference-PrunesStale@@Tests/AgentSkills.wlt:2779,1-2790,2"
 ]
 
 (* If the directory can't be removed, the entry is kept without references and the next sweep retries *)
@@ -2774,7 +2812,7 @@ VerificationTest[
     ],
     { "RemoveFailed", { }, True, { "Removed" }, False, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-RemoveFailed@@Tests/AgentSkills.wlt:2755,1-2778,2"
+    TestID   -> "ReleaseSkillReference-RemoveFailed@@Tests/AgentSkills.wlt:2793,1-2816,2"
 ]
 
 (* A file that can't be read makes the directory "Modified": it is kept (not an internal failure) *)
@@ -2792,7 +2830,7 @@ ifPermissions @ VerificationTest[
     ],
     { "KeptModified", True, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-Unreadable@@Tests/AgentSkills.wlt:2781,17-2796,2"
+    TestID   -> "ReleaseSkillReference-Unreadable@@Tests/AgentSkills.wlt:2819,17-2834,2"
 ]
 
 (* The directory was removed, but its backup can't be deleted completely (a read-only subdirectory): reported *)
@@ -2815,7 +2853,7 @@ ifPermissions @ VerificationTest[
     { "Removed", False, Missing[ "NotFound" ], 1 },
     { AgentTools::AgentSkillBackupNotRemoved },
     SameTest -> SameQ,
-    TestID   -> "ReleaseSkillReference-BackupNotRemoved@@Tests/AgentSkills.wlt:2799,17-2819,2"
+    TestID   -> "ReleaseSkillReference-BackupNotRemoved@@Tests/AgentSkills.wlt:2837,17-2857,2"
 ]
 
 (* Several entries for one directory (registry keys from before entries were matched by their directory): the
@@ -2858,7 +2896,7 @@ VerificationTest[
         "UnusedState"   -> False
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ReleaseSkillReference-DuplicateEntries@@Tests/AgentSkills.wlt:2823,1-2862,2"
+    TestID   -> "ReleaseSkillReference-DuplicateEntries@@Tests/AgentSkills.wlt:2861,1-2900,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2891,7 +2929,7 @@ VerificationTest[
     },
     { AgentTools::AgentSkillInUse, AgentTools::AgentSkillNotRemoved },
     SameTest -> MatchQ,
-    TestID   -> "SkillReleaseMessages@@Tests/AgentSkills.wlt:2867,1-2895,2"
+    TestID   -> "SkillReleaseMessages@@Tests/AgentSkills.wlt:2905,1-2933,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2901,7 +2939,7 @@ VerificationTest[
     withTemporaryRoot @ sweepSkillRegistry[ ],
     { },
     SameTest -> SameQ,
-    TestID   -> "SweepSkillRegistry-Empty@@Tests/AgentSkills.wlt:2900,1-2905,2"
+    TestID   -> "SweepSkillRegistry-Empty@@Tests/AgentSkills.wlt:2938,1-2943,2"
 ]
 
 VerificationTest[
@@ -2937,7 +2975,7 @@ VerificationTest[
         True
     },
     SameTest -> SameQ,
-    TestID   -> "SweepSkillRegistry@@Tests/AgentSkills.wlt:2907,1-2941,2"
+    TestID   -> "SweepSkillRegistry@@Tests/AgentSkills.wlt:2945,1-2979,2"
 ]
 
 (* The sweep runs before every locked deploy and delete: an entry that fails is skipped (and retried by the next
@@ -2964,7 +3002,7 @@ VerificationTest[
     ],
     { { { "sweep-other", "Removed" } }, True, False, { { "sweep-failing", "Removed" } }, False },
     SameTest -> SameQ,
-    TestID   -> "SweepSkillRegistry-SkipsFailures@@Tests/AgentSkills.wlt:2945,1-2968,2"
+    TestID   -> "SweepSkillRegistry-SkipsFailures@@Tests/AgentSkills.wlt:2983,1-3006,2"
 ]
 
 (* An orphaned entry whose directory has a file that can't be read is released as "Modified" *)
@@ -2986,7 +3024,7 @@ ifPermissions @ VerificationTest[
     ],
     { { { "sweep-unreadable", "KeptModified" } }, True, Missing[ "NotFound" ] },
     SameTest -> SameQ,
-    TestID   -> "SweepSkillRegistry-Unreadable@@Tests/AgentSkills.wlt:2971,17-2990,2"
+    TestID   -> "SweepSkillRegistry-Unreadable@@Tests/AgentSkills.wlt:3009,17-3028,2"
 ]
 
 (* An orphaned entry is not removed while another entry for the same directory is in use *)
@@ -3010,7 +3048,7 @@ VerificationTest[
     ],
     { { { "sweep-duplicate", "InUse" } }, True, Missing[ "NotFound" ], { "uuid-2" } },
     SameTest -> SameQ,
-    TestID   -> "SweepSkillRegistry-DuplicateEntries@@Tests/AgentSkills.wlt:2993,1-3014,2"
+    TestID   -> "SweepSkillRegistry-DuplicateEntries@@Tests/AgentSkills.wlt:3031,1-3052,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -3028,7 +3066,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ResolveSkillsRoot-Client@@Tests/AgentSkills.wlt:3022,1-3032,2"
+    TestID   -> "ResolveSkillsRoot-Client@@Tests/AgentSkills.wlt:3060,1-3070,2"
 ]
 
 VerificationTest[
@@ -3061,7 +3099,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-Client@@Tests/AgentSkills.wlt:3034,1-3065,2"
+    TestID   -> "InstallAgentSkills-Client@@Tests/AgentSkills.wlt:3072,1-3103,2"
 ]
 
 VerificationTest[
@@ -3081,7 +3119,7 @@ VerificationTest[
         Success[ "UninstallAgentSkills", KeyValuePattern[ "Name" -> "project-skill" ] ]
     },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-ProjectClient@@Tests/AgentSkills.wlt:3067,1-3085,2"
+    TestID   -> "InstallAgentSkills-ProjectClient@@Tests/AgentSkills.wlt:3105,1-3123,2"
 ]
 
 VerificationTest[
@@ -3091,7 +3129,7 @@ VerificationTest[
     Failure[ "InstallAgentSkills::UnsupportedSkillsClient", _ ],
     { InstallAgentSkills::UnsupportedSkillsClient },
     SameTest -> MatchQ,
-    TestID   -> "InstallAgentSkills-UnsupportedClient@@Tests/AgentSkills.wlt:3087,1-3095,2"
+    TestID   -> "InstallAgentSkills-UnsupportedClient@@Tests/AgentSkills.wlt:3125,1-3133,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -3102,7 +3140,7 @@ VerificationTest[
     DirectoryQ @ $skillTestBase,
     False,
     SameTest -> SameQ,
-    TestID   -> "Cleanup@@Tests/AgentSkills.wlt:3100,1-3106,2"
+    TestID   -> "Cleanup@@Tests/AgentSkills.wlt:3138,1-3144,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

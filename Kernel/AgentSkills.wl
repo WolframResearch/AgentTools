@@ -1187,7 +1187,7 @@ validateSkillsRoot // endDefinition;
    result should be returned. *)
 skillSpecList // beginDefinition;
 skillSpecList[ specs_List ] := { specs, False };
-skillSpecList[ obj_AgentToolsObject? agentToolsObjectQ ] := { Replace[ obj[ "AgentSkills" ], Except[ _List ] -> { } ], False };
+skillSpecList[ obj_AgentToolsObject? agentToolsObjectQ ] := { Replace[ obj[ "Data" ][ "AgentSkills" ], Except[ _List ] -> { } ], False };
 skillSpecList[ spec_ ] := { { spec }, True };
 skillSpecList // endDefinition;
 

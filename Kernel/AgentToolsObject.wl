@@ -35,6 +35,7 @@ $agentToolsProperties = {
     "MCPServers",
     "Name",
     "Properties",
+    "Skills",
     "Tools",
     "ToolsetType"
 };
@@ -335,20 +336,27 @@ _AgentToolsObject[ invalid_ ] :=
 (*getAgentToolsObjectProperty*)
 getAgentToolsObjectProperty // beginDefinition;
 
+(* As for MCPServerObject's "Tools" and "ToolNames": "MCPServers" and "AgentSkills" give the resolved objects (loading
+   definitions), and the "...Names" properties give the names (qualified for paclet items) without loading anything.
+   The stored specifications are in "Data". *)
 getAgentToolsObjectProperty[ data_, "Data"             ] := data;
 getAgentToolsObjectProperty[ data_, "Properties"       ] := $agentToolsProperties;
 getAgentToolsObjectProperty[ data_, "Name"             ] := data[ "Name" ];
 getAgentToolsObjectProperty[ data_, "Location"         ] := data[ "Location" ];
-getAgentToolsObjectProperty[ data_, "MCPServers"       ] := data[ "MCPServers" ];
-getAgentToolsObjectProperty[ data_, "AgentSkills"      ] := data[ "AgentSkills" ];
+getAgentToolsObjectProperty[ data_, "MCPServers"       ] := toMCPServerObject /@ data[ "MCPServers" ];
+getAgentToolsObjectProperty[ data_, "AgentSkills"      ] := toLLMSkill /@ data[ "AgentSkills" ];
 getAgentToolsObjectProperty[ data_, "Description"      ] := Lookup[ data, "Description", Missing[ "NotAvailable" ] ];
 getAgentToolsObjectProperty[ data_, "ToolsetType"      ] := Lookup[ data, "ToolsetType", "AgentToolsObject" ];
 getAgentToolsObjectProperty[ data_, "MCPServerNames"   ] := serverSpecName /@ data[ "MCPServers" ];
 getAgentToolsObjectProperty[ data_, "AgentSkillNames"  ] := skillSpecName /@ data[ "AgentSkills" ];
-getAgentToolsObjectProperty[ data_, "MCPServerObjects" ] := toMCPServerObject /@ data[ "MCPServers" ];
-getAgentToolsObjectProperty[ data_, "LLMSkills"        ] := toLLMSkill /@ data[ "AgentSkills" ];
 getAgentToolsObjectProperty[ data_, "Tools"            ] := getAgentToolsTools @ data;
-getAgentToolsObjectProperty[ data_, prop_String        ] := Missing[ "UnknownProperty", prop ];
+
+(* Aliases *)
+getAgentToolsObjectProperty[ data_, "MCPServerObjects" ] := getAgentToolsObjectProperty[ data, "MCPServers"  ];
+getAgentToolsObjectProperty[ data_, "Skills"           ] := getAgentToolsObjectProperty[ data, "AgentSkills" ];
+getAgentToolsObjectProperty[ data_, "LLMSkills"        ] := getAgentToolsObjectProperty[ data, "AgentSkills" ];
+
+getAgentToolsObjectProperty[ data_, prop_String ] := Missing[ "UnknownProperty", prop ];
 
 getAgentToolsObjectProperty // endDefinition;
 
@@ -363,9 +371,9 @@ serverSpecName // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*skillSpecName*)
-(* The name of a skill specification, without loading any definitions. *)
+(* The name of a skill specification, without loading any definitions: a paclet skill keeps its qualified name. *)
 skillSpecName // beginDefinition;
-skillSpecName[ name_String ] := Replace[ StringSplit[ name, "/" ], { { ___, last_ } :> last, _ :> name } ];
+skillSpecName[ name_String ] := name;
 skillSpecName[ HoldPattern[ LLMSkill ][ as_Association ] ] := Lookup[ as, "Name", Missing[ "NotAvailable" ] ];
 skillSpecName[ as_Association ] := Lookup[ as, "Name", Missing[ "NotAvailable" ] ];
 skillSpecName[ file_File ] := Replace[ skillDirectoryLLMSkill @ file, { HoldPattern[ LLMSkill ][ as_Association ] :> as[ "Name" ], _ :> FileNameTake @ file } ];

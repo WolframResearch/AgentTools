@@ -357,13 +357,13 @@ Unknown names fail with `AgentToolsNotFound`. Name resolution never loads defini
 | Property | Description |
 |---|---|
 | `"Name"`, `"Location"`, `"Description"` | Stored values (`"Description"` → `Missing[...]` if absent) |
-| `"MCPServers"` | Stored server specifications (qualified names for paclet bundles) |
-| `"AgentSkills"` | Stored skill specifications |
-| `"MCPServerObjects"` | `MCPServerObject /@ servers` |
-| `"MCPServerNames"`, `"AgentSkillNames"` | Names only (no definition loading; `AgentSkillNames` reads names from `LLMSkill`/`File` specs) |
-| `"LLMSkills"` | Resolved skills as `LLMSkill` objects (loads definitions): `LLMSkill[File[dir]]` for directory sources, `LLMSkill[{name, description}, body]` otherwise (other frontmatter is not represented) |
+| `"MCPServers"` | Resolved servers as `MCPServerObject`s (loads definitions); alias `"MCPServerObjects"` |
+| `"AgentSkills"` | Resolved skills as `LLMSkill` objects (loads definitions): `LLMSkill[File[dir]]` for directory sources, `LLMSkill[{name, description}, body]` otherwise (other frontmatter is not represented); aliases `"Skills"`, `"LLMSkills"` |
+| `"MCPServerNames"`, `"AgentSkillNames"` | Names only, without loading definitions: qualified names for paclet items (as given in the bundle), the skill's name for `LLMSkill`/`File`/association specs |
 | `"Tools"` | Union of the servers' tools |
-| `"Data"`, `"Properties"` | Full association / property list |
+| `"Data"`, `"Properties"` | Full association (including the stored server and skill specifications) / property list |
+
+As for `MCPServerObject`'s `"Tools"` and `"ToolNames"`, the plural properties give the resolved objects and the `"...Names"` properties give the (qualified) names. Internal code that needs the stored specifications (paclet installation before deploying, `InstallAgentSkills`/`UninstallAgentSkills` on a bundle) reads them from `"Data"`.
 
 Formatting: summary box (name, server names, skill names; hidden: location, description).
 

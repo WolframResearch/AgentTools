@@ -25,7 +25,7 @@ An **`AgentToolsObject`** is a named bundle of MCP servers and agent skills. `De
 `$DefaultAgentTools` has one bundle per built-in MCP server, with the same name (`"Wolfram"`, `"WolframAlpha"`, `"WolframLanguage"`, `"WolframPacletDevelopment"`). They currently contain no skills, so deploying them is the same as deploying the corresponding server.
 
 ```wl
-AgentToolsObject["WolframLanguage"]["MCPServers"]
+AgentToolsObject["WolframLanguage"]["MCPServerNames"]
 (* {"WolframLanguage"} *)
 ```
 
@@ -70,11 +70,21 @@ Skill names must be 1–64 lowercase letters, digits, and hyphens (no leading, t
 | Property | Description |
 |----------|-------------|
 | `"Name"`, `"Location"`, `"Description"` | Basic data |
-| `"MCPServers"`, `"AgentSkills"` | The stored specifications |
-| `"MCPServerNames"`, `"AgentSkillNames"` | Names only |
-| `"MCPServerObjects"` | The servers as `MCPServerObject`s |
-| `"LLMSkills"` | The skills as `LLMSkill`s |
+| `"MCPServers"` | The servers as `MCPServerObject`s (alias `"MCPServerObjects"`) |
+| `"AgentSkills"` | The skills as `LLMSkill`s (aliases `"Skills"`, `"LLMSkills"`) |
+| `"MCPServerNames"`, `"AgentSkillNames"` | Names only (qualified names for paclet servers and skills); no definitions are loaded |
 | `"Tools"` | The tools of all servers |
+| `"Data"` | The stored data, including the server and skill specifications as given |
+
+As with `MCPServerObject`'s `"Tools"` and `"ToolNames"`, `"MCPServers"` and `"AgentSkills"` give objects, and `"MCPServerNames"` and `"AgentSkillNames"` give names:
+
+```wl
+AgentToolsObject["PublisherID/MyPaclet/MyPaclet"]["AgentSkillNames"]
+(* {"PublisherID/MyPaclet/using-my-paclet", ...} *)
+
+AgentToolsObject["PublisherID/MyPaclet/MyPaclet"]["AgentSkills"]
+(* {LLMSkill[<|"Name" -> "using-my-paclet", ...|>], ...} *)
+```
 
 ## DeployAgentTools
 

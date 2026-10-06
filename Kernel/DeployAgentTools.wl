@@ -521,7 +521,7 @@ resolvePacletToolsetName // endDefinition;
 ensureToolsetPaclets // beginDefinition;
 
 ensureToolsetPaclets[ bundle0_AgentToolsObject ] := Enclose[
-    Module[ { bundle, location, server, qualified },
+    Module[ { bundle, location, server, specs, qualified },
         bundle   = bundle0;
         location = bundle[ "Location" ];
 
@@ -538,10 +538,12 @@ ensureToolsetPaclets[ bundle0_AgentToolsObject ] := Enclose[
             ]
         ];
 
-        (* User-created servers may also have names containing "/" *)
+        (* The stored specifications, since resolving them would need the paclets. User-created servers may also have
+           names containing "/". *)
+        specs = bundle[ "Data" ];
         qualified = Join[
-            Select[ bundle[ "MCPServers" ], StringQ[ # ] && pacletQualifiedNameQ[ # ] && ! userMCPServerQ[ # ] & ],
-            Select[ bundle[ "AgentSkills" ], StringQ[ # ] && pacletQualifiedNameQ[ # ] & ]
+            Select[ specs[ "MCPServers" ], StringQ[ # ] && pacletQualifiedNameQ[ # ] && ! userMCPServerQ[ # ] & ],
+            Select[ specs[ "AgentSkills" ], StringQ[ # ] && pacletQualifiedNameQ[ # ] & ]
         ];
         Scan[ ensurePacletForInstall, qualified ];
 
@@ -711,8 +713,8 @@ deployAgentTools[ target_, bundle_AgentToolsObject, opts0: $$deployAgentToolsOpt
         (* Toolset contents *)
         toolsetType = ConfirmMatch[ bundle[ "ToolsetType" ], "AgentToolsObject" | "MCPServerObject", "ToolsetType" ];
         toolsetName = ConfirmBy[ bundle[ "Name" ], StringQ, "ToolsetName" ];
-        servers     = ConfirmMatch[ bundle[ "MCPServerObjects" ], { ___MCPServerObject }, "Servers" ];
-        skillSpecs  = ConfirmMatch[ bundle[ "AgentSkills" ], _List, "Skills" ];
+        servers     = ConfirmMatch[ bundle[ "MCPServers" ], { ___MCPServerObject }, "Servers" ];
+        skillSpecs  = ConfirmMatch[ bundle[ "Data" ][ "AgentSkills" ], _List, "Skills" ];
         If[ servers === { } && skillSpecs === { }, throwFailure[ "AgentToolsEmpty", toolsetName ] ];
         If[ servers === { } && skillsDirectory === None, throwFailure[ "AgentSkillsDisabled", toolsetName ] ];
 
