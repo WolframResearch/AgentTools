@@ -67,6 +67,9 @@ Module[ { rawArgs, positional, flags, i, key, value },
 (* ::Section:: *)
 (*Tool Invocation*)
 
+(* Keep stdout clean for the tool result (progress output is written to stdout in scripts) *)
+$ProgressReporting = False;
+
 Quiet[
     PacletInstall[ "Wolfram/AgentTools" ],
     PacletInstall::samevers
@@ -111,7 +114,14 @@ If[ ! TrueQ @ StringQ @ result,
     Exit[ 1 ];
 ];
 
-WriteString[ "stdout", result ];
+(* Characters in the Unicode private use area (e.g. \[Rule]) only display correctly in notebooks, so they're converted
+   like the MCP server does. This is defined here since the installed paclet version might not include the function. *)
+convertPUACharacters[ str_String ] := StringReplace[
+    str,
+    c: RegularExpression[ "[\\x{E000}-\\x{F8FF}]" ] :> ToString[ c, CharacterEncoding -> "PrintableASCII" ]
+];
+
+WriteString[ "stdout", convertPUACharacters @ result ];
 Exit[ 0 ];
 
 (* :!CodeAnalysis::EndBlock:: *)
