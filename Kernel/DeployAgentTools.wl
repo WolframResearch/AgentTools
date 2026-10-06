@@ -193,7 +193,7 @@ getDeploymentProperty[ data_Association, "Location"         ] := deploymentDirec
 getDeploymentProperty[ data_Association, "Properties"       ] := $deploymentProperties;
 getDeploymentProperty[ data_Association, "MCPServerObjects" ] := toMCPServerObject /@ getDeploymentProperty[ data, "MCPServerNames" ];
 getDeploymentProperty[ data_Association, "MCPServerObject"  ] := primaryMCPServerObject @ data;
-getDeploymentProperty[ data_Association, "LLMConfiguration" ] := primaryMCPServerObject[ data ][ "LLMConfiguration" ];
+getDeploymentProperty[ data_Association, "LLMConfiguration" ] := deploymentLLMConfiguration @ primaryMCPServerObject @ data;
 getDeploymentProperty[ data_Association, "Tools"            ] := deploymentTools @ data;
 getDeploymentProperty[ data_Association, "AgentToolsObject" ] := deploymentAgentToolsObject @ normalizeDeploymentData @ data;
 
@@ -217,6 +217,15 @@ primaryMCPServerObject[ data_Association ] :=
     ];
 
 primaryMCPServerObject // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*deploymentLLMConfiguration*)
+deploymentLLMConfiguration // beginDefinition;
+deploymentLLMConfiguration[ server_MCPServerObject ] := server[ "LLMConfiguration" ];
+(* Skills-only deployments have no primary server, and a recorded server might no longer exist *)
+deploymentLLMConfiguration[ other: _Missing | _Failure ] := other;
+deploymentLLMConfiguration // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
