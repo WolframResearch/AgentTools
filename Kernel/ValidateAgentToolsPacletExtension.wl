@@ -815,8 +815,8 @@ skillDataProblems[ data_Association, name_String ] :=
             AppendTo[ problems, "\"" <> name <> "\" is not a valid skill name (1 to 64 lowercase letters, digits, and hyphens, without leading, trailing, or consecutive hyphens)" ]
         ];
 
-        If[ ! (StringQ @ description && 1 <= StringLength @ description <= $maxSkillDescriptionLength),
-            AppendTo[ problems, "the description must be a string of 1 to " <> ToString @ $maxSkillDescriptionLength <> " characters" ]
+        If[ ! agentSkillDescriptionQ @ description,
+            AppendTo[ problems, "the description must be a string of 1 to " <> ToString @ $maxSkillDescriptionLength <> " characters that are not all whitespace" ]
         ];
 
         If[ ! StringQ @ Lookup[ data, "Body" ],

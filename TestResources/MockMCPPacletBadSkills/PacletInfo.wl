@@ -10,6 +10,7 @@ PacletObject[<|
                 "mismatch-skill",
                 "Bad_Name",
                 "no-description",
+                "blank-description",
                 "long-description",
                 "not-a-skill",
                 "bad-location-skill"

@@ -246,7 +246,7 @@ A definition file evaluates to an `LLMSkill[...]` or to an association:
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
 | `"Name"` | String | Yes | Skill name; must equal the declared name |
-| `"Description"` | String | Yes | 1 to 1024 characters; tells the agent when to use the skill |
+| `"Description"` | String | Yes | 1 to 1024 characters, not all whitespace; tells the agent when to use the skill |
 | `"Body"` | String | Yes | Markdown instructions (the body of the generated `SKILL.md`) |
 | `"License"`, `"Compatibility"`, `"AllowedTools"`, `"Metadata"`, `"AdditionalFrontmatter"` | | No | Additional frontmatter |
 

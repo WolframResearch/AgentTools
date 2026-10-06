@@ -80,7 +80,7 @@ Ad hoc names may not contain `/` or equal a built-in bundle name.
 | `"Publisher/Paclet/skill-name"` | A paclet-defined skill |
 | `"skill-name"` | A built-in skill (`"wolfram-alpha"`, `"wolfram-language"`, `"wolfram-notebooks"`, `"wolfram-paclets"`); other names fail with `AgentSkillNotFound` |
 
-Skill names must be 1–64 lowercase letters, digits, and hyphens (no leading, trailing, or consecutive hyphens), and skills need a description of 1–1024 characters.
+Skill names must be 1–64 lowercase letters, digits, and hyphens (no leading, trailing, or consecutive hyphens), and skills need a description of 1–1024 characters that are not all whitespace.
 
 ### Properties
 

@@ -99,15 +99,22 @@ validateSkillName // endDefinition;
 (*validateSkillDescription*)
 (* Clients skip skills without a description, so installing one would silently do nothing. *)
 validateSkillDescription // beginDefinition;
-
-validateSkillDescription[ name_, description_String ] /;
-    StringLength @ description <= 1024 && ! StringMatchQ[ description, WhitespaceCharacter... ] :=
-        description;
-
-validateSkillDescription[ name_, _ ] :=
-    throwFailure[ "InvalidAgentSkillDescription", name ];
-
+validateSkillDescription[ name_, description_? agentSkillDescriptionQ ] := description;
+validateSkillDescription[ name_, _ ] := throwFailure[ "InvalidAgentSkillDescription", name ];
 validateSkillDescription // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*agentSkillDescriptionQ*)
+(* Agent Skills description rules: 1-1024 characters, which must not all be whitespace. *)
+agentSkillDescriptionQ // beginDefinition;
+
+agentSkillDescriptionQ[ description_String ] :=
+    StringLength @ description <= 1024 && ! StringMatchQ[ description, WhitespaceCharacter... ];
+
+agentSkillDescriptionQ[ _ ] := False;
+
+agentSkillDescriptionQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

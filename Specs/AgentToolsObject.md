@@ -133,7 +133,7 @@ All forms normalize (`toAgentSkillSource[ spec ]`, or `toAgentSkillSource[ spec,
 
 Names must satisfy the Agent Skills rules: 1–64 characters, lowercase ASCII letters, digits, and hyphens, no leading/trailing hyphen, no `--` (`^[a-z0-9]+(-[a-z0-9]+)*$`). Invalid names fail with `InvalidAgentSkillName` at install time **and** are rejected by `UninstallAgentSkills` before any path is built (so `""`, `".."`, or `"a/b"` can never resolve to the skills root or outside it). For paclet skills the declared name must equal the skill's name (`InvalidPacletSkillDefinition` otherwise).
 
-Descriptions must be non-empty strings of at most 1024 characters (`InvalidAgentSkillDescription`); clients skip skills without a description, so installing one would silently do nothing.
+Descriptions must be strings of at most 1024 characters that are not empty or all whitespace (`InvalidAgentSkillDescription`); clients skip skills without a description, so installing one would silently do nothing.
 
 ### Generated `SKILL.md`
 

@@ -212,6 +212,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 
 (* Agent skills (AgentSkills.wl): *)
 `$defaultAgentSkills;
+`agentSkillDescriptionQ;
 `agentSkillName;
 `agentSkillNameQ;
 `applySkillInstallPlan;
