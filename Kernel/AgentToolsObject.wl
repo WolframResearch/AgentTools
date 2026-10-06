@@ -57,6 +57,7 @@ $defaultAgentTools = <| |>;
 (*Wolfram*)
 $defaultAgentTools[ "Wolfram" ] = <|
     "Name"        -> "Wolfram",
+    "Description" -> "Tools for general computation and knowledge",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "Wolfram" },
     "AgentSkills" -> { }
@@ -67,6 +68,7 @@ $defaultAgentTools[ "Wolfram" ] = <|
 (*WolframAlpha*)
 $defaultAgentTools[ "WolframAlpha" ] = <|
     "Name"        -> "WolframAlpha",
+    "Description" -> "Tools for Wolfram|Alpha natural language queries",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframAlpha" },
     "AgentSkills" -> { }
@@ -77,6 +79,7 @@ $defaultAgentTools[ "WolframAlpha" ] = <|
 (*WolframLanguage*)
 $defaultAgentTools[ "WolframLanguage" ] = <|
     "Name"        -> "WolframLanguage",
+    "Description" -> "Tools for Wolfram Language development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframLanguage" },
     "AgentSkills" -> { }
@@ -87,6 +90,7 @@ $defaultAgentTools[ "WolframLanguage" ] = <|
 (*WolframPacletDevelopment*)
 $defaultAgentTools[ "WolframPacletDevelopment" ] = <|
     "Name"        -> "WolframPacletDevelopment",
+    "Description" -> "Tools for Wolfram Paclet development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframPacletDevelopment" },
     "AgentSkills" -> { }

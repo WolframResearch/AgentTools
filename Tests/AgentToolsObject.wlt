@@ -99,9 +99,9 @@ VerificationTest[
 
 VerificationTest[
     $wolfram[ "Description" ],
-    _Missing,
+    _String,
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-BuiltIn-NoDescription@@Tests/AgentToolsObject.wlt:100,1-105,2"
+    TestID   -> "AgentToolsObject-BuiltIn-Description@@Tests/AgentToolsObject.wlt:100,1-105,2"
 ]
 
 VerificationTest[
@@ -485,6 +485,17 @@ VerificationTest[
     TestID   -> "AgentToolsObject-Formatting-AdHoc@@Tests/AgentToolsObject.wlt:481,1-486,2"
 ]
 
+VerificationTest[
+    With[ { boxes = ToString[ ToBoxes @ $wolfram, InputForm ] },
+        {
+            StringContainsQ[ boxes, "Tools for general computation and knowledge" ],
+            StringFreeQ[ boxes, "TruncateStringToWidth" ]
+        }
+    ],
+    { True, True },
+    TestID -> "AgentToolsObject-Formatting-Description@@Tests/AgentToolsObject.wlt:488,1-497,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Cleanup*)
@@ -493,7 +504,7 @@ VerificationTest[
     PacletDirectoryUnload @ $mockPacletDirectory;
     True,
     True,
-    TestID -> "Cleanup@@Tests/AgentToolsObject.wlt:491,1-497,2"
+    TestID -> "Cleanup@@Tests/AgentToolsObject.wlt:502,1-508,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

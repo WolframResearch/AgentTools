@@ -94,9 +94,31 @@ toolName // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*summaryItem*)
 summaryItem // beginDefinition;
+summaryItem[ "Description", d_ ] := { BoxForm`SummaryItem @ { niceLabel[ "Description" ], formatDescription @ d } };
 summaryItem[ _, _Missing ] := Nothing;
 summaryItem[ label_, value_ ] := { BoxForm`SummaryItem @ { niceLabel @ label, value } };
 summaryItem // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatDescription*)
+formatDescription // beginDefinition;
+
+formatDescription[ _Missing ] :=
+    Style[ "None", FontColor -> Gray ];
+
+formatDescription[ description_String ] :=
+    Module[ { short },
+        (* Truncate long descriptions: *)
+        short = FE`Evaluate @ FEPrivate`TruncateStringToWidth[ description, "SummaryPanel", 250, Right ];
+        (* If truncated, show a tooltip with the full description (without a front end, short stays unevaluated): *)
+        If[ StringQ @ short && StringLength @ short < StringLength @ description,
+            Tooltip[ short, description ],
+            description
+        ]
+    ];
+
+formatDescription // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -118,7 +140,7 @@ makeAgentToolsObjectBoxes[ obj_AgentToolsObject, fmt_ ] :=
     BoxForm`ArrangeSummaryBox[
         AgentToolsObject,
         obj,
-        makeMCPServerIcon @ obj,
+        None, (* TODO: Add a suitable icon *)
         makeAgentToolsSummaryRows @ obj,
         makeAgentToolsHiddenRows @ obj,
         fmt
@@ -132,9 +154,8 @@ makeAgentToolsObjectBoxes // endDefinition;
 makeAgentToolsSummaryRows // beginDefinition;
 
 makeAgentToolsSummaryRows[ obj_ ] := Flatten @ {
-    summaryItem[ "Name"        , obj[ "Name" ] ],
-    summaryItem[ "MCP Servers" , nameList @ obj[ "MCPServerNames" ] ],
-    summaryItem[ "Agent Skills", nameList @ obj[ "AgentSkillNames" ] ]
+    summaryItem[ "Name"       , obj[ "Name" ] ],
+    summaryItem[ "Description", obj[ "Description" ] ]
 };
 
 makeAgentToolsSummaryRows // endDefinition;
@@ -145,8 +166,9 @@ makeAgentToolsSummaryRows // endDefinition;
 makeAgentToolsHiddenRows // beginDefinition;
 
 makeAgentToolsHiddenRows[ obj_ ] := Flatten @ {
-    summaryItem[ "Description", obj[ "Description" ] ],
-    summaryItem[ "Location"   , obj[ "Location" ] ]
+    summaryItem[ "MCP Servers" , nameList @ obj[ "MCPServerNames" ] ],
+    summaryItem[ "Agent Skills", nameList @ obj[ "AgentSkillNames" ] ],
+    summaryItem[ "Location"    , obj[ "Location" ] ]
 };
 
 makeAgentToolsHiddenRows // endDefinition;
@@ -155,8 +177,8 @@ makeAgentToolsHiddenRows // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*nameList*)
 nameList // beginDefinition;
-nameList[ { } ] := Style[ "None", Gray ];
-nameList[ names: { __ } ] := Row[ names, ", " ];
+nameList[ { } ] := Missing[ ];
+nameList[ names: { __ } ] := Multicolumn[ names, 5 ];
 nameList[ other_ ] := other;
 nameList // endDefinition;
 
