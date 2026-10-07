@@ -166,10 +166,140 @@ validateCommandLineArguments // endDefinition;
 (* ::Subsection::Closed:: *)
 (*resolveMCPServerName*)
 resolveMCPServerName // beginDefinition;
-resolveMCPServerName[ obj_MCPServerObject ] := resolveMCPServerName[ $installMCPServerName, obj ];
-resolveMCPServerName[ name_String, _ ] := name;
-resolveMCPServerName[ Automatic, obj_MCPServerObject ] := Replace[ Quiet @ obj[ "MCPServerName" ], Except[ _String ] :> obj[ "Name" ] ];
+resolveMCPServerName[ obj_MCPServerObject ] := mcpServerConfigKey[ obj, $installMCPServerName ];
 resolveMCPServerName // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*mcpServerConfigKey*)
+(* The key under which a server is written into a client's configuration file: the "MCPServerName" option if it is a
+   string, otherwise the server's "MCPServerName" property (e.g. "Wolfram" for every built-in server, or the short item
+   name for a paclet server), falling back to the server's "Name". *)
+mcpServerConfigKey // beginDefinition;
+mcpServerConfigKey[ obj_MCPServerObject, name_String ] := name;
+mcpServerConfigKey[ obj_MCPServerObject, _ ] := Replace[ Quiet @ obj[ "MCPServerName" ], Except[ _String ] :> obj[ "Name" ] ];
+mcpServerConfigKey // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*localMCPServerConfigKey*)
+(* Derives the configuration key of a server from its name and recorded InstallMCPServer options without any network
+   access (unlike MCPServerObject, which falls back to PacletFindRemote for uninstalled paclets). This is used for
+   deployment records that only recorded the server name. In order:
+     1. the "MCPServerName" option, if it is a string
+     2. a user server with that name (an existing Metadata.wxf), which takes precedence over built-in servers just
+        like in MCPServerObject[ name ]
+     3. a built-in server
+     4. a paclet server whose paclet is installed (falling back to the item name if the definition can't be loaded)
+     5. the last "/"-separated segment of the name (the default key for an uninstalled paclet server)
+   Never throws for servers that can't be resolved. *)
+localMCPServerConfigKey // beginDefinition;
+
+localMCPServerConfigKey[ name_String, options_Association ] :=
+    Replace[ Lookup[ options, "MCPServerName" ], Except[ _String ] :> localMCPServerConfigKey @ name ];
+
+localMCPServerConfigKey[ name_String ] :=
+    Replace[ Quiet @ catchAlways @ resolveLocalMCPServerConfigKey @ name, Except[ _String ] :> lastNameSegment @ name ];
+
+localMCPServerConfigKey // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*resolveLocalMCPServerConfigKey*)
+resolveLocalMCPServerConfigKey // beginDefinition;
+
+resolveLocalMCPServerConfigKey[ name_String ] := Enclose[
+    Catch @ Module[ { file, data, parsed, definition },
+
+        (* User servers *)
+        file = ConfirmBy[ mcpServerFile @ name, fileQ, "File" ];
+        If[ FileExistsQ @ file,
+            data = Quiet @ readWXFFile @ file;
+            If[ AssociationQ @ data,
+                Throw @ Replace[ Lookup[ data, "MCPServerName" ], Except[ _String ] :> Lookup[ data, "Name" ] ]
+            ]
+        ];
+
+        (* Built-in servers *)
+        If[ KeyExistsQ[ $DefaultMCPServers, name ],
+            Throw @ mcpServerConfigKey[ $DefaultMCPServers @ name, Automatic ]
+        ];
+
+        (* Paclet servers (installed paclets only) *)
+        If[ pacletQualifiedNameQ @ name,
+            parsed = ConfirmBy[ parsePacletQualifiedName @ name, AssociationQ, "Parsed" ];
+            If[ MatchQ[ PacletFind @ parsed[ "PacletName" ], { __PacletObject } ],
+                definition = Quiet @ catchAlways @ resolvePacletServer @ name;
+                Throw @ Replace[
+                    If[ AssociationQ @ definition, Lookup[ definition, "MCPServerName" ], Missing[ ] ],
+                    Except[ _String ] :> parsed[ "ItemName" ]
+                ]
+            ]
+        ];
+
+        Missing[ "NotFound", name ]
+    ],
+    throwInternalFailure
+];
+
+resolveLocalMCPServerConfigKey // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*lastNameSegment*)
+lastNameSegment // beginDefinition;
+lastNameSegment[ name_String ] := Replace[ StringSplit[ name, "/" ], { { ___, last_String } :> last, _ :> name } ];
+lastNameSegment // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*preflightMCPServerInstall*)
+(* Everything InstallMCPServer checks before it writes anything, given InstallMCPServer options: installs the paclet of
+   a paclet server, validates the options, runs the LLMKit check (honoring "VerifyLLMKit" and "EnableLLMKit"),
+   initializes the tools, and validates paclet definitions. DeployAgentTools runs this for every server of a bundle
+   before modifying any files, so these failures can't leave a partially deployed bundle behind. Returns Null or throws
+   a failure; nothing is written (other than installing a missing paclet). *)
+preflightMCPServerInstall // beginDefinition;
+
+preflightMCPServerInstall[ server0_MCPServerObject, opts: OptionsPattern[ ] ] := Enclose[
+    Module[ { installOpts, server, appName, devMode },
+
+        installOpts = FilterRules[ Flatten @ { opts }, Options @ InstallMCPServer ];
+        server = ConfirmBy[ ensureMCPServerExists @ server0, MCPServerObjectQ, "Server" ];
+
+        (* Like InstallMCPServer, installing a paclet server is an execution-level operation that installs its paclet.
+           Only servers that come from a paclet are checked, since a user server's name may also contain "/". *)
+        If[ MatchQ[ server[ "Location" ], _PacletObject ] && pacletQualifiedNameQ @ server[ "Name" ],
+            ConfirmMatch[ ensurePacletForInstall @ server[ "Name" ], _PacletObject, "EnsurePaclet" ]
+        ];
+
+        (* Option validation *)
+        appName = OptionValue[ InstallMCPServer, installOpts, "ApplicationName" ];
+        If[ ! MatchQ[ appName, Automatic | _String ], throwFailure[ "InvalidApplicationName", appName ] ];
+        validateToolOptions[ OptionValue[ InstallMCPServer, installOpts, "ToolOptions" ], server ];
+        validateSubmitUsageData @ OptionValue[ InstallMCPServer, installOpts, "SubmitUsageData" ];
+        validateWolframCommand @ OptionValue[ InstallMCPServer, installOpts, "WolframCommand" ];
+        validateCommandLineArguments @ OptionValue[ InstallMCPServer, installOpts, "CommandLineArguments" ];
+        devMode = OptionValue[ InstallMCPServer, installOpts, "DevelopmentMode" ];
+        If[ devMode =!= False,
+            ConfirmMatch[ makeDevelopmentArgs @ devMode, { __String }, "DevelopmentArgs" ]
+        ];
+
+        (* The same checks that installMCPServer performs before writing the configuration *)
+        Block[ { $enableLLMKit = OptionValue[ InstallMCPServer, installOpts, "EnableLLMKit" ] },
+            If[ TrueQ @ OptionValue[ InstallMCPServer, installOpts, "VerifyLLMKit" ],
+                ConfirmMatch[ checkLLMKitRequirements @ server, _String|None, "LLMKitCheck" ]
+            ]
+        ];
+        initializeTools @ server;
+        Confirm[ validatePacletServerDefinitions @ server, "ValidatePacletServerDefinitions" ];
+
+        Null
+    ],
+    throwInternalFailure
+];
+
+preflightMCPServerInstall // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -614,6 +744,56 @@ clearRecordedInstallation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*clearMCPInstallationRecord*)
+(* Removes the installation records for a configuration file from a server's Installations.wxf by server name. Unlike
+   clearRecordedInstallation, this never resolves the MCPServerObject (which could require network access or fail for
+   a server that no longer exists), so it can be used when removing deployments. The file is deleted when no records
+   remain. Returns the remaining records ({ } if there was no file). *)
+clearMCPInstallationRecord // beginDefinition;
+
+clearMCPInstallationRecord[ serverName_String, configFile: _File | _String ] := Enclose[
+    Catch @ Module[ { target, file, existing, remaining },
+        target = ConfirmBy[ expandConfigFile @ configFile, fileQ, "Target" ];
+        file = ConfirmBy[ fileNameJoin[ mcpServerDirectory @ serverName, "Installations.wxf" ], fileQ, "File" ];
+        If[ ! FileExistsQ @ file, Throw @ { } ];
+
+        existing = Quiet @ readWXFFile @ file;
+        If[ ! ListQ @ existing, Throw @ { } ];
+
+        remaining = DeleteCases[ existing, _? (installationRecordFileQ[ #, target ] &) ];
+
+        Which[
+            remaining === { }, Quiet @ DeleteFile @ file,
+            remaining =!= existing, ConfirmBy[ writeWXFFile[ file, remaining ], FileExistsQ, "Export" ]
+        ];
+
+        remaining
+    ],
+    throwInternalFailure
+];
+
+clearMCPInstallationRecord // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*installationRecordFileQ*)
+(* Whether an installation record refers to the given (expanded) configuration file. Legacy records are just the
+   configuration file. *)
+installationRecordFileQ // beginDefinition;
+installationRecordFileQ[ KeyValuePattern[ "ConfigurationFile" -> file_ ], target_File ] := installationRecordFileQ[ file, target ];
+installationRecordFileQ[ file: _File | _String, target_File ] := Quiet @ expandConfigFile @ file === target;
+installationRecordFileQ[ _, _File ] := False;
+installationRecordFileQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*expandConfigFile*)
+expandConfigFile // beginDefinition;
+expandConfigFile[ file: _File | _String ] := File @ ExpandFileName @ file;
+expandConfigFile // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*mcpServerInstallations*)
 mcpServerInstallations // beginDefinition;
 
@@ -670,7 +850,7 @@ guessClientName[ file_? fileQ ] := Enclose[
     Catch @ Module[ { clientNames, client, split, extension, format },
 
         (* Check if the file explicitly matches a client's global install location *)
-        clientNames = Keys @ $SupportedMCPClients;
+        clientNames = Keys @ Select[ $SupportedClients, KeyExistsQ[ #, "InstallLocation" ] & ];
         client = SelectFirst[ clientNames, Quiet @ catchAlways @ installLocation @ # === file & ];
         If[ StringQ @ client, Throw @ client ];
 
@@ -1063,11 +1243,11 @@ configKeyPath[ file_? fileQ ] := configKeyPath[ $installClientName, file ];
 configKeyPath[ "VisualStudioCode", File[ path_String ] ] /;
     ToLowerCase @ FileNameTake @ path === "settings.json" := { "mcp", "servers" };
 
-configKeyPath[ name_String, _ ] /; KeyExistsQ[ $supportedMCPClients, name ] :=
-    $supportedMCPClients[ name, "ConfigKey" ];
+configKeyPath[ name_String, _ ] /; KeyExistsQ[ $supportedClients, name ] :=
+    $supportedClients[ name, "ConfigKey" ];
 
-configKeyPath[ name_String ] /; KeyExistsQ[ $supportedMCPClients, name ] :=
-    $supportedMCPClients[ name, "ConfigKey" ];
+configKeyPath[ name_String ] /; KeyExistsQ[ $supportedClients, name ] :=
+    $supportedClients[ name, "ConfigKey" ];
 
 configKeyPath[ _ ] := { "mcpServers" };
 configKeyPath[ _, _ ] := { "mcpServers" };
@@ -1099,7 +1279,7 @@ ensureNestedKey // endDefinition;
 (* ::Subsection::Closed:: *)
 (*serverConverter*)
 serverConverter // beginDefinition;
-serverConverter[ name_String ] := Replace[ $supportedMCPClients[ name, "ServerConverter" ], _Missing -> Identity ];
+serverConverter[ name_String ] := Replace[ $supportedClients[ name, "ServerConverter" ], _Missing -> Identity ];
 serverConverter[ _ ] := Identity;
 serverConverter // endDefinition;
 
@@ -1218,6 +1398,25 @@ readExistingContinueConfig[ file_ ] := Enclose[
 readExistingContinueConfig // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*readExistingCodexConfig*)
+(* TOML counterpart to readExistingMCPConfig for removing entries. The TOML reader is lenient, so the only failure is a
+   file that can't be read as text (e.g. a directory or a file without read permission), which surfaces as
+   InvalidMCPConfiguration instead of an internal failure. *)
+readExistingCodexConfig // beginDefinition;
+
+readExistingCodexConfig[ file_ ] := Enclose[
+    Module[ { content },
+        content = Quiet @ ReadString @ ExpandFileName @ file;
+        If[ ! MatchQ[ content, _String | EndOfFile ], throwFailure[ "InvalidMCPConfiguration", file ] ];
+        ConfirmBy[ readTOMLFile @ file, AssociationQ, "TOML" ]
+    ],
+    throwInternalFailure
+];
+
+readExistingCodexConfig // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*UninstallMCPServer*)
 UninstallMCPServer // beginDefinition;
@@ -1297,145 +1496,21 @@ allMCPServers // endDefinition;
 (*uninstallMCPServer*)
 uninstallMCPServer // beginDefinition;
 
-uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName === "Codex" := Enclose[
-    Catch @ Module[ { target, name, configName, existing, mcpServers, updated },
-
-        target     = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
-        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
-
-        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
-        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
-
-        (* Read existing TOML config *)
-        existing = ConfirmBy[ readTOMLFile @ target, AssociationQ, "ExistingTOML" ];
-
-        (* Check if server exists *)
-        mcpServers = getMCPServers @ existing;
-        If[ ! KeyExistsQ[ mcpServers, configName ], Throw @ Missing[ "NotInstalled", target ] ];
-
-        (* Remove the server *)
-        updated = ConfirmBy[ removeMCPServer[ existing, configName ], AssociationQ, "UpdatedTOML" ];
-
-        (* Write back *)
-        ConfirmBy[ writeTOMLFile[ target, updated[ "Data" ], updated ], fileQ, "Export" ];
-        ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
-
-        uninstallSuccess[ name, target, obj ]
-    ],
-    throwInternalFailure
-];
-
-(* Augment Code VS Code extension: remove an entry matched by "name" from the
-   root-level JSON array. *)
-uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName === "AugmentCodeIDE" := Enclose[
-    Catch @ Module[ { target, name, configName, existing, filtered },
-
-        target = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
-        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
-
-        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
-        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
-
-        existing = ConfirmBy[ readExistingAugmentCodeIDEConfig @ target, ListQ, "Existing" ];
-        filtered = DeleteCases[ existing, KeyValuePattern @ { "name" -> configName } ];
-
-        If[ Length @ filtered === Length @ existing,
-            Throw @ Missing[ "NotInstalled", target ]
-        ];
-
-        ConfirmBy[ writeRawJSONFile[ target, filtered ], FileExistsQ, "Export" ];
-        ConfirmAssert[ readRawJSONFile @ target === filtered, "ExportCheck" ];
-        ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
-
-        uninstallSuccess[ name, target, obj ]
-    ],
-    throwInternalFailure
-];
-
-(* Continue: filter the `mcpServers` array by entry's `name` field. *)
-uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName === "Continue" := Enclose[
-    Catch @ Module[ { target, name, configName, existing, entries, filtered },
-
-        target = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
-        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
-
-        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
-        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
-
-        existing = ConfirmBy[ readExistingContinueConfig @ target, AssociationQ, "Existing" ];
-        entries  = Lookup[ existing, "mcpServers", { } ];
-
-        If[ ! ListQ @ entries,
-            Throw @ Missing[ "NotInstalled", target ]
-        ];
-
-        filtered = DeleteCases[ entries, KeyValuePattern @ { "name" -> configName } ];
-
-        If[ Length @ filtered === Length @ entries,
-            Throw @ Missing[ "NotInstalled", target ]
-        ];
-
-        existing[ "mcpServers" ] = filtered;
-
-        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
-        ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
-
-        uninstallSuccess[ name, target, obj ]
-    ],
-    throwInternalFailure
-];
-
-uninstallMCPServer[ target0_File, obj_MCPServerObject ] /; $installClientName === "Goose" := Enclose[
-    Catch @ Module[ { target, name, configName, existing, extensions },
-
-        target     = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
-        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
-
-        name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
-        configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
-
-        (* Read existing YAML config via the same helper as the install path so
-           parse failures surface as InvalidMCPConfiguration rather than an
-           internal failure, and the file is never rewritten. *)
-        existing = ConfirmBy[ readExistingGooseConfig @ target, AssociationQ, "Existing" ];
-        extensions = Lookup[ existing, "extensions", <| |> ];
-
-        If[ ! AssociationQ @ extensions || ! KeyExistsQ[ extensions, configName ],
-            Throw @ Missing[ "NotInstalled", target ]
-        ];
-
-        KeyDropFrom[ extensions, configName ];
-        existing[ "extensions" ] = extensions;
-
-        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
-        ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
-
-        uninstallSuccess[ name, target, obj ]
-    ],
-    throwInternalFailure
-];
-
 uninstallMCPServer[ target0_File, obj_MCPServerObject ] := Enclose[
-    Catch @ Module[ { target, name, configName, existing, path },
+    Catch @ Module[ { target, name, configName, removed },
 
-        target     = ConfirmBy[ ensureFilePath @ target0, fileQ, "Target" ];
-        If[ ! FileExistsQ @ target, Throw @ Missing[ "NotInstalled", target ] ];
-
+        target     = ConfirmBy[ expandConfigFile @ target0, fileQ, "Target" ];
         name       = ConfirmBy[ obj[ "Name" ], StringQ, "Name" ];
         configName = ConfirmBy[ resolveMCPServerName @ obj, StringQ, "ConfigName" ];
-        existing   = ConfirmBy[ readExistingMCPConfig @ target, AssociationQ, "Existing" ];
 
-        path = ConfirmMatch[ configKeyPath @ target, { __String }, "ConfigKeyPath" ];
-
-        With[ { keys = Sequence @@ path },
-            If[ ! AssociationQ @ existing[ keys ], Throw @ Missing[ "NotInstalled", target ] ];
-            If[ ! KeyExistsQ[ existing[ keys ], configName ], Throw @ Missing[ "NotInstalled", target ] ];
-            KeyDropFrom[ existing[ keys ], configName ]
+        removed = ConfirmMatch[
+            removeMCPConfigEntry[ target, $installClientName, configName ],
+            True | Missing[ "NotInstalled", _ ],
+            "Remove"
         ];
 
-        ConfirmBy[ writeRawJSONFile[ target, existing ], FileExistsQ, "Export" ];
+        If[ MissingQ @ removed, Throw @ removed ];
 
-        ConfirmAssert[ readRawJSONFile @ target === existing, "ExportCheck" ];
         ConfirmMatch[ clearRecordedInstallation[ target, obj ], { ___Association }, "Clear" ];
 
         uninstallSuccess[ name, target, obj ]
@@ -1444,6 +1519,131 @@ uninstallMCPServer[ target0_File, obj_MCPServerObject ] := Enclose[
 ];
 
 uninstallMCPServer // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*removeMCPConfigEntry*)
+(* Removes the entry with the given configuration key from a client's MCP configuration file, using the file format of
+   the client (clientName is None for an unknown client, which uses the generic JSON format). This is shared by
+   UninstallMCPServer and DeleteObject[ AgentToolsDeployment[ ... ] ], which only knows the recorded configuration key.
+   Returns True if an entry was removed, or Missing[ "NotInstalled", file ] if the file or the entry doesn't exist (in
+   which case nothing is written). Throws InvalidMCPConfiguration if the file can't be parsed, so a file that the user
+   has been editing by hand is never rewritten. *)
+removeMCPConfigEntry // beginDefinition;
+
+removeMCPConfigEntry[ file_File, clientName: _String|None, configKey_String ] := Enclose[
+    Module[ { target },
+        target = ConfirmBy[ expandConfigFile @ file, fileQ, "Target" ];
+        If[ FileExistsQ @ target,
+            Block[ { $installClientName = toInstallName @ clientName },
+                removeMCPConfigEntry0[ $installClientName, target, configKey ]
+            ],
+            Missing[ "NotInstalled", target ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+removeMCPConfigEntry // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*removeMCPConfigEntry0*)
+removeMCPConfigEntry0 // beginDefinition;
+
+(* Codex: TOML file with servers under [mcp_servers.<name>] *)
+removeMCPConfigEntry0[ "Codex", target_File, configKey_String ] := Enclose[
+    Catch @ Module[ { existing, servers, updated },
+        existing = ConfirmBy[ readExistingCodexConfig @ target, AssociationQ, "Existing" ];
+        servers  = getMCPServers @ existing;
+
+        If[ ! AssociationQ @ servers || ! KeyExistsQ[ servers, configKey ],
+            Throw @ Missing[ "NotInstalled", target ]
+        ];
+
+        updated = ConfirmBy[ removeMCPServer[ existing, configKey ], AssociationQ, "UpdatedTOML" ];
+        ConfirmBy[ writeTOMLFile[ target, updated[ "Data" ], updated ], fileQ, "Export" ];
+        True
+    ],
+    throwInternalFailure
+];
+
+(* Augment Code VS Code extension: remove an entry matched by "name" from the root-level JSON array. *)
+removeMCPConfigEntry0[ "AugmentCodeIDE", target_File, configKey_String ] := Enclose[
+    Catch @ Module[ { existing, filtered },
+        existing = ConfirmBy[ readExistingAugmentCodeIDEConfig @ target, ListQ, "Existing" ];
+        filtered = DeleteCases[ existing, KeyValuePattern @ { "name" -> configKey } ];
+
+        If[ Length @ filtered === Length @ existing, Throw @ Missing[ "NotInstalled", target ] ];
+
+        ConfirmBy[ writeRawJSONFile[ target, filtered ], FileExistsQ, "Export" ];
+        ConfirmAssert[ readRawJSONFile @ target === filtered, "ExportCheck" ];
+        True
+    ],
+    throwInternalFailure
+];
+
+(* Continue: filter the `mcpServers` array by entry's `name` field (global config.yaml and project block files). *)
+removeMCPConfigEntry0[ "Continue", target_File, configKey_String ] := Enclose[
+    Catch @ Module[ { existing, entries, filtered },
+        existing = ConfirmBy[ readExistingContinueConfig @ target, AssociationQ, "Existing" ];
+        entries  = Lookup[ existing, "mcpServers", { } ];
+
+        If[ ! ListQ @ entries, Throw @ Missing[ "NotInstalled", target ] ];
+
+        filtered = DeleteCases[ entries, KeyValuePattern @ { "name" -> configKey } ];
+
+        If[ Length @ filtered === Length @ entries, Throw @ Missing[ "NotInstalled", target ] ];
+
+        existing[ "mcpServers" ] = filtered;
+        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
+        True
+    ],
+    throwInternalFailure
+];
+
+(* Goose: YAML file with servers under the `extensions` mapping. The file is read via the same helper as the install
+   path so parse failures surface as InvalidMCPConfiguration rather than an internal failure, and the file is never
+   rewritten. *)
+removeMCPConfigEntry0[ "Goose", target_File, configKey_String ] := Enclose[
+    Catch @ Module[ { existing, extensions },
+        existing   = ConfirmBy[ readExistingGooseConfig @ target, AssociationQ, "Existing" ];
+        extensions = Lookup[ existing, "extensions", <| |> ];
+
+        If[ ! AssociationQ @ extensions || ! KeyExistsQ[ extensions, configKey ],
+            Throw @ Missing[ "NotInstalled", target ]
+        ];
+
+        KeyDropFrom[ extensions, configKey ];
+        existing[ "extensions" ] = extensions;
+
+        ConfirmBy[ exportYAML[ target, existing ], fileQ, "Export" ];
+        True
+    ],
+    throwInternalFailure
+];
+
+(* Everything else: JSON file with servers under the client's config key path (configKeyPath reads
+   $installClientName, which also selects the legacy VS Code settings.json key path). *)
+removeMCPConfigEntry0[ _, target_File, configKey_String ] := Enclose[
+    Catch @ Module[ { existing, path },
+        existing = ConfirmBy[ readExistingMCPConfig @ target, AssociationQ, "Existing" ];
+        path     = ConfirmMatch[ configKeyPath @ target, { __String }, "ConfigKeyPath" ];
+
+        With[ { keys = Sequence @@ path },
+            If[ ! AssociationQ @ existing[ keys ], Throw @ Missing[ "NotInstalled", target ] ];
+            If[ ! KeyExistsQ[ existing[ keys ], configKey ], Throw @ Missing[ "NotInstalled", target ] ];
+            KeyDropFrom[ existing[ keys ], configKey ]
+        ];
+
+        ConfirmBy[ writeRawJSONFile[ target, existing ], FileExistsQ, "Export" ];
+        ConfirmAssert[ readRawJSONFile @ target === existing, "ExportCheck" ];
+        True
+    ],
+    throwInternalFailure
+];
+
+removeMCPConfigEntry0 // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1490,8 +1690,13 @@ installLocation[ name0_String, os0_String ] := Enclose[
         name = ConfirmBy[ toInstallName @ name0, StringQ, "Name" ];
         os = ConfirmBy[ os0, StringQ, "OperatingSystem" ];
 
-        clientData = ConfirmMatch[ Lookup[ $SupportedMCPClients, name, None ], _Association|None, "ClientData" ];
-        If[ clientData === None, throwFailure[ "UnsupportedMCPClient", name ] ];
+        clientData = ConfirmMatch[ Lookup[ $SupportedClients, name, None ], _Association|None, "ClientData" ];
+
+        (* "InstallLocation" is optional: a client might only support agent skills *)
+        If[ clientData === None || ! KeyExistsQ[ clientData, "InstallLocation" ],
+            throwFailure[ "UnsupportedMCPClient", name ]
+        ];
+
         locationSpec = ConfirmMatch[ clientData[ "InstallLocation" ], _Association|_List, "InstallLocation" ];
 
         path = ConfirmMatch[
@@ -1516,9 +1721,10 @@ projectInstallLocation // beginDefinition;
 
 projectInstallLocation[ name_String, dir_ ] := Enclose[
     Module[ { clientData, path },
-        clientData = Lookup[ $SupportedMCPClients, name, None ];
-        If[ clientData === None, throwFailure[ "UnsupportedMCPClient", name ] ];
-        ConfirmAssert[ AssociationQ @ clientData, "ClientData" ];
+        clientData = ConfirmMatch[ Lookup[ $SupportedClients, name, None ], _Association|None, "ClientData" ];
+        If[ clientData === None || ! KeyExistsQ[ clientData, "InstallLocation" ],
+            throwFailure[ "UnsupportedMCPClient", name ]
+        ];
         If[ ! TrueQ @ clientData[ "ProjectSupport" ], throwFailure[ "UnsupportedMCPClientProject", name ] ];
         path = ConfirmMatch[ Lookup[ clientData, "ProjectPath" ], { __String }, "ProjectPath" ];
         If[ path === None, throwFailure[ "UnknownProjectInstallLocation", name ] ];
@@ -1529,6 +1735,63 @@ projectInstallLocation[ name_String, dir_ ] := Enclose[
 ];
 
 projectInstallLocation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*skillsLocation*)
+(* The user-scope agent skills root of a client (the directory that contains skill folders), from its "SkillsLocation",
+   which has the same format as "InstallLocation". *)
+skillsLocation // beginDefinition;
+
+skillsLocation[ name_String ] := skillsLocation[ name, $OperatingSystem ];
+
+skillsLocation[ name0_String, os0_String ] := Enclose[
+    Module[ { name, os, clientData, locationSpec, path },
+
+        name = ConfirmBy[ toInstallName @ name0, StringQ, "Name" ];
+        os = ConfirmBy[ os0, StringQ, "OperatingSystem" ];
+
+        clientData = ConfirmMatch[ Lookup[ $SupportedClients, name, None ], _Association|None, "ClientData" ];
+        If[ clientData === None || ! KeyExistsQ[ clientData, "SkillsLocation" ],
+            throwFailure[ "UnsupportedSkillsClient", name ]
+        ];
+
+        locationSpec = ConfirmMatch[ clientData[ "SkillsLocation" ], _Association|_List, "SkillsLocation" ];
+
+        path = ConfirmMatch[
+            If[ AssociationQ @ locationSpec, Lookup[ locationSpec, os, None ], locationSpec ],
+            { __String }|None,
+            "Path"
+        ];
+
+        If[ path === None, throwFailure[ "UnknownSkillsLocation", name, os ] ];
+
+        ConfirmBy[ fileNameJoin @ path, fileQ, "Result" ]
+    ],
+    throwInternalFailure
+];
+
+skillsLocation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*projectSkillsLocation*)
+(* The project-scope agent skills root of a client: the project directory joined with its "SkillsProjectPath". *)
+projectSkillsLocation // beginDefinition;
+
+projectSkillsLocation[ name0_String, dir_ ] := Enclose[
+    Module[ { name, clientData, path },
+        name = ConfirmBy[ toInstallName @ name0, StringQ, "Name" ];
+        clientData = ConfirmMatch[ Lookup[ $SupportedClients, name, None ], _Association|None, "ClientData" ];
+        path = If[ AssociationQ @ clientData, Lookup[ clientData, "SkillsProjectPath", None ], None ];
+        If[ ! MatchQ[ path, { __String } ], throwFailure[ "UnsupportedSkillsClientProject", name ] ];
+        If[ ! MatchQ[ dir, _String | _File? fileQ ], throwFailure[ "InvalidProjectDirectory", dir ] ];
+        ConfirmBy[ fileNameJoin[ dir, path ], fileQ, "Result" ]
+    ],
+    throwInternalFailure
+];
+
+projectSkillsLocation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1542,7 +1805,7 @@ toInstallName // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*installDisplayName*)
 installDisplayName // beginDefinition;
-installDisplayName[ name_String ] := Lookup[ $supportedMCPClients, name, <| |> ][ "DisplayName" ] // Replace[ _Missing -> name ];
+installDisplayName[ name_String ] := Lookup[ $supportedClients, name, <| |> ][ "DisplayName" ] // Replace[ _Missing -> name ];
 installDisplayName[ None ] := None;
 installDisplayName // endDefinition;
 

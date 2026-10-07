@@ -12,6 +12,8 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 $rootPath           := migrateRoot @ FileNameJoin @ { $UserBaseDirectory, "ApplicationData", "Wolfram", "AgentTools" };
 $storagePath        := FileNameJoin @ { $rootPath, "Servers" };
 $deploymentsPath    := FileNameJoin @ { $rootPath, "Deployments" };
+$deploymentLockFile := FileNameJoin @ { $deploymentsPath, ".lock" };
+$skillRegistryPath  := FileNameJoin @ { $deploymentsPath, ".SkillRegistry" };
 $imagePath          := FileNameJoin @ { $rootPath, "Images"  };
 $outputLogDirectory := FileNameJoin @ { $UserBaseDirectory, "Logs", "AgentTools", "Output" };
 

@@ -383,6 +383,8 @@ Phase 2 extends the deployment record to include additional component types. The
 
 ### Skills Component
 
+> **Superseded.** Agent skills are implemented as specified in [AgentToolsObject.md](AgentToolsObject.md): skills are copied into each client's native skills directory and reference counted across deployments, and deployment records use schema version 2. The outline below is kept for history.
+
 ```wl
 "Skills" -> <|
     "Installed"  -> {"wolfram-language", "wolfram-notebooks"},

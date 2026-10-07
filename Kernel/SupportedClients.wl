@@ -8,12 +8,19 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*$SupportedMCPClients*)
-$SupportedMCPClients := WithCleanup[
-    Unprotect @ $SupportedMCPClients,
-    $SupportedMCPClients = KeySort @ AssociationMap[ clientMetadata, Keys @ $supportedMCPClients ],
-    Protect @ $SupportedMCPClients
+(*$SupportedClients*)
+$SupportedClients := WithCleanup[
+    Unprotect @ $SupportedClients,
+    $SupportedClients = KeySort @ AssociationMap[ clientMetadata, Keys @ $supportedClients ],
+    Protect @ $SupportedClients
 ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*$SupportedMCPClients*)
+(* The clients that support MCP servers (those with an "InstallLocation"). This is kept for backward compatibility and
+   is intentionally not cached, so it always reflects the current value of $SupportedClients (e.g. in a Block). *)
+$SupportedMCPClients := Select[ $SupportedClients, KeyExistsQ[ #, "InstallLocation" ] & ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -22,7 +29,7 @@ DetectedMCPClients // beginDefinition;
 
 DetectedMCPClients[ ] :=
     catchMine @ KeySelect[
-        $SupportedMCPClients,
+        Select[ $SupportedClients, KeyExistsQ[ #, "InstallLocation" ] & ],
         Quiet @ FileExistsQ @ catchAlways @ installLocation[ # ] &
     ];
 
@@ -30,71 +37,90 @@ DetectedMCPClients // endExportedDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*$supportedMCPClients*)
-$supportedMCPClients = <|
+(*$supportedClients*)
+(* "SkillsLocation" (same format as "InstallLocation") is the user-scope skills root, i.e. the directory that contains
+   skill folders, and "SkillsProjectPath" is the project-scope skills root relative to a project directory. Each client
+   uses its *native* skills directory; the shared ~/.agents/skills (.agents/skills) is only used where it is the
+   client's primary or only location, so deploying to one client does not expose skills to every client that reads the
+   shared directory. Several clients therefore share a root (Codex/Goose/Zed, CopilotCLI/VisualStudioCode,
+   AugmentCode/AugmentCodeIDE); deployments reference count the skill directories they install. User-scope locations
+   are relative to $HomeDirectory on every OS. See Specs/AgentToolsObject.md for the rationale behind each location. *)
+$supportedClients = <|
+    (* No skills locations: the Chat and Cowork tabs only use skills uploaded to the claude.ai account, and the Code tab
+       reads ~/.claude/skills, which is covered by the "ClaudeCode" client. *)
     "ClaudeDesktop" -> <|
-        "DisplayName"     -> "Claude Desktop",
-        "DefaultToolset"  -> "Wolfram",
-        "Aliases"         -> { "Claude" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://claude.ai/download",
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Claude Desktop",
+        "DefaultToolset"    -> "Wolfram",
+        "Aliases"           -> { "Claude" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://claude.ai/download",
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, "Library", "Application Support", "Claude", "claude_desktop_config.json" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Claude", "claude_desktop_config.json" }
         |>
     |>,
     "ClaudeCode" -> <|
-        "DisplayName"     -> "Claude Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://code.claude.com",
-        "ProjectPath"     -> { ".mcp.json" },
-        "InstallLocation" :> { $HomeDirectory, ".claude.json" }
+        "DisplayName"       -> "Claude Code",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://code.claude.com",
+        "ProjectPath"       -> { ".mcp.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".claude.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".claude", "skills" },
+        "SkillsProjectPath" -> { ".claude", "skills" }
     |>,
     "Continue" -> <|
-        "DisplayName"     -> "Continue",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "YAML",
-        "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToContinueFormat,
-        "URL"             -> "https://www.continue.dev/",
-        "ProjectPath"     -> { ".continue", "mcpServers", "wolfram.yaml" },
-        "InstallLocation" :> { $HomeDirectory, ".continue", "config.yaml" }
+        "DisplayName"       -> "Continue",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "YAML",
+        "ConfigKey"         -> { "mcpServers" },
+        "ServerConverter"   -> convertToContinueFormat,
+        "URL"               -> "https://www.continue.dev/",
+        "ProjectPath"       -> { ".continue", "mcpServers", "wolfram.yaml" },
+        "InstallLocation"   :> { $HomeDirectory, ".continue", "config.yaml" },
+        "SkillsLocation"    :> { $HomeDirectory, ".continue", "skills" },
+        "SkillsProjectPath" -> { ".continue", "skills" }
     |>,
     "Cursor" -> <|
-        "DisplayName"     -> "Cursor",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://www.cursor.com",
-        "InstallLocation" :> { $HomeDirectory, ".cursor", "mcp.json" }
+        "DisplayName"       -> "Cursor",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://www.cursor.com",
+        "InstallLocation"   :> { $HomeDirectory, ".cursor", "mcp.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".cursor", "skills" },
+        "SkillsProjectPath" -> { ".cursor", "skills" }
     |>,
     "GeminiCLI" -> <|
-        "DisplayName"     -> "Gemini CLI",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Gemini" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://github.com/google-gemini/gemini-cli",
-        "InstallLocation" :> { $HomeDirectory, ".gemini", "settings.json" }
+        "DisplayName"       -> "Gemini CLI",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Gemini" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://github.com/google-gemini/gemini-cli",
+        "InstallLocation"   :> { $HomeDirectory, ".gemini", "settings.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".gemini", "skills" },
+        "SkillsProjectPath" -> { ".gemini", "skills" }
     |>,
     "Goose" -> <|
-        "DisplayName"     -> "Goose",
-        "DefaultToolset"  -> "Wolfram",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "YAML",
-        "ConfigKey"       -> { "extensions" },
-        "URL"             -> "https://block.github.io/goose/",
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Goose",
+        "DefaultToolset"    -> "Wolfram",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "YAML",
+        "ConfigKey"         -> { "extensions" },
+        "URL"               -> "https://block.github.io/goose/",
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, ".config", "goose", "config.yaml" },
             "Unix"    :> { $HomeDirectory, ".config", "goose", "config.yaml" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Block", "goose", "config", "config.yaml" }
-        |>
+        |>,
+        "SkillsLocation"    :> { $HomeDirectory, ".agents", "skills" },
+        "SkillsProjectPath" -> { ".agents", "skills" }
     |>,
     (* A single entry covers the Antigravity IDE, the Antigravity 2.0 desktop app, AND the
        Antigravity CLI. They share one global MCP config file, so they MUST be one client
@@ -113,187 +139,223 @@ $supportedMCPClients = <|
 
        Workspace path (ProjectPath): the CLI reads project-scoped servers from
        .agents/mcp_config.json, so InstallMCPServer[{"Antigravity"|"AntigravityCLI", dir}]
-       writes there. *)
+       writes there.
+
+       Skills (antigravitySkillsLocation): the same .migrated marker decides between
+       ~/.gemini/config/skills and the legacy ~/.gemini/antigravity/skills. Workspace skills
+       live in .agents/skills. *)
     "Antigravity" -> <|
-        "DisplayName"     -> "Antigravity",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "GoogleAntigravity", "AntigravityCLI", "GoogleAntigravityCLI" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://antigravity.google",
-        "ProjectPath"     -> { ".agents", "mcp_config.json" },
-        "InstallLocation" :> antigravityInstallLocation[ ]
+        "DisplayName"       -> "Antigravity",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "GoogleAntigravity", "AntigravityCLI", "GoogleAntigravityCLI" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://antigravity.google",
+        "ProjectPath"       -> { ".agents", "mcp_config.json" },
+        "InstallLocation"   :> antigravityInstallLocation[ ],
+        "SkillsLocation"    :> antigravitySkillsLocation[ ],
+        "SkillsProjectPath" -> { ".agents", "skills" }
     |>,
     "AugmentCode" -> <|
-        "DisplayName"     -> "Augment Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Auggie", "Augment" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToAugmentCodeFormat,
-        "URL"             -> "https://www.augmentcode.com",
-        "InstallLocation" :> { $HomeDirectory, ".augment", "settings.json" }
+        "DisplayName"       -> "Augment Code",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Auggie", "Augment" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "ServerConverter"   -> convertToAugmentCodeFormat,
+        "URL"               -> "https://www.augmentcode.com",
+        "InstallLocation"   :> { $HomeDirectory, ".augment", "settings.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".augment", "skills" },
+        "SkillsProjectPath" -> { ".augment", "skills" }
     |>,
     "AugmentCodeIDE" -> <|
-        "DisplayName"     -> "Augment Code IDE",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "AugmentIDE", "AuggieIDE" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { },
-        "ServerConverter" -> convertToAugmentCodeIDEFormat,
-        "URL"             -> "https://marketplace.visualstudio.com/items?itemName=augment.vscode-augment",
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Augment Code IDE",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "AugmentIDE", "AuggieIDE" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { },
+        "ServerConverter"   -> convertToAugmentCodeIDEFormat,
+        "URL"               -> "https://marketplace.visualstudio.com/items?itemName=augment.vscode-augment",
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, "Library", "Application Support", "Code", "User", "globalStorage",
                            "augment.vscode-augment", "augment-global-state", "mcpServers.json" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Code", "User", "globalStorage",
                            "augment.vscode-augment", "augment-global-state", "mcpServers.json" },
             "Unix"    :> { $HomeDirectory, ".config", "Code", "User", "globalStorage",
                            "augment.vscode-augment", "augment-global-state", "mcpServers.json" }
-        |>
+        |>,
+        "SkillsLocation"    :> { $HomeDirectory, ".augment", "skills" },
+        "SkillsProjectPath" -> { ".augment", "skills" }
     |>,
     "Codex" -> <|
-        "DisplayName"     -> "Codex CLI",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "OpenAICodex" },
-        "ConfigFormat"    -> "TOML",
-        "ConfigKey"       -> { "mcp_servers" },
-        "ProjectPath"     -> { ".codex", "config.toml" },
-        "URL"             -> "https://openai.com/codex",
-        "InstallLocation" :> { $HomeDirectory, ".codex", "config.toml" }
+        "DisplayName"       -> "Codex CLI",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "OpenAICodex" },
+        "ConfigFormat"      -> "TOML",
+        "ConfigKey"         -> { "mcp_servers" },
+        "ProjectPath"       -> { ".codex", "config.toml" },
+        "URL"               -> "https://openai.com/codex",
+        "InstallLocation"   :> { $HomeDirectory, ".codex", "config.toml" },
+        "SkillsLocation"    :> { $HomeDirectory, ".agents", "skills" },
+        "SkillsProjectPath" -> { ".agents", "skills" }
     |>,
     "CopilotCLI" -> <|
-        "DisplayName"     -> "Copilot CLI",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Copilot" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToCopilotCLIFormat,
-        "URL"             -> "https://github.com/features/copilot/cli",
-        "InstallLocation" :> { $HomeDirectory, ".copilot", "mcp-config.json" }
+        "DisplayName"       -> "Copilot CLI",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Copilot" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "ServerConverter"   -> convertToCopilotCLIFormat,
+        "URL"               -> "https://github.com/features/copilot/cli",
+        "InstallLocation"   :> { $HomeDirectory, ".copilot", "mcp-config.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".copilot", "skills" },
+        "SkillsProjectPath" -> { ".github", "skills" }
     |>,
     "Junie" -> <|
-        "DisplayName"     -> "Junie",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "JetBrainsJunie" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://www.jetbrains.com/junie/",
-        "ProjectPath"     -> { ".junie", "mcp", "mcp.json" },
-        "InstallLocation" :> { $HomeDirectory, ".junie", "mcp", "mcp.json" }
+        "DisplayName"       -> "Junie",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "JetBrainsJunie" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://www.jetbrains.com/junie/",
+        "ProjectPath"       -> { ".junie", "mcp", "mcp.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".junie", "mcp", "mcp.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".junie", "skills" },
+        "SkillsProjectPath" -> { ".junie", "skills" }
     |>,
     "KimiCode" -> <|
-        "DisplayName"     -> "Kimi Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Kimi", "KimiCLI" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://github.com/MoonshotAI/kimi-cli",
-        "InstallLocation" :> { $HomeDirectory, ".kimi", "mcp.json" }
+        "DisplayName"       -> "Kimi Code",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Kimi", "KimiCLI" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://github.com/MoonshotAI/kimi-cli",
+        "InstallLocation"   :> { $HomeDirectory, ".kimi", "mcp.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".kimi", "skills" },
+        "SkillsProjectPath" -> { ".kimi", "skills" }
     |>,
     "Kiro" -> <|
-        "DisplayName"     -> "Kiro",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToClineFormat,
-        "URL"             -> "https://kiro.dev",
-        "ProjectPath"     -> { ".kiro", "settings", "mcp.json" },
-        "InstallLocation" :> { $HomeDirectory, ".kiro", "settings", "mcp.json" }
+        "DisplayName"       -> "Kiro",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "ServerConverter"   -> convertToClineFormat,
+        "URL"               -> "https://kiro.dev",
+        "ProjectPath"       -> { ".kiro", "settings", "mcp.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".kiro", "settings", "mcp.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".kiro", "skills" },
+        "SkillsProjectPath" -> { ".kiro", "skills" }
     |>,
+    (* No skills locations: LM Studio does not support agent skills. *)
     "LMStudio" -> <|
-        "DisplayName"     -> "LM Studio",
-        "DefaultToolset"  -> "Wolfram",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://lmstudio.ai",
-        "InstallLocation" :> { $HomeDirectory, ".lmstudio", "mcp.json" }
+        "DisplayName"       -> "LM Studio",
+        "DefaultToolset"    -> "Wolfram",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://lmstudio.ai",
+        "InstallLocation"   :> { $HomeDirectory, ".lmstudio", "mcp.json" }
     |>,
+    (* OpenCode uses ~/.config/opencode/skills on every OS (including Windows). *)
     "OpenCode" -> <|
-        "DisplayName"     -> "OpenCode",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcp" },
-        "ServerConverter" -> convertToOpenCodeFormat,
-        "URL"             -> "https://opencode.ai",
-        "ProjectPath"     -> { "opencode.json" },
-        "InstallLocation" :> { $HomeDirectory, ".config", "opencode", "opencode.json" }
+        "DisplayName"       -> "OpenCode",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcp" },
+        "ServerConverter"   -> convertToOpenCodeFormat,
+        "URL"               -> "https://opencode.ai",
+        "ProjectPath"       -> { "opencode.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".config", "opencode", "opencode.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".config", "opencode", "skills" },
+        "SkillsProjectPath" -> { ".opencode", "skills" }
     |>,
     "QwenCode" -> <|
-        "DisplayName"     -> "Qwen Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Qwen" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://github.com/QwenLM/qwen-code",
-        "ProjectPath"     -> { ".qwen", "settings.json" },
-        "InstallLocation" :> { $HomeDirectory, ".qwen", "settings.json" }
+        "DisplayName"       -> "Qwen Code",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Qwen" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://github.com/QwenLM/qwen-code",
+        "ProjectPath"       -> { ".qwen", "settings.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".qwen", "settings.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".qwen", "skills" },
+        "SkillsProjectPath" -> { ".qwen", "skills" }
     |>,
     "VisualStudioCode" -> <|
-        "DisplayName"     -> "Visual Studio Code",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "VSCode" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "servers" },
-        "URL"             -> "https://code.visualstudio.com",
-        "ProjectPath"     -> { ".vscode", "mcp.json" },
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Visual Studio Code",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "VSCode" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "servers" },
+        "URL"               -> "https://code.visualstudio.com",
+        "ProjectPath"       -> { ".vscode", "mcp.json" },
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, "Library", "Application Support", "Code", "User", "mcp.json" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Code", "User", "mcp.json" },
             "Unix"    :> { $HomeDirectory, ".config", "Code", "User", "mcp.json" }
-        |>
+        |>,
+        "SkillsLocation"    :> { $HomeDirectory, ".copilot", "skills" },
+        "SkillsProjectPath" -> { ".github", "skills" }
     |>,
     "Windsurf" -> <|
-        "DisplayName"     -> "Windsurf",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "Codeium" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://codeium.com/windsurf",
-        "InstallLocation" :> { $HomeDirectory, ".codeium", "windsurf", "mcp_config.json" }
+        "DisplayName"       -> "Windsurf",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "Codeium" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://codeium.com/windsurf",
+        "InstallLocation"   :> { $HomeDirectory, ".codeium", "windsurf", "mcp_config.json" },
+        "SkillsLocation"    :> { $HomeDirectory, ".codeium", "windsurf", "skills" },
+        "SkillsProjectPath" -> { ".windsurf", "skills" }
     |>,
+    (* No skills locations: the legacy Amazon Q Developer CLI has no agent skills. Its successor, Kiro CLI, reads
+       ~/.kiro/skills, which is covered by the "Kiro" client. *)
     "AmazonQ" -> <|
-        "DisplayName"     -> "Amazon Q Developer",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { "AmazonQDeveloper", "Q", "QDeveloper" },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "URL"             -> "https://aws.amazon.com/q/developer/",
-        "ProjectPath"     -> { ".amazonq", "mcp.json" },
-        "InstallLocation" :> { $HomeDirectory, ".aws", "amazonq", "mcp.json" }
+        "DisplayName"       -> "Amazon Q Developer",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { "AmazonQDeveloper", "Q", "QDeveloper" },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "URL"               -> "https://aws.amazon.com/q/developer/",
+        "ProjectPath"       -> { ".amazonq", "mcp.json" },
+        "InstallLocation"   :> { $HomeDirectory, ".aws", "amazonq", "mcp.json" }
     |>,
     "Cline" -> <|
-        "DisplayName"     -> "Cline",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "mcpServers" },
-        "ServerConverter" -> convertToClineFormat,
-        "URL"             -> "https://cline.bot",
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Cline",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "mcpServers" },
+        "ServerConverter"   -> convertToClineFormat,
+        "URL"               -> "https://cline.bot",
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, "Library", "Application Support", "Code", "User", "globalStorage",
                            "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Code", "User", "globalStorage",
                            "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json" },
             "Unix"    :> { $HomeDirectory, ".config", "Code", "User", "globalStorage", "saoudrizwan.claude-dev",
                            "settings", "cline_mcp_settings.json" }
-        |>
+        |>,
+        "SkillsLocation"    :> { $HomeDirectory, ".cline", "skills" },
+        "SkillsProjectPath" -> { ".cline", "skills" }
     |>,
     "Zed" -> <|
-        "DisplayName"     -> "Zed",
-        "DefaultToolset"  -> "WolframLanguage",
-        "Aliases"         -> { },
-        "ConfigFormat"    -> "JSON",
-        "ConfigKey"       -> { "context_servers" },
-        "URL"             -> "https://zed.dev",
-        "ProjectPath"     -> { ".zed", "settings.json" },
-        "InstallLocation" -> <|
+        "DisplayName"       -> "Zed",
+        "DefaultToolset"    -> "WolframLanguage",
+        "Aliases"           -> { },
+        "ConfigFormat"      -> "JSON",
+        "ConfigKey"         -> { "context_servers" },
+        "URL"               -> "https://zed.dev",
+        "ProjectPath"       -> { ".zed", "settings.json" },
+        "InstallLocation"   -> <|
             "MacOSX"  :> { $HomeDirectory, ".config", "zed", "settings.json" },
             "Windows" :> { $HomeDirectory, "AppData", "Roaming", "Zed", "settings.json" },
             "Unix"    :> { $HomeDirectory, ".config", "zed", "settings.json" }
-        |>
+        |>,
+        "SkillsLocation"    :> { $HomeDirectory, ".agents", "skills" },
+        "SkillsProjectPath" -> { ".agents", "skills" }
     |>
 |>;
 
@@ -302,16 +364,22 @@ $supportedMCPClients = <|
 (*clientMetadata*)
 clientMetadata // beginDefinition;
 
+(* "ProjectSupport" keeps its MCP-only meaning; "SkillsSupport" and "SkillsProjectSupport" describe the agent skills
+   locations. *)
 clientMetadata[ name_String ] := Enclose[
-    Module[ { data, projectSupport, converter },
-        data = ConfirmBy[ $supportedMCPClients @ name, AssociationQ, "Data" ];
+    Module[ { data, projectSupport, skillsSupport, skillsProjectSupport, converter },
+        data = ConfirmBy[ $supportedClients @ name, AssociationQ, "Data" ];
         projectSupport = MatchQ[ data[ "ProjectPath" ], { __String } ];
+        skillsSupport = KeyExistsQ[ data, "SkillsLocation" ];
+        skillsProjectSupport = MatchQ[ data[ "SkillsProjectPath" ], { __String } ];
         converter = Lookup[ data, "ServerConverter", Identity ];
         KeySort @ <|
             data,
-            "Name"            -> name,
-            "ProjectSupport"  -> projectSupport,
-            "ServerConverter" -> converter
+            "Name"                 -> name,
+            "ProjectSupport"       -> projectSupport,
+            "ServerConverter"      -> converter,
+            "SkillsProjectSupport" -> skillsProjectSupport,
+            "SkillsSupport"        -> skillsSupport
         |>
     ],
     throwInternalFailure
@@ -324,7 +392,7 @@ clientMetadata // endDefinition;
 (*$aliasToCanonicalName*)
 $aliasToCanonicalName := $aliasToCanonicalName = Association @ Flatten @ KeyValueMap[
     Function[ { name, meta }, Thread[ meta[ "Aliases" ] -> name ] ],
-    $supportedMCPClients
+    $supportedClients
 ];
 
 (* ::**************************************************************************************************************:: *)
@@ -335,7 +403,7 @@ defaultToolsetForTarget // beginDefinition;
 defaultToolsetForTarget[ name_String ] :=
     Replace[
         Lookup[
-            Lookup[ $supportedMCPClients, toInstallName @ name, <| |> ],
+            Lookup[ $supportedClients, toInstallName @ name, <| |> ],
             "DefaultToolset",
             $defaultMCPServer
         ],
@@ -363,12 +431,12 @@ defaultToolsetForTarget // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*Install Location Helpers*)
+(*Install and Skills Location Helpers*)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*antigravityInstallLocation*)
-(* See the rationale in the "Antigravity" entry of $supportedMCPClients: when the 2.0
+(* See the rationale in the "Antigravity" entry of $supportedClients: when the 2.0
    installer migrates a pre-2.0 IDE forward, it drops a `.migrated` marker into
    ~/.gemini/config/ and the IDE switches to reading ~/.gemini/config/mcp_config.json
    instead of the historical ~/.gemini/antigravity/mcp_config.json. Fresh 2.0 installs
@@ -384,6 +452,23 @@ antigravityInstallLocation[ ] := If[
 ];
 
 antigravityInstallLocation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*antigravitySkillsLocation*)
+(* The skills counterpart of antigravityInstallLocation: migrated installs read ~/.gemini/config/skills, while
+   unmigrated ones read the legacy ~/.gemini/antigravity/skills. The same .migrated marker decides, because creating
+   ~/.gemini/config/skills before the migration would strand the legacy skills. Evaluated each time
+   skillsLocation["Antigravity"] is evaluated, like antigravityInstallLocation. *)
+antigravitySkillsLocation // beginDefinition;
+
+antigravitySkillsLocation[ ] := If[
+    FileExistsQ @ FileNameJoin @ { $HomeDirectory, ".gemini", "config", ".migrated" },
+    { $HomeDirectory, ".gemini", "config", "skills" },
+    { $HomeDirectory, ".gemini", "antigravity", "skills" }
+];
+
+antigravitySkillsLocation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -614,7 +699,7 @@ $powerShell := $powerShell = Quiet @ SelectFirst[
 (* ::Section::Closed:: *)
 (*Package Footer*)
 addToMXInitialization[
-    $SupportedMCPClients;
+    $SupportedClients;
     $aliasToCanonicalName;
 ];
 

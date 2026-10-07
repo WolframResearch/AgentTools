@@ -714,7 +714,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Antigravity" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Antigravity" ],
     "Antigravity",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Antigravity@@Tests/InstallMCPServer.wlt:716,1-721,2"
@@ -1002,7 +1002,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Codex" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Codex" ],
     "Codex CLI",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Codex@@Tests/InstallMCPServer.wlt:1004,1-1009,2"
@@ -1315,7 +1315,7 @@ VerificationTest[
 (* ::Subsection::Closed:: *)
 (*Display Name*)
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Goose" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Goose" ],
     "Goose",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Goose@@Tests/InstallMCPServer.wlt:1317,1-1322,2"
@@ -1659,7 +1659,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Continue" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Continue" ],
     "Continue",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Continue@@Tests/InstallMCPServer.wlt:1661,1-1666,2"
@@ -2113,7 +2113,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "CopilotCLI" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "CopilotCLI" ],
     "Copilot CLI",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-CopilotCLI@@Tests/InstallMCPServer.wlt:2115,1-2120,2"
@@ -2193,7 +2193,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Windsurf" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Windsurf" ],
     "Windsurf",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Windsurf@@Tests/InstallMCPServer.wlt:2195,1-2200,2"
@@ -2238,7 +2238,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Cline" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Cline" ],
     "Cline",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Cline@@Tests/InstallMCPServer.wlt:2240,1-2245,2"
@@ -2454,7 +2454,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "AugmentCode" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "AugmentCode" ],
     "Augment Code",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-AugmentCode@@Tests/InstallMCPServer.wlt:2456,1-2461,2"
@@ -2686,7 +2686,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "AugmentCodeIDE" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "AugmentCodeIDE" ],
     "Augment Code IDE",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-AugmentCodeIDE@@Tests/InstallMCPServer.wlt:2688,1-2693,2"
@@ -3154,7 +3154,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Zed" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Zed" ],
     "Zed",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Zed@@Tests/InstallMCPServer.wlt:3156,1-3161,2"
@@ -3325,7 +3325,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Junie" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Junie" ],
     "Junie",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Junie@@Tests/InstallMCPServer.wlt:3327,1-3332,2"
@@ -3563,7 +3563,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "Kiro" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "Kiro" ],
     "Kiro",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-Kiro@@Tests/InstallMCPServer.wlt:3565,1-3570,2"
@@ -3735,7 +3735,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "LMStudio" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "LMStudio" ],
     "LM Studio",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-LMStudio@@Tests/InstallMCPServer.wlt:3737,1-3742,2"
@@ -3942,7 +3942,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`InstallMCPServer`Private`installDisplayName[ "AmazonQ" ],
+    Wolfram`AgentTools`Common`installDisplayName[ "AmazonQ" ],
     "Amazon Q Developer",
     SameTest -> Equal,
     TestID   -> "InstallDisplayName-AmazonQ@@Tests/InstallMCPServer.wlt:3944,1-3949,2"
@@ -5277,6 +5277,374 @@ VerificationTest[
     True,
     True,
     TestID -> "Automatic-Cleanup@@Tests/InstallMCPServer.wlt:5273,1-5280,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Configuration Keys*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Setup*)
+VerificationTest[
+    PacletDirectoryLoad @ FileNameJoin @ { $testResourceDirectory, "MockMCPPacletTest" };
+    PacletDirectoryLoad @ FileNameJoin @ { $testResourceDirectory, "MockMCPPacletConfigKey" };
+    configKey      = Wolfram`AgentTools`Common`mcpServerConfigKey;
+    localConfigKey = Wolfram`AgentTools`Common`localMCPServerConfigKey;
+    PacletObject[ "MockMCPPacletConfigKey" ][ "Name" ],
+    "MockMCPPacletConfigKey",
+    SameTest -> Equal,
+    TestID   -> "ConfigKey-Setup@@Tests/InstallMCPServer.wlt:5289,1-5298,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*mcpServerConfigKey*)
+
+(* Every built-in server shares the "Wolfram" key *)
+VerificationTest[
+    DeleteDuplicates[ configKey[ #, Automatic ] & /@ Values @ $DefaultMCPServers ],
+    { "Wolfram" },
+    SameTest -> Equal,
+    TestID   -> "MCPServerConfigKey-BuiltIn@@Tests/InstallMCPServer.wlt:5305,1-5310,2"
+]
+
+VerificationTest[
+    configKey[ MCPServerObject[ "WolframLanguage" ], "CustomKey" ],
+    "CustomKey",
+    SameTest -> Equal,
+    TestID   -> "MCPServerConfigKey-OptionString@@Tests/InstallMCPServer.wlt:5312,1-5317,2"
+]
+
+(* Anything other than a string falls back to the server's own key *)
+VerificationTest[
+    configKey[ MCPServerObject[ "WolframLanguage" ], # ] & /@ { Automatic, None, 123 },
+    { "Wolfram", "Wolfram", "Wolfram" },
+    SameTest -> Equal,
+    TestID   -> "MCPServerConfigKey-OptionNotString@@Tests/InstallMCPServer.wlt:5320,1-5325,2"
+]
+
+VerificationTest[
+    {
+        configKey[ MCPServerObject[ "MockMCPPacletTest/TestServer" ], Automatic ],
+        configKey[ MCPServerObject[ "MockMCPPacletConfigKey/KeyServer" ], Automatic ]
+    },
+    { "TestServer", "CustomConfigKey" },
+    SameTest -> Equal,
+    TestID   -> "MCPServerConfigKey-PacletServers@@Tests/InstallMCPServer.wlt:5327,1-5335,2"
+]
+
+(* A user server without an "MCPServerName" uses its name *)
+VerificationTest[
+    withTemporaryRoot @ configKey[
+        CreateMCPServer[
+            "ConfigKeyTestServer",
+            LLMConfiguration @ <| "Tools" -> { LLMTool[ "Doubler", { "x" -> "Number" }, 2 * #x & ] } |>
+        ],
+        Automatic
+    ],
+    "ConfigKeyTestServer",
+    SameTest -> Equal,
+    TestID   -> "MCPServerConfigKey-UserServer@@Tests/InstallMCPServer.wlt:5338,1-5349,2"
+]
+
+(* resolveMCPServerName reads the "MCPServerName" option through mcpServerConfigKey *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`InstallMCPServer`Private`$installMCPServerName = Automatic },
+        Wolfram`AgentTools`InstallMCPServer`Private`resolveMCPServerName @ MCPServerObject[
+            "MockMCPPacletConfigKey/KeyServer"
+        ]
+    ],
+    "CustomConfigKey",
+    SameTest -> Equal,
+    TestID   -> "ResolveMCPServerName-CustomPacletKey@@Tests/InstallMCPServer.wlt:5352,1-5361,2"
+]
+
+(* Installing a paclet server with a custom "MCPServerName" writes that key, and uninstalling removes it *)
+VerificationTest[
+    Module[ { file, installed, uninstalled },
+        file = testConfigFile[ ];
+        installed = InstallMCPServer[ file, "MockMCPPacletConfigKey/KeyServer", "VerifyLLMKit" -> False ];
+        installed = { installed, Keys @ Developer`ReadRawJSONFile[ First @ file ][ "mcpServers" ] };
+        uninstalled = UninstallMCPServer[ file, "MockMCPPacletConfigKey/KeyServer" ];
+        uninstalled = { uninstalled, Keys @ Developer`ReadRawJSONFile[ First @ file ][ "mcpServers" ] };
+        cleanupTestFiles @ file;
+        { installed, uninstalled }
+    ],
+    { { _Success, { "CustomConfigKey" } }, { _Success, { } } },
+    SameTest -> MatchQ,
+    TestID   -> "InstallMCPServer-CustomPacletConfigKey@@Tests/InstallMCPServer.wlt:5364,1-5377,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*localMCPServerConfigKey*)
+VerificationTest[
+    localConfigKey[ "WolframLanguage", <| "MCPServerName" -> "CustomKey" |> ],
+    "CustomKey",
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-OptionString@@Tests/InstallMCPServer.wlt:5382,1-5387,2"
+]
+
+VerificationTest[
+    withTemporaryRoot @ {
+        localConfigKey[ "WolframLanguage", <| "MCPServerName" -> Automatic |> ],
+        localConfigKey[ "WolframLanguage", <| "ToolOptions" -> <| |> |> ]
+    },
+    { "Wolfram", "Wolfram" },
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-OptionNotString@@Tests/InstallMCPServer.wlt:5389,1-5397,2"
+]
+
+VerificationTest[
+    withTemporaryRoot @ AssociationMap[ localConfigKey[ #, <| |> ] &, Keys @ $DefaultMCPServers ],
+    _Association? (AllTrue[ #, # === "Wolfram" & ] &),
+    SameTest -> MatchQ,
+    TestID   -> "LocalMCPServerConfigKey-BuiltIn@@Tests/InstallMCPServer.wlt:5399,1-5404,2"
+]
+
+VerificationTest[
+    withTemporaryRoot @ Module[ { name },
+        name = "LocalConfigKeyTestServer";
+        CreateMCPServer[
+            name,
+            LLMConfiguration @ <| "Tools" -> { LLMTool[ "Doubler", { "x" -> "Number" }, 2 * #x & ] } |>
+        ];
+        localConfigKey[ name, <| |> ]
+    ],
+    "LocalConfigKeyTestServer",
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-UserServer@@Tests/InstallMCPServer.wlt:5406,1-5418,2"
+]
+
+(* User server metadata is read directly: its "MCPServerName" wins, and a user server shadows a built-in server of the
+   same name (as in MCPServerObject[ name ]) *)
+VerificationTest[
+    withTemporaryRoot @ (
+        Wolfram`AgentTools`Common`writeWXFFile[
+            Wolfram`AgentTools`Common`mcpServerFile[ "ManualServer" ],
+            <| "Name" -> "ManualServer", "MCPServerName" -> "ManualKey" |>
+        ];
+        Wolfram`AgentTools`Common`writeWXFFile[
+            Wolfram`AgentTools`Common`mcpServerFile[ "WolframLanguage" ],
+            <| "Name" -> "WolframLanguage" |>
+        ];
+        { localConfigKey[ "ManualServer", <| |> ], localConfigKey[ "WolframLanguage", <| |> ] }
+    ),
+    { "ManualKey", "WolframLanguage" },
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-UserServerMetadata@@Tests/InstallMCPServer.wlt:5422,1-5437,2"
+]
+
+VerificationTest[
+    {
+        localConfigKey[ "MockMCPPacletTest/TestServer", <| |> ],
+        localConfigKey[ "MockMCPPacletConfigKey/KeyServer", <| |> ],
+        (* Not declared by the installed paclet: falls back to the item name without failing *)
+        localConfigKey[ "MockMCPPacletConfigKey/NotAServer", <| |> ]
+    },
+    { "TestServer", "CustomConfigKey", "NotAServer" },
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-InstalledPacletServers@@Tests/InstallMCPServer.wlt:5439,1-5449,2"
+]
+
+(* Uninstalled paclets are never looked up remotely or installed *)
+VerificationTest[
+    Module[ { calls = 0, keys },
+        keys = Block[
+            {
+                PacletFindRemote = Function[ calls++; { } ],
+                PacletInstall    = Function[ calls++; $Failed ]
+            },
+            {
+                localConfigKey[ "NotInstalledPublisher/NotInstalledPaclet/SomeServer", <| |> ],
+                localConfigKey[ "NotInstalledPaclet/OtherServer", <| |> ]
+            }
+        ];
+        { keys, calls }
+    ],
+    { { "SomeServer", "OtherServer" }, 0 },
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-UninstalledPaclet-NoNetwork@@Tests/InstallMCPServer.wlt:5452,1-5469,2"
+]
+
+VerificationTest[
+    withTemporaryRoot @ { localConfigKey[ "SomeUnknownServer", <| |> ], localConfigKey[ "a/b/c/d", <| |> ] },
+    { "SomeUnknownServer", "d" },
+    SameTest -> Equal,
+    TestID   -> "LocalMCPServerConfigKey-Unknown@@Tests/InstallMCPServer.wlt:5471,1-5476,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*preflightMCPServerInstall*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Setup*)
+VerificationTest[
+    preflight = Wolfram`AgentTools`Common`preflightMCPServerInstall;
+    createPreflightServer[ ] := CreateMCPServer[
+        "PreflightTestServer",
+        LLMConfiguration @ <| "Tools" -> { LLMTool[ "Doubler", { "x" -> "Number" }, 2 * #x & ] } |>
+    ];
+    rootFiles[ ] := Sort @ FileNames[ All, Wolfram`AgentTools`Common`$rootPath, Infinity ];
+    Head @ preflight,
+    Symbol,
+    SameTest -> Equal,
+    TestID   -> "PreflightMCPServerInstall-Setup@@Tests/InstallMCPServer.wlt:5485,1-5496,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Valid options write nothing*)
+VerificationTest[
+    withTemporaryRoot @ Module[ { server, before, result },
+        server = createPreflightServer[ ];
+        before = rootFiles[ ];
+        result = preflight[
+            server,
+            "ApplicationName"      -> "ClaudeCode",
+            "CommandLineArguments" -> { "-noinit" },
+            "DevelopmentMode"      -> DirectoryName[ $TestFileName, 2 ],
+            "MCPServerName"        -> "CustomKey",
+            "SubmitUsageData"      -> False,
+            "ToolOptions"          -> <| "Doubler" -> <| |> |>,
+            "VerifyLLMKit"         -> False,
+            "WolframCommand"       -> "/opt/wolfram/bin/wolfram",
+            OverwriteTarget        -> True (* not an InstallMCPServer option: ignored *)
+        ];
+        { result, rootFiles[ ] === before }
+    ],
+    { Null, True },
+    SameTest -> Equal,
+    TestID   -> "PreflightMCPServerInstall-ValidOptions-NoWrites@@Tests/InstallMCPServer.wlt:5501,1-5522,2"
+]
+
+VerificationTest[
+    withTemporaryRoot @ { preflight[ createPreflightServer[ ], "VerifyLLMKit" -> False ], rootFiles[ ] },
+    { Null, { ___String? (StringEndsQ[ "PreflightTestServer" | "Metadata.wxf" | "Servers" ]) } },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-NoInstallationRecord@@Tests/InstallMCPServer.wlt:5524,1-5529,2"
+]
+
+VerificationTest[
+    preflight[ MCPServerObject[ "MockMCPPacletConfigKey/KeyServer" ], "VerifyLLMKit" -> False ],
+    Null,
+    SameTest -> Equal,
+    TestID   -> "PreflightMCPServerInstall-PacletServer@@Tests/InstallMCPServer.wlt:5531,1-5536,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Invalid options fail*)
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[ MCPServerObject[ "Wolfram" ], "SubmitUsageData" -> "yes" ],
+    Failure[ "AgentTools::InvalidSubmitUsageData", _ ],
+    { AgentTools::InvalidSubmitUsageData },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidSubmitUsageData@@Tests/InstallMCPServer.wlt:5541,1-5547,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[ MCPServerObject[ "Wolfram" ], "WolframCommand" -> 123 ],
+    Failure[ "AgentTools::InvalidWolframCommand", _ ],
+    { AgentTools::InvalidWolframCommand },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidWolframCommand@@Tests/InstallMCPServer.wlt:5549,1-5555,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[ MCPServerObject[ "Wolfram" ], "CommandLineArguments" -> "-noinit" ],
+    Failure[ "AgentTools::InvalidCommandLineArguments", _ ],
+    { AgentTools::InvalidCommandLineArguments },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidCommandLineArguments@@Tests/InstallMCPServer.wlt:5557,1-5563,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[ MCPServerObject[ "Wolfram" ], "DevelopmentMode" -> InvalidValue ],
+    Failure[ "AgentTools::InvalidDevelopmentMode", _ ],
+    { AgentTools::InvalidDevelopmentMode },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidDevelopmentMode@@Tests/InstallMCPServer.wlt:5565,1-5571,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[
+        MCPServerObject[ "Wolfram" ],
+        "DevelopmentMode" -> FileNameJoin @ { $TemporaryDirectory, CreateUUID[ "InvalidPath-" ] }
+    ],
+    Failure[ "AgentTools::DevelopmentModeUnavailable", _ ],
+    { AgentTools::DevelopmentModeUnavailable },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-DevelopmentModeUnavailable@@Tests/InstallMCPServer.wlt:5573,1-5582,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Common`catchAlways @ preflight[ MCPServerObject[ "Wolfram" ], "ApplicationName" -> 123 ],
+    Failure[ "AgentTools::InvalidApplicationName", _ ],
+    { AgentTools::InvalidApplicationName },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidApplicationName@@Tests/InstallMCPServer.wlt:5584,1-5590,2"
+]
+
+(* Unknown tool options are warnings, as in InstallMCPServer *)
+VerificationTest[
+    withTemporaryRoot @ Wolfram`AgentTools`Common`catchAlways @ preflight[
+        createPreflightServer[ ],
+        "ToolOptions"  -> <| "NotATool" -> <| |> |>,
+        "VerifyLLMKit" -> False
+    ],
+    Null,
+    { AgentTools::UnrecognizedToolOption },
+    SameTest -> Equal,
+    TestID   -> "PreflightMCPServerInstall-UnrecognizedToolOption@@Tests/InstallMCPServer.wlt:5593,1-5603,2"
+]
+
+(* Paclet tool definitions are validated *)
+VerificationTest[
+    withTemporaryRoot @ Wolfram`AgentTools`Common`catchAlways @ preflight[
+        CreateMCPServer[ "PreflightBadToolServer", <| "Tools" -> { "NonExistentPaclet/BadTool" } |> ],
+        "VerifyLLMKit" -> False
+    ],
+    Failure[ "AgentTools::PacletNotInstalled", _ ],
+    { AgentTools::PacletNotInstalled },
+    SameTest -> MatchQ,
+    TestID   -> "PreflightMCPServerInstall-InvalidPacletDefinitions@@Tests/InstallMCPServer.wlt:5606,1-5615,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*LLMKit check honors VerifyLLMKit and EnableLLMKit*)
+VerificationTest[
+    withTemporaryRoot @ Module[ { server, calls = { } },
+        server = createPreflightServer[ ];
+        Block[ { Wolfram`AgentTools`InstallMCPServer`Private`checkLLMKitRequirements },
+            Wolfram`AgentTools`InstallMCPServer`Private`checkLLMKitRequirements[ _ ] := (
+                AppendTo[ calls, Wolfram`AgentTools`InstallMCPServer`Private`$enableLLMKit ];
+                None
+            );
+            preflight[ server, "VerifyLLMKit" -> True ];
+            preflight[ server, "VerifyLLMKit" -> True, "EnableLLMKit" -> False ];
+            preflight[ server, "VerifyLLMKit" -> False ]
+        ];
+        calls
+    ],
+    { Automatic, False },
+    SameTest -> Equal,
+    TestID   -> "PreflightMCPServerInstall-LLMKitCheckOptions@@Tests/InstallMCPServer.wlt:5620,1-5637,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cleanup*)
+VerificationTest[
+    PacletDirectoryUnload @ FileNameJoin @ { $testResourceDirectory, "MockMCPPacletConfigKey" };
+    Wolfram`AgentTools`Common`clearPacletDefinitionCache[ ],
+    <| |>,
+    SameTest -> MatchQ,
+    TestID   -> "ConfigKey-Cleanup@@Tests/InstallMCPServer.wlt:5642,1-5648,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

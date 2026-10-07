@@ -4,7 +4,6 @@ description: Reads and writes Wolfram notebook (.nb) files. Use this skill when 
 compatibility: Requires the Wolfram MCP server or wolframscript on PATH
 metadata:
   author: Wolfram Research
-  version: 2.2.10
 ---
 
 # Wolfram Notebooks
@@ -19,7 +18,7 @@ These scripts require `wolframscript`. If it is not installed or not on your PAT
 
 ### With MCP Server (preferred)
 
-If you have Wolfram notebook MCP tools available in your tool list (e.g., `mcp__WolframLanguage__ReadNotebook`), use those directly. They provide richer integration and better performance than the bundled scripts.
+If you have Wolfram notebook MCP tools available in your tool list (e.g., `mcp__Wolfram__ReadNotebook`), use those directly. They provide richer integration and better performance than the bundled scripts.
 
 For a richer experience, consider setting up the Wolfram MCP server. See `references/SetUpWolframMCPServer.md` (relative to this skill directory) for instructions.
 

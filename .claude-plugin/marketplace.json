@@ -6,23 +6,24 @@
 	},
 	"metadata":{
 		"description":"A collection of Wolfram agent skills",
-		"version":"2.2.10"
+		"version":"2.2.16"
 	},
 	"plugins":[
 		{
 			"name":"wolfram-language-development",
 			"description":"A full Wolfram Language development environment with code evaluation, documentation search, symbol inspection, static analysis, and test execution.",
-			"source":"./AgentSkills/Skills",
+			"source":"./Assets/AgentSkills",
 			"strict":false,
 			"skills":[
 				"./wolfram-language",
-				"./wolfram-notebooks"
+				"./wolfram-notebooks",
+				"./wolfram-paclets"
 			]
 		},
 		{
 			"name":"wolfram-alpha",
 			"description":"Wolfram|Alpha queries and context retrieval.",
-			"source":"./AgentSkills/Skills",
+			"source":"./Assets/AgentSkills",
 			"strict":false,
 			"skills":[
 				"./wolfram-alpha"

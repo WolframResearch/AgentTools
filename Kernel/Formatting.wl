@@ -94,9 +94,31 @@ toolName // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*summaryItem*)
 summaryItem // beginDefinition;
+summaryItem[ "Description", d_ ] := { BoxForm`SummaryItem @ { niceLabel[ "Description" ], formatDescription @ d } };
 summaryItem[ _, _Missing ] := Nothing;
 summaryItem[ label_, value_ ] := { BoxForm`SummaryItem @ { niceLabel @ label, value } };
 summaryItem // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*formatDescription*)
+formatDescription // beginDefinition;
+
+formatDescription[ _Missing ] :=
+    Style[ "None", FontColor -> Gray ];
+
+formatDescription[ description_String ] :=
+    Module[ { short },
+        (* Truncate long descriptions: *)
+        short = FE`Evaluate @ FEPrivate`TruncateStringToWidth[ description, "SummaryPanel", 250, Right ];
+        (* If truncated, show a tooltip with the full description (without a front end, short stays unevaluated): *)
+        If[ StringQ @ short && StringLength @ short < StringLength @ description,
+            Tooltip[ short, description ],
+            description
+        ]
+    ];
+
+formatDescription // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -104,6 +126,61 @@ summaryItem // endDefinition;
 niceLabel // beginDefinition;
 niceLabel[ label_String ] := StringJoin[ label, ": " ];
 niceLabel // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*AgentToolsObject*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*makeAgentToolsObjectBoxes*)
+makeAgentToolsObjectBoxes // beginDefinition;
+
+makeAgentToolsObjectBoxes[ obj_AgentToolsObject, fmt_ ] :=
+    BoxForm`ArrangeSummaryBox[
+        AgentToolsObject,
+        obj,
+        None, (* TODO: Add a suitable icon *)
+        makeAgentToolsSummaryRows @ obj,
+        makeAgentToolsHiddenRows @ obj,
+        fmt
+    ];
+
+makeAgentToolsObjectBoxes // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeAgentToolsSummaryRows*)
+makeAgentToolsSummaryRows // beginDefinition;
+
+makeAgentToolsSummaryRows[ obj_ ] := Flatten @ {
+    summaryItem[ "Name"       , obj[ "Name" ] ],
+    summaryItem[ "Description", obj[ "Description" ] ]
+};
+
+makeAgentToolsSummaryRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeAgentToolsHiddenRows*)
+makeAgentToolsHiddenRows // beginDefinition;
+
+makeAgentToolsHiddenRows[ obj_ ] := Flatten @ {
+    summaryItem[ "MCP Servers" , nameList @ obj[ "MCPServerNames" ] ],
+    summaryItem[ "Agent Skills", nameList @ obj[ "AgentSkillNames" ] ],
+    summaryItem[ "Location"    , obj[ "Location" ] ]
+};
+
+makeAgentToolsHiddenRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*nameList*)
+nameList // beginDefinition;
+nameList[ { } ] := Missing[ ];
+nameList[ names: { __ } ] := Multicolumn[ names, 5 ];
+nameList[ other_ ] := other;
+nameList // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -151,7 +228,8 @@ makeDeploymentHiddenRows[ dep_ ] :=
         Flatten @ {
             summaryItem[ "Scope"     , dep[ "Scope"      ] ],
             summaryItem[ "ConfigFile", dep[ "ConfigFile" ] ],
-            toolItem
+            toolItem,
+            Replace[ dep[ "AgentSkills" ], { names: { __String } :> summaryItem[ "Agent Skills", Multicolumn[ names, 5 ] ], _ :> Nothing } ]
         }
     ];
 

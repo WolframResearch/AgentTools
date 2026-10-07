@@ -26,7 +26,11 @@ buildPacletTool[ path_String, check_ ] := Enclose[
         ensurePacletCICD[];
         file       = ConfirmBy[ validatePacletPath @ path, MatchQ @ File[ _String ], "ValidatePath" ];
         checkValue = Replace[ check, Except[ True | False ] -> False ];
-        result     = Wolfram`PacletCICD`BuildPaclet[ file, "Check" -> checkValue ];
+        (* The formatted result describes the failure, so the message would only add noise to the output *)
+        result     = Quiet[
+            Wolfram`PacletCICD`BuildPaclet[ file, "Check" -> checkValue ],
+            Wolfram`PacletCICD`BuildPaclet::invfile
+        ];
         ConfirmBy[ formatBuildResult @ result, StringQ, "FormatResult" ]
     ],
     throwInternalFailure
@@ -123,6 +127,9 @@ formatCheckIssues // beginDefinition;
 formatCheckIssues[ dataset_Dataset ] :=
     formatCheckIssues @ Normal @ dataset;
 
+formatCheckIssues[ json_String ] :=
+    formatCheckIssues @ checkHintsFromJSON @ json;
+
 formatCheckIssues[ { } ] :=
     "No issues found.";
 
@@ -142,15 +149,28 @@ formatCheckIssues // endDefinition;
 (*extractFailureMessage*)
 extractFailureMessage // beginDefinition;
 
+(* PacletCICD's message for a path without a definition notebook shows Missing["NotFound"] instead of the path *)
+extractFailureMessage[ tag_String, data_Association ] /; StringEndsQ[ tag, "::invfile" ] :=
+    $noDefinitionNotebookMessage;
+
 extractFailureMessage[ tag_, data_Association ] :=
-    Module[ { msg },
-        msg = Lookup[ data, "MessageTemplate",
-              Lookup[ data, "Message",
-              ToString @ tag ] ];
-        ToString @ msg
+    Module[ { template, params },
+        template = Lookup[ data, "MessageTemplate", Lookup[ data, "Message", tag ] ];
+        params   = Lookup[ data, "MessageParameters", { } ];
+        (* StringForm gives plain text for every parameter, while ToString @ Failure[ ... ][ "Message" ] leaves
+           boxes for some (e.g. File[ ... ]) and ignores a "Message" key *)
+        If[ StringQ @ template && MatchQ[ params, { __ } ],
+            ToString @ StringForm[ template, Sequence @@ params ],
+            ToString @ template
+        ]
     ];
 
 extractFailureMessage // endDefinition;
+
+$noDefinitionNotebookMessage = "\
+No paclet definition notebook was found at the given path. \
+Provide the path to the paclet definition notebook (usually ResourceDefinition.nb in the paclet root directory) \
+or to the directory that contains it.";
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)

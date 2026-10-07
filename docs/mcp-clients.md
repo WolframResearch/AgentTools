@@ -39,7 +39,7 @@ The following clients have built-in support for automatic configuration via `Ins
 | Windsurf | `"Windsurf"` | `"Codeium"` | JSON | No | `"WolframLanguage"` |
 | Zed | `"Zed"` | — | JSON | Yes | `"WolframLanguage"` |
 
-The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose, LM Studio) default to `"Wolfram"`.
+The **Default Toolset** is the [predefined server](servers.md) used when `InstallMCPServer`/`DeployAgentTools` is called without an explicit server (or with `Automatic`). `DeployAgentTools` deploys the built-in bundle of the same name, which adds the matching agent skills for clients that support them (see [agent-tools-objects.md](agent-tools-objects.md#built-in-bundles)). Coding clients default to `"WolframLanguage"`; chat clients (Claude Desktop, Goose, LM Studio) default to `"Wolfram"`.
 
 ## Usage
 
@@ -548,6 +548,65 @@ Note: VS Code uses a dedicated `mcp.json` file with `servers` at the root level.
 
 Note: Zed uses `context_servers` instead of `mcpServers`. The inner server entry format is the same as Claude Desktop.
 
+## Agent Skills Locations
+
+Besides MCP servers, AgentTools can install [agent skills](https://agentskills.io/specification) (directories containing a `SKILL.md` file) into the skills directory of most supported clients. Skills are copied into each client's **native** skills directory. The shared `~/.agents/skills` (`.agents/skills` in a project) is only used where it is the client's primary or only location, so deploying to one client does not expose the skills to every client that happens to read the shared directory.
+
+The table lists the **skills root** for each client: the directory that contains the skill folders (a skill named `my-skill` is installed to `<root>/my-skill/`).
+
+| Client | User Skills Directory | Project Skills Directory | Notes |
+|--------|-----------------------|--------------------------|-------|
+| Amazon Q Developer | — | — | The legacy Q Developer CLI has no skills. Its successor, Kiro CLI, uses `~/.kiro/skills` (use the `"Kiro"` client). |
+| Antigravity | `~/.gemini/config/skills` or `~/.gemini/antigravity/skills` | `.agents/skills` | `~/.gemini/config/skills` once `~/.gemini/config/.migrated` exists, otherwise the legacy location (like the MCP config file). |
+| Augment Code | `~/.augment/skills` | `.augment/skills` | Shared with Augment Code IDE. |
+| Augment Code IDE | `~/.augment/skills` | `.augment/skills` | Shared with Augment Code. Skills are a beta feature of the extension. |
+| Claude Code | `~/.claude/skills` | `.claude/skills` | Does not read `.agents/skills`. |
+| Claude Desktop | — | — | Chat and Cowork only use skills uploaded to the claude.ai account; the Code tab reads `~/.claude/skills` (use the `"ClaudeCode"` client). |
+| Cline | `~/.cline/skills` | `.cline/skills` | The documented locations (Cline also reads `.agents/skills`). |
+| Codex CLI | `~/.agents/skills` | `.agents/skills` | The primary location; `~/.codex/skills` is deprecated. |
+| Continue | `~/.continue/skills` | `.continue/skills` | |
+| Copilot CLI | `~/.copilot/skills` | `.github/skills` | Shared with Visual Studio Code. |
+| Cursor | `~/.cursor/skills` | `.cursor/skills` | Also reads the `.agents`, `.claude`, and `.codex` skills directories. |
+| Gemini CLI | `~/.gemini/skills` | `.gemini/skills` | `.agents/skills` (v0.28+) takes precedence within the same scope. |
+| Goose | `~/.agents/skills` | `.agents/skills` | The canonical location. |
+| Junie | `~/.junie/skills` | `.junie/skills` | |
+| Kimi Code | `~/.kimi/skills` | `.kimi/skills` | |
+| Kiro | `~/.kiro/skills` | `.kiro/skills` | |
+| LM Studio | — | — | No skills support. |
+| OpenCode | `~/.config/opencode/skills` | `.opencode/skills` | The same path on Windows (`%USERPROFILE%\.config\opencode\skills`). |
+| Qwen Code | `~/.qwen/skills` | `.qwen/skills` | |
+| Visual Studio Code | `~/.copilot/skills` | `.github/skills` | Shared with Copilot CLI. |
+| Windsurf | `~/.codeium/windsurf/skills` | `.windsurf/skills` | |
+| Zed | `~/.agents/skills` | `.agents/skills` | The only location. |
+
+User skills directories are relative to `$HomeDirectory` on every operating system (`~` above), and project skills directories are relative to the project directory. Client-specific environment variables that relocate a client's home (such as `CLAUDE_CONFIG_DIR` or `CODEX_HOME`) are not consulted, consistent with the MCP install locations; use a `File[...]` target or the `"SkillsDirectory"` option of `DeployAgentTools` for custom locations.
+
+Several clients share a skills directory (Codex, Goose, and Zed; Copilot CLI and Visual Studio Code; Augment Code and Augment Code IDE). `DeployAgentTools` keeps track of which deployments use each installed skill directory, so removing one deployment never deletes skills that another deployment still uses.
+
+### Installing Skills
+
+`DeployAgentTools` deploys the MCP servers and agent skills of an `AgentToolsObject` together as one tracked unit that `DeleteObject` removes again; it uses the user skills directory for a `"ClientName"` target and the project skills directory for a `{"ClientName", dir}` target. `InstallAgentSkills` and `UninstallAgentSkills` are the low-level functions that copy skills into (or remove them from) a skills directory without any tracking:
+
+```wl
+(* Deploy a built-in toolset: the WolframLanguage MCP server plus the wolfram-language, wolfram-notebooks, and wolfram-paclets skills *)
+DeployAgentTools["ClaudeCode", "WolframLanguage"]
+
+(* Deploy a bundle of MCP servers and agent skills *)
+DeployAgentTools["ClaudeCode", "PublisherID/MyPaclet/MyPaclet"]
+
+(* Copy a skill directory into Cursor's user skills directory *)
+InstallAgentSkills["Cursor", File["path/to/my-skill"]]
+
+(* Project scope, or any skills directory *)
+InstallAgentSkills[{"ClaudeCode", "path/to/project"}, File["path/to/my-skill"]]
+InstallAgentSkills[File["path/to/skills"], File["path/to/my-skill"]]
+
+(* Remove a skill by name *)
+UninstallAgentSkills["Cursor", "my-skill"]
+```
+
+Clients without skills support (Amazon Q Developer, Claude Desktop, and LM Studio) fail with `UnsupportedSkillsClient` (or `UnsupportedSkillsClientProject` for a project target). `DeployAgentTools` installs only the MCP server of a built-in toolset on these clients, without a warning. See [agent-tools-objects.md](agent-tools-objects.md) for skill specifications, bundles, and how deployments track and remove skills.
+
 ## Using Other MCP Clients
 
 AgentTools can be used with any MCP client that supports the stdio transport. If your client is not listed above, you can manually configure it using the server's command, arguments, and environment variables.
@@ -559,7 +618,7 @@ The basic configuration requires:
 | Field | Value |
 |-------|-------|
 | Command | `/full/path/to/wolfram` (or `wolfram.exe` on Windows) |
-| Arguments | ``-run PacletSymbol["Wolfram/AgentTools","StartMCPServer"][] -noinit -noprompt`` |
+| Arguments | ``-run PacletSymbol["Wolfram/AgentTools","Wolfram`AgentTools`StartMCPServer"][] -noinit -noprompt`` |
 
 ### Environment Variables
 
@@ -570,6 +629,7 @@ Include these environment variables for proper operation:
 | `MCP_SERVER_NAME` | Name of the MCP server to run (e.g. `"WolframLanguage"`, optional) |
 | `WOLFRAM_BASE` | Path to Wolfram base directory (`$BaseDirectory`) |
 | `WOLFRAM_USERBASE` | Path to user's Wolfram files (`$UserBaseDirectory`) |
+| `WOLFRAM_LOCALBASE` | Path to `LocalObject` storage (the directory of `$LocalBase`) |
 | `APPDATA` | (Windows only) Path to application data (typically `ParentDirectory[$UserBaseDirectory]`) |
 | `MCP_APPS_ENABLED` | Set to `"false"` to disable [MCP Apps](mcp-apps.md) UI resources (optional) |
 | `MCP_APPS_NOTEBOOK_METHOD` | Set to `"Inline"` to embed [MCP Apps](mcp-apps.md) notebooks inline instead of deploying them to the cloud (experimental, optional) |
@@ -769,21 +829,34 @@ UninstallMCPServer[File["config.json"], "ApplicationName" -> "Cline"]
 
 ## Querying Supported Clients
 
-The public variable `$SupportedMCPClients` provides an association of all supported client metadata. It can be used to programmatically query which clients are supported and inspect their configuration details.
+The public variable `$SupportedClients` provides an association of all supported client metadata (MCP servers and/or agent skills). It can be used to programmatically query which clients are supported and inspect their configuration details. `$SupportedMCPClients` is the subset of clients that support MCP servers (those with an `"InstallLocation"`); today this is every client, and it remains available for backward compatibility.
 
 ```wl
 (* List all supported client names *)
-Keys[$SupportedMCPClients]
-(* {"Antigravity", "ClaudeCode", "ClaudeDesktop", "Cline", "Codex", ...} *)
+Keys[$SupportedClients]
+(* {"AmazonQ", "Antigravity", "AugmentCode", "AugmentCodeIDE", "ClaudeCode", ...} *)
 
 (* Get metadata for a specific client *)
-$SupportedMCPClients["ClaudeDesktop"]
+$SupportedClients["ClaudeDesktop"]
 (* <|"Aliases" -> {"Claude"}, "ConfigFormat" -> "JSON", "ConfigKey" -> {"mcpServers"}, ...|> *)
+
+(* Clients that support agent skills *)
+Keys @ Select[$SupportedClients, #["SkillsSupport"] &]
 ```
+
+Besides the fields of the registry entry (see [Client Entry Structure](#client-entry-structure)), each metadata association contains these derived fields:
+
+| Field | Description |
+|-------|-------------|
+| `"Name"` | The canonical client name |
+| `"ProjectSupport"` | Whether `InstallMCPServer` supports project-level installation (`"ProjectPath"` is set) |
+| `"SkillsSupport"` | Whether the client has a user skills directory (`"SkillsLocation"` is set) |
+| `"SkillsProjectSupport"` | Whether the client has a project skills directory (`"SkillsProjectPath"` is set) |
+| `"ServerConverter"` | The server converter function (`Identity` if none) |
 
 ### Detecting Installed Clients
 
-`DetectedMCPClients[]` returns the subset of `$SupportedMCPClients` whose user-scope config file exists on the current machine — a quick way to discover which supported clients are actually installed before calling `InstallMCPServer`.
+`DetectedMCPClients[]` returns the subset of `$SupportedMCPClients` whose user-scope MCP config file exists on the current machine — a quick way to discover which supported clients are actually installed before calling `InstallMCPServer`.
 
 ```wl
 (* Names of clients that appear to be installed locally *)
@@ -799,7 +872,7 @@ The result is keyed by canonical client name and preserves the ordering of `$Sup
 
 ## Adding Support for New Clients
 
-All client configuration is centralized in `$supportedMCPClients` in `Kernel/SupportedClients.wl`. To add support for a new MCP client, add an entry to this association.
+All client configuration is centralized in `$supportedClients` in `Kernel/SupportedClients.wl`. To add support for a new client, add an entry to this association.
 
 ### Client Entry Structure
 
@@ -812,10 +885,12 @@ Each entry is keyed by the canonical client name and contains an association wit
 | `"ConfigFormat"` | Yes | File format: `"JSON"`, `"TOML"`, or `"YAML"` |
 | `"ConfigKey"` | Yes | Key path to the servers section (e.g. `{"mcpServers"}` or `{"servers"}`) |
 | `"URL"` | Yes | Client's website or download page |
-| `"InstallLocation"` | Yes | Config file path(s) per OS (see below) |
+| `"InstallLocation"` | For MCP | Config file path(s) per OS (see below). A client without it doesn't support MCP servers: it is not part of `$SupportedMCPClients`, and `InstallMCPServer` fails with `UnsupportedMCPClient`. |
 | `"DefaultToolset"` | Yes | Predefined server name to use when `InstallMCPServer`/`DeployAgentTools` is called with `Automatic`. Use `"WolframLanguage"` for coding-oriented clients and `"Wolfram"` for general-purpose chat clients. |
 | `"ProjectPath"` | No | Relative path components for project-level config |
 | `"ServerConverter"` | No | Function to transform the standard server entry into a client-specific format |
+| `"SkillsLocation"` | No | The user [skills directory](#agent-skills-locations) (the directory that contains skill folders), in the same format as `"InstallLocation"` |
+| `"SkillsProjectPath"` | No | Relative path components of the project skills directory |
 
 ### Example Entry
 
@@ -832,7 +907,9 @@ Each entry is keyed by the canonical client name and contains an association wit
         "MacOSX"  :> { $HomeDirectory, ".newclient", "config.json" },
         "Windows" :> { $HomeDirectory, "AppData", "Roaming", "NewClient", "config.json" },
         "Unix"    :> { $HomeDirectory, ".config", "newclient", "config.json" }
-    |>
+    |>,
+    "SkillsLocation"    :> { $HomeDirectory, ".newclient", "skills" },
+    "SkillsProjectPath" -> { ".newclient", "skills" }
 |>
 ```
 
@@ -841,6 +918,8 @@ If the install location is the same on all platforms, use a single `RuleDelayed`
 ```wl
 "InstallLocation" :> { $HomeDirectory, ".newclient", "config.json" }
 ```
+
+Always use `RuleDelayed` (`:>`) for paths that contain `$HomeDirectory`, so that they are evaluated when used (the registry is cached in the paclet's MX file) and tests can isolate them by `Block`ing `$HomeDirectory`.
 
 ### Custom Server Converters
 
@@ -860,8 +939,9 @@ convertToClineFormat[ server_Association ] := Enclose[
 
 ## Related Files
 
-- `Kernel/SupportedClients.wl` - Supported MCP client definitions and format converters
-- `Kernel/InstallMCPServer.wl` - Installation and uninstallation implementation
+- `Kernel/SupportedClients.wl` - Supported client definitions (MCP and agent skills locations) and format converters
+- `Kernel/InstallMCPServer.wl` - Installation and uninstallation implementation, and the location helpers (`installLocation`, `projectInstallLocation`, `skillsLocation`, `projectSkillsLocation`)
+- `Kernel/AgentSkills.wl` - Agent skills installation (`InstallAgentSkills`, `UninstallAgentSkills`; see [agent-tools-objects.md](agent-tools-objects.md))
 - `Kernel/DeployAgentTools.wl` - Managed deployment of agent tools (see [deploy-agent-tools.md](deploy-agent-tools.md))
 - `Kernel/CreateMCPServer.wl` - Server creation and JSON configuration generation
 - `Kernel/MCPServerObject.wl` - Server object structure

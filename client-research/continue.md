@@ -191,7 +191,7 @@ Continue is essentially *"do what AugmentCodeIDE does, but on a YAML file, and t
 6. **Tests** in [`Tests/InstallMCPServer.wlt`](../Tests/InstallMCPServer.wlt) — install location per OS, project-path shape, install/uninstall round-trip on both scopes, name-based upsert idempotency, multi-server, standalone-file metadata, path-based auto-detection, `$SupportedMCPClients` metadata, count bump.
 7. **User-facing docs** in [`docs/mcp-clients.md`](../docs/mcp-clients.md) — table row and a "Continue" subsection covering global vs. project scope and the YAML+array shape.
 8. **`README.md`** — supported-clients table row.
-9. **`AgentSkills/References/SetUpWolframMCPServer.md`** + 4 generated skill copies — table row.
+9. **`AgentSkills/References/SetUpWolframMCPServer.md`** + the 4 built copies in `Assets/AgentSkills/*/references/` — table row.
 10. **`TODO/more-mcp-clients.md`** — mark as done.
 
 No changes to `PacletInfo.wl` or `Kernel/Main.wl` are required (client support is internal metadata plus existing `InstallMCPServer`).

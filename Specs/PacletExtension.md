@@ -4,6 +4,8 @@
 
 External Wolfram paclets can contribute MCP servers, tools, and prompts by declaring a custom `"AgentTools"` extension in their `PacletInfo.wl`. AgentTools discovers these extensions via the PacletManager and exposes them through the existing APIs (`MCPServerObject`, `InstallMCPServer`, `CreateMCPServer`, etc.). This leverages the Wolfram Paclet Repository as a distribution mechanism for AgentTools extensions.
 
+> **See also:** [AgentToolsObject.md](AgentToolsObject.md) extends this design: a paclet may have several `"AgentTools"` entries (all applicable entries are used, items are paclet-scoped, and definition files are looked up in every entry's root), entries can declare `"AgentSkills"`, and each entry that declares servers or skills defines a bundle (`AgentToolsObject`). It also describes the additional entry keys (`"Name"`, `"Description"`, `"AgentSkills"`, `"SystemID"`, `"WolframVersion"`) and validation checks. Where the two documents differ, AgentToolsObject.md takes precedence.
+
 ---
 
 ## Goals

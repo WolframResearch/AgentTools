@@ -598,4 +598,4 @@ InstallMCPServer[
 - `Tests/ToolOptions.wlt` - Tests for tool options system
 - `Specs/ToolOptions.md` - Design specification for tool options
 - `AgentSkills/Manifest.wl` - Maps tools to distributable agent skills (see [agent-skills.md](agent-skills.md))
-- `Scripts/BuildAgentSkills.wls` - Generates standalone `.wls` scripts from tool definitions
+- `Scripts/BuildAgentSkills.wls` - Generates standalone `.wls` scripts from tool definitions and writes the built skills to `Assets/AgentSkills/` (rebuild and commit after changing a tool that a skill uses; `Tests/AgentSkillsBuild.wlt` fails when the built skills are stale)

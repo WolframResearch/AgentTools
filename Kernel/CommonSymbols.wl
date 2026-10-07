@@ -8,6 +8,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$debug;
 `$defaultMCPServer;
 `$deployCloudNotebooks;
+`$deploymentLockFile;
 `$deploymentsPath;
 `$imagePath;
 `$mcpEvaluation;
@@ -16,8 +17,9 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$releaseID;
 `$rootPath;
 `$serverVersion;
+`$skillRegistryPath;
 `$storagePath;
-`$supportedMCPClients;
+`$supportedClients;
 `$thisPaclet;
 `$wolframCommand;
 `addToMXInitialization;
@@ -93,10 +95,19 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `exportMarkdownString;
 
 (* Shared symbols with DeployAgentTools: *)
+`clearMCPInstallationRecord;
+`clearRecordedInstallation;
 `defaultToolsetForTarget;
 `guessClientName;
+`installDisplayName;
 `installLocation;
+`localMCPServerConfigKey;
+`mcpServerConfigKey;
+`preflightMCPServerInstall;
 `projectInstallLocation;
+`projectSkillsLocation;
+`removeMCPConfigEntry;
+`skillsLocation;
 `toInstallName;
 
 (* Graphics detection and conversion: *)
@@ -138,6 +149,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$supportedProtocolVersions;
 
 (* Output sanitization: *)
+`convertPUACharacters;
 `sanitizeResponse;
 
 (* MCP client requests / server-to-client traffic: *)
@@ -177,6 +189,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `ensurePacletForInstall;
 `findAgentToolsPaclets;
 `findInstalledPaclet;
+`findRemoteAgentToolsPaclet;
 `findRemoteAgentToolsPaclets;
 `getAgentToolsDeclaredItems;
 `getAgentToolsExtension;
@@ -189,5 +202,47 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `resolvePacletPrompt;
 `resolvePacletServer;
 `resolvePacletTool;
+(* Paclet extension support for bundles and agent skills: *)
+`getAgentToolsBundles;
+`getAgentToolsExtensionDirectories;
+`getAgentToolsExtensions;
+`getAgentToolsItemDeclaration;
+`resolvePacletBundle;
+`resolvePacletSkill;
+
+(* Agent skills (AgentSkills.wl): *)
+`$defaultAgentSkills;
+`agentSkillDescriptionQ;
+`agentSkillName;
+`agentSkillNameQ;
+`applySkillInstallPlan;
+`builtInSkillDefinition;
+`canonicalPath;
+`canonicalPathKey;
+`compareSkillManifest;
+`deleteSkillRegistryEntry;
+`deploymentUUIDExistsQ;
+`foldPathCase;
+`parseSkillMarkdown;
+`planSkillInstall;
+`readSkillRegistryEntry;
+`releaseSkillReference;
+`resolveSkillsRoot;
+`skillDirectoryState;
+`skillManifest;
+`skillRegistryKey;
+`skillReleaseMessages;
+`sweepSkillRegistry;
+`toAgentSkillSource;
+`writeSkillRegistryEntry;
+
+(* Agent tools bundles (AgentToolsObject.wl): *)
+`$defaultAgentTools;
+`agentToolsObjectQ;
+`makeAgentToolsObjectBoxes;
+`toAgentToolsObject;
+
+(* Deployment lock (DeployAgentTools.wl): *)
+`withDeploymentLock;
 
 EndPackage[ ];
