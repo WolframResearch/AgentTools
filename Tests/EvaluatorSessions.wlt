@@ -749,19 +749,20 @@ VerificationTest[
 (* Under the "Local" method Chatbook parses the code in this kernel but evaluates it in the eval subkernel, so
    the parse is given the eval kernel's context state and the eval kernel's symbols for the code's names. *)
 
-(* Words in strings and comments are extra candidates, which is harmless; named-character letters are
-   unescaped so that they belong to a name, while operators such as \[Equal] still separate names. *)
+(* Only symbols count (not strings, comments, operators such as \[Equal], or slots), as written: qualified and
+   relative names stay whole, and named-character letters are unescaped. Code with syntax errors works too. *)
 VerificationTest[
-    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`symbolNameCandidates[
-        "f[x_Integer] := \\[Alpha]1 + $v2 + ctx`g + a\\[Equal]b (* note *) + \"word\" + f[2x]"
+    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`codeSymbolNames[
+        "f[x_Integer] := \\[Alpha]1 + $v2 + ctx`g + a\\[Equal]b (* note *) + \"word\" + f[2x + `y] + #s & + h["
     ],
-    { "f", "x", "Integer", "\[Alpha]1", "$v2", "ctx", "g", "a", "Equal", "b", "note", "word" },
+    { "f", "x", "Integer", "\[Alpha]1", "$v2", "ctx`g", "a", "b", "`y", "h" },
     SameTest -> MatchQ,
-    TestID   -> "SymbolNameCandidates-GH#249@@Tests/EvaluatorSessions.wlt:754,1-761,2"
+    TestID   -> "CodeSymbolNames-GH#249@@Tests/EvaluatorSessions.wlt:754,1-761,2"
 ]
 
-(* The eval kernel reports its context state and the full name of the existing symbol each name resolves to
-   ($ContextPath first, then $Context), and does not create symbols for the names that resolve to nothing. *)
+(* The eval kernel reports its context state and the full name of the symbol each name refers to there: found on
+   $ContextPath first, then in $Context, where names that do not exist yet are created (as the parser would);
+   qualified and relative names are resolved too. Names that are not valid as written are left out. *)
 VerificationTest[
     Module[ { result },
         result = Block[ { $Context = "ParseCtxTestA`", $ContextPath = { "ParseCtxTestB`", "System`" } },
@@ -770,9 +771,9 @@ VerificationTest[
             ParseCtxTestA`pctOnlyA  = 3;
             {
                 Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`parseContextInKernel[
-                    { "pctShared", "pctOnlyA", "pctMissing", "Plus" }
+                    { "pctShared", "pctOnlyA", "pctNew", "Plus", "`pctRel", "ParseCtxTestB`pctOther", "\\:03b2" }
                 ],
-                NameQ[ "ParseCtxTestA`pctMissing" ]
+                NameQ[ "ParseCtxTestA`pctNew" ]
             }
         ];
         Quiet @ Remove[ "ParseCtxTestA`*", "ParseCtxTestB`*" ];
@@ -783,12 +784,19 @@ VerificationTest[
             "$Context"        -> "ParseCtxTestA`",
             "$ContextPath"    -> { "ParseCtxTestB`", "System`" },
             "$ContextAliases" -> _Association,
-            "Symbols"         -> { "ParseCtxTestB`pctShared", "ParseCtxTestA`pctOnlyA", "System`Plus" }
+            "Symbols"         -> {
+                "ParseCtxTestB`pctShared",
+                "ParseCtxTestA`pctOnlyA",
+                "ParseCtxTestA`pctNew",
+                "System`Plus",
+                "ParseCtxTestA`pctRel",
+                "ParseCtxTestB`pctOther"
+            }
         |>,
-        False
+        True
     },
     SameTest -> MatchQ,
-    TestID   -> "ParseContextInKernel-ResolvesExistingNames-GH#249@@Tests/EvaluatorSessions.wlt:765,1-792,2"
+    TestID   -> "ParseContextInKernel-ResolvesNames-GH#249@@Tests/EvaluatorSessions.wlt:766,1-800,2"
 ]
 
 (* With the eval kernel stubbed: the symbols it reports are created here although this kernel never loaded
@@ -817,7 +825,7 @@ VerificationTest[
     ],
     { "Sessions`PctStubSess`", { "PctStubPkg`", "PctStubPkg`", "Sessions`PctStubSess`" } },
     SameTest -> MatchQ,
-    TestID   -> "SyncParseContext-AppliesEvalKernelState-GH#249@@Tests/EvaluatorSessions.wlt:797,1-821,2"
+    TestID   -> "SyncParseContext-AppliesEvalKernelState-GH#249@@Tests/EvaluatorSessions.wlt:805,1-829,2"
 ]
 
 (* In-process methods parse where they evaluate, so this kernel's context state is left alone. *)
@@ -830,7 +838,7 @@ VerificationTest[
     ] === { $Context, $ContextPath, $ContextAliases },
     True,
     SameTest -> MatchQ,
-    TestID   -> "SyncParseContext-NoOpForInProcess-GH#249@@Tests/EvaluatorSessions.wlt:824,1-834,2"
+    TestID   -> "SyncParseContext-NoOpForInProcess-GH#249@@Tests/EvaluatorSessions.wlt:832,1-842,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -858,7 +866,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:843,1-862,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:851,1-870,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
@@ -880,7 +888,7 @@ VerificationTest[
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:865,1-884,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:873,1-892,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
@@ -904,7 +912,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:887,1-908,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:895,1-916,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
@@ -924,7 +932,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:911,1-928,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:919,1-936,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
@@ -944,7 +952,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:931,1-948,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:939,1-956,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -969,7 +977,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:953,1-973,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:961,1-981,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
@@ -989,7 +997,7 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:976,1-993,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:984,1-1001,2"
 ]
 
 (* Context-path changes made inside a session (e.g. by Get) survive continued calls: the continuing
@@ -1013,7 +1021,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "{101, True}" ]
     ],
     True,
-    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:998,1-1017,2"
+    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:1006,1-1025,2"
 ]
 
 (* Resuming a session saved by a different kernel process restores the saved state and warns that
@@ -1043,7 +1051,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:1022,1-1047,2"
+    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:1030,1-1055,2"
 ]
 
 (* Switching back to an earlier session within the same kernel process resumes silently: no
@@ -1068,7 +1076,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:1051,1-1072,2"
+    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:1059,1-1080,2"
 ]
 
 (* If the eval kernel loses its in-memory session state while the session is still current (e.g. the
@@ -1099,7 +1107,7 @@ VerificationTest[
     ],
     { True, True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:1077,1-1103,2"
+    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:1085,1-1111,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1147,7 +1155,7 @@ $localSessionTest @ VerificationTest[
         _? (StringContainsQ[ "{localIsoX, \"Sessions`LocalIsoB`\"}" ])
     },
     SameTest -> MatchQ,
-    TestID   -> "Integration-Local-TypedSymbolsInSessionContext-GH#249@@Tests/EvaluatorSessions.wlt:1140,21-1151,2"
+    TestID   -> "Integration-Local-TypedSymbolsInSessionContext-GH#249@@Tests/EvaluatorSessions.wlt:1148,21-1159,2"
 ]
 
 (* Later calls resolve names through the contexts and aliases the session added: a package loaded only in the
@@ -1170,7 +1178,7 @@ $localSessionTest @ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-Local-SessionContextPathAndAliases-GH#249@@Tests/EvaluatorSessions.wlt:1155,21-1174,2"
+    TestID   -> "Integration-Local-SessionContextPathAndAliases-GH#249@@Tests/EvaluatorSessions.wlt:1163,21-1182,2"
 ]
 
 (* Symbols created at run time and typed symbols are the same symbols, and functions defined in an earlier call
@@ -1185,7 +1193,7 @@ $localSessionTest @ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-Local-NoUndefinedSymbolWarnings-GH#249@@Tests/EvaluatorSessions.wlt:1178,21-1189,2"
+    TestID   -> "Integration-Local-NoUndefinedSymbolWarnings-GH#249@@Tests/EvaluatorSessions.wlt:1186,21-1197,2"
 ]
 
 (* The session's context state is applied to this kernel only for the duration of the call. *)
@@ -1200,7 +1208,7 @@ $localSessionTest @ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Integration-Local-ParseContextScopedToCall-GH#249@@Tests/EvaluatorSessions.wlt:1192,21-1204,2"
+    TestID   -> "Integration-Local-ParseContextScopedToCall-GH#249@@Tests/EvaluatorSessions.wlt:1200,21-1212,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1243,7 +1251,7 @@ $cloudSessionTest @ VerificationTest[
     ],
     { True, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-CloudSessionDefinitionsSurviveRestart@@Tests/EvaluatorSessions.wlt:1218,21-1247,2"
+    TestID   -> "Integration-CloudSessionDefinitionsSurviveRestart@@Tests/EvaluatorSessions.wlt:1226,21-1255,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

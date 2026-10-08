@@ -10,6 +10,7 @@ Needs[ "Wolfram`AgentTools`Graphics`" ];
 Needs[ "Wolfram`AgentTools`Tools`"    ];
 
 Needs[ "Wolfram`Chatbook`" -> "cb`" ];
+Needs[ "CodeParser`"       -> "cp`" ];
 
 System`HoldCompleteForm;
 
@@ -1099,11 +1100,11 @@ resumeSessionInKernel // endDefinition;
    string in this kernel first, and the parse decides which symbol each short name refers to. Left to this
    kernel's own context state, typed symbols would land in Global` (shared by every session) and names would
    resolve against this kernel's packages instead of the session's. So before each evaluation
-   syncParseContext asks the eval kernel which existing symbol each short name in the code resolves to there,
-   creates those symbols here (this kernel may not have loaded the session's packages), and applies the
-   session's $Context, $ContextPath, and $ContextAliases to this kernel, scoped to the call by withSession.
-   Names that resolve to nothing in the eval kernel are then created in the session context, as they would be
-   there. The in-process methods parse where they evaluate, so this is a no-op for them. *)
+   syncParseContext asks the eval kernel for the full name of the symbol that each symbol name in the code
+   refers to there, creates those symbols here (this kernel may not have loaded the session's packages), and
+   applies the session's $Context, $ContextPath, and $ContextAliases to this kernel, scoped to the call by
+   withSession. The parse here then finds each name where the eval kernel would. The in-process methods parse
+   where they evaluate, so this is a no-op for them. *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1116,7 +1117,7 @@ syncParseContext[ code_String ] /; getEvaluatorMethod[ ] === "Local" := Enclose[
     Module[ { state },
         state = ConfirmMatch[
             (* Inject the literal names for the same reason as in saveSession. *)
-            With[ { names = symbolNameCandidates @ code }, useEvaluatorKernel @ parseContextInKernel @ names ],
+            With[ { names = codeSymbolNames @ code }, useEvaluatorKernel @ parseContextInKernel @ names ],
             KeyValuePattern @ {
                 "$Context"        -> _String,
                 "$ContextPath"    -> { ___String },
@@ -1153,19 +1154,22 @@ syncParseContextSafe // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*symbolNameCandidates*)
-(* The short names that appear in a code string. A lexical scan is enough because extra candidates (words in
-   strings and comments, the parts of qualified names) are only looked up, never created unless the eval
-   kernel already has them. Named-character letters such as \[Alpha] are unescaped first so that they count as
-   letters. *)
-symbolNameCandidates // beginDefinition;
+(*codeSymbolNames*)
+(* The names of the symbols in a code string as written there (short, qualified, or relative such as `f). The
+   concrete parse also covers code with syntax errors. Named-character letters such as \[Alpha] are unescaped
+   so that the eval kernel accepts the names (see resolveSymbolName). *)
+codeSymbolNames // beginDefinition;
 
-symbolNameCandidates[ code_String ] := DeleteDuplicates @ StringCases[
-    StringReplace[ code, esc: ("\\[" ~~ LetterCharacter.. ~~ "]") :> unescapeLetter @ esc ],
-    (LetterCharacter | "$") ~~ (WordCharacter | "$")...
-];
+codeSymbolNames[ code_String ] := (
+    (* We need to make sure CodeParser is loaded at runtime, since we might be running from an MX build *)
+    Needs[ "CodeParser`" -> None ];
+    DeleteDuplicates @ StringReplace[
+        Cases[ cp`CodeConcreteParse @ code, cp`LeafNode[ Symbol, name_String, _ ] :> name, Infinity ],
+        esc: ("\\[" ~~ LetterCharacter.. ~~ "]") :> unescapeLetter @ esc
+    ]
+);
 
-symbolNameCandidates // endDefinition;
+codeSymbolNames // endDefinition;
 
 
 unescapeLetter // beginDefinition;
@@ -1176,9 +1180,8 @@ unescapeLetter // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*parseContextInKernel*)
-(* Runs in the eval kernel: its context state, plus the full name of the existing symbol that each given short
-   name resolves to there. Context[name] performs the kernel's own lookup ($ContextPath, then $Context) without
-   creating a symbol; names that resolve to nothing are left out. *)
+(* Runs in the eval kernel: its context state, plus the full name of the symbol that each given name refers to
+   there. *)
 parseContextInKernel // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
@@ -1192,10 +1195,20 @@ parseContextInKernel[ names: { ___String } ] := <|
 parseContextInKernel // endDefinition;
 
 
+(* The name is looked up exactly as the parser looks it up, which creates the symbol in $Context if it does not
+   exist yet (as the evaluation would anyway). Names that are not valid symbol names as written (e.g. other
+   escaped characters) are left out and resolved by the parse in the controlling kernel. *)
 resolveSymbolName // beginDefinition;
-resolveSymbolName[ name_String ] :=
-    With[ { context = Quiet @ Context @ name }, If[ StringQ @ context, context <> name, Nothing ] ];
+resolveSymbolName[ name_String ] /; Internal`SymbolNameQ[ name, True ] :=
+    ToExpression[ name, InputForm, fullSymbolName ];
+resolveSymbolName[ _String ] := Nothing;
 resolveSymbolName // endDefinition;
+
+
+fullSymbolName // beginDefinition;
+fullSymbolName // Attributes = { HoldAllComplete };
+fullSymbolName[ symbol_Symbol ] := Context @ Unevaluated @ symbol <> SymbolName @ Unevaluated @ symbol;
+fullSymbolName // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
