@@ -588,7 +588,7 @@ Several clients share a skills directory (Codex, Goose, and Zed; Copilot CLI and
 `DeployAgentTools` deploys the MCP servers and agent skills of an `AgentToolsObject` together as one tracked unit that `DeleteObject` removes again; it uses the user skills directory for a `"ClientName"` target and the project skills directory for a `{"ClientName", dir}` target. `InstallAgentSkills` and `UninstallAgentSkills` are the low-level functions that copy skills into (or remove them from) a skills directory without any tracking:
 
 ```wl
-(* Deploy a built-in toolset: the WolframLanguage MCP server plus the wolfram-language, wolfram-notebooks, and wolfram-paclets skills *)
+(* Deploy a built-in toolset: the WolframLanguage MCP server plus the wolfram-language, wolfram-notebooks, wolfram-paclets, and wolfram-debugging skills *)
 DeployAgentTools["ClaudeCode", "WolframLanguage"]
 
 (* Deploy a bundle of MCP servers and agent skills *)

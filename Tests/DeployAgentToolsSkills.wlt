@@ -1501,7 +1501,7 @@ builtInRegistryEntry[ name_String ] :=
 $builtInSkillsAsset := Wolfram`AgentTools`Common`$thisPaclet[ "AssetLocation", "AgentSkills" ];
 $builtInVersion     := Wolfram`AgentTools`Common`$thisPaclet[ "Version" ];
 
-$languageSkills = { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
+$languageSkills = { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" };
 
 (* Relative path -> bytes of every file in a directory *)
 directoryContents[ dir_String ] := Association @ Map[
@@ -1550,7 +1550,7 @@ VerificationTest[
             directoryContents @ FileNameJoin @ { $claudeSkills, name } === builtInSkillContents @ name,
         { name, $languageSkills }
     ],
-    { True, True, True },
+    { True, True, True, True },
     TestID -> "BuiltIn-Global-SkillFiles@@Tests/DeployAgentToolsSkills.wlt:1547,1-1555,2"
 ]
 
@@ -1565,7 +1565,7 @@ VerificationTest[
             "External"   -> False,
             "References" -> { $builtInDep[ "UUID" ] }
         |>,
-        { name, $languageSkills }
+        { name, Sort @ $languageSkills }
     ],
     TestID -> "BuiltIn-Global-RegistryEntries@@Tests/DeployAgentToolsSkills.wlt:1558,1-1571,2"
 ]
@@ -1582,7 +1582,7 @@ VerificationTest[
         builtInRegistryEntries[ ],
         withBuiltInEnvironment @ KeyExistsQ[ readJSON[ FileNameJoin @ { $HomeDirectory, ".claude.json" } ][ "mcpServers" ], "Wolfram" ]
     },
-    { { False, False, False }, { }, False },
+    { { False, False, False, False }, { }, False },
     TestID -> "BuiltIn-Global-Delete-State@@Tests/DeployAgentToolsSkills.wlt:1579,1-1587,2"
 ]
 
@@ -1600,7 +1600,7 @@ VerificationTest[
         $builtInLMStudio[ "Skills" ][ "NotInstalled" ],
         KeyExistsQ[ readJSON[ $builtInLMStudio[ "ConfigFile" ] ][ "mcpServers" ], "Wolfram" ]
     },
-    { { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha" }, { }, True },
+    { { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" }, { }, True },
     TestID -> "BuiltIn-NoSkillsSupport-Client@@Tests/DeployAgentToolsSkills.wlt:1594,1-1605,2"
 ]
 
@@ -1646,8 +1646,8 @@ VerificationTest[
     $builtInAll = withBuiltInClients[ { "Codex", "LMStudio" }, DeployAgentTools[ All, "Wolfram", "VerifyLLMKit" -> False ] ];
     withBuiltInEnvironment[ { #[ "ClientName" ], #[ "MCPServerNames" ], #[ "AgentSkills" ], #[ "Skills" ][ "Skipped" ] } & /@ $builtInAll ],
     {
-        { "Codex"   , { "Wolfram" }, { "wolfram-language", "wolfram-alpha" }, { } },
-        { "LMStudio", { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha" } }
+        { "Codex"   , { "Wolfram" }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" }, { } },
+        { "LMStudio", { "Wolfram" }, { }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" } }
     },
     TestID -> "BuiltIn-All-NoSkillsWarning@@Tests/DeployAgentToolsSkills.wlt:1645,1-1653,2"
 ]
@@ -1719,13 +1719,13 @@ VerificationTest[
     },
     {
         True,
-        { "wolfram-notebooks", "wolfram-paclets" },
+        { "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" },
         { "wolfram-language" },
         True,
         True,
         { "WolframLanguage" },
         True,
-        { "wolfram-notebooks", "wolfram-paclets" }
+        { "wolfram-debugging", "wolfram-notebooks", "wolfram-paclets" }
     },
     TestID -> "BuiltIn-Clash-SkillNotInstalled-State@@Tests/DeployAgentToolsSkills.wlt:1709,1-1731,2"
 ]
@@ -1794,7 +1794,7 @@ VerificationTest[
     },
     {
         {
-            { "ClaudeCode", { "WolframLanguage" }, { "wolfram-notebooks", "wolfram-paclets" }, { "wolfram-language" } },
+            { "ClaudeCode", { "WolframLanguage" }, { "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" }, { "wolfram-language" } },
             { "Codex"     , { "WolframLanguage" }, $languageSkills, { } }
         },
         True
@@ -1854,7 +1854,7 @@ VerificationTest[
     {
         True,
         True,
-        { "wolfram-notebooks", "wolfram-paclets" },
+        { "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" },
         { "wolfram-language" },
         False,
         Missing[ "NotFound" ],
@@ -1908,7 +1908,7 @@ VerificationTest[
     CopyDirectory[ $builtInSkillsAsset, FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills" } ];
     Scan[
         rewriteFile[ FileNameJoin @ { $olderPacletDirectory, "Assets", "AgentSkills", #, "SKILL.md" }, olderSkillMarkdown ] &,
-        { "wolfram-alpha", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
+        { "wolfram-alpha", "wolfram-debugging", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
     ];
     $olderPaclet = PacletObject @ File @ $olderPacletDirectory;
     withOlderAgentTools @ { Wolfram`AgentTools`Common`$pacletVersion, Wolfram`AgentTools`Common`builtInSkillDefinition[ "wolfram-language" ] },
@@ -1923,7 +1923,7 @@ VerificationTest[
         withBuiltInEnvironment @ Table[ directoryContents @ FileNameJoin @ { $agentsSkills, name } === olderSkillContents @ name, { name, $languageSkills } ],
         builtInRegistryEntry[ # ][ "Version" ] & /@ $languageSkills
     },
-    { _AgentToolsDeployment? agentToolsDeploymentQ, { True, True, True }, { $olderVersion, $olderVersion, $olderVersion } },
+    { _AgentToolsDeployment? agentToolsDeploymentQ, { True, True, True, True }, { $olderVersion, $olderVersion, $olderVersion, $olderVersion } },
     SameTest -> MatchQ,
     TestID   -> "BuiltIn-Update-OlderVersionDeployed@@Tests/DeployAgentToolsSkills.wlt:1919,1-1929,2"
 ]
@@ -1946,8 +1946,8 @@ VerificationTest[
         withBuiltInEnvironment @ $newerGoose[ "AgentSkills" ]
     },
     {
-        { True, True, True },
-        ConstantArray[ { $builtInVersion, Sort @ { $olderCodex[ "UUID" ], $newerGoose[ "UUID" ] }, False }, 3 ],
+        { True, True, True, True },
+        ConstantArray[ { $builtInVersion, Sort @ { $olderCodex[ "UUID" ], $newerGoose[ "UUID" ] }, False }, 4 ],
         $languageSkills
     },
     TestID -> "BuiltIn-Update-NewerVersionReplaces-State@@Tests/DeployAgentToolsSkills.wlt:1939,1-1954,2"
@@ -1957,7 +1957,7 @@ VerificationTest[
 VerificationTest[
     $olderZed = withOlderAgentTools @ withBuiltInEnvironment @ DeployAgentTools[ "Zed", "Wolfram", "VerifyLLMKit" -> False ],
     _AgentToolsDeployment? agentToolsDeploymentQ,
-    { DeployAgentTools::AgentSkillNewerVersionKept },
+    { DeployAgentTools::AgentSkillNewerVersionKept, DeployAgentTools::AgentSkillNewerVersionKept },
     SameTest -> MatchQ,
     TestID   -> "BuiltIn-Update-OlderVersionKeepsNewer@@Tests/DeployAgentToolsSkills.wlt:1957,1-1963,2"
 ]
@@ -1977,7 +1977,7 @@ VerificationTest[
         Sort @ { $olderCodex[ "UUID" ], $newerGoose[ "UUID" ], $olderZed[ "UUID" ] },
         True,
         $olderVersion,
-        { "wolfram-language", "wolfram-alpha" }
+        { "wolfram-language", "wolfram-alpha", "wolfram-debugging" }
     },
     TestID -> "BuiltIn-Update-OlderVersionKeepsNewer-State@@Tests/DeployAgentToolsSkills.wlt:1965,1-1983,2"
 ]

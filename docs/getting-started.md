@@ -172,7 +172,7 @@ AgentTools/
 ├── AgentSkills/               # Agent skill sources (see [agent-skills.md](agent-skills.md))
 │   ├── Manifest.wl            # Tool-to-skill mapping
 │   ├── References/            # Shared reference files
-│   └── Skills/                # Hand-authored SKILL.md files
+│   └── Skills/                # Hand-authored SKILL.md files (plus optional references/ and scripts/)
 ├── Tests/                     # Test files (.wlt)
 ├── Specs/                     # Design specifications for features
 ├── Notes/                     # Development notes and design explorations

@@ -67,7 +67,7 @@ Agent skills are built separately from the paclet, and the built skills are comm
 wolframscript -f Scripts/BuildAgentSkills.wls
 ```
 
-This generates the scripts and `references/Scripts.md`, copies the shared references, copies each hand-authored `SKILL.md` with the paclet version stamped into its `metadata.version`, updates the version in `.claude-plugin/marketplace.json`, and cleans up temporary files. The build itself is implemented in `Scripts/Resources/AgentSkillsBuilder.wl`.
+This generates the scripts and `references/Scripts.md`, copies the shared references and any hand-authored `references/` and `scripts/` files of a skill, copies each hand-authored `SKILL.md` with the paclet version stamped into its `metadata.version`, updates the version in `.claude-plugin/marketplace.json`, and cleans up temporary files. The build itself is implemented in `Scripts/Resources/AgentSkillsBuilder.wl`.
 
 `PacletInfo.wl` declares `Assets/AgentSkills` as the `"AgentSkills"` asset, so the paclet build ships whatever is committed there; `BuildPaclet.wls` does not rebuild the skills. Rebuild and commit `Assets/AgentSkills/` after changing `AgentSkills/`, `Scripts/Resources/SkillScriptTemplate.wls`, or a tool that a skill uses. To check whether the committed skills are up to date without changing anything:
 

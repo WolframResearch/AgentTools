@@ -62,7 +62,7 @@ $defaultAgentTools[ "Wolfram" ] = <|
     "Description" -> "Tools for general computation and knowledge",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "Wolfram" },
-    "AgentSkills" -> { "wolfram-language", "wolfram-alpha" }
+    "AgentSkills" -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -84,7 +84,7 @@ $defaultAgentTools[ "WolframLanguage" ] = <|
     "Description" -> "Tools for Wolfram Language development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframLanguage" },
-    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
+    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" }
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -95,7 +95,7 @@ $defaultAgentTools[ "WolframPacletDevelopment" ] = <|
     "Description" -> "Tools for Wolfram Paclet development",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframPacletDevelopment" },
-    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
+    "AgentSkills" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" }
 |>;
 
 (* ::**************************************************************************************************************:: *)

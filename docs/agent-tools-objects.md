@@ -26,17 +26,17 @@ An **`AgentToolsObject`** is a named bundle of MCP servers and agent skills. `De
 
 | Bundle | MCP server | Agent skills |
 |--------|------------|--------------|
-| `"Wolfram"` | `Wolfram` | wolfram-language, wolfram-alpha |
+| `"Wolfram"` | `Wolfram` | wolfram-language, wolfram-alpha, wolfram-debugging |
 | `"WolframAlpha"` | `WolframAlpha` | wolfram-alpha |
-| `"WolframLanguage"` | `WolframLanguage` | wolfram-language, wolfram-notebooks, wolfram-paclets |
-| `"WolframPacletDevelopment"` | `WolframPacletDevelopment` | wolfram-language, wolfram-notebooks, wolfram-paclets |
+| `"WolframLanguage"` | `WolframLanguage` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging |
+| `"WolframPacletDevelopment"` | `WolframPacletDevelopment` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging |
 
 ```wl
 AgentToolsObject["WolframLanguage"]["MCPServerNames"]
 (* {"WolframLanguage"} *)
 
 AgentToolsObject["WolframLanguage"]["AgentSkillNames"]
-(* {"wolfram-language", "wolfram-notebooks", "wolfram-paclets"} *)
+(* {"wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging"} *)
 ```
 
 The skills of a built-in bundle complement its MCP server, so `DeployAgentTools` treats them differently from the skills of other bundles:
@@ -78,7 +78,7 @@ Ad hoc names may not contain `/` or equal a built-in bundle name.
 | `LLMSkill[...]` | If its `"Location"` is a skill directory, that directory is copied (including bundled files); otherwise a `SKILL.md` is generated from its fields |
 | `File[dir]` | A skill directory |
 | `"Publisher/Paclet/skill-name"` | A paclet-defined skill |
-| `"skill-name"` | A built-in skill (`"wolfram-alpha"`, `"wolfram-language"`, `"wolfram-notebooks"`, `"wolfram-paclets"`); other names fail with `AgentSkillNotFound` |
+| `"skill-name"` | A built-in skill (`"wolfram-alpha"`, `"wolfram-debugging"`, `"wolfram-language"`, `"wolfram-notebooks"`, `"wolfram-paclets"`); other names fail with `AgentSkillNotFound` |
 
 Skill names must be 1–64 lowercase letters, digits, and hyphens (no leading, trailing, or consecutive hyphens), and skills need a description of 1–1024 characters that are not all whitespace.
 
