@@ -121,6 +121,7 @@ evaluateWolframLanguage[ args: KeyValuePattern[ "code" -> code_ ] ] :=
         session        = Lookup[ args, "session", Missing[ "session" ] ];
         withSession[
             session,
+            code,
             If[ TrueQ @ $clientSupportsUI && TrueQ @ $deployCloudNotebooks,
                 evaluateWolframLanguageUI[ code, timeConstraint ],
                 evaluateWolframLanguage[ code, timeConstraint ]
@@ -555,10 +556,11 @@ initializePacletInLocalKernel // endDefinition;
 (*Sessions*)
 (* Each conversation gets an isolated, resumable evaluation session, keyed by an opaque ID supplied by
    the AI via the "session" parameter. Isolation comes from a per-session $Context: the session functions
-   run via useEvaluatorKernel and point the controlling kernel's $Context at "Sessions`<id>`", so the
-   user's code parses into that context (and, under the "Local" method, the resulting fully qualified
-   symbols then evaluate in that context inside the eval subkernel). State is persisted to disk so sessions
-   survive server restarts.
+   run via useEvaluatorKernel and point the eval kernel's $Context at "Sessions`<id>`", so the user's code
+   parses into that context. Under the in-process methods the eval kernel is this kernel. Under the "Local"
+   method the code is parsed here but evaluated in the eval subkernel, so syncParseContext also points this
+   kernel's parser at the subkernel's session state (see Local Parse Context). State is persisted to disk so
+   sessions survive server restarts.
 
    Line numbering is owned by the file-scoped $line: the authoritative per-session counter, persisted in
    the session payload and passed as the "Line" option. Under the in-process "Session" method that option
@@ -735,9 +737,8 @@ restoreCloudSessionState // endDefinition;
    $currentSessionID and the file-scoped $line. Under in-process methods parsing, evaluation, and session
    state all live in this kernel. Under the "Local" method useEvaluatorKernel runs these in the persistent
    eval subkernel alongside the user's evaluations, whose $Line is seeded separately via
-   syncEvalKernelLine. (Note: under "Local", Chatbook parses code strings in the controlling kernel, so
-   parse-time binding of unqualified new symbols does not see the eval kernel's session contexts \[LongDash]
-   a known limitation of that method.) *)
+   syncEvalKernelLine, and whose context state syncParseContext mirrors into this kernel for parsing (see
+   Local Parse Context). *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1093,6 +1094,111 @@ resumeSessionInKernel // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Local Parse Context*)
+(* Under the "Local" method the user's code is evaluated in the eval subkernel, but Chatbook parses the code
+   string in this kernel first, and the parse decides which symbol each short name refers to. Left to this
+   kernel's own context state, typed symbols would land in Global` (shared by every session) and names would
+   resolve against this kernel's packages instead of the session's. So before each evaluation
+   syncParseContext asks the eval kernel which existing symbol each short name in the code resolves to there,
+   creates those symbols here (this kernel may not have loaded the session's packages), and applies the
+   session's $Context, $ContextPath, and $ContextAliases to this kernel, scoped to the call by withSession.
+   Names that resolve to nothing in the eval kernel are then created in the session context, as they would be
+   there. The in-process methods parse where they evaluate, so this is a no-op for them. *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*syncParseContext*)
+syncParseContext // beginDefinition;
+
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
+syncParseContext[ code_String ] /; getEvaluatorMethod[ ] === "Local" := Enclose[
+    Module[ { state },
+        state = ConfirmMatch[
+            (* Inject the literal names for the same reason as in saveSession. *)
+            With[ { names = symbolNameCandidates @ code }, useEvaluatorKernel @ parseContextInKernel @ names ],
+            KeyValuePattern @ {
+                "$Context"        -> _String,
+                "$ContextPath"    -> { ___String },
+                "$ContextAliases" -> _Association,
+                "Symbols"         -> { ___String }
+            },
+            "State"
+        ];
+        (* Full names, so no aliases may apply; Quiet suppresses General::shdw for names that exist in several
+           contexts here. *)
+        Block[ { $ContextAliases = <| |> },
+            Quiet @ Scan[ ToExpression[ #, InputForm, Hold ] &, state[ "Symbols" ] ]
+        ];
+        $Context        = state[ "$Context" ];
+        $ContextPath    = state[ "$ContextPath" ];
+        $ContextAliases = state[ "$ContextAliases" ];
+    ],
+    throwInternalFailure
+];
+(* :!CodeAnalysis::EndBlock:: *)
+
+syncParseContext[ _String ] := Null;
+
+syncParseContext // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*syncParseContextSafe*)
+(* Parse-context bookkeeping must never abort the user's evaluation (mirrors syncEvalKernelLineSafe). *)
+syncParseContextSafe // beginDefinition;
+syncParseContextSafe[ code_String ] := Quiet @ catchAlways @ syncParseContext @ code;
+syncParseContextSafe[ _ ] := Null;
+syncParseContextSafe // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*symbolNameCandidates*)
+(* The short names that appear in a code string. A lexical scan is enough because extra candidates (words in
+   strings and comments, the parts of qualified names) are only looked up, never created unless the eval
+   kernel already has them. Named-character letters such as \[Alpha] are unescaped first so that they count as
+   letters. *)
+symbolNameCandidates // beginDefinition;
+
+symbolNameCandidates[ code_String ] := DeleteDuplicates @ StringCases[
+    StringReplace[ code, esc: ("\\[" ~~ LetterCharacter.. ~~ "]") :> unescapeLetter @ esc ],
+    (LetterCharacter | "$") ~~ (WordCharacter | "$")...
+];
+
+symbolNameCandidates // endDefinition;
+
+
+unescapeLetter // beginDefinition;
+unescapeLetter[ esc_String ] :=
+    With[ { c = Quiet @ ToExpression[ "\"" <> esc <> "\"" ] }, If[ StringQ @ c && LetterQ @ c, c, esc ] ];
+unescapeLetter // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*parseContextInKernel*)
+(* Runs in the eval kernel: its context state, plus the full name of the existing symbol that each given short
+   name resolves to there. Context[name] performs the kernel's own lookup ($ContextPath, then $Context) without
+   creating a symbol; names that resolve to nothing are left out. *)
+parseContextInKernel // beginDefinition;
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
+parseContextInKernel[ names: { ___String } ] := <|
+    "$Context"        -> $Context,
+    "$ContextPath"    -> $ContextPath,
+    "$ContextAliases" -> $ContextAliases,
+    "Symbols"         -> Map[ resolveSymbolName, names ]
+|>;
+(* :!CodeAnalysis::EndBlock:: *)
+parseContextInKernel // endDefinition;
+
+
+resolveSymbolName // beginDefinition;
+resolveSymbolName[ name_String ] :=
+    With[ { context = Quiet @ Context @ name }, If[ StringQ @ context, context <> name, Nothing ] ];
+resolveSymbolName // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*Session Cleanup*)
 
 (* ::**************************************************************************************************************:: *)
@@ -1259,7 +1365,8 @@ saveSessionSafe // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*withSession*)
 (* Single choke point wrapping both eval paths: set up the session, evaluate, save, then append the
-   session info. HoldRest defers the evaluation until the session is active. Internal`InheritedBlock
+   session info. HoldRest defers the evaluation until the session is active; the code string is only needed
+   to set up parsing under the "Local" method (see Local Parse Context). Internal`InheritedBlock
    scopes $Context/$ContextPath/$ContextAliases to this call: the session context is active during the
    evaluation and the save, then restored to the kernel's neutral baseline afterward. Symbols created
    during the block (the user's definitions) persist in their session context, as do the session's
@@ -1270,15 +1377,17 @@ saveSessionSafe // endDefinition;
 withSession // beginDefinition;
 withSession // Attributes = { HoldRest };
 
-withSession[ session_, eval_ ] :=
+withSession[ session_, code_, eval_ ] :=
     Internal`InheritedBlock[ { $Context, $ContextPath, $ContextAliases },
         Block[ { cb`$CloudSessionMX = None },
             Module[ { id, result },
                 id = applySession @ session;
                 (* applySession has set $line and the session $Context. For the "Local" method also push
                    $line into the eval subkernel's $Line at a boundary (a continued session already tracks
-                   it in lockstep); no-op for in-process methods. *)
+                   it in lockstep), and point this kernel's parser at the subkernel's session state; both
+                   are no-ops for in-process methods. *)
                 If[ $sessionStatus =!= "continued", syncEvalKernelLineSafe @ $line ];
+                syncParseContextSafe @ code;
                 result = eval;
                 saveSessionSafe @ id;
                 appendSessionInfo[ result, id ]
