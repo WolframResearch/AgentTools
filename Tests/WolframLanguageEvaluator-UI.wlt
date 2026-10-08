@@ -156,14 +156,14 @@ VerificationTest[
 (* ::Subsection::Closed:: *)
 (*Returns $Failed for Non-Matching Input*)
 VerificationTest[
-    Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", "plain string" ],
+    Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", "plain string", 1 ],
     $Failed | _Failure,
     SameTest -> MatchQ,
     TestID   -> "makeEvaluatorUIResult-PlainStringFails@@Tests/WolframLanguageEvaluator-UI.wlt:158,1-163,2"
 ]
 
 VerificationTest[
-    Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", $Failed ],
+    Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", $Failed, 1 ],
     $Failed | _Failure,
     SameTest -> MatchQ,
     TestID   -> "makeEvaluatorUIResult-FailedInput@@Tests/WolframLanguageEvaluator-UI.wlt:165,1-170,2"
@@ -175,21 +175,70 @@ VerificationTest[
 VerificationTest[
     Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[
         "1+1",
-        <| "String" -> "text only" |>
+        <| "String" -> "text only" |>,
+        1
     ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-MissingResultKey@@Tests/WolframLanguageEvaluator-UI.wlt:175,1-183,2"
+    TestID   -> "makeEvaluatorUIResult-MissingResultKey@@Tests/WolframLanguageEvaluator-UI.wlt:175,1-184,2"
 ]
 
 VerificationTest[
     Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[
         "1+1",
-        <| "Result" -> HoldForm[ 2 ] |>
+        <| "Result" -> HoldForm[ 2 ] |>,
+        1
     ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-MissingStringKey@@Tests/WolframLanguageEvaluator-UI.wlt:185,1-193,2"
+    TestID   -> "makeEvaluatorUIResult-MissingStringKey@@Tests/WolframLanguageEvaluator-UI.wlt:186,1-195,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Cell Labels*)
+(* The code can contain several inputs, each with its own line number. Like a notebook input cell, the input cell
+   is labeled with the line number of the first input, and the output cell with the label of the last output.
+   Deployment is mocked, so no cloud is involved. *)
+VerificationTest[
+    Module[ { nb = None, result },
+        result = Block[
+            {
+                Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp =
+                    Function[ nb = #1; "https://www.wolframcloud.com/obj/test-notebook" ]
+            },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[
+                "1 + 1\n2 + 2",
+                <| "String" -> "Out[3]= 2\n\nOut[4]= 4", "Result" -> HoldCompleteForm[ 4 ] |>,
+                3
+            ]
+        ];
+        { result, Cases[ nb, (CellLabel -> label_) :> label, Infinity ] }
+    ],
+    { KeyValuePattern[ "Content" -> { __Association } ], { "In[3]:=", "Out[4]=" } },
+    SameTest -> MatchQ,
+    TestID   -> "makeEvaluatorUIResult-MultipleInputLabels@@Tests/WolframLanguageEvaluator-UI.wlt:203,1-221,2"
+]
+
+(* Without an output label in the result string, the output cell gets the line number of the input. *)
+VerificationTest[
+    Module[ { nb = None },
+        Block[
+            {
+                Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp =
+                    Function[ nb = #1; "https://www.wolframcloud.com/obj/test-notebook" ]
+            },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[
+                "Print[1]",
+                <| "String" -> "1", "Result" -> HoldCompleteForm[ Null ] |>,
+                5
+            ]
+        ];
+        Cases[ nb, (CellLabel -> label_) :> label, Infinity ]
+    ],
+    { "In[5]:=", "Out[5]=" },
+    SameTest -> MatchQ,
+    TestID   -> "makeEvaluatorUIResult-DefaultOutputLabel@@Tests/WolframLanguageEvaluator-UI.wlt:224,1-242,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

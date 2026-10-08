@@ -24,6 +24,10 @@ $outputSizeLimit        = 100000;
 (* Chatbook version that introduced cb`$CloudSessionMX (see the Cloud Sessions section) *)
 $cloudSessionMXChatbookVersion = "2.7.11";
 
+(* Chatbook version that evaluates each top-level input separately and reports the next line number as the "Line"
+   property (see the Line Numbers section) *)
+$linePropertyChatbookVersion = "2.7.28";
+
 (* Evaluator session state (plain load-time assignments, so they reset on every (re)load; see the Sessions section) *)
 $currentSessionID = None;
 $sessionStatus    = None;
@@ -152,30 +156,35 @@ evaluateWolframLanguage0 // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*chatbookToolEvaluate*)
 (* Shared Chatbook call behind the plain and UI evaluation paths. The session's line counter is consumed
-   here: it becomes the "Line" option (which drives the In/Out label under the in-process methods) and also
-   seeds Chatbook's own per-kernel cloud line counter, because under the "Cloud" method the option never
-   reaches the cloud evaluator kernel that produces the label (see Cloud Sessions). *)
+   here: it becomes the "Line" option, which gives the line number of the first input. Chatbook's own
+   per-kernel cloud line counter is seeded with it too, because before Chatbook 2.7.28 the option never
+   reaches the cloud evaluator kernel that produces the label (see Cloud Sessions). The counter is then
+   advanced past every input the code contained (see Line Numbers). *)
 chatbookToolEvaluate // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
 chatbookToolEvaluate[ code_String, property_, timeConstraint_Integer ] :=
-    With[ { line = $line++ },
-        Block[
-            { (* FIXME: Expose these as options in WolframLanguageToolEvaluate *)
-                Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False,
-                Wolfram`Chatbook`Sandbox`Private`$cloudLineNumber    = line
-            },
-            catchAlways @ cb`WolframLanguageToolEvaluate[
-                code,
-                property,
-                "Line"                  -> line,
-                "AppendRetryNotice"     -> False,
-                "AppendURIInstructions" -> False,
-                "MaxCharacterCount"     -> $maxCharacterCount,
-                "Method"                -> getEvaluatorMethod[ ],
-                "PropagateMessages"     -> True,
-                "TimeConstraint"        -> timeConstraint
-            ]
+    With[ { line = $line++, lineQ = chatbookLinePropertyQ[ ] },
+        Module[ { result },
+            result = Block[
+                { (* FIXME: Expose these as options in WolframLanguageToolEvaluate *)
+                    Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False,
+                    Wolfram`Chatbook`Sandbox`Private`$cloudLineNumber    = line
+                },
+                catchAlways @ cb`WolframLanguageToolEvaluate[
+                    code,
+                    If[ lineQ, addLineProperty @ property, property ],
+                    "Line"                  -> line,
+                    "AppendRetryNotice"     -> False,
+                    "AppendURIInstructions" -> False,
+                    "MaxCharacterCount"     -> $maxCharacterCount,
+                    "Method"                -> getEvaluatorMethod[ ],
+                    "PropagateMessages"     -> True,
+                    "TimeConstraint"        -> timeConstraint
+                ]
+            ];
+            $line = nextLineNumber[ result, line + 1 ];
+            If[ lineQ, dropLineProperty[ result, property ], result ]
         ]
     ];
 (* :!CodeAnalysis::EndBlock:: *)
@@ -189,6 +198,63 @@ getEvaluatorMethod[ ] := getEvaluatorMethod @ $evaluatorMethod;
 getEvaluatorMethod[ Automatic ] := If[ $CloudEvaluation, "Cloud", "Session" ];
 getEvaluatorMethod[ other_ ] := other;
 getEvaluatorMethod // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Line Numbers*)
+(* Like an interactive kernel session, Chatbook 2.7.28+ evaluates each top-level input of the code separately, and
+   each one gets its own line number, so a call can use up several lines. Chatbook reports the line number for the
+   next input as the "Line" property, which is where the session's line counter continues. That version also
+   applies an explicit "Line" option in every evaluator kernel, and accepts "Line" -> None for evaluations that
+   should neither use a line number nor record In/Out history (see localKernelEvaluate). Older versions evaluate
+   the code as a single input, so the counter advances by one per call. *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*chatbookLinePropertyQ*)
+(* Whether the loaded Chatbook supports the "Line" property. Only a positive answer is cached, for the same reason
+   as in cloudSessionMXAvailableQ. *)
+chatbookLinePropertyQ // beginDefinition;
+
+chatbookLinePropertyQ[ ] :=
+    With[ { available = chatbookLinePropertyQ @ Quiet @ PacletObject[ "Wolfram/Chatbook" ][ "Version" ] },
+        If[ available, chatbookLinePropertyQ[ ] = True ];
+        available
+    ];
+
+chatbookLinePropertyQ[ $linePropertyChatbookVersion ] := True;
+chatbookLinePropertyQ[ version_String ] := TrueQ @ PacletNewerQ[ version, $linePropertyChatbookVersion ];
+chatbookLinePropertyQ[ _ ] := False;
+
+chatbookLinePropertyQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*addLineProperty*)
+addLineProperty // beginDefinition;
+addLineProperty[ property_String ] := { property, "Line" };
+addLineProperty[ properties_List ] := Append[ properties, "Line" ];
+addLineProperty // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*dropLineProperty*)
+(* The originally requested property value(s) from a result that was given the added "Line" property. *)
+dropLineProperty // beginDefinition;
+dropLineProperty[ result_Association, property_String ] := Lookup[ result, property ];
+dropLineProperty[ result_Association, properties_List ] := KeyTake[ result, properties ];
+dropLineProperty[ failure_, _ ] := failure;
+dropLineProperty // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*nextLineNumber*)
+(* The line number reported by Chatbook for the next input. It's not available from older Chatbook versions or
+   after a failed evaluation, so the given default is used instead. *)
+nextLineNumber // beginDefinition;
+nextLineNumber[ KeyValuePattern[ "Line" -> line_Integer? Positive ], _Integer ] := line;
+nextLineNumber[ _, default_Integer ] := default;
+nextLineNumber // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -300,7 +366,7 @@ evaluateWolframLanguageUI[ code_String, timeConstraint_Integer ] := Enclose[
         ConfirmMatch[ chatbookVersionCheck[ ], True, "ChatbookVersionCheck" ];
         savedLine = $line;
         result = evaluateWolframLanguageForUI[ code, timeConstraint ];
-        uiResult = Quiet @ UsingFrontEnd @ makeEvaluatorUIResult[ code, result ];
+        uiResult = Quiet @ UsingFrontEnd @ makeEvaluatorUIResult[ code, result, savedLine ];
         If[ MatchQ[ uiResult, KeyValuePattern[ "Content" -> { __Association } ] ],
             uiResult,
             (* UI result creation failed; reuse already-computed string to avoid re-evaluation *)
@@ -330,9 +396,11 @@ evaluateWolframLanguageForUI // endDefinition;
 (*makeEvaluatorUIResult*)
 makeEvaluatorUIResult // beginDefinition;
 
+(* line is the line number of the first input in the code *)
 makeEvaluatorUIResult[
     code0_String,
-    KeyValuePattern[ { "Result" -> heldResult_, "String" -> stringResult_String } ]
+    KeyValuePattern[ { "Result" -> heldResult_, "String" -> stringResult_String } ],
+    line_Integer
 ] := Enclose[
     Catch @ Module[ { code, textContent, outLabel, inLabel, inputCell, outputCell, nb, deployed },
 
@@ -344,9 +412,13 @@ makeEvaluatorUIResult[
             "TextContent"
         ];
 
-        (* Extract cell labels from string *)
-        outLabel = Last[ StringCases[ stringResult, "Out[" ~~ DigitCharacter.. ~~ "]=" ], "Out[1]=" ];
-        inLabel  = StringReplace[ outLabel, "Out[" ~~ n: DigitCharacter.. ~~ "]=" :> "In[" <> n <> "]:=" ];
+        (* The input cell holds all of the code, which can contain several inputs, so like a notebook input cell
+           it's labeled with the line number of the first one. The output cell gets the label of the last output: *)
+        inLabel  = "In[" <> ToString @ line <> "]:=";
+        outLabel = Last[
+            StringCases[ stringResult, "Out[" ~~ DigitCharacter.. ~~ "]=" ],
+            "Out[" <> ToString @ line <> "]="
+        ];
 
         (* Create cells *)
         inputCell = Cell[
@@ -485,20 +557,10 @@ evaluateInLocalKernel0[ eval_ ] := Enclose[
     Module[ { heldResult, result },
         ConfirmMatch[ initializePacletInLocalKernel[ ], Null, "InitializePacletInLocalKernel" ];
 
-        heldResult = cb`WolframLanguageToolEvaluate[
-            HoldComplete @ WithCleanup[
-
-                Block[ { $catching = True },
-                    (* Since this is in another kernel, thrown errors won't propagate back to the top-level,
-                        so we need to catch and identify them here to send them to the top if needed. *)
-                    Catch[ eval, _, caughtWrapper ]
-                ],
-
-                (* Roll back the line number, since this isn't part of a tool evaluation *)
-                $Line--
-            ],
-            "Result",
-            "Method" -> "Local"
+        heldResult = localKernelEvaluate @ Block[ { $catching = True },
+            (* Since this is in another kernel, thrown errors won't propagate back to the top-level,
+                so we need to catch and identify them here to send them to the top if needed. *)
+            Catch[ eval, _, caughtWrapper ]
         ];
 
         result = Replace[
@@ -530,14 +592,9 @@ initializePacletInLocalKernel[ ] := Enclose[
         pacletDir = ConfirmMatch[ $thisPaclet[ "Location" ], _? DirectoryQ, "PacletDir" ];
 
         result = With[ { dir = pacletDir },
-            cb`WolframLanguageToolEvaluate[
-                HoldComplete @ WithCleanup[
-                    PacletDirectoryLoad @ dir;
-                    Block[ { $ContextPath }, Get[ "Wolfram`AgentTools`" ] ],
-                    $Line--
-                ],
-                "Result",
-                "Method" -> "Local"
+            localKernelEvaluate[
+                PacletDirectoryLoad @ dir;
+                Block[ { $ContextPath }, Get[ "Wolfram`AgentTools`" ] ]
             ]
         ];
 
@@ -547,6 +604,23 @@ initializePacletInLocalKernel[ ] := Enclose[
 ];
 
 initializePacletInLocalKernel // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*localKernelEvaluate*)
+(* Evaluates bookkeeping code in the "Local" eval kernel, which is not part of a tool evaluation, so it must not use
+   up a line number. Chatbook 2.7.28+ evaluates it without one, which also keeps it out of the In/Out history (see
+   Line Numbers). Older versions evaluate it as the next input, so the line number is rolled back afterward. *)
+localKernelEvaluate // beginDefinition;
+localKernelEvaluate // Attributes = { HoldAllComplete };
+
+localKernelEvaluate[ eval_ ] /; chatbookLinePropertyQ[ ] :=
+    cb`WolframLanguageToolEvaluate[ HoldComplete @ eval, "Result", "Line" -> None, "Method" -> "Local" ];
+
+localKernelEvaluate[ eval_ ] :=
+    cb`WolframLanguageToolEvaluate[ HoldComplete @ WithCleanup[ eval, $Line-- ], "Result", "Method" -> "Local" ];
+
+localKernelEvaluate // endDefinition;
 
 (* :!CodeAnalysis::EndBlock:: *)
 
@@ -561,10 +635,12 @@ initializePacletInLocalKernel // endDefinition;
    survive server restarts.
 
    Line numbering is owned by the file-scoped $line: the authoritative per-session counter, persisted in
-   the session payload and passed as the "Line" option. Under the in-process "Session" method that option
-   drives the In/Out label directly. Under "Local" the user's code runs in a persistent subkernel whose own
-   $Line produces the label and the option does not reach it, so syncEvalKernelLine pushes $line into that
-   subkernel's $Line at each session boundary, after which the two advance in lockstep.
+   the session payload and passed as the "Line" option, which numbers the first input of each call (see
+   Line Numbers). Under the in-process "Session" method that option drives the In/Out label directly.
+   Under "Local" the user's code runs in a persistent subkernel whose own $Line produces the label.
+   Chatbook 2.7.28+ applies the option there as well; with older versions it does not reach that kernel,
+   so syncEvalKernelLine pushes $line into the subkernel's $Line at each session boundary, after which the
+   two advance in lockstep.
 
    Under the "Cloud" method the user's code runs in a fresh, non-persistent cloud kernel on every call, so a
    session's definitions travel in Chatbook's session byte array instead of living in any kernel, and the
@@ -734,10 +810,10 @@ restoreCloudSessionState // endDefinition;
    via useEvaluatorKernel and return the line seed; the outer functions update the MCP-side
    $currentSessionID and the file-scoped $line. Under in-process methods parsing, evaluation, and session
    state all live in this kernel. Under the "Local" method useEvaluatorKernel runs these in the persistent
-   eval subkernel alongside the user's evaluations, whose $Line is seeded separately via
-   syncEvalKernelLine. (Note: under "Local", Chatbook parses code strings in the controlling kernel, so
-   parse-time binding of unqualified new symbols does not see the eval kernel's session contexts \[LongDash]
-   a known limitation of that method.) *)
+   eval subkernel alongside the user's evaluations, whose $Line is set by the "Line" option (or, before
+   Chatbook 2.7.28, seeded separately via syncEvalKernelLine). (Note: under "Local", Chatbook versions
+   before 2.7.28 parse code strings in the controlling kernel, so parse-time binding of unqualified new
+   symbols does not see the eval kernel's session contexts \[LongDash] a known limitation of that method.) *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -832,10 +908,11 @@ enterSessionContextInKernel // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*syncEvalKernelLine*)
-(* Push the session's line counter into the eval kernel's $Line. Only needed for the "Local" method: there
-   the user's code runs in a persistent subkernel whose own $Line produces the In/Out label, and the "Line"
-   option does not reach it. (For in-process methods the "Line" option drives the label directly, so this
-   is a no-op.) Routed through evaluateInLocalKernel0 so it targets the subkernel; its $Line-- rollback
+(* Push the session's line counter into the eval kernel's $Line. Only needed for the "Local" method with
+   Chatbook versions before 2.7.28: there the user's code runs in a persistent subkernel whose own $Line
+   produces the In/Out label, and the "Line" option does not reach it. (For in-process methods the "Line"
+   option drives the label directly, and newer Chatbook versions apply it in the subkernel too, so this is
+   a no-op.) Routed through evaluateInLocalKernel0 so it targets the subkernel; its $Line-- rollback
    cancels the main-loop increment, leaving $Line set to exactly the next user line. Called at session
    boundaries (see withSession); within a session the subkernel's $Line then advances in lockstep with
    $line. *)
@@ -843,7 +920,7 @@ syncEvalKernelLine // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 (* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
-syncEvalKernelLine[ line_Integer ] /; getEvaluatorMethod[ ] === "Local" :=
+syncEvalKernelLine[ line_Integer ] /; getEvaluatorMethod[ ] === "Local" && ! chatbookLinePropertyQ[ ] :=
     Block[ { Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False },
         With[ { n = line }, evaluateInLocalKernel0[ $Line = n ] ]
     ];
@@ -1275,9 +1352,9 @@ withSession[ session_, eval_ ] :=
         Block[ { cb`$CloudSessionMX = None },
             Module[ { id, result },
                 id = applySession @ session;
-                (* applySession has set $line and the session $Context. For the "Local" method also push
-                   $line into the eval subkernel's $Line at a boundary (a continued session already tracks
-                   it in lockstep); no-op for in-process methods. *)
+                (* applySession has set $line and the session $Context. For the "Local" method with older
+                   Chatbook versions also push $line into the eval subkernel's $Line at a boundary (a
+                   continued session already tracks it in lockstep); no-op otherwise. *)
                 If[ $sessionStatus =!= "continued", syncEvalKernelLineSafe @ $line ];
                 result = eval;
                 saveSessionSafe @ id;
