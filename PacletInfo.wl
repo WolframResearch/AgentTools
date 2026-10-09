@@ -2,7 +2,7 @@ PacletObject[ <|
     "Name"             -> "Wolfram/AgentTools",
     "Description"      -> "Provides tools and integrations for connecting Wolfram Language to AI agents and LLMs",
     "Creator"          -> "Richard Hennigan (Wolfram Research)",
-    "Version"          -> "2.2.18",
+    "Version"          -> "2.2.19",
     "WolframVersion"   -> "15.0+",
     "PublisherID"      -> "Wolfram",
     "License"          -> "MIT",
