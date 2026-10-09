@@ -4,7 +4,7 @@ description: Verified Wolfram Language debugging recipes, tested helpers and und
 compatibility: Requires the Wolfram MCP server or wolframscript on PATH
 metadata:
   author: Wolfram Research
-  version: 2.2.17
+  version: 2.2.18
 ---
 
 # Wolfram Language Debugging

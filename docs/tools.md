@@ -527,6 +527,14 @@ The evaluator's optional `session` parameter gives each conversation an isolated
 `$UserBaseDirectory/ApplicationData/Wolfram/AgentTools/Sessions/` after every call, so they survive
 server restarts, and every result ends with a reminder of the session ID to pass on subsequent calls.
 
+With Chatbook 2.7.28+, each top-level input of the code gets its own line number, as in an interactive
+kernel session (`1 + 1` and `2 + 2` on separate lines give `Out[1]= 2` and `Out[2]= 4`), so one call can
+use up several lines. Chatbook reports the line number for the next input (the `"Line"` property of
+`WolframLanguageToolEvaluate`), and the session continues from there. Session bookkeeping in the `"Local"`
+eval kernel is evaluated with `"Line" -> None`, so it uses no line number and stays out of the In/Out
+history. Older Chatbook versions evaluate the code as a single input, so the line number advances by one
+per call.
+
 Under the `"Cloud"` method each call runs in a fresh, non-persistent cloud kernel, so only a session's
 **global definitions** persist: Chatbook 2.7.11+ returns the evaluator kernel's `` Global` `` definitions
 after each call as an MX byte array (`Wolfram`Chatbook`$CloudSessionMX`), which AgentTools stores in

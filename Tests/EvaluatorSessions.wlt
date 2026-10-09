@@ -318,6 +318,177 @@ VerificationTest[
     TestID -> "SyncEvalKernelLineSafe-IgnoresNonInteger@@Tests/EvaluatorSessions.wlt:315,1-319,2"
 ]
 
+(* Chatbook 2.7.28+ applies the "Line" option in the "Local" eval kernel itself, so there is nothing to sync. *)
+VerificationTest[
+    Module[ { synced = False },
+        Block[
+            {
+                Wolfram`AgentTools`Common`$toolOptions = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local" |> |>,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`evaluateInLocalKernel0 =
+                    Function[ Null, synced = True, HoldAllComplete ]
+            },
+            {
+                Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = True & },
+                    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLine[ 5 ];
+                    synced
+                ],
+                Block[ { Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = False & },
+                    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`syncEvalKernelLine[ 5 ];
+                    synced
+                ]
+            }
+        ]
+    ],
+    { False, True },
+    SameTest -> MatchQ,
+    TestID   -> "SyncEvalKernelLine-NoOpWithChatbookLineProperty@@Tests/EvaluatorSessions.wlt:322,1-345,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Line Numbers*)
+(* Chatbook 2.7.28+ evaluates each top-level input of the code with its own line number and reports the line number
+   for the next input as the "Line" property; see the Line Numbers section of Kernel/Tools/WolframLanguageEvaluator.wl.
+   Chatbook is mocked here, so these don't depend on the installed version. *)
+VerificationTest[
+    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ /@
+        { "2.7.27", "2.7.28", "2.7.29", "2.8.0", "3.0.0", $Failed, None },
+    { False, True, True, True, True, False, False },
+    SameTest -> MatchQ,
+    TestID   -> "ChatbookLinePropertyQ-VersionGate@@Tests/EvaluatorSessions.wlt:353,1-359,2"
+]
+
+VerificationTest[
+    BooleanQ @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ[ ],
+    True,
+    TestID -> "ChatbookLinePropertyQ-LoadedChatbook@@Tests/EvaluatorSessions.wlt:361,1-365,2"
+]
+
+(* The session's line counter numbers the first input and continues at the line number Chatbook reports, which
+   is requested alongside the property the caller asked for and then dropped from the result. *)
+VerificationTest[
+    Module[ { calls = { } },
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line = 7,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = True &,
+                Wolfram`Chatbook`WolframLanguageToolEvaluate = Function[
+                    AppendTo[ calls, { #2, Lookup[ { ##3 }, "Line" ] } ];
+                    <| "String" -> "Out[7]= 2\n\nOut[8]= 4", "Line" -> 9 |>
+                ]
+            },
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookToolEvaluate[ "1+1\n2+2", "String", 10 ],
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line,
+                calls
+            }
+        ]
+    ],
+    { "Out[7]= 2\n\nOut[8]= 4", 9, { { { "String", "Line" }, 7 } } },
+    SameTest -> MatchQ,
+    TestID   -> "ChatbookToolEvaluate-ContinuesAtReportedLine@@Tests/EvaluatorSessions.wlt:369,1-390,2"
+]
+
+VerificationTest[
+    Module[ { calls = { } },
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line = 2,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = True &,
+                Wolfram`Chatbook`WolframLanguageToolEvaluate = Function[
+                    AppendTo[ calls, #2 ];
+                    <| "String" -> "Out[2]= 4\n\nOut[3]= 6", "Result" -> HoldForm[ 6 ], "Line" -> 4 |>
+                ]
+            },
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookToolEvaluate[ "4\n6", { "String", "Result" }, 10 ],
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line,
+                calls
+            }
+        ]
+    ],
+    {
+        <| "String" -> "Out[2]= 4\n\nOut[3]= 6", "Result" -> HoldForm[ 6 ] |>,
+        4,
+        { { "String", "Result", "Line" } }
+    },
+    SameTest -> MatchQ,
+    TestID   -> "ChatbookToolEvaluate-ContinuesAtReportedLine-PropertyList@@Tests/EvaluatorSessions.wlt:392,1-417,2"
+]
+
+(* Without a reported line number (e.g. the eval kernel quit, or the evaluation failed), the counter advances by
+   one as it did before. *)
+VerificationTest[
+    Block[
+        {
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line = 7,
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = True &,
+            Wolfram`Chatbook`WolframLanguageToolEvaluate =
+                Function[ <| "String" -> "General::quit", "Line" -> Missing[ "NotAvailable" ] |> ]
+        },
+        {
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookToolEvaluate[ "Quit[]", "String", 10 ],
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line,
+            Block[ { Wolfram`Chatbook`WolframLanguageToolEvaluate = Function[ Failure[ "Test", <| |> ] ] },
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookToolEvaluate[ "1", "String", 10 ]
+            ],
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line
+        }
+    ],
+    { "General::quit", 8, Failure[ "Test", <| |> ], 9 },
+    SameTest -> MatchQ,
+    TestID   -> "ChatbookToolEvaluate-NoReportedLine@@Tests/EvaluatorSessions.wlt:421,1-441,2"
+]
+
+(* Older Chatbook versions don't support the "Line" property, so it isn't requested. *)
+VerificationTest[
+    Module[ { calls = { } },
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line = 7,
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = False &,
+                Wolfram`Chatbook`WolframLanguageToolEvaluate = Function[ AppendTo[ calls, #2 ]; "Out[7]= 4" ]
+            },
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookToolEvaluate[ "2+2", "String", 10 ],
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$line,
+                calls
+            }
+        ]
+    ],
+    { "Out[7]= 4", 8, { "String" } },
+    SameTest -> MatchQ,
+    TestID   -> "ChatbookToolEvaluate-WithoutLineProperty@@Tests/EvaluatorSessions.wlt:444,1-462,2"
+]
+
+(* Session bookkeeping in the "Local" eval kernel must not use up a line number: with Chatbook 2.7.28+ it is
+   evaluated with "Line" -> None, which also keeps it out of the In/Out history, and before that the line number
+   was rolled back afterward. *)
+VerificationTest[
+    {
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = True &,
+                Wolfram`Chatbook`WolframLanguageToolEvaluate = HoldComplete
+            },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`localKernelEvaluate[ 1 + 1 ]
+        ],
+        Block[
+            {
+                Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ = False &,
+                Wolfram`Chatbook`WolframLanguageToolEvaluate = HoldComplete
+            },
+            Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`localKernelEvaluate[ 1 + 1 ]
+        ]
+    },
+    {
+        HoldComplete[ HoldComplete[ 1 + 1 ], "Result", "Line" -> None, "Method" -> "Local" ],
+        HoldComplete[ HoldComplete[ WithCleanup[ 1 + 1, $Line-- ] ], "Result", "Method" -> "Local" ]
+    },
+    SameTest -> SameQ,
+    TestID   -> "LocalKernelEvaluate-DoesNotUseLineNumber@@Tests/EvaluatorSessions.wlt:467,1-490,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*enterSessionContextInKernel*)
@@ -344,7 +515,7 @@ VerificationTest[
     ],
     { Null, "Sessions`UnitCtxA`", True },
     SameTest -> MatchQ,
-    TestID   -> "EnterSessionContextInKernel-RestoresSavedContextState@@Tests/EvaluatorSessions.wlt:326,1-348,2"
+    TestID   -> "EnterSessionContextInKernel-RestoresSavedContextState@@Tests/EvaluatorSessions.wlt:497,1-519,2"
 ]
 
 (* Missing or foreign kernel-side state (e.g. the eval kernel restarted between calls) is reported as
@@ -368,7 +539,7 @@ VerificationTest[
     },
     { $Failed, $Failed },
     SameTest -> MatchQ,
-    TestID   -> "EnterSessionContextInKernel-FailsOnMissingOrForeignState@@Tests/EvaluatorSessions.wlt:352,1-372,2"
+    TestID   -> "EnterSessionContextInKernel-FailsOnMissingOrForeignState@@Tests/EvaluatorSessions.wlt:523,1-543,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -387,7 +558,7 @@ VerificationTest[
     ],
     _Association? (#[ "SessionID" ] === "FbWriteSess" && #[ "$line" ] === 7 &),
     SameTest -> MatchQ,
-    TestID   -> "SaveSessionInKernel-ReturnsInfoWhenWriteFails@@Tests/EvaluatorSessions.wlt:380,1-391,2"
+    TestID   -> "SaveSessionInKernel-ReturnsInfoWhenWriteFails@@Tests/EvaluatorSessions.wlt:551,1-562,2"
 ]
 
 (* A fallback-written file (info only, no session-context definitions) must round-trip through
@@ -420,7 +591,7 @@ VerificationTest[
     ],
     { 5, False },
     SameTest -> MatchQ,
-    TestID   -> "WriteSessionInfoFile-ResumeRoundTrip@@Tests/EvaluatorSessions.wlt:395,1-424,2"
+    TestID   -> "WriteSessionInfoFile-ResumeRoundTrip@@Tests/EvaluatorSessions.wlt:566,1-595,2"
 ]
 
 (* A failed fallback write must report False without emitting messages and must not leave orphaned
@@ -442,7 +613,7 @@ VerificationTest[
     ],
     { False, { } },
     SameTest -> MatchQ,
-    TestID   -> "WriteSessionInfoFile-FailureReportsFalseAndCleansUp@@Tests/EvaluatorSessions.wlt:430,1-446,2"
+    TestID   -> "WriteSessionInfoFile-FailureReportsFalseAndCleansUp@@Tests/EvaluatorSessions.wlt:601,1-617,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -459,13 +630,13 @@ VerificationTest[
         { "2.7.10", "2.7.11", "2.7.12", "2.8.0", "3.0.0", $Failed, None },
     { False, True, True, True, True, False, False },
     SameTest -> MatchQ,
-    TestID   -> "CloudSessionMXAvailableQ-VersionGate@@Tests/EvaluatorSessions.wlt:457,1-463,2"
+    TestID   -> "CloudSessionMXAvailableQ-VersionGate@@Tests/EvaluatorSessions.wlt:628,1-634,2"
 ]
 
 VerificationTest[
     BooleanQ @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`cloudSessionMXAvailableQ[ ],
     True,
-    TestID -> "CloudSessionMXAvailableQ-LoadedChatbook@@Tests/EvaluatorSessions.wlt:465,1-469,2"
+    TestID -> "CloudSessionMXAvailableQ-LoadedChatbook@@Tests/EvaluatorSessions.wlt:636,1-640,2"
 ]
 
 VerificationTest[
@@ -479,7 +650,7 @@ VerificationTest[
     },
     { False, True },
     SameTest -> MatchQ,
-    TestID   -> "CloudSessionQ-FollowsMethodOption@@Tests/EvaluatorSessions.wlt:471,1-483,2"
+    TestID   -> "CloudSessionQ-FollowsMethodOption@@Tests/EvaluatorSessions.wlt:642,1-654,2"
 ]
 
 (* In-kernel methods isolate each session in its own context; a cloud session parses into Global`,
@@ -495,7 +666,7 @@ VerificationTest[
     },
     { "Sessions`Abc123`", "Global`" },
     SameTest -> MatchQ,
-    TestID   -> "SessionContext-CloudUsesGlobal@@Tests/EvaluatorSessions.wlt:487,1-499,2"
+    TestID   -> "SessionContext-CloudUsesGlobal@@Tests/EvaluatorSessions.wlt:658,1-670,2"
 ]
 
 (* Starting a cloud session parses into Global` and clears the byte array so the evaluator starts empty. *)
@@ -519,7 +690,7 @@ VerificationTest[
     ],
     { 1, "Global`", { "Global`", "System`" }, None, "Global`" },
     SameTest -> MatchQ,
-    TestID   -> "StartSessionInKernel-CloudUsesGlobalAndClearsSessionMX@@Tests/EvaluatorSessions.wlt:502,1-523,2"
+    TestID   -> "StartSessionInKernel-CloudUsesGlobalAndClearsSessionMX@@Tests/EvaluatorSessions.wlt:673,1-694,2"
 ]
 
 (* Saving a cloud session returns info-only state (nothing to dump from this kernel) that carries the
@@ -546,7 +717,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "SaveSessionInKernel-CloudReturnsInfoWithSessionMX@@Tests/EvaluatorSessions.wlt:527,1-550,2"
+    TestID   -> "SaveSessionInKernel-CloudReturnsInfoWithSessionMX@@Tests/EvaluatorSessions.wlt:698,1-721,2"
 ]
 
 (* Without a new enough Chatbook there is no byte array to keep; in-kernel sessions never carry one. *)
@@ -566,7 +737,7 @@ VerificationTest[
     },
     { None, False },
     SameTest -> MatchQ,
-    TestID   -> "MakeSessionInfo-SessionMXOnlyForSupportedCloudSessions@@Tests/EvaluatorSessions.wlt:553,1-570,2"
+    TestID   -> "MakeSessionInfo-SessionMXOnlyForSupportedCloudSessions@@Tests/EvaluatorSessions.wlt:724,1-741,2"
 ]
 
 (* An info-only cloud session file round-trips: resuming restores the byte array for the next cloud
@@ -611,7 +782,7 @@ VerificationTest[
     ],
     { { 4, False }, ByteArray[ { 7, 8, 9 } ], "Global`" },
     SameTest -> MatchQ,
-    TestID   -> "ResumeSessionInKernel-CloudRestoresSessionMXAndGlobalContext@@Tests/EvaluatorSessions.wlt:575,1-615,2"
+    TestID   -> "ResumeSessionInKernel-CloudRestoresSessionMXAndGlobalContext@@Tests/EvaluatorSessions.wlt:746,1-786,2"
 ]
 
 (* Continuing a live cloud session gets its byte array back from the last save's $sessionInfo. *)
@@ -640,11 +811,11 @@ VerificationTest[
     ],
     { Null, ByteArray[ { 1, 1, 2 } ], "Global`" },
     SameTest -> MatchQ,
-    TestID   -> "EnterSessionContextInKernel-CloudRestoresSessionMX@@Tests/EvaluatorSessions.wlt:618,1-644,2"
+    TestID   -> "EnterSessionContextInKernel-CloudRestoresSessionMX@@Tests/EvaluatorSessions.wlt:789,1-815,2"
 ]
 
-(* The "Line" option never reaches the cloud evaluator kernel, so the session's line counter is also
-   pushed into Chatbook's per-kernel cloud line counter for the duration of the call. *)
+(* Before Chatbook 2.7.28 the "Line" option never reaches the cloud evaluator kernel, so the session's line
+   counter is also pushed into Chatbook's per-kernel cloud line counter for the duration of the call. *)
 VerificationTest[
     Block[
         {
@@ -659,7 +830,7 @@ VerificationTest[
     ],
     { { 7, 7 }, 8 },
     SameTest -> MatchQ,
-    TestID   -> "ChatbookToolEvaluate-SyncsCloudLineCounterWithSessionLine@@Tests/EvaluatorSessions.wlt:648,1-663,2"
+    TestID   -> "ChatbookToolEvaluate-SyncsCloudLineCounterWithSessionLine@@Tests/EvaluatorSessions.wlt:819,1-834,2"
 ]
 
 (* Cloud sessions remind the AI on every call that the kernel is non-persistent... *)
@@ -676,7 +847,7 @@ VerificationTest[
     ],
     { True, True, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "SessionInfoStatusText-CloudNoticeOnEveryStatus@@Tests/EvaluatorSessions.wlt:666,1-680,2"
+    TestID   -> "SessionInfoStatusText-CloudNoticeOnEveryStatus@@Tests/EvaluatorSessions.wlt:837,1-851,2"
 ]
 
 (* ...replacing (not appending to) the in-kernel "kernel process has changed" wording... *)
@@ -692,7 +863,7 @@ VerificationTest[
     ],
     { False, True },
     SameTest -> MatchQ,
-    TestID   -> "SessionInfoStatusText-CloudReplacesKernelChangedNotice@@Tests/EvaluatorSessions.wlt:683,1-696,2"
+    TestID   -> "SessionInfoStatusText-CloudReplacesKernelChangedNotice@@Tests/EvaluatorSessions.wlt:854,1-867,2"
 ]
 
 (* ...while an unknown ID still gets the "No saved state" notice ahead of the cloud one. *)
@@ -708,7 +879,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "SessionInfoStatusText-CloudReusedKeepsNoSavedStateNotice@@Tests/EvaluatorSessions.wlt:699,1-712,2"
+    TestID   -> "SessionInfoStatusText-CloudReusedKeepsNoSavedStateNotice@@Tests/EvaluatorSessions.wlt:870,1-883,2"
 ]
 
 (* Without a new enough Chatbook the notice says definitions cannot be restored and names the version. *)
@@ -727,7 +898,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "SessionInfoStatusText-CloudWithoutChatbookSupport@@Tests/EvaluatorSessions.wlt:715,1-731,2"
+    TestID   -> "SessionInfoStatusText-CloudWithoutChatbookSupport@@Tests/EvaluatorSessions.wlt:886,1-902,2"
 ]
 
 (* In-kernel methods are unaffected. *)
@@ -740,7 +911,7 @@ VerificationTest[
     ],
     { False, False, False, False, False },
     SameTest -> MatchQ,
-    TestID   -> "SessionInfoStatusText-InKernelHasNoCloudNotice@@Tests/EvaluatorSessions.wlt:734,1-744,2"
+    TestID   -> "SessionInfoStatusText-InKernelHasNoCloudNotice@@Tests/EvaluatorSessions.wlt:905,1-915,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -768,7 +939,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r3, "42" ]
     ],
     True,
-    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:753,1-772,2"
+    TestID -> "Integration-SessionIsolation@@Tests/EvaluatorSessions.wlt:924,1-943,2"
 ]
 
 (* Re-passing the same session ID continues it: definitions persist and line numbers advance. *)
@@ -790,7 +961,7 @@ VerificationTest[
         StringContainsQ[ text, "6" ] && StringContainsQ[ text, "Out[2]" ]
     ],
     True,
-    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:775,1-794,2"
+    TestID -> "Integration-ContinueSamePersistsAndAdvancesLine@@Tests/EvaluatorSessions.wlt:946,1-965,2"
 ]
 
 (* A session resumes from disk after its in-kernel symbols are gone (simulated server restart). *)
@@ -814,7 +985,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "99" ]
     ],
     True,
-    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:797,1-818,2"
+    TestID -> "Integration-RestartResumeFromDisk@@Tests/EvaluatorSessions.wlt:968,1-989,2"
 ]
 
 (* Every result echoes the session ID with resume instructions. *)
@@ -834,7 +1005,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "session=\"AppendSession\"" ]
     ],
     True,
-    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:821,1-838,2"
+    TestID -> "Integration-AppendsSessionInfo@@Tests/EvaluatorSessions.wlt:992,1-1009,2"
 ]
 
 (* A fresh session's first evaluation is labeled Out[1]. *)
@@ -854,7 +1025,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[1]" ]
     ],
     True,
-    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:841,1-858,2"
+    TestID -> "Integration-FreshSessionStartsAtLineOne@@Tests/EvaluatorSessions.wlt:1012,1-1029,2"
 ]
 
 (* Resuming a session continues its line numbering rather than resetting it: A reaches Out[2], B
@@ -879,7 +1050,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r, "Out[3]" ]
     ],
     True,
-    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:863,1-883,2"
+    TestID -> "Integration-ResumeContinuesLineNumbering@@Tests/EvaluatorSessions.wlt:1034,1-1054,2"
 ]
 
 (* An unknown / expired session ID starts a fresh session reusing that ID and says so. *)
@@ -899,7 +1070,7 @@ VerificationTest[
         StringContainsQ[ text, "NeverSavedXyz" ] && StringContainsQ[ text, "No saved state" ]
     ],
     True,
-    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:886,1-903,2"
+    TestID -> "Integration-UnknownIdReusedFresh@@Tests/EvaluatorSessions.wlt:1057,1-1074,2"
 ]
 
 (* Context-path changes made inside a session (e.g. by Get) survive continued calls: the continuing
@@ -923,7 +1094,7 @@ VerificationTest[
         StringContainsQ[ extractToolText @ r2, "{101, True}" ]
     ],
     True,
-    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:908,1-927,2"
+    TestID -> "Integration-ContinuePreservesContextPath@@Tests/EvaluatorSessions.wlt:1079,1-1098,2"
 ]
 
 (* Resuming a session saved by a different kernel process restores the saved state and warns that
@@ -953,7 +1124,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:932,1-957,2"
+    TestID   -> "Integration-ResumeFromPreviousKernelWarns@@Tests/EvaluatorSessions.wlt:1103,1-1128,2"
 ]
 
 (* Switching back to an earlier session within the same kernel process resumes silently: no
@@ -978,7 +1149,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:961,1-982,2"
+    TestID   -> "Integration-SameKernelResumeHasNoWarning@@Tests/EvaluatorSessions.wlt:1132,1-1153,2"
 ]
 
 (* If the eval kernel loses its in-memory session state while the session is still current (e.g. the
@@ -1009,7 +1180,91 @@ VerificationTest[
     ],
     { True, True, False },
     SameTest -> MatchQ,
-    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:987,1-1013,2"
+    TestID   -> "Integration-ContinueFallsBackToFileWhenKernelStateLost@@Tests/EvaluatorSessions.wlt:1158,1-1184,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Integration: multiple inputs*)
+(* With Chatbook 2.7.28+ each top-level input of the code gets its own line number, so one call can use up several
+   lines, and the session's next call continues after the last one, also when it's resumed from its file. Skipped
+   with older Chatbook versions, which evaluate the code as a single input. *)
+$multipleInputsTest = conditionalTest[
+    TrueQ @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ[ ]
+];
+
+(* The "Local" method also needs a sandbox kernel. *)
+$localMultipleInputsTest = conditionalTest[
+    TrueQ @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`chatbookLinePropertyQ[ ] &&
+        MatchQ[
+            Quiet @ Wolfram`Chatbook`WolframLanguageToolEvaluate[ "1 + 1", "Result", "Method" -> "Local" ],
+            (HoldForm|HoldCompleteForm)[ 2 ]
+        ]
+];
+
+(* Evaluates each { code, session } pair with the real tool under the given method and returns the result texts. *)
+multipleInputsTexts[ method_String, calls: { { _String, _String }.. } ] :=
+    Module[ { root, tool },
+        root = FileNameJoin @ { $TemporaryDirectory, "AgentToolsSession_" <> CreateUUID[ ] };
+        tool = $DefaultMCPTools[ "WolframLanguageEvaluator" ];
+        WithCleanup[
+            Block[
+                {
+                    Wolfram`AgentTools`Common`$rootPath         = root,
+                    Wolfram`AgentTools`Common`$clientSupportsUI = False,
+                    Wolfram`AgentTools`Common`$toolOptions      = <| "WolframLanguageEvaluator" -> <| "Method" -> method |> |>,
+                    Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$currentSessionID = None
+                },
+                extractToolText @ tool[ <| "code" -> #1, "session" -> #2 |> ] & @@@ calls
+            ],
+            Quiet @ DeleteDirectory[ root, DeleteContents -> True ]
+        ]
+    ];
+
+$multipleInputsTest @ VerificationTest[
+    Module[ { t1, t2, t3, t4 },
+        { t1, t2, t3, t4 } = multipleInputsTexts[
+            "Session",
+            {
+                { "1 + 1\n2 + 2", "MultiInputA" },
+                { "3 + 3", "MultiInputA" },
+                { "7", "MultiInputB" },
+                { "{%, Out[1], Out[2]}", "MultiInputA" } (* resumed from its file *)
+            }
+        ];
+        Quiet @ Remove[ "Sessions`MultiInputA`*", "Sessions`MultiInputB`*" ];
+        {
+            StringContainsQ[ t1, "Out[1]= 2" ] && StringContainsQ[ t1, "Out[2]= 4" ],
+            StringContainsQ[ t2, "Out[3]= 6" ],
+            StringContainsQ[ t3, "Out[1]= 7" ],
+            StringContainsQ[ t4, "Out[4]= {6, 2, 4}" ]
+        }
+    ],
+    { True, True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "Integration-MultipleInputsLineNumbers@@Tests/EvaluatorSessions.wlt:1224,23-1246,2"
+]
+
+(* Under the "Local" method the session bookkeeping in the eval kernel also leaves the In/Out history alone. *)
+$localMultipleInputsTest @ VerificationTest[
+    Module[ { t1, t2, t3 },
+        { t1, t2, t3 } = multipleInputsTexts[
+            "Local",
+            {
+                { "1 + 1\n2 + 2", "LocalMultiInputA" },
+                { "7", "LocalMultiInputB" },
+                { "{%, Out[1], InString[2]}", "LocalMultiInputA" }
+            }
+        ];
+        {
+            StringContainsQ[ t1, "Out[1]= 2" ] && StringContainsQ[ t1, "Out[2]= 4" ],
+            StringContainsQ[ t2, "Out[1]= 7" ],
+            StringContainsQ[ t3, "Out[3]= {4, 2, \"2 + 2\"}" ]
+        }
+    ],
+    { True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "Integration-Local-MultipleInputsLineNumbers@@Tests/EvaluatorSessions.wlt:1249,28-1268,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1052,7 +1307,7 @@ $cloudSessionTest @ VerificationTest[
     ],
     { True, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "Integration-CloudSessionDefinitionsSurviveRestart@@Tests/EvaluatorSessions.wlt:1027,21-1056,2"
+    TestID   -> "Integration-CloudSessionDefinitionsSurviveRestart@@Tests/EvaluatorSessions.wlt:1282,21-1311,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
