@@ -67,6 +67,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `readWXFFile;
 `relatedDocumentation;
 `relatedWolframAlphaResults;
+`resourceFunctionAvailableQ;
 `relatedWolframContext;
 `throwFailure;
 `throwInternalFailure;

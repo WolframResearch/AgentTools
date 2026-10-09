@@ -783,6 +783,77 @@ resultToContent // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*catchUncaughtThrows*)
+(* A Throw whose tag nothing in the paclet catches (for example the network-failure tag that CloudObject throws when the
+   Wolfram Cloud cannot be reached), a tagless Throw, or an Abort would otherwise unwind through the entire server: in
+   the local transport that ends the read loop and with it the server process. This evaluates eval and hands any such
+   exception to handler[ value, tag ] (tag is None for a tagless Throw and Abort for an abort), returning its result.
+   The paclet's own $catchTopTag throws are unaffected, since an enclosed catchTop/stealthCatchTop catches them first. *)
+catchUncaughtThrows // beginDefinition;
+catchUncaughtThrows // Attributes = { HoldFirst };
+
+catchUncaughtThrows[ eval_, handler_ ] :=
+    Module[ { completed = False, result },
+        result = CheckAbort[
+            Catch @ Catch[ With[ { r = eval }, completed = True; r ], _, (completed = True; handler[ #1, #2 ]) & ],
+            completed = True; handler[ $Aborted, Abort ]
+        ];
+        If[ completed, result, handler[ result, None ] ]
+    ];
+
+catchUncaughtThrows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*uncaughtToolThrow*)
+(* Handler for catchUncaughtThrows around a tool call: the failure becomes the tool's error result *)
+uncaughtToolThrow // beginDefinition;
+
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
+uncaughtToolThrow[ toolName_String, _, CloudObject`Private`NetworkCallFailure ] :=
+    messageFailure[ "CloudUnavailable", toolName ];
+(* :!CodeAnalysis::EndBlock:: *)
+
+uncaughtToolThrow[ toolName_String, _, Abort ] :=
+    messageFailure[ "ToolAborted", toolName ];
+
+uncaughtToolThrow[ toolName_String, value_, tag_ ] :=
+    messageFailure[ "UncaughtToolThrow", toolName, throwString[ value, tag ] ];
+
+uncaughtToolThrow // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*uncaughtRequestThrow*)
+(* Handler for catchUncaughtThrows around handleMethod in the transports: the failure becomes a JSON-RPC internal
+   error response, like any other failure from handleMethod *)
+uncaughtRequestThrow // beginDefinition;
+
+uncaughtRequestThrow[ method_, _, Abort ] :=
+    messageFailure[ "RequestAborted", methodString @ method ];
+
+uncaughtRequestThrow[ method_, value_, tag_ ] :=
+    messageFailure[ "UncaughtThrow", methodString @ method, throwString[ value, tag ] ];
+
+uncaughtRequestThrow // endDefinition;
+
+methodString // beginDefinition;
+methodString[ method_String ] := method;
+methodString[ _ ] := "(unknown)";
+methodString // endDefinition;
+
+throwString // beginDefinition;
+throwString[ value_, None ] := "Throw[" <> shortInputString @ value <> "]";
+throwString[ value_, tag_ ] := "Throw[" <> shortInputString @ value <> ", " <> shortInputString @ tag <> "]";
+throwString // endDefinition;
+
+shortInputString // beginDefinition;
+shortInputString[ expr_ ] := StringTake[ ToString[ Unevaluated @ expr, InputForm ], UpTo[ 200 ] ];
+shortInputString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*evaluateTool*)
 evaluateTool // beginDefinition;
 
@@ -803,7 +874,7 @@ evaluateTool[ msg_, req_ ] := Enclose[
             |>
         ];
 
-        result = stealthCatchTop @ tool @ args;
+        result = catchUncaughtThrows[ stealthCatchTop @ tool @ args, uncaughtToolThrow[ toolName, ##1 ] & ];
 
         content = Which[
             (* Structured result with Content key (from WolframLanguageEvaluator) *)
@@ -847,10 +918,28 @@ safeString[ failure: Failure[ "AgentTools::Internal" | "General::ChatbookInterna
         formatted /; StringQ @ formatted
     ];
 
-safeString[ failure_Failure ] := With[ { s = failure[ "Message" ] }, "[Error] " <> safeString @ s /; StringQ @ s ];
+safeString[ failure_Failure ] := With[ { s = failureMessageString @ failure }, "[Error] " <> safeString @ s /; StringQ @ s ];
 safeString[ string_String ] := convertPUACharacters @ string; (* avoid mangling due to StandardForm strings *)
 safeString[ arg_ ] := convertPUACharacters @ ToString @ Unevaluated @ arg;
 safeString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*failureMessageString*)
+(* The "Message" property of a Failure wraps the message parameters in boxes (Short) for notebook display, which come out
+   as box syntax in plain text, so the message is formatted from the template and parameters directly *)
+failureMessageString // beginDefinition;
+
+failureMessageString[ failure_Failure ] := Quiet @ Replace[
+    { failure[ "MessageTemplate" ], failure[ "MessageParameters" ] },
+    {
+        { template_String, params_List } :> ToString @ StringForm[ template, Sequence @@ params ],
+        { template_String, _ } :> template,
+        _ :> failure[ "Message" ]
+    }
+];
+
+failureMessageString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

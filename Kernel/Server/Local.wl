@@ -87,13 +87,9 @@ startMCPServer[ obj0_MCPServerObject ] := Enclose[
                 response = catchAlways @ processRequest[ ];
                 If[ response =!= EndOfFile, writeLog[ "Response" -> response ] ];
                 If[ AssociationQ @ response,
-                    output = ConfirmBy[
-                        Developer`WriteRawJSONString[ sanitizeResponse @ response, "Compact" -> True ],
-                        StringQ,
-                        "WriteRawJSONString"
-                    ];
+                    output = ConfirmBy[ serializeResponse @ response, StringQ, "SerializeResponse" ];
                     WriteLine[ "stdout", output ];
-                    If[ TrueQ @ $warmupTools, toolWarmup @ $toolList ],
+                    If[ TrueQ @ $warmupTools, warmupTools[ ] ],
                     Pause[ 0.1 ]
                 ]
             ]
@@ -121,6 +117,40 @@ setCloudBaseFromEnvironment[ base_String ] /; StringTrim @ base =!= "" := (Cloud
 setCloudBaseFromEnvironment[ _ ] := Null;
 
 setCloudBaseFromEnvironment // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*serializeResponse*)
+(* A response that cannot be encoded as JSON (e.g. a tool result holding an unexpected expression) must not end the
+   server, so it is replaced by an internal error response to the same request. *)
+serializeResponse // beginDefinition;
+
+serializeResponse[ response_Association ] :=
+    Replace[
+        Developer`WriteRawJSONString[ sanitizeResponse @ response, "Compact" -> True ],
+        Except[ _String ] :> (
+            writeLog[ "SerializationFailure" -> response ];
+            Developer`WriteRawJSONString[
+                <|
+                    "jsonrpc" -> "2.0",
+                    "id"      -> Lookup[ response, "id", Null ],
+                    "error"   -> <| "code" -> -32603, "message" -> "Internal error: the response could not be serialized." |>
+                |>,
+                "Compact" -> True
+            ]
+        )
+    ];
+
+serializeResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*warmupTools*)
+(* Tool warmup runs inside the read loop, so a failure there (e.g. installing the vector databases without cloud
+   access) must not end the server *)
+warmupTools // beginDefinition;
+warmupTools[ ] := catchUncaughtThrows[ catchAlways @ toolWarmup @ $toolList, $Failed & ];
+warmupTools // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -204,7 +234,10 @@ processRequest[ ] :=
         ];
 
         req = <| "jsonrpc" -> "2.0", "id" -> id |>;
-        response = catchAlways @ handleMethod[ method, message, req ];
+        response = catchUncaughtThrows[
+            catchAlways @ handleMethod[ method, message, req ],
+            uncaughtRequestThrow[ method, ##1 ] &
+        ];
         recordUsageData[ method, message, response ];
         If[ method === "tools/list", $warmupTools = True ];
         writeLog[ "Response" -> response ];

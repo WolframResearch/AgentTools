@@ -251,6 +251,45 @@ endExportedDefinition // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Resource Functions*)
+(* The paclet uses a few functions from the Wolfram Function Repository, pinned to the versions in $resourceVersions.
+   Each is imported with importResourceFunction, which takes the definition from a local copy in the paclet's
+   ResourceFunctions directory when there is one (see ResourceFunctions/README.md) and only otherwise fetches the
+   resource function, so neither building the paclet nor loading it from source requires cloud access.
+
+   When building the MX file, the definitions are inlined into the paclet in the context
+   $resourceFunctionContext<>name<>"`", so the built paclet never touches the Function Repository. When loading from
+   source, the import is resolved at the first use of the imported symbol and memoized only on success: a resource
+   function that is not available (no local copy and no cloud access) yields a resourceFunctionUnavailable placeholder
+   whose use fails with AgentTools::ResourceFunctionUnavailable, and the next use tries again. *)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*$localResourceFunctionDirectory*)
+(* Determined from this file's location at load time, like $thisPaclet, since the directory is not part of the built
+   paclet. During an MX build this is the temporary copy of the paclet, which BuildMX.wls copies the directory into. *)
+$localResourceFunctionDirectory = FileNameJoin @ { DirectoryName[ $InputFileName, 2 ], "ResourceFunctions" };
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*localResourceFunctionFile*)
+localResourceFunctionFile // beginDefinition;
+
+localResourceFunctionFile[ name_String ] :=
+    localResourceFunctionFile[ name, $localResourceFunctionDirectory ];
+
+localResourceFunctionFile[ name_String, dir_String ] :=
+    With[ { file = FileNameJoin @ { dir, name<>".wl" } },
+        If[ FileExistsQ @ file, file, Missing[ "NotFound", name ] ]
+    ];
+
+localResourceFunctionFile[ name_String, _ ] :=
+    Missing[ "NotFound", name ];
+
+localResourceFunctionFile // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*importResourceFunction*)
 importResourceFunction // beginDefinition;
 importResourceFunction::failure = "[ERROR] Failed to import resource function `1`. Aborting MX build.";
 importResourceFunction // Attributes = { HoldFirst };
@@ -261,31 +300,29 @@ importResourceFunction[ name_String ] :=
 importResourceFunction[ symbol_Symbol, name_String ] :=
     importResourceFunction[ symbol, name, Lookup[ $resourceVersions, name ] ];
 
+(* MX build: inline the definitions into the paclet *)
 importResourceFunction[ symbol_Symbol, name_String, version_ ] /; $mxFlag := Enclose[
     Block[ { PrintTemporary },
-        Module[ { sourceContext, targetContext, definition, replaced, inlined, newSymbol },
+        Module[ { targetContext, replaced, inlined, newSymbol },
 
-            ConfirmAssert @ StringQ @ version;
-            sourceContext = ConfirmBy[ ResourceFunction[ name, "Context", ResourceVersion -> version ], StringQ ];
+            ConfirmAssert[ StringQ @ version, "Version" ];
             targetContext = $resourceFunctionContext<>name<>"`";
-            definition    = ConfirmMatch[ ResourceFunction[ name, "DefinitionList" ], _Language`DefinitionList ];
 
+            (* The definitions, in the target context: *)
             replaced = ConfirmMatch[
-                ResourceFunction[ "ReplaceContext", ResourceVersion -> $resourceVersions[ "ReplaceContext" ] ][
-                    definition,
-                    sourceContext -> targetContext
-                ],
-                _Language`DefinitionList
+                resourceFunctionDefinitionList[ name, version, targetContext ],
+                _Language`DefinitionList,
+                "DefinitionList"
             ];
 
-            inlined = ConfirmMatch[ inlineDependentResourceFunctions @ replaced, _Language`DefinitionList ];
+            inlined = ConfirmMatch[ inlineDependentResourceFunctions @ replaced, _Language`DefinitionList, "Inlined" ];
 
             $importedResourceFunctions[ name ] = version;
             KeyDropFrom[ $dependentResourceFunctions, Keys @ $importedResourceFunctions ];
 
-            ConfirmMatch[ Language`ExtendedFullDefinition[ ] = inlined, _Language`DefinitionList ];
+            ConfirmMatch[ Language`ExtendedFullDefinition[ ] = inlined, _Language`DefinitionList, "SetDefinition" ];
 
-            newSymbol = ConfirmMatch[ Symbol[ targetContext<>name ], _Symbol? AtomQ ];
+            newSymbol = ConfirmMatch[ Symbol[ targetContext<>name ], _Symbol? AtomQ, "Symbol" ];
 
             importResourceFunction[ symbol, name, version ] =
                 If[ Unevaluated @ symbol === None,
@@ -297,12 +334,213 @@ importResourceFunction[ symbol_Symbol, name_String, version_ ] /; $mxFlag := Enc
     (Message[ importResourceFunction::failure, name ]; Abort[ ]) &
 ];
 
+(* Loading from source: resolve the import at the first use of the symbol, memoizing only on success *)
 importResourceFunction[ symbol: Except[ None, _Symbol ], name_String, version_String ] :=
-    symbol := symbol = Block[ { PrintTemporary }, ResourceFunction[ name, "Function", ResourceVersion -> version ] ];
+    symbol := resolveResourceFunction[ symbol, name, version ];
+
+(* Loading from source: a resource function that a local definition depends on (see inlineDependentResourceFunctions),
+   which then has a local definition itself *)
+importResourceFunction[ None, name_String, version_String ] :=
+    With[ { file = localResourceFunctionFile @ name },
+        loadLocalResourceFunction[ name, file ] /; StringQ @ file
+    ];
 
 importResourceFunction // endDefinition;
 
 $importedResourceFunctions = <| |>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*resolveResourceFunction*)
+resolveResourceFunction // beginDefinition;
+resolveResourceFunction // Attributes = { HoldFirst };
+
+resolveResourceFunction[ symbol_Symbol, name_String, version_String ] :=
+    Module[ { function },
+        function = Block[ { PrintTemporary }, getResourceFunction[ name, version ] ];
+        If[ resourceFunctionSymbolQ @ function,
+            symbol = function,
+            resourceFunctionUnavailable @ name
+        ]
+    ];
+
+resolveResourceFunction // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*resourceFunctionSymbolQ*)
+(* A resolved resource function is a symbol outside System`, since ResourceFunction gives $Failed on failure *)
+resourceFunctionSymbolQ // beginDefinition;
+resourceFunctionSymbolQ[ s_Symbol ] := Context @ s =!= "System`";
+resourceFunctionSymbolQ[ _ ] := False;
+resourceFunctionSymbolQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*resourceFunctionUnavailable*)
+(* Placeholder for an imported resource function that could not be resolved: applying it to arguments fails with a
+   message instead of producing a garbled expression. It is never memoized (see resolveResourceFunction). *)
+resourceFunctionUnavailable // ClearAll;
+resourceFunctionUnavailable[ name_String ][ ___ ] := throwFailure[ "ResourceFunctionUnavailable", name ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*resourceFunctionAvailableQ*)
+(* Whether an imported resource function symbol (e.g. readableForm) resolved to a usable function *)
+resourceFunctionAvailableQ // beginDefinition;
+resourceFunctionAvailableQ[ _resourceFunctionUnavailable ] := False;
+resourceFunctionAvailableQ[ s_Symbol ] := resourceFunctionSymbolQ @ s;
+resourceFunctionAvailableQ[ _ ] := False;
+resourceFunctionAvailableQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*getResourceFunction*)
+(* The function symbol of a resource function: from a local definition if there is one, otherwise from the Function
+   Repository (which gives $Failed or Missing when it cannot be reached) *)
+getResourceFunction // beginDefinition;
+
+getResourceFunction[ name_String, version_String ] :=
+    getResourceFunction[ name, version, localResourceFunctionFile @ name ];
+
+(* A local definition that was already loaded as a dependency of another one is not loaded again *)
+getResourceFunction[ name_String, version_String, file_String ] :=
+    If[ KeyExistsQ[ $importedResourceFunctions, name ],
+        Symbol[ $resourceFunctionContext<>name<>"`"<>name ],
+        loadLocalResourceFunction[ name, file ]
+    ];
+
+getResourceFunction[ name_String, version_String, _Missing ] :=
+    Quiet @ ResourceFunction[ name, "Function", ResourceVersion -> version ];
+
+getResourceFunction // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*loadLocalResourceFunction*)
+(* Loads a local definition into its target context, rewrites its references to other resource functions to their
+   local symbols (loading those as well) and returns the function's symbol *)
+loadLocalResourceFunction // beginDefinition;
+
+loadLocalResourceFunction[ name_String, file_String ] := Enclose[
+    Module[ { targetContext, definition, inlined },
+        targetContext = $resourceFunctionContext<>name<>"`";
+
+        definition = ConfirmMatch[
+            localResourceFunctionDefinitionList[ name, file, targetContext ],
+            _Language`DefinitionList,
+            "DefinitionList"
+        ];
+
+        inlined = ConfirmMatch[ inlineDependentResourceFunctions @ definition, _Language`DefinitionList, "Inlined" ];
+
+        $importedResourceFunctions[ name ] = Lookup[ $resourceVersions, name, None ];
+        KeyDropFrom[ $dependentResourceFunctions, Keys @ $importedResourceFunctions ];
+
+        ConfirmMatch[ Language`ExtendedFullDefinition[ ] = inlined, _Language`DefinitionList, "SetDefinition" ];
+        importDependentResourceFunctions[ ];
+
+        ConfirmMatch[ Symbol[ targetContext<>name ], _Symbol? AtomQ, "Symbol" ]
+    ],
+    throwInternalFailure
+];
+
+loadLocalResourceFunction // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*resourceFunctionDefinitionList*)
+(* The definitions of a resource function as a DefinitionList in the given context: from the local definition if there
+   is one, otherwise fetched from the Function Repository *)
+resourceFunctionDefinitionList // beginDefinition;
+
+resourceFunctionDefinitionList[ name_String, version_String, targetContext_String ] :=
+    resourceFunctionDefinitionList[ name, version, targetContext, localResourceFunctionFile @ name ];
+
+resourceFunctionDefinitionList[ name_String, version_String, targetContext_String, file_String ] :=
+    localResourceFunctionDefinitionList[ name, file, targetContext ];
+
+resourceFunctionDefinitionList[ name_String, version_String, targetContext_String, _Missing ] := Enclose[
+    Module[ { sourceContext, definition },
+
+        sourceContext = ConfirmBy[ ResourceFunction[ name, "Context", ResourceVersion -> version ], StringQ, "Context" ];
+        definition    = ConfirmMatch[ ResourceFunction[ name, "DefinitionList" ], _Language`DefinitionList, "DefinitionList" ];
+
+        ConfirmMatch[
+            ResourceFunction[ "ReplaceContext", ResourceVersion -> $resourceVersions[ "ReplaceContext" ] ][
+                definition,
+                sourceContext -> targetContext
+            ],
+            _Language`DefinitionList,
+            "Replaced"
+        ]
+    ],
+    throwInternalFailure
+];
+
+resourceFunctionDefinitionList // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*localResourceFunctionDefinitionList*)
+(* Loads a local definition file (which wraps the definition in BeginPackage/EndPackage for the target context, so its
+   symbols are created there) and collects the definitions of the symbols in that context. The Block keeps the file's
+   BeginPackage/EndPackage from leaving the context on the caller's $ContextPath. *)
+localResourceFunctionDefinitionList // beginDefinition;
+
+localResourceFunctionDefinitionList[ name_String, file_String, targetContext_String ] := Enclose[
+    Module[ { names },
+
+        Block[ { $Context = $Context, $ContextPath = $ContextPath, PrintTemporary },
+            ConfirmMatch[ Get @ file, Null, "Get" ]
+        ];
+
+        ConfirmAssert[ NameQ[ targetContext<>name ], "Defined" ];
+        names = ConfirmMatch[ Join[ Names[ targetContext<>"*" ], Names[ targetContext<>"*`*" ] ], { __String }, "Names" ];
+
+        Language`DefinitionList @@ Select[ symbolDefinitionRule /@ names, definedSymbolRuleQ ]
+    ],
+    throwInternalFailure
+];
+
+localResourceFunctionDefinitionList // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*symbolDefinitionRule*)
+(* The definition of a symbol in the format of a DefinitionList element *)
+symbolDefinitionRule // beginDefinition;
+symbolDefinitionRule // Attributes = { HoldAllComplete };
+
+symbolDefinitionRule[ name_String ] :=
+    ToExpression[ name, InputForm, symbolDefinitionRule ];
+
+symbolDefinitionRule[ s_Symbol ] := HoldForm[ s ] -> DeleteCases[
+    {
+        OwnValues     -> OwnValues @ s,
+        DownValues    -> DownValues @ s,
+        UpValues      -> UpValues @ s,
+        SubValues     -> SubValues @ s,
+        NValues       -> NValues @ s,
+        FormatValues  -> FormatValues @ s,
+        DefaultValues -> DefaultValues @ s,
+        Messages      -> Messages @ s,
+        Attributes    -> Attributes @ s
+    },
+    _ -> { }
+];
+
+symbolDefinitionRule // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*definedSymbolRuleQ*)
+(* Symbols without definitions and the Module temporaries that loading leaves behind are not part of the definition *)
+definedSymbolRuleQ // beginDefinition;
+definedSymbolRuleQ[ HoldForm[ _ ] -> { } ] := False;
+definedSymbolRuleQ[ HoldForm[ _ ] -> { ___, Attributes -> { ___, Temporary, ___ }, ___ } ] := False;
+definedSymbolRuleQ[ HoldForm[ _ ] -> { __ } ] := True;
+definedSymbolRuleQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -326,16 +564,18 @@ importDependentResourceFunctions // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*inlineDependentResourceFunctions*)
+(* Rewrites references to other resource functions in a definition to their local symbols, recording them as
+   dependencies to import (see importDependentResourceFunctions) *)
 inlineDependentResourceFunctions // beginDefinition;
 
 inlineDependentResourceFunctions[ definition_ ] := ReplaceAll[
     definition,
     {
-        HoldPattern @ ResourceFunction[ name_String, OptionsPattern[ ] ] :> RuleCondition[
+        HoldPattern @ ResourceFunction[ name_String? inlinableResourceFunctionQ, OptionsPattern[ ] ] :> RuleCondition[
             $dependentResourceFunctions[ name ] = True;
             Symbol[ $resourceFunctionContext<>name<>"`"<>name ]
         ],
-        HoldPattern @ ResourceFunction[ name_String, "Function", OptionsPattern[ ] ] :> RuleCondition[
+        HoldPattern @ ResourceFunction[ name_String? inlinableResourceFunctionQ, "Function", OptionsPattern[ ] ] :> RuleCondition[
             $dependentResourceFunctions[ name ] = True;
             Symbol[ $resourceFunctionContext<>name<>"`"<>name ]
         ]
@@ -344,8 +584,16 @@ inlineDependentResourceFunctions[ definition_ ] := ReplaceAll[
 
 inlineDependentResourceFunctions // endDefinition;
 
-
 $dependentResourceFunctions = <| |>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*inlinableResourceFunctionQ*)
+(* In an MX build every reference is inlined (fetching the dependency if it has no local definition); when loading from
+   source only those with a local definition are, leaving the others to the Function Repository at call time *)
+inlinableResourceFunctionQ // beginDefinition;
+inlinableResourceFunctionQ[ name_String ] := TrueQ @ $mxFlag || StringQ @ localResourceFunctionFile @ name;
+inlinableResourceFunctionQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)

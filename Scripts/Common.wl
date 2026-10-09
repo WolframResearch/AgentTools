@@ -28,7 +28,8 @@ DefinitionNotebookClient`$DisabledHints = <| "MessageTag" -> #, "Level" -> All, 
     "HugeRaster",
     "InternalContextWarning",
     "InvalidFirstVersion",
-    "NoGithubRepoFound"
+    "NoGithubRepoFound",
+    "PublisherUpdateNotAllowed"
 };
 
 $messageHistoryLength = 10;

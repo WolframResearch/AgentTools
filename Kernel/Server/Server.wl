@@ -27,6 +27,11 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
    so it is declared here where both subcontexts can bind it. *)
 `stealthCatchTop;
 
+(* Boundary for exceptions that nothing in the paclet catches (foreign Throw tags, tagless Throw, Abort): defined in
+   Shared.wl, used by evaluateTool there and by both transports around handleMethod (see catchUncaughtThrows). *)
+`catchUncaughtThrows;
+`uncaughtRequestThrow;
+
 (* Tool-list construction shared by the transports: defined in Shared.wl and also read by the cloud
    transport (Cloud.wl) to describe a server for the /api/info landing-page endpoint. *)
 `serverToolListData;
