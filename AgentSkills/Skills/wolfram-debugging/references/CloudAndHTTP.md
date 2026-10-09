@@ -253,9 +253,11 @@ URLRead[HTTPRequest[First[diag], <|"Query" -> {"mode" -> #, "x" -> "3"}|>], {"St
 ```
 
 It does not catch an untagged `Throw[v]`, `Abort[]` or time-outs. The helper does all of these, captures `Print` output,
-can stop at a time limit below 300 s with the sampled stack, answers `debug=1` requests with the report, and can log
-each report: ``APIFunction[{...}, WolframDebugging`HTTPDiagnostics[myBody[#x]] &]``; load the package before
-`CloudDeploy` (options in `HelperFunctions.md`).
+can stop at a time limit below 300 s with the sampled stack, answers `debug=1` requests with the report if you pass
+`"Debug" -> Automatic`, and can log each report: ``APIFunction[{...}, WolframDebugging`HTTPDiagnostics[myBody[#x]] &]``;
+load the package before `CloudDeploy` (options in `HelperFunctions.md`). Reports go to whoever calls the API and can
+show parameters, intermediate values and code: debug a private deployment as its owner, and remove the wrapper when
+done.
 
 ### Logging from deployed code
 

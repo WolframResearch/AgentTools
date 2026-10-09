@@ -4334,11 +4334,12 @@ debugHTTPResponse[ deployable_, req_, o_Association ] :=
 (*HTTPDiagnostics*)
 (* The body wrapper for deployed APIFunction/Delayed/FormFunction code: message handlers, Stack, StackBegin,
    ScheduledTask sampling and TimeConstrained work in deployed kernels (Trace does not). Returns the value of expr
-   unchanged, or a JSON diagnostics response on failure or when the request has debug=1. *)
+   unchanged, or a JSON diagnostics response on failure, or with "Debug" -> Automatic when the request has debug=1.
+   The response goes to whoever made the request, so it is meant for deployments that only the owner can call. *)
 HTTPDiagnostics // Attributes = { HoldFirst };
 
 defineOptions[ HTTPDiagnostics, {
-    { "Debug"         , Automatic, MatchQ[ Automatic | True | False ], "Automatic (on when the request has <DebugParameter>=1, true or yes), True or False" },
+    { "Debug"         , False    , MatchQ[ Automatic | True | False ], "False, True or Automatic (on when the request has <DebugParameter>=1, true or yes)" },
     { "DebugParameter", "debug"  , StringQ                           , "a string" },
     { "FailOnMessages", True     , booleanQ                          , "True or False" },
     { "TimeLimit"     , None     , MatchQ[ None | _? positiveNumberQ ], "None or a positive number of seconds (keep it below the deployment limit)" },
@@ -4433,9 +4434,13 @@ failureReason[ res_, records_List, failOnMsgs_ ] := Which[
     True                                                         , None
 ];
 
-requestParams[ ] := Quiet @ Join[
-    Replace[ HTTPRequestData[ "Query" ], Except[ { ___Rule } ] -> { } ],
-    Replace[ HTTPRequestData[ "FormRules" ], Except[ { ___Rule } ] -> { } ]
+(* the evaluation cache does not see that HTTPRequestData depends on the request: without the Update, results computed
+   outside a request (HTTPDiagnostics called locally) were reused by later requests *)
+requestData[ prop_String ] := ( Update @ HTTPRequestData; Quiet @ HTTPRequestData @ prop );
+
+requestParams[ ] := Join[
+    Replace[ requestData[ "Query" ], Except[ { ___Rule } ] -> { } ],
+    Replace[ requestData[ "FormRules" ], Except[ { ___Rule } ] -> { } ]
 ];
 
 debugRequestedQ[ name_String ] := MemberQ[ { "1", "true", "yes" }, ToLowerCase @ ToString @ Lookup[ requestParams[ ], name, "" ] ];
@@ -4450,8 +4455,8 @@ requestEnvironment[ ] := Quiet @ <|
 |>;
 
 requestInfo[ n_Integer ] := Quiet @ <|
-    "Method"     -> Replace[ HTTPRequestData[ "Method" ], Except[ _String ] -> Missing[ ] ],
-    "Path"       -> Replace[ HTTPRequestData[ "PathString" ], Except[ _String ] -> Missing[ ] ],
+    "Method"     -> Replace[ requestData[ "Method" ], Except[ _String ] -> Missing[ ] ],
+    "Path"       -> Replace[ requestData[ "PathString" ], Except[ _String ] -> Missing[ ] ],
     "Parameters" -> Map[ If[ StringQ @ #, truncateString[ #, n ], heldString[ HoldComplete @ #, n ] ] &, Association @ requestParams[ ] ]
 |>;
 

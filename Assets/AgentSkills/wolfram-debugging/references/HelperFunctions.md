@@ -584,17 +584,22 @@ The body wrapper for deployed code:
 `CloudDeploy`). Returns the value of `expr` unchanged, or a JSON `HTTPResponse`: `"Success"`, `"Reason"` (`"Messages"`,
 `"UncaughtThrow"`, `"Aborted"`, `"TimedOut"`, `"FailureResult"`, `"DebugRequested"`), `"Result"`, `"Messages"`,
 `"Output"` (Print text), `"Stack"` (at the first message, or the last sample on a time-out), `"Seconds"`,
-`"Environment"`, `"Request"`. Options: `"Debug"` (Automatic: on for `debug=1`/`true`/`yes`); `"DebugParameter"`
+`"Environment"`, `"Request"`. Options: `"Debug"` (False; Automatic: on for `debug=1`/`true`/`yes`); `"DebugParameter"`
 ("debug"); `"FailOnMessages"` (True); `"TimeLimit"` (None | seconds below the 300 s limit); `"StatusCode"` (500);
 `"StackFrames"` (8); `"MaxMessages"` (10); `"StringLength"` (200); `"MaxPrints"` (10); `"Log"` (None |
 `CloudObject`/file: `PutAppend`, read with `ReadList`).
+The report goes to whoever made the request and holds the request parameters, messages, stack frames, `Print` text and
+results, so deploy the wrapped code with the default `Permissions -> "Private"` (call it as the owner with
+`URLRead[HTTPRequest[obj, ...]]`) and take the wrapper out before others use the API. With `"Debug" -> Automatic`, any
+caller can ask for a report.
 ```wl
 WolframDebugging`HTTPSummary[WolframDebugging`HTTPDiagnostics[myFn[-1, 1]], "MaxLength" -> 150]
 (* <|"StatusCode" -> 500, "ContentType" -> "application/json", "Text" -> "{\"Success\":false,\"Reason\":\"Messages\",
      \"Result\":\"{-1, ComplexInfinity, 1}\",\"Messages\":[{\"Message\":\"Power::infy\",\"Text\":\"Power::infy: Infinite express..."|> *)
 ```
 Deployed (`"WebAPI"`), `a=-1, b=1` answered 500 with `"Stack":["myFn[-1, 1]",...,"0^(-1)"]`, an endless loop with a 5 s
-`"TimeLimit"` answered `"Reason":"TimedOut"` with the sampled stack, and `debug=1` answered 200 with `"DebugRequested"`;
+`"TimeLimit"` answered `"Reason":"TimedOut"` with the sampled stack, and with `"Debug" -> Automatic`, `debug=1` answered
+200 with `"DebugRequested"`;
 as the body of a deployed `Delayed` or `FormFunction` it answered the same 500 report.
 
 ### `WithHTTPLog[expr, opts]`
