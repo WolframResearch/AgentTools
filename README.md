@@ -30,7 +30,7 @@ A Wolfram Language toolkit for integrating with AI agents and LLMs — providing
 - **MCP prompts** for enhanced context and workflows
 - **MCP Apps** for interactive UI resources in supported clients (e.g., embedded notebook viewers, Wolfram\|Alpha result displays)
 - **MCP Roots** support so the server, evaluator, and external tools (`TestReport` and similar) resolve relative paths against the client's project directory
-- **Agent Skills** for distributing Wolfram tools as portable skills to AI coding agents (Claude Code, Cursor, Gemini CLI, VS Code, and [more](https://agentskills.io/)); the built-in skills (wolfram-language, wolfram-alpha, wolfram-notebooks, wolfram-paclets) ship with the paclet, and `DeployAgentTools` installs them together with the matching MCP server
+- **Agent Skills** for distributing Wolfram tools as portable skills to AI coding agents (Claude Code, Cursor, Gemini CLI, VS Code, and [more](https://agentskills.io/)); the built-in skills (wolfram-language, wolfram-alpha, wolfram-notebooks, wolfram-paclets, wolfram-debugging) ship with the paclet, and `DeployAgentTools` installs them together with the matching MCP server
 - **Paclet extensions** allowing third-party paclets to contribute MCP tools, prompts, and servers via the `"AgentTools"` extension
 - **Docker image** for running the MCP server in a container without a local Wolfram Engine installation
 

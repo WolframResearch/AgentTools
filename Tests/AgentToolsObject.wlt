@@ -62,10 +62,10 @@ VerificationTest[
 VerificationTest[
     #[ "AgentSkillNames" ] & /@ $DefaultAgentTools,
     <|
-        "Wolfram"                  -> { "wolfram-language", "wolfram-alpha" },
+        "Wolfram"                  -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
         "WolframAlpha"             -> { "wolfram-alpha" },
-        "WolframLanguage"          -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" },
-        "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" }
+        "WolframLanguage"          -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" },
+        "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" }
     |>,
     SameTest -> SameQ,
     TestID   -> "DefaultAgentTools-AgentSkillNames@@Tests/AgentToolsObject.wlt:62,1-72,2"
@@ -132,49 +132,50 @@ VerificationTest[
         "BuiltIn",
         {
             HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-language" ] ],
-            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-alpha" ] ]
+            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-alpha" ] ],
+            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-debugging" ] ]
         },
         { "Wolfram" },
-        { "wolfram-language", "wolfram-alpha" },
+        { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
         "AgentToolsObject"
     },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-BuiltIn-Properties@@Tests/AgentToolsObject.wlt:128,1-143,2"
+    TestID   -> "AgentToolsObject-BuiltIn-Properties@@Tests/AgentToolsObject.wlt:128,1-144,2"
 ]
 
 VerificationTest[
     $wolfram[ "Description" ],
     _String,
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-BuiltIn-Description@@Tests/AgentToolsObject.wlt:145,1-150,2"
+    TestID   -> "AgentToolsObject-BuiltIn-Description@@Tests/AgentToolsObject.wlt:146,1-151,2"
 ]
 
 VerificationTest[
     $wolfram[ "MCPServers" ],
     { _MCPServerObject? MCPServerObjectQ },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-BuiltIn-MCPServers@@Tests/AgentToolsObject.wlt:152,1-157,2"
+    TestID   -> "AgentToolsObject-BuiltIn-MCPServers@@Tests/AgentToolsObject.wlt:153,1-158,2"
 ]
 
 VerificationTest[
     $wolfram[ "MCPServers" ] === $wolfram[ "MCPServerObjects" ] === { MCPServerObject[ "Wolfram" ] },
     True,
-    TestID -> "AgentToolsObject-BuiltIn-MCPServerObjects@@Tests/AgentToolsObject.wlt:159,1-163,2"
+    TestID -> "AgentToolsObject-BuiltIn-MCPServerObjects@@Tests/AgentToolsObject.wlt:160,1-164,2"
 ]
 
 VerificationTest[
     #[ "Name" ] & /@ $wolfram[ "Tools" ],
     #[ "Name" ] & /@ MCPServerObject[ "Wolfram" ][ "Tools" ],
-    TestID -> "AgentToolsObject-BuiltIn-Tools@@Tests/AgentToolsObject.wlt:165,1-169,2"
+    TestID -> "AgentToolsObject-BuiltIn-Tools@@Tests/AgentToolsObject.wlt:166,1-170,2"
 ]
 
 VerificationTest[
     With[ { skills = $wolfram /@ { "AgentSkills", "Skills", "LLMSkills" } },
         { SameQ @@ skills, MatchQ[ First @ skills, { __LLMSkill } ], Map[ #[ "Name" ] &, First @ skills ] }
     ],
-    { True, True, { "wolfram-language", "wolfram-alpha" } },
+    { True, True, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" } },
     SameTest -> SameQ,
-    TestID   -> "AgentToolsObject-BuiltIn-LLMSkills@@Tests/AgentToolsObject.wlt:171,1-178,2"
+    TestID   -> "AgentToolsObject-BuiltIn-LLMSkills@@Tests/AgentToolsObject.wlt:172,1-179,2"
 ]
 
 (* The skills are the skill directories in the "AgentSkills" asset of the loaded paclet *)
@@ -185,9 +186,9 @@ VerificationTest[
             $wolfram[ "AgentSkills" ]
         ]
     ],
-    { True, True },
+    { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "AgentToolsObject-BuiltIn-SkillLocations@@Tests/AgentToolsObject.wlt:181,1-191,2"
+    TestID   -> "AgentToolsObject-BuiltIn-SkillLocations@@Tests/AgentToolsObject.wlt:182,1-192,2"
 ]
 
 (* A paclet without the skills (e.g. a damaged installation) still has the skill names, but not the skills *)
@@ -214,12 +215,12 @@ VerificationTest[
         ]
     ],
     {
-        { "wolfram-language", "wolfram-alpha" },
+        { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
         Failure[ "AgentToolsObject::BuiltInAgentSkillMissing", KeyValuePattern[ "MessageParameters" :> { "wolfram-language" } ] ]
     },
     { AgentToolsObject::BuiltInAgentSkillMissing },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-BuiltIn-MissingAsset@@Tests/AgentToolsObject.wlt:194,1-223,2"
+    TestID   -> "AgentToolsObject-BuiltIn-MissingAsset@@Tests/AgentToolsObject.wlt:195,1-224,2"
 ]
 
 VerificationTest[
@@ -228,19 +229,19 @@ VerificationTest[
         { "Name", "MCPServers", "MCPServerNames", "AgentSkills", "AgentSkillNames", "Skills", "Tools", "Data" }
     ],
     True,
-    TestID -> "AgentToolsObject-Properties@@Tests/AgentToolsObject.wlt:225,1-232,2"
+    TestID -> "AgentToolsObject-Properties@@Tests/AgentToolsObject.wlt:226,1-233,2"
 ]
 
 VerificationTest[
     $wolfram[ { "Name", "Location" } ],
     <| "Name" -> "Wolfram", "Location" -> "BuiltIn" |>,
-    TestID -> "AgentToolsObject-PropertyList@@Tests/AgentToolsObject.wlt:234,1-238,2"
+    TestID -> "AgentToolsObject-PropertyList@@Tests/AgentToolsObject.wlt:235,1-239,2"
 ]
 
 VerificationTest[
     $wolfram[ "NotAProperty" ],
     Missing[ "UnknownProperty", "NotAProperty" ],
-    TestID -> "AgentToolsObject-UnknownProperty@@Tests/AgentToolsObject.wlt:240,1-244,2"
+    TestID -> "AgentToolsObject-UnknownProperty@@Tests/AgentToolsObject.wlt:241,1-245,2"
 ]
 
 VerificationTest[
@@ -248,13 +249,13 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidProperty },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-InvalidProperty@@Tests/AgentToolsObject.wlt:246,1-252,2"
+    TestID   -> "AgentToolsObject-InvalidProperty@@Tests/AgentToolsObject.wlt:247,1-253,2"
 ]
 
 VerificationTest[
     AgentToolsObject @ $wolfram,
     $wolfram,
-    TestID -> "AgentToolsObject-Idempotent@@Tests/AgentToolsObject.wlt:254,1-258,2"
+    TestID -> "AgentToolsObject-Idempotent@@Tests/AgentToolsObject.wlt:255,1-259,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -265,7 +266,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::AgentToolsNotFound },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-NotFound@@Tests/AgentToolsObject.wlt:263,1-269,2"
+    TestID   -> "AgentToolsObject-NotFound@@Tests/AgentToolsObject.wlt:264,1-270,2"
 ]
 
 VerificationTest[
@@ -273,7 +274,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::AgentToolsNotFound },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-NotFound-Qualified@@Tests/AgentToolsObject.wlt:271,1-277,2"
+    TestID   -> "AgentToolsObject-NotFound-Qualified@@Tests/AgentToolsObject.wlt:272,1-278,2"
 ]
 
 VerificationTest[
@@ -281,7 +282,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-InvalidArguments@@Tests/AgentToolsObject.wlt:279,1-285,2"
+    TestID   -> "AgentToolsObject-InvalidArguments@@Tests/AgentToolsObject.wlt:280,1-286,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -296,60 +297,60 @@ VerificationTest[
     |>,
     _AgentToolsObject? agentToolsObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc@@Tests/AgentToolsObject.wlt:290,1-300,2"
+    TestID   -> "AgentToolsObject-AdHoc@@Tests/AgentToolsObject.wlt:291,1-301,2"
 ]
 
 VerificationTest[
     $adHoc /@ { "Name", "Location", "MCPServerNames", "AgentSkillNames", "Description" },
     { "MyTools", None, { "WolframLanguage" }, { "my-test-skill", "dir-test-skill" }, "Tools for testing" },
-    TestID -> "AgentToolsObject-AdHoc-Properties@@Tests/AgentToolsObject.wlt:302,1-306,2"
+    TestID -> "AgentToolsObject-AdHoc-Properties@@Tests/AgentToolsObject.wlt:303,1-307,2"
 ]
 
 VerificationTest[
     $adHoc[ "MCPServers" ],
     { MCPServerObject[ "WolframLanguage" ] },
-    TestID -> "AgentToolsObject-AdHoc-MCPServers@@Tests/AgentToolsObject.wlt:308,1-312,2"
+    TestID -> "AgentToolsObject-AdHoc-MCPServers@@Tests/AgentToolsObject.wlt:309,1-313,2"
 ]
 
 VerificationTest[
     $adHoc[ "AgentSkills" ],
     { $testSkill, HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "dir-test-skill" ] ] },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-AgentSkills@@Tests/AgentToolsObject.wlt:314,1-319,2"
+    TestID   -> "AgentToolsObject-AdHoc-AgentSkills@@Tests/AgentToolsObject.wlt:315,1-320,2"
 ]
 
 VerificationTest[
     $adHoc[ "AgentSkills" ] === $adHoc[ "Skills" ] === $adHoc[ "LLMSkills" ],
     True,
-    TestID -> "AgentToolsObject-AdHoc-SkillsAliases@@Tests/AgentToolsObject.wlt:321,1-325,2"
+    TestID -> "AgentToolsObject-AdHoc-SkillsAliases@@Tests/AgentToolsObject.wlt:322,1-326,2"
 ]
 
 (* The stored specifications are kept as given *)
 VerificationTest[
     Lookup[ $adHoc[ "Data" ], { "MCPServers", "AgentSkills" } ],
     { { "WolframLanguage" }, { $testSkill, File @ $testSkillDirectory } },
-    TestID -> "AgentToolsObject-AdHoc-StoredSpecs@@Tests/AgentToolsObject.wlt:328,1-332,2"
+    TestID -> "AgentToolsObject-AdHoc-StoredSpecs@@Tests/AgentToolsObject.wlt:329,1-333,2"
 ]
 
 VerificationTest[
     AgentToolsObject @ <| "Name" -> "OnlySkills", "AgentSkills" -> $testSkill |>,
     _AgentToolsObject? (#[ "MCPServers" ] === { } && #[ "AgentSkills" ] === { $testSkill } &),
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-SkillsOnly@@Tests/AgentToolsObject.wlt:334,1-339,2"
+    TestID   -> "AgentToolsObject-AdHoc-SkillsOnly@@Tests/AgentToolsObject.wlt:335,1-340,2"
 ]
 
 VerificationTest[
     AgentToolsObject @ <| "Name" -> "Empty" |>,
     _AgentToolsObject? (#[ "MCPServers" ] === { } && #[ "AgentSkills" ] === { } &),
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-Empty@@Tests/AgentToolsObject.wlt:341,1-346,2"
+    TestID   -> "AgentToolsObject-AdHoc-Empty@@Tests/AgentToolsObject.wlt:342,1-347,2"
 ]
 
 VerificationTest[
     AgentToolsObject @ <| "Name" -> "WithServerObject", "MCPServers" -> { MCPServerObject[ "WolframAlpha" ] } |>,
     _AgentToolsObject? (#[ "MCPServerNames" ] === { "WolframAlpha" } &),
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-ServerObject@@Tests/AgentToolsObject.wlt:348,1-353,2"
+    TestID   -> "AgentToolsObject-AdHoc-ServerObject@@Tests/AgentToolsObject.wlt:349,1-354,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -360,7 +361,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-BuiltInName@@Tests/AgentToolsObject.wlt:358,1-364,2"
+    TestID   -> "AgentToolsObject-AdHoc-BuiltInName@@Tests/AgentToolsObject.wlt:359,1-365,2"
 ]
 
 VerificationTest[
@@ -368,7 +369,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-ReservedName@@Tests/AgentToolsObject.wlt:366,1-372,2"
+    TestID   -> "AgentToolsObject-AdHoc-ReservedName@@Tests/AgentToolsObject.wlt:367,1-373,2"
 ]
 
 VerificationTest[
@@ -376,7 +377,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-NoName@@Tests/AgentToolsObject.wlt:374,1-380,2"
+    TestID   -> "AgentToolsObject-AdHoc-NoName@@Tests/AgentToolsObject.wlt:375,1-381,2"
 ]
 
 VerificationTest[
@@ -384,7 +385,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-InvalidServers@@Tests/AgentToolsObject.wlt:382,1-388,2"
+    TestID   -> "AgentToolsObject-AdHoc-InvalidServers@@Tests/AgentToolsObject.wlt:383,1-389,2"
 ]
 
 VerificationTest[
@@ -392,7 +393,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-InvalidSkills@@Tests/AgentToolsObject.wlt:390,1-396,2"
+    TestID   -> "AgentToolsObject-AdHoc-InvalidSkills@@Tests/AgentToolsObject.wlt:391,1-397,2"
 ]
 
 VerificationTest[
@@ -400,7 +401,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-InvalidDescription@@Tests/AgentToolsObject.wlt:398,1-404,2"
+    TestID   -> "AgentToolsObject-AdHoc-InvalidDescription@@Tests/AgentToolsObject.wlt:399,1-405,2"
 ]
 
 VerificationTest[
@@ -408,7 +409,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::InvalidAgentSkill },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-InvalidFile@@Tests/AgentToolsObject.wlt:406,1-412,2"
+    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-InvalidFile@@Tests/AgentToolsObject.wlt:407,1-413,2"
 ]
 
 (* Bare skill names are names of built-in skills *)
@@ -417,14 +418,14 @@ VerificationTest[
     Failure[ "AgentToolsObject::AgentSkillNotFound", KeyValuePattern[ "MessageParameters" :> { "no-such-built-in-skill" } ] ],
     { AgentToolsObject::AgentSkillNotFound },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-UnknownName@@Tests/AgentToolsObject.wlt:415,1-421,2"
+    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-UnknownName@@Tests/AgentToolsObject.wlt:416,1-422,2"
 ]
 
 VerificationTest[
     AgentToolsObject[ <| "Name" -> "WithBuiltInSkill", "AgentSkills" -> { $testSkill, "wolfram-alpha" } |> ][ "AgentSkills" ],
     { $testSkill, HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-alpha" ] ] },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-BuiltInName@@Tests/AgentToolsObject.wlt:423,1-428,2"
+    TestID   -> "AgentToolsObject-AdHoc-AgentSkills-BuiltInName@@Tests/AgentToolsObject.wlt:424,1-429,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -434,20 +435,20 @@ VerificationTest[
     AgentToolsObject[ <| "Name" -> "NoBody", "AgentSkills" -> { <| "Name" -> "t-skill", "Description" -> "d" |> } |> ][ "AgentSkills" ],
     { HoldPattern[ LLMSkill ][ KeyValuePattern @ { "Name" -> "t-skill", "Body" -> "" } ] },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AgentSkills-NoBody@@Tests/AgentToolsObject.wlt:433,1-438,2"
+    TestID   -> "AgentToolsObject-AgentSkills-NoBody@@Tests/AgentToolsObject.wlt:434,1-439,2"
 ]
 
 VerificationTest[
     AgentToolsObject[ <| "Name" -> "OtherType", "AgentSkills" -> { <| "Name" -> "t-skill", "Description" -> "d", "Body" -> "b", "Type" -> "Skill" |> } |> ][ "AgentSkills" ],
     { HoldPattern[ LLMSkill ][ KeyValuePattern @ { "Name" -> "t-skill", "Body" -> "b" } ] },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-AgentSkills-OtherTypeKey@@Tests/AgentToolsObject.wlt:440,1-445,2"
+    TestID   -> "AgentToolsObject-AgentSkills-OtherTypeKey@@Tests/AgentToolsObject.wlt:441,1-446,2"
 ]
 
 VerificationTest[
     AgentToolsObject[ <| "Name" -> "OddNames", "AgentSkills" -> { "", "a/b" } |> ][ "AgentSkillNames" ],
     { "", "a/b" },
-    TestID -> "AgentToolsObject-AgentSkillNames-OddStrings@@Tests/AgentToolsObject.wlt:447,1-451,2"
+    TestID -> "AgentToolsObject-AgentSkillNames-OddStrings@@Tests/AgentToolsObject.wlt:448,1-452,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -460,13 +461,13 @@ VerificationTest[
     $pacletBundle = AgentToolsObject[ "MockMCPPacletSkills/SkillsBundle" ],
     _AgentToolsObject? agentToolsObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-ByName@@Tests/AgentToolsObject.wlt:459,1-464,2"
+    TestID   -> "PacletBundle-ByName@@Tests/AgentToolsObject.wlt:460,1-465,2"
 ]
 
 VerificationTest[
     $pacletBundle /@ { "Name", "MCPServerNames", "Description", "ToolsetType" },
     { "MockMCPPacletSkills/SkillsBundle", { "MockMCPPacletSkills/SkillsServer" }, "Servers and skills for testing", "AgentToolsObject" },
-    TestID -> "PacletBundle-Properties@@Tests/AgentToolsObject.wlt:466,1-470,2"
+    TestID -> "PacletBundle-Properties@@Tests/AgentToolsObject.wlt:467,1-471,2"
 ]
 
 VerificationTest[
@@ -474,38 +475,38 @@ VerificationTest[
     "MockMCPPacletSkills/" <> # & /@ {
         "directory-skill", "assoc-skill", "llmskill-skill", "combined-skill", "located-skill", "foreign-skill"
     },
-    TestID -> "PacletBundle-AgentSkillNames@@Tests/AgentToolsObject.wlt:472,1-478,2"
+    TestID -> "PacletBundle-AgentSkillNames@@Tests/AgentToolsObject.wlt:473,1-479,2"
 ]
 
 VerificationTest[
     $pacletBundle[ "Location" ],
     _PacletObject,
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-Location@@Tests/AgentToolsObject.wlt:480,1-485,2"
+    TestID   -> "PacletBundle-Location@@Tests/AgentToolsObject.wlt:481,1-486,2"
 ]
 
 VerificationTest[
     #[ "Name" ] & /@ $pacletBundle[ "AgentSkills" ],
     { "directory-skill", "assoc-skill", "llmskill-skill", "combined-skill", "located-skill", "foreign-skill" },
-    TestID -> "PacletBundle-AgentSkills@@Tests/AgentToolsObject.wlt:487,1-491,2"
+    TestID -> "PacletBundle-AgentSkills@@Tests/AgentToolsObject.wlt:488,1-492,2"
 ]
 
 VerificationTest[
     $pacletBundle[ "Skills" ] === $pacletBundle[ "AgentSkills" ],
     True,
-    TestID -> "PacletBundle-Skills@@Tests/AgentToolsObject.wlt:493,1-497,2"
+    TestID -> "PacletBundle-Skills@@Tests/AgentToolsObject.wlt:494,1-498,2"
 ]
 
 VerificationTest[
     AgentToolsObject[ "MockMCPPacletSkills/DevBundle" ][ "MCPServerNames" ],
     { "MockMCPPacletSkills/SkillsServer", "MockMCPPacletSkills/DevServer" },
-    TestID -> "PacletBundle-SecondEntry@@Tests/AgentToolsObject.wlt:499,1-503,2"
+    TestID -> "PacletBundle-SecondEntry@@Tests/AgentToolsObject.wlt:500,1-504,2"
 ]
 
 VerificationTest[
     AgentToolsObject[ "MockMCPPacletSkills/DevBundle" ][ "MCPServers" ],
     { MCPServerObject[ "MockMCPPacletSkills/SkillsServer" ], MCPServerObject[ "MockMCPPacletSkills/DevServer" ] },
-    TestID -> "PacletBundle-SecondEntry-MCPServers@@Tests/AgentToolsObject.wlt:505,1-509,2"
+    TestID -> "PacletBundle-SecondEntry-MCPServers@@Tests/AgentToolsObject.wlt:506,1-510,2"
 ]
 
 (* Entries for other systems define no bundle *)
@@ -514,7 +515,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::AgentToolsNotFound },
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-OtherSystem@@Tests/AgentToolsObject.wlt:512,1-518,2"
+    TestID   -> "PacletBundle-OtherSystem@@Tests/AgentToolsObject.wlt:513,1-519,2"
 ]
 
 VerificationTest[
@@ -522,7 +523,7 @@ VerificationTest[
     _Failure,
     { AgentToolsObject::AgentToolsBundleNameAmbiguous },
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-PacletNameAmbiguous@@Tests/AgentToolsObject.wlt:520,1-526,2"
+    TestID   -> "PacletBundle-PacletNameAmbiguous@@Tests/AgentToolsObject.wlt:521,1-527,2"
 ]
 
 VerificationTest[
@@ -530,7 +531,7 @@ VerificationTest[
     { _Failure, _Failure },
     { AgentToolsObject::AgentToolsNotFound, AgentToolsObject::AgentToolsNotFound },
     SameTest -> MatchQ,
-    TestID   -> "PacletBundle-NoWildcards@@Tests/AgentToolsObject.wlt:528,1-534,2"
+    TestID   -> "PacletBundle-NoWildcards@@Tests/AgentToolsObject.wlt:529,1-535,2"
 ]
 
 VerificationTest[
@@ -539,13 +540,13 @@ VerificationTest[
         { "MockMCPPacletSkills/SkillsBundle", "MockMCPPacletSkills/DevBundle" }
     ],
     True,
-    TestID -> "PacletBundle-AgentToolsObjects@@Tests/AgentToolsObject.wlt:536,1-543,2"
+    TestID -> "PacletBundle-AgentToolsObjects@@Tests/AgentToolsObject.wlt:537,1-544,2"
 ]
 
 VerificationTest[
     #[ "Name" ] & /@ AgentToolsObjects[ "MockMCPPacletSkills/*" ],
     { "MockMCPPacletSkills/SkillsBundle", "MockMCPPacletSkills/DevBundle" },
-    TestID -> "PacletBundle-AgentToolsObjects-Pattern@@Tests/AgentToolsObject.wlt:545,1-549,2"
+    TestID -> "PacletBundle-AgentToolsObjects-Pattern@@Tests/AgentToolsObject.wlt:546,1-550,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -555,13 +556,13 @@ VerificationTest[
     toAgentToolsObject @ MCPServerObject[ "WolframAlpha" ],
     _AgentToolsObject? agentToolsObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "toAgentToolsObject-MCPServerObject@@Tests/AgentToolsObject.wlt:554,1-559,2"
+    TestID   -> "toAgentToolsObject-MCPServerObject@@Tests/AgentToolsObject.wlt:555,1-560,2"
 ]
 
 VerificationTest[
     toAgentToolsObject[ MCPServerObject[ "WolframAlpha" ] ] /@ { "Name", "Location", "MCPServerNames", "MCPServers", "AgentSkills", "ToolsetType" },
     { "WolframAlpha", "BuiltIn", { "WolframAlpha" }, { MCPServerObject[ "WolframAlpha" ] }, { }, "MCPServerObject" },
-    TestID -> "toAgentToolsObject-MCPServerObject-Properties@@Tests/AgentToolsObject.wlt:561,1-565,2"
+    TestID -> "toAgentToolsObject-MCPServerObject-Properties@@Tests/AgentToolsObject.wlt:562,1-566,2"
 ]
 
 (* The implicit bundle of an MCP server has no skills, even if the built-in bundle of the same name has some *)
@@ -570,27 +571,27 @@ VerificationTest[
         toAgentToolsObject[ MCPServerObject[ "Wolfram" ] ] /@ { "Name", "AgentSkills", "AgentSkillNames" },
         AgentToolsObject[ "Wolfram" ][ "AgentSkillNames" ]
     },
-    { { "Wolfram", { }, { } }, { "wolfram-language", "wolfram-alpha" } },
+    { { "Wolfram", { }, { } }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" } },
     SameTest -> SameQ,
-    TestID   -> "toAgentToolsObject-MCPServerObject-NoSkills@@Tests/AgentToolsObject.wlt:568,1-576,2"
+    TestID   -> "toAgentToolsObject-MCPServerObject-NoSkills@@Tests/AgentToolsObject.wlt:569,1-577,2"
 ]
 
 VerificationTest[
     toAgentToolsObject @ $wolfram,
     $wolfram,
-    TestID -> "toAgentToolsObject-AgentToolsObject@@Tests/AgentToolsObject.wlt:578,1-582,2"
+    TestID -> "toAgentToolsObject-AgentToolsObject@@Tests/AgentToolsObject.wlt:579,1-583,2"
 ]
 
 VerificationTest[
     toAgentToolsObject[ "Wolfram" ],
     $wolfram,
-    TestID -> "toAgentToolsObject-Name@@Tests/AgentToolsObject.wlt:584,1-588,2"
+    TestID -> "toAgentToolsObject-Name@@Tests/AgentToolsObject.wlt:585,1-589,2"
 ]
 
 VerificationTest[
     toAgentToolsObject[ <| "Name" -> "Mine", "MCPServers" -> { "Wolfram" } |> ][ "Name" ],
     "Mine",
-    TestID -> "toAgentToolsObject-Association@@Tests/AgentToolsObject.wlt:590,1-594,2"
+    TestID -> "toAgentToolsObject-Association@@Tests/AgentToolsObject.wlt:591,1-595,2"
 ]
 
 VerificationTest[
@@ -598,7 +599,7 @@ VerificationTest[
     _Failure,
     { AgentTools::InvalidAgentToolsObject },
     SameTest -> MatchQ,
-    TestID   -> "toAgentToolsObject-Invalid@@Tests/AgentToolsObject.wlt:596,1-602,2"
+    TestID   -> "toAgentToolsObject-Invalid@@Tests/AgentToolsObject.wlt:597,1-603,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -608,26 +609,26 @@ VerificationTest[
     AgentToolsObjects[ ],
     { ___AgentToolsObject? agentToolsObjectQ },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObjects-Installed@@Tests/AgentToolsObject.wlt:607,1-612,2"
+    TestID   -> "AgentToolsObjects-Installed@@Tests/AgentToolsObject.wlt:608,1-613,2"
 ]
 
 VerificationTest[
     SubsetQ[ AgentToolsObjects[ "IncludeBuiltIn" -> True ], Values @ $DefaultAgentTools ],
     True,
-    TestID -> "AgentToolsObjects-IncludeBuiltIn@@Tests/AgentToolsObject.wlt:614,1-618,2"
+    TestID -> "AgentToolsObjects-IncludeBuiltIn@@Tests/AgentToolsObject.wlt:615,1-619,2"
 ]
 
 VerificationTest[
     AgentToolsObjects[ "Wolfram*", "IncludeBuiltIn" -> True ],
     { __AgentToolsObject? (StringStartsQ[ #[ "Name" ], "Wolfram" ] &) },
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObjects-Pattern@@Tests/AgentToolsObject.wlt:620,1-625,2"
+    TestID   -> "AgentToolsObjects-Pattern@@Tests/AgentToolsObject.wlt:621,1-626,2"
 ]
 
 VerificationTest[
     AgentToolsObjects[ "NoSuchName*", "IncludeBuiltIn" -> True ],
     { },
-    TestID -> "AgentToolsObjects-PatternNoMatch@@Tests/AgentToolsObject.wlt:627,1-631,2"
+    TestID -> "AgentToolsObjects-PatternNoMatch@@Tests/AgentToolsObject.wlt:628,1-632,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -637,14 +638,14 @@ VerificationTest[
     MakeBoxes[ $wolfram, StandardForm ],
     Except[ _MakeBoxes ],
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-Formatting@@Tests/AgentToolsObject.wlt:636,1-641,2"
+    TestID   -> "AgentToolsObject-Formatting@@Tests/AgentToolsObject.wlt:637,1-642,2"
 ]
 
 VerificationTest[
     ToBoxes @ $adHoc,
     Except[ _ToBoxes ],
     SameTest -> MatchQ,
-    TestID   -> "AgentToolsObject-Formatting-AdHoc@@Tests/AgentToolsObject.wlt:643,1-648,2"
+    TestID   -> "AgentToolsObject-Formatting-AdHoc@@Tests/AgentToolsObject.wlt:644,1-649,2"
 ]
 
 VerificationTest[
@@ -655,7 +656,7 @@ VerificationTest[
         }
     ],
     { True, True },
-    TestID -> "AgentToolsObject-Formatting-Description@@Tests/AgentToolsObject.wlt:650,1-659,2"
+    TestID -> "AgentToolsObject-Formatting-Description@@Tests/AgentToolsObject.wlt:651,1-660,2"
 ]
 
 VerificationTest[
@@ -663,7 +664,7 @@ VerificationTest[
         StringContainsQ[ boxes, "wolfram-language" ] && StringContainsQ[ boxes, "wolfram-alpha" ]
     ],
     True,
-    TestID -> "AgentToolsObject-Formatting-SkillNames@@Tests/AgentToolsObject.wlt:661,1-667,2"
+    TestID -> "AgentToolsObject-Formatting-SkillNames@@Tests/AgentToolsObject.wlt:662,1-668,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -674,7 +675,7 @@ VerificationTest[
     PacletDirectoryUnload @ $mockPacletDirectory;
     True,
     True,
-    TestID -> "Cleanup@@Tests/AgentToolsObject.wlt:672,1-678,2"
+    TestID -> "Cleanup@@Tests/AgentToolsObject.wlt:673,1-679,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

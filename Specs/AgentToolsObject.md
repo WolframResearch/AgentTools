@@ -103,7 +103,7 @@ Wherever a skill is accepted (`InstallAgentSkills`, an `AgentToolsObject`'s `"Ag
 | `LLMSkill[...]` | An `LLMSkill` object. If its `"Location"` is an existing directory containing `SKILL.md`, that directory is the source (all bundled files are copied). Otherwise a `SKILL.md` is generated from its fields. |
 | `File[dir]` | A skill directory in Agent Skills format (contains `SKILL.md`). Parsed with `LLMSkill[File[dir]]` for its name and description. |
 | `"Publisher/Paclet/skill-name"`, `"Paclet/skill-name"` | A paclet-defined skill (see [Paclet Extension](#paclet-extension)). |
-| `"skill-name"` | A built-in skill (internal registry `$defaultAgentSkills`: `wolfram-alpha`, `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`; see [Built-in skills](#built-in-skills)). Other names → `AgentSkillNotFound`. |
+| `"skill-name"` | A built-in skill (internal registry `$defaultAgentSkills`: `wolfram-alpha`, `wolfram-debugging`, `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`; see [Built-in skills](#built-in-skills)). Other names → `AgentSkillNotFound`. |
 
 AgentTools never calls ``LLMSkillQ`` or other LLMFunctions internals; it reads an `LLMSkill`'s data association directly (`HoldPattern[LLMSkill][as_Association]`), which also works for deserialized skills. To *create* `LLMSkill`s it uses only the public constructors `LLMSkill[File[dir]]` and `LLMSkill[{name, description}, body]` (the association constructor requires LLMFunctions internals).
 
@@ -375,10 +375,10 @@ $defaultAgentTools[ "Wolfram" ] = <|
     "Name"        -> "Wolfram",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "Wolfram" },
-    "AgentSkills" -> { "wolfram-language", "wolfram-alpha" }
+    "AgentSkills" -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging" }
 |>;
 (* likewise "WolframAlpha" -> { "wolfram-alpha" },
-   "WolframLanguage" and "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets" } *)
+   "WolframLanguage" and "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" } *)
 ```
 
 `$DefaultAgentTools := AgentToolsObject /@ KeySort @ $defaultAgentTools` (self-caching and protected, like `$DefaultMCPServers`; skill specs are names only, resolved lazily when they are used, so nothing machine-specific is baked into the MX).

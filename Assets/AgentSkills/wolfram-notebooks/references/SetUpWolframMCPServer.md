@@ -36,16 +36,16 @@ wolframscript -code 'PacletInstall["Wolfram/AgentTools", UpdatePacletSites -> Tr
 wolframscript -code 'Wolfram`AgentTools`AgentToolsObject["WolframLanguage"]["AgentSkillNames"]'
 ```
 
-Wolfram 15 includes an older built-in copy of AgentTools. The first command installs the latest version, and Wolfram uses that version from then on. The second command should print `{wolfram-language, wolfram-notebooks, wolfram-paclets}`. If it prints `{}`, or the expression comes back unevaluated, the installed AgentTools cannot install agent skills. In that case use `InstallMCPServer` ([Step 5](#step-5-install-the-server)).
+Wolfram 15 includes an older built-in copy of AgentTools. The first command installs the latest version, and Wolfram uses that version from then on. The second command should print `{wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging}`. If it prints `{}`, or the expression comes back unevaluated, the installed AgentTools cannot install agent skills. In that case use `InstallMCPServer` ([Step 5](#step-5-install-the-server)).
 
 ### Step 3: Choose a toolset
 
 | Toolset | MCP tools | Agent skills installed by `DeployAgentTools` |
 | --- | --- | --- |
-| `Wolfram` | `WolframContext`, `WolframLanguageEvaluator`, `WolframAlpha` | `wolfram-language`, `wolfram-alpha` |
+| `Wolfram` | `WolframContext`, `WolframLanguageEvaluator`, `WolframAlpha` | `wolfram-language`, `wolfram-alpha`, `wolfram-debugging` |
 | `WolframAlpha` | `WolframAlphaContext`, `WolframAlpha` | `wolfram-alpha` |
-| `WolframLanguage` | `WolframLanguageContext`, `WolframLanguageEvaluator`, `ReadNotebook`, `WriteNotebook`, `SymbolDefinition`, `CodeInspector`, `TestReport` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets` |
-| `WolframPacletDevelopment` | The `WolframLanguage` tools plus `CreateSymbolDoc`, `EditSymbolDoc`, `EditSymbolDocExamples`, `CheckPaclet`, `BuildPaclet`, `SubmitPaclet` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets` |
+| `WolframLanguage` | `WolframLanguageContext`, `WolframLanguageEvaluator`, `ReadNotebook`, `WriteNotebook`, `SymbolDefinition`, `CodeInspector`, `TestReport` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`, `wolfram-debugging` |
+| `WolframPacletDevelopment` | The `WolframLanguage` tools plus `CreateSymbolDoc`, `EditSymbolDoc`, `EditSymbolDocExamples`, `CheckPaclet`, `BuildPaclet`, `SubmitPaclet` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`, `wolfram-debugging` |
 
 - **Use cases:** `Wolfram` is for general computation and knowledge, `WolframAlpha` for Wolfram|Alpha queries only, and `WolframLanguage` for Wolfram Language development. `WolframPacletDevelopment` adds tools for writing documentation pages and for checking, building, and submitting paclets.
 - **Tools:** the `*Context` tools are semantic search (`WolframAlphaContext` over Wolfram|Alpha, `WolframLanguageContext` over Wolfram Language documentation and resources, `WolframContext` over both). `ReadNotebook`/`WriteNotebook` convert notebooks (`.nb`) to and from markdown, `SymbolDefinition` retrieves symbol definitions, `CodeInspector` reports code issues, and `TestReport` runs `.wlt` test files.

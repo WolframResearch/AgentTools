@@ -9,6 +9,13 @@
             "WolframAlpha"
         }
     |>,
+    "wolfram-debugging" -> <|
+        "References" -> {
+            "GetWolframEngine",
+            "SetUpWolframMCPServer"
+        },
+        "Scripts" -> { }
+    |>,
     "wolfram-language" -> <|
         "References" -> {
             "GetWolframEngine",

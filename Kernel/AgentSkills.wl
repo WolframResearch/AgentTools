@@ -15,6 +15,7 @@ Needs[ "Wolfram`AgentTools`Common`" ];
    in the paclet that is actually loaded, and nothing machine-specific is stored in the MX file. *)
 $defaultAgentSkills = <|
     "wolfram-alpha"     :> builtInSkillDirectory[ "wolfram-alpha"     ],
+    "wolfram-debugging" :> builtInSkillDirectory[ "wolfram-debugging" ],
     "wolfram-language"  :> builtInSkillDirectory[ "wolfram-language"  ],
     "wolfram-notebooks" :> builtInSkillDirectory[ "wolfram-notebooks" ],
     "wolfram-paclets"   :> builtInSkillDirectory[ "wolfram-paclets"   ]
