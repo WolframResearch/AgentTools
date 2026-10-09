@@ -484,8 +484,9 @@ Module[{bag = Internal`Bag[]},
 (* {42, {HoldComplete["step 1"], HoldComplete[">> ", "value:", " ", Unevaluated[2]]}} *)
 ```
 
-`Print` capture works in every environment, but `Echo` goes through `Print` only outside the cloud: CloudEvaluate,
-deployed APIs and the remote MCP server gave `{42, {HoldComplete["step 1"]}}`.
+`Print` capture works in every environment, but `Echo` goes through `Print` only where `$Notebooks` is False:
+CloudEvaluate, deployed APIs, the remote MCP server and code under `UsingFrontEnd` gave `{42, {HoldComplete["step 1"]}}`.
+There `Echo` prints a cell with `CellPrint`, so block `CellPrint` too (``WolframDebugging`CapturePrints`` does).
 
 A `"Wolfram.System.Print.Veto"` handler that returns `False` suppresses prints only in MCP Local and wolframscript; MCP
 Session (and the remote MCP server) capture the print before your handler runs:

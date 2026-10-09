@@ -173,7 +173,7 @@ FileWritesDuring::usage =
 "FileWritesDuring[expr] lists the files opened for writing while expr is evaluated.";
 
 CapturePrints::usage =
-"CapturePrints[expr] evaluates expr with Print (and Echo) output suppressed and returns the first 20 printed texts.
+"CapturePrints[expr] evaluates expr with Print, CellPrint and Echo output suppressed and returns the first 20 printed texts.
 CapturePrints[expr, max] returns the first max texts.";
 
 FailedAssertions::usage =
@@ -2188,7 +2188,9 @@ writeRecord[ other_ ] := { heldString[ HoldComplete @ other, 200 ] };
 (* ::Subsection::Closed:: *)
 (*CapturePrints*)
 (* Block[{Print = ...}] is the only method that hides Print output in every environment (a "Print.Veto" handler
-   works only in wolframscript and the MCP Local method). Echo prints through Print. *)
+   works only in wolframscript and the MCP Local method). Echo prints through Print, except where $Notebooks is True
+   (with a front end, e.g. under UsingFrontEnd, and in cloud kernels): there it prints a cell with CellPrint, so
+   CellPrint is blocked too and its cells are recorded as text. *)
 CapturePrints // Attributes = { HoldFirst };
 
 defineOptions[ CapturePrints, { { "MaxLength", 200, positiveIntegerQ, "a positive integer" }, $resultOptionSpec } ];
@@ -2204,23 +2206,46 @@ CapturePrints[ args___ ] := badCall[ CapturePrints, HoldComplete @ args ];
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 capturePrints[ HoldComplete[ expr_ ], max_Integer, opts_List ] :=
-    Module[ { o, bag, n, res },
+    Module[ { o, bag, n, record, res },
         o   = optionsAssociation[ CapturePrints, opts ];
         bag = Internal`Bag[ ];
         n   = 0;
+        (* HoldFirst: texts past max are counted, not converted *)
+        record = Function[ text, If[ ++n <= max, Internal`StuffBag[ bag, truncateString[ text, o[ "MaxLength" ] ] ] ], HoldFirst ];
         res = Block[
             {
-                Print = Function[
-                    Null,
-                    If[ ++n <= max, Internal`StuffBag[ bag, truncateString[ StringJoin[ ToString /@ { ## } ], o[ "MaxLength" ] ] ] ],
-                    HoldAllComplete
-                ]
+                Print     = Function[ Null, record @ StringJoin[ ToString /@ { ## } ], HoldAllComplete ],
+                CellPrint = Function[ Null, record @ StringRiffle[ cellText /@ Flatten @ { ## }, "\n" ] ]
             },
             evaluateContained @ expr
         ];
         <| "Result" -> boundedResult[ res, o[ "MaxResultBytes" ] ], "PrintCount" -> n, "Prints" -> Internal`BagPart[ bag, All ] |>
     ];
 (* :!CodeAnalysis::EndBlock:: *)
+
+(* the text of a printed cell; for Echo cells the same text as Echo prints without a front end, e.g. ">> label value" *)
+cellText[ Cell[ BoxData[ boxes_ ], style_, ___ ] ] := echoDingbat @ style <> boxesText[ boxes, style === "EchoAfter" ];
+cellText[ Cell[ text_String, ___ ] ] := text;
+cellText[ TextCell[ text_, ___ ] ] := ToString @ text;
+cellText[ ExpressionCell[ e_, ___ ] ] := ToString @ e;
+cellText[ other_ ] := ToString[ other, InputForm ];
+
+echoDingbat[ "EchoBefore" ] := "<< ";
+echoDingbat[ style_String ] /; StringStartsQ[ style, "Echo" ] := ">> ";
+echoDingbat[ _ ] := "";
+
+boxesText[ FormBox[ boxes_, _ ], tip_ ] := boxesText[ boxes, tip ];
+boxesText[ RowBox[ { TagBox[ label_, "EchoLabel" ], "  ", boxes_ } ], tip_ ] :=
+    boxesText[ label, False ] <> " " <> boxesText[ boxes, tip ];
+boxesText[ boxes_, tip_ ] := Replace[
+    Quiet @ ToExpression[ boxes, StandardForm, HoldComplete ],
+    {
+        (* EchoEvaluation shows the result with the input as a tooltip (EchoAfter cells) *)
+        HoldComplete[ Annotation[ Tooltip[ e_, ___ ], ___ ] | Tooltip[ e_, ___ ] ] /; tip :> ToString @ Unevaluated @ e,
+        HoldComplete[ e_ ] :> ToString @ Unevaluated @ e,
+        _ :> ToString @ DisplayForm @ boxes
+    }
+];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

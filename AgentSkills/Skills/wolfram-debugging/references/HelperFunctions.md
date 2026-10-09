@@ -311,8 +311,9 @@ WolframDebugging`FileWritesDuring[Export[FileNameJoin[{$TemporaryDirectory, "wd-
 ```
 
 ### `CapturePrints[expr, max, opts]`
-Suppresses `Print` and returns the first `max` (20) texts; `Echo` goes through `Print` and is captured, except in
-CloudEvaluate, deployed APIs and on the remote MCP server, where it bypasses `Print` (and is not shown either).
+Suppresses `Print` and `CellPrint` and returns the first `max` (20) texts. `Echo` is captured everywhere: it goes
+through `Print`, or, where `$Notebooks` is True (CloudEvaluate, deployed APIs, the remote MCP server, `UsingFrontEnd`),
+through `CellPrint`, whose `Echo` cells are recorded with the same text.
 `Block[{Print = ...}]` hides prints in every environment (`Block[{$Output = {}}, ...]` does not in MCP Session).
 Options: `"MaxLength"` (200 per text); `"MaxResultBytes"`.
 ```wl
