@@ -4807,10 +4807,11 @@ protectedModeFailure[ f_Symbol ] := Failure[ "ProtectedMode", <|
 |> ];
 
 runIsolated[ file_String, dir_String, o_Association ] :=
-    Module[ { exe, secs, res, code, left },
-        exe = Replace[ o[ "Executable" ], Automatic :> findExecutable[ "wolframscript" ] ];
+    Module[ { exe, limit, secs, res, code, left },
+        exe   = Replace[ o[ "Executable" ], Automatic :> findExecutable[ "wolframscript" ] ];
+        limit = Ceiling @ o[ "TimeLimit" ];
         { secs, res } = AbsoluteTiming @ RunProcess[
-            { "timeout", "-s", "KILL", ToString @ Ceiling @ o[ "TimeLimit" ], exe, "-f", file },
+            { "timeout", "-s", "KILL", ToString @ limit, exe, "-f", file },
             All,
             "",
             ProcessDirectory -> dir
@@ -4821,12 +4822,13 @@ runIsolated[ file_String, dir_String, o_Association ] :=
         <|
             "ExitCode"        -> code,
             "Status"          -> Which[
-                ! IntegerQ @ code, "Failed",
-                code == 0        , "OK",
-                code == 124      , "TimedOut",
-                code == 137      , "Killed",   (* SIGKILL from the time limit or from outside, e.g. the OOM killer *)
-                code > 128       , "Crashed",  (* 139 = SIGSEGV, 134 = SIGABRT *)
-                True             , "Failed"
+                ! IntegerQ @ code                       , "Failed",
+                code == 0                               , "OK",
+                (* on a time-out GNU timeout -s KILL exits with 137 (it kills itself too), uutils timeout with 124 *)
+                code == 124 || code == 137 && secs >= limit, "TimedOut",
+                code == 137                             , "Killed",   (* SIGKILL from outside, e.g. the OOM killer *)
+                code > 128                              , "Crashed",  (* 139 = SIGSEGV, 134 = SIGABRT *)
+                True                                    , "Failed"
             ],
             "Seconds"         -> Round[ secs, 0.1 ],
             "StdOut"          -> If[ AssociationQ @ res, stringTail[ res[ "StandardOutput" ], o[ "MaxOutput" ] ], "" ],

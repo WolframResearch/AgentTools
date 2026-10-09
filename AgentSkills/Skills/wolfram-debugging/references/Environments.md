@@ -270,7 +270,8 @@ TimeConstrained[Pause[3]; "finished", Min[1, Internal`TimeRemaining[] - 10], $Ti
 - Always bound runs and redirect output to files (a lingering kernel or front end keeps a pipe open):
   ```bash
   timeout -s KILL 300 wolframscript -f test.wls < /dev/null > out.txt 2> err.txt; echo "exit=$?"
-  # 0 = finished, 124 = time limit, 137 = killed from outside (e.g. out of memory), 139 = kernel crash (segfault)
+  # 0 = finished, 137 = time limit (GNU timeout; uutils timeout gives 124) or killed from outside (e.g. out of
+  # memory: compare the run time with the limit), 139 = kernel crash (segfault)
   ```
   Plain `timeout 300` sends SIGTERM, which a busy wolframscript ignores: `timeout 5 wolframscript -code 'Pause[25]; 1'`
   ran for 30 s, printed `1` and "The product exited for an unknown reason.". After a kill, look for kernels you started

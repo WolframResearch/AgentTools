@@ -646,7 +646,8 @@ Quiet[WolframDebugging`FrontEndCalls[NotebookDirectory[]]]
 ### `RunIsolated["code" or File[path], opts]`
 Runs code in a fresh wolframscript kernel with a hard kill time limit (`timeout -s KILL`) in a private working
 directory, kills leftover kernels and their children afterwards, and returns `"ExitCode"`, `"Status"` (`"OK"`,
-`"TimedOut"`, `"Killed"`, `"Crashed"` for exit codes above 128, `"Failed"`), `"Seconds"`, the tails of
+`"TimedOut"` (exit code 124, or 137 after the full time limit), `"Killed"` (137 earlier, e.g. out of memory),
+`"Crashed"` for other exit codes above 128, `"Failed"`), `"Seconds"`, the tails of
 `"StdOut"`/`"StdErr"` and `"KilledLeftovers"`. Options: `"TimeLimit"` (60); `"MaxOutput"` (2000 characters);
 `"Executable"` (Automatic). Needs `RunProcess` and the `timeout` command (tested on Linux):
 `Failure["ProtectedMode", ...]` in MCP Local.
