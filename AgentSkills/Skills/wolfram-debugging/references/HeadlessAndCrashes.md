@@ -23,7 +23,8 @@ unevaluated as `SetOptions[$Failed, ...]` with `SetOptions::optnf`.
    CloudEvaluate, remote MCP server: {$Failed, False}   -- no message at all *)
 ```
 
-- The message is subject to `General::stop`: after three of them in one evaluation, further notebook calls fail silently.
+- The message is subject to `General::stop`: after three of them in one evaluation, further notebook calls fail silently
+  (in MCP Session the count can include messages of earlier calls of the session).
   `Check[expr, alt, FrontEndObject::notavail]` still catches the suppressed ones locally, but never fires in the cloud.
 - The failure usually surfaces later as a secondary error: `SetDirectory[NotebookDirectory[]]` gives
   `SetDirectory::badfile` about `$Failed`; `FileNameJoin[{NotebookDirectory[], "data.csv"}]` builds a bad path.
@@ -70,7 +71,8 @@ Module[{file = "/tmp/demo.nb"},
      Cell["Some text", "Text"], Cell[BoxData[SuperscriptBox["x", "2"]], "Input"]}], file];
   Cases[Import[file, "Notebook"],
     Cell[BoxData[b_], "Input" | "Code", ___] :> ToExpression[b, StandardForm, HoldComplete], Infinity]]
-(* {HoldComplete[x = 1 + 1], HoldComplete[x^2]}   (MCP Local shows Sessions`<id>`x: run-time symbols go there) *)
+(* {HoldComplete[x = 1 + 1], HoldComplete[x^2]}
+   (in the MCP evaluator x is created in Sessions`<id>`, where run-time symbols go; MCP Local shows Sessions`<id>`x) *)
 ```
 
 ## Does this code use the front end?
@@ -129,8 +131,8 @@ they fall back to reading stdin. (`DialogInput` and `SystemDialogInput` just ret
 
 | environment | effect |
 |---|---|
-| MCP Session | the server hangs forever; the tool time limit does not help (checked with `InputString`) |
-| MCP Local | no valid response, whatever the time limit: none within 100 s, or (once) the subkernel was killed and its Failure arrived prefixed with an `In[n]:=` prompt, which breaks the JSON-RPC line (checked with `InputString`) |
+| MCP Session | the server hangs forever; the tool time limit does not help (checked with `InputString`: no response within 100 s with a 10 s limit) |
+| MCP Local | no response at all, whatever the time limit (checked with `InputString`: none within 240 s with a 10 s limit) |
 | wolframscript | `InputString` returns `EndOfFile` when stdin is `/dev/null`; on an open stdin that never sends data it blocks forever (the kernel even survived killing wolframscript, until stdin closed); `ChoiceDialog` with `/dev/null` printed its prompt in an endless loop (67,000 times in 10 s); `Dialog[]` printed `In[2]:=` and ended without a result |
 
 ```bash
@@ -168,11 +170,11 @@ What this means:
   and protected mode with `-sandbox`.
 - **`InitializationValue` is stored per `$EvaluationEnvironment`**: values set under `wolfram -script` (`"Session"`,
   as in a notebook; not checked there) are not applied in wolframscript (`"Script"`), and the reverse.
-- **`$ContextPath`**: wolframscript adds ``WolframScript` ``, MCP Session has ``{"Sessions`<id>`", "System`"}`` and
-  CloudEvaluate 36 contexts. ``Wolfram`Chatbook` `` in the probe output above comes from the user base of the machine
-  checked here, which has a Chatbook update installed (an empty user base gave ``{"System`", "Global`"}``); with it,
-  defining a function named like a Chatbook symbol (`CellToString`, ...) fails in wolframscript, `wolfram -script`
-  and MCP Local (see `Environments.md`).
+- **`$ContextPath`**: wolframscript adds ``WolframScript` ``, MCP Local and MCP Session have
+  ``{"Sessions`<id>`", "System`"}`` and CloudEvaluate 36 contexts. ``Wolfram`Chatbook` `` in the probe output above
+  comes from the user base of the machine checked here, which has a Chatbook update installed (an empty user base gave
+  ``{"System`", "Global`"}``); with it, defining a function named like a Chatbook symbol (`CellToString`, ...) fails in
+  wolframscript and `wolfram -script` (see `Environments.md`).
 - **Persistence locations** differ, which changes `PersistentSymbol`, `Once[..., "Local"]` and `LocalCache`:
 
 ```wl
@@ -250,7 +252,7 @@ more keys (handlers of every type, `Off` messages, paclet versions, option hashe
 | wolframscript | exit code **139**; stderr `Segmentation fault (core dumped)` and `The product exited for an unknown reason.`; output printed before the crash is kept |
 | `wolfram -script` | exit code 139 |
 | MCP Session | the server process dies and sends no response; a child process can keep stdout open, so a client that waits for an answer just times out |
-| MCP Local | `Failure["KernelQuit", ...]` ("The kernel quit unexpectedly during an evaluation."), exactly like `Quit[]`; the next call runs in a new subkernel (new PID, `$Line` 1, all definitions lost) without any notice |
+| MCP Local | only `General::quit: The kernel quit unexpectedly during an evaluation.` comes back, exactly as for `Quit[]`; the next call runs in a new subkernel (new PID, the definitions of every session lost; the `Out[n]` numbering continues) without any notice |
 
 Known crash triggers to avoid in shared kernels: ``Package`PackageInformation[]`` and
 ``RuntimeTools`SetExecutionState[{"RuntimeAnalysisTools" -> True}]``. Reproduce crashes only in throwaway kernels.
@@ -311,16 +313,21 @@ Details on time limits and stack sampling are in `TracingAndPerformance.md`. The
 {AbsoluteTiming[TimeConstrained[Run["sleep 3"], 1, "stopped"]],
  AbsoluteTiming[TimeConstrained[RunProcess[{"sleep", "3"}], 1, "stopped"]]}
 (* wolframscript: {{3.00754, 0}, {1.04101, "stopped"}}   -- Run ignored the 1 s limit
-   MCP Local:     RunProcess::pnfd: Program sleep not found. Check Environment["PATH"].
-                  {{0.000456, $Failed}, {0.004157, $Failed}}   -- both are blocked in protected mode; the message is misleading *)
+   MCP Local:     RunProcess::pnfd: Program "sleep" not found. Check Environment["PATH"].
+                  {{0.04555, $Failed}, {0.100993, $Failed}}   -- both are blocked in protected mode; the message is misleading *)
 ```
 
 When an MCP call hangs or times out:
-1. Read the result. MCP Local: a `Failure["EvaluationTimeExceeded", ...]` **without** `Out[n]=` means the subkernel was
-   killed and restarted after about twice the limit (all state lost; the Failure for a 5 s limit came after 21 s).
-   MCP Session: a Failure that arrives much later than the limit means a non-abortable call finished late. No response
+1. Read the result. An ordinary time-out gives `Out[n]= Failure["EvaluationTimeExceeded", ...]`, keeps the `Print`
+   output and the state, and skips the later inputs of the call. MCP Local: the Failure **without** `Out[n]=` (and
+   `Print` output without its `During evaluation of In[n]:=` label) means a non-abortable call: the subkernel was killed
+   and restarted about 20 s after the limit, whatever the limit (all state lost; the Failure for a 5 s limit came after
+   22-24 s, for a 10 s limit after 28 s). MCP Session: a Failure that arrives much later than the limit means a
+   non-abortable call finished late (`AbortProtect[Pause[9]]` with a 3 s limit answered after 9 s); a blocking
+   `Run["sleep 8"]` under a 5 s limit even returned its normal result after 8 s and ran the later inputs. No response
    at all: the call is blocked on stdin or a dialog (either method), or the MCP Session server crashed.
-2. In the next call check `{$ProcessID, SessionTime[], $Line}` to see whether you are in a new kernel.
+2. In the next call check `{$ProcessID, SessionTime[]}` to see whether you are in a new kernel (`$Line` is no sign: it
+   continues the session's numbering in a new subkernel).
 3. Re-run the suspect code with an inner `TimeConstrained` well below ``Internal`TimeRemaining[]`` and a bounded
    `ScheduledTask` stack sampler (``WolframDebugging`SampleStacks[expr, maxSeconds]``). Only about one sample during the
    whole wait means a non-interruptible call: `Run`, a stdin read, or one long primitive.
@@ -339,7 +346,7 @@ Module[{p = StartProcess[{"sleep", "30"}], line},
   line = TimeConstrained[ReadLine[p], 1, "no output yet"];
   {line, ProcessStatus[p], KillProcess[p]; ProcessStatus[p]}]
 (* wolframscript: {"no output yet", "Running", "Finished"}
-   MCP Local:     StartProcess::pnfd: Program sleep not found. ...  {ReadLine[$Failed], ProcessStatus[$Failed], ProcessStatus[$Failed]} *)
+   MCP Local:     StartProcess::pnfd: Program "sleep" not found. ...  {ReadLine[$Failed], ProcessStatus[$Failed], ProcessStatus[$Failed]} *)
 ```
 
 - `ReadString[ProcessConnection[p, "StandardOutput"], EndOfBuffer]` reads what is available without blocking.
@@ -376,15 +383,15 @@ binary operator at a line end that joins two lines. Locate syntax errors in a st
 (* {False, 13, 17, 15, True}   -- the last one parses as a = 1; b = 2 + (c = 3) *)
 ```
 
-The inspector as data (load it in its own call first: ``Needs["CodeInspector`"]``):
+The inspector as data (load it first, on its own line: ``Needs["CodeInspector`"]``):
 
 ```wl
 {#[[1]], #[[3]], #[[4]][CodeParser`Source]} & /@ CodeInspector`CodeInspect["f[x_] := If[x = 1, {1, 2,}, x]"]
 (* {{"Comma", "Error", {{1, 26}, {1, 26}}}, {"IfSet", "Warning", {{1, 13}, {1, 18}}}}   -- {line, column} ranges *)
 ```
 
-The MCP evaluator silently closes a bracket that is missing at the end of multi-line input (see `Environments.md`), so
-inspect code that behaves impossibly before you debug it.
+The MCP evaluator silently inserts a missing closing bracket (see `Environments.md`), so inspect code that behaves
+impossibly before you debug it.
 
 ## Catch, Throw and Enclose
 
@@ -399,7 +406,8 @@ inspect code that behaves impossibly before you debug it.
 
 - `Catch[expr, _, f]` catches every **tagged** throw (and tells you the tag); it does not catch an untagged `Throw[x]`.
   A plain `Catch[expr]` catches only untagged throws.
-- An uncaught `Throw` gives `Throw::nocatch` and `Hold[Throw[...]]` in the MCP evaluator; in a `-f` script it prints
+- An uncaught `Throw` gives `Throw::nocatch` and `Hold[Throw[...]]` in the MCP evaluator (the next input of the call
+  still runs); in a `-f` script it prints
   `Throw::nocatch` and ends the rest of the script; under `wolfram -script` it ends the script without any message.
   The exit code stays 0.
 - `Enclose`/`Confirm*` failures carry `"ConfirmationType"`, `"HeldMessageName"` and `"HeldMessageCall"`. Their

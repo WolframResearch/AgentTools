@@ -8,14 +8,13 @@ Wolfram 15.0.
 ## Loading
 
 ```wl
-Get["/absolute/path/to/wolfram-debugging/scripts/WolframDebugging.wl"]   (* in its OWN tool call, or its own line in a -f script *)
-WolframDebugging`CollectMessages[myFunction[1, 2]]                      (* always fully qualified, in a later call *)
+Get["/absolute/path/to/wolfram-debugging/scripts/WolframDebugging.wl"]   (* on its own line or in its own call *)
+WolframDebugging`CollectMessages[myFunction[1, 2]]                      (* fully qualified, on a later line *)
 ```
 
 | environment | how |
 |---|---|
-| MCP Local | `Get` in its own tool call; later calls use full names. With AgentTools bug #249 (typed code parsed into ``Global` ``, see `Environments.md`) an unqualified name never resolves to the package, not even in a later call. |
-| MCP Session | the same; the whole tool call is parsed before `Get` runs, so an unqualified name in the same call is created in the session context first |
+| MCP evaluator (Local and Session) | `Get` on its own line or in its own call, then full names. Each top-level input of a call is parsed just before it runs, so a name in the same input as the `Get` (`Get[...]; name[...]`) is created in the session context first. |
 | wolframscript | `Get` on its own line of a `-f` file, or ``wolframscript -code 'Get["/abs/.../WolframDebugging.wl"]; Print[ToString[WolframDebugging`EnvironmentInfo[], InputForm]]'`` (`-code` prints OutputForm and drops string quotes: print with `ToString[..., InputForm]`) |
 | `wolfram -script` | as with `-f` |
 | CloudEvaluate | load locally, then ``CloudEvaluate[WolframDebugging`CollectMessages[...]]``: the definitions are sent along (7 helper calls in one `CloudEvaluate` took 6 s); `ShowDefinition` does not work there |
@@ -251,10 +250,9 @@ Not for `Locked` symbols, symbols with OwnValues, or the functions the logger it
 
 ### `WithOverrides[{lhs :> rhs, ...}, expr, opts]`
 Evaluates `expr` with the rules temporarily in front of the existing definitions (`sym :> v` OwnValues, `f[...] :> v`
-DownValues, `f[...][...] :> v` SubValues; `->` acts like `:>`) and returns `HoldComplete[result]` (the MCP evaluator prints a
-top-level `HoldComplete[v]` result as `v`): mock HTTP (`URLRead`, `URLFetch`), time (`Now`), files, slow functions.
-Stubs are loaded first, `Locked` symbols refused; literal left-hand sides (`f[7]`) are tried before pattern ones whatever
-the order. Option: `"MaxResultBytes"`.
+DownValues, `f[...][...] :> v` SubValues; `->` acts like `:>`) and returns `HoldComplete[result]`: mock HTTP (`URLRead`,
+`URLFetch`), time (`Now`), files, slow functions. Stubs are loaded first, `Locked` symbols refused; literal left-hand
+sides (`f[7]`) are tried before pattern ones whatever the order. Option: `"MaxResultBytes"`.
 ```wl
 WolframDebugging`WithOverrides[{otherFn[0] :> "MOCK"}, myFn[-1, 1]]
 (* HoldComplete[{-1, "MOCK", 1}] *)
@@ -298,7 +296,7 @@ WolframDebugging`StopWhen[state, # > 2 &, Do[state = k, {k, 5}]]
 ### `NewSymbolsDuring[expr, opts]`
 Symbols created at run time (`ToExpression`, `Symbol`, `Get`, ...): typos, leaks, wrong contexts while loading. Symbols
 of the input itself were created when it was parsed and are not listed (`ToExpression` creates symbols in `$Context`:
-``Sessions`<id>` `` in MCP Local). Options: `"MaxSymbols"` (50); `"MaxResultBytes"`.
+``Sessions`<id>` `` in the MCP evaluator). Options: `"MaxSymbols"` (50); `"MaxResultBytes"`.
 ```wl
 WolframDebugging`NewSymbolsDuring[ToExpression["newSym1 + newSym2"]]
 (* <|"Result" -> newSym1 + newSym2, "Count" -> 2, "NewSymbols" -> {"Global`newSym1", "Global`newSym2"}|> *)
@@ -484,9 +482,8 @@ WolframDebugging`TestSource[file, "Wrong"]
 ### `RunTestsByID[file, idPattern, opts]`
 `TestReport` of the file in which only the matching tests (and `"Setup"` tests) run; returns a summary. Options:
 `"Setup"` (None | TestID pattern of setup tests, e.g. `"GetDefinitions" | "LoadContext"`); `"Context"` (Automatic: the
-file is read in `$Context` with ``Global` `` on `$ContextPath`, so the tests see your typed definitions also in MCP Local
-with bug #249, and symbols the tests create go to `$Context`; another context: the file is read there, and `$Context` is
-taken off `$ContextPath`); `"TimeConstraint"` (Automatic: per test, below the remaining tool time); `"ReturnReport"`
+file is read in `$Context`, where your typed definitions are, and symbols the tests create go there; another context:
+the file is read there, and `$Context` is taken off `$ContextPath`); `"TimeConstraint"` (Automatic: per test, below the remaining tool time); `"ReturnReport"`
 (False: True returns the `TestReportObject`); `"MaxBytes"` (2000).
 ```wl
 WolframDebugging`RunTestsByID[file, "Wrong"]

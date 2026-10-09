@@ -36,7 +36,7 @@ outputs: `HelperFunctions.md`). Everything below works without them, including o
 Internal`HandlerBlock[{"Message", Print[ToString[#, InputForm]] &}, {myFn[-1, 1], Quiet[First[{}]]}]
 ```
 ```
-Power::infy: Infinite expression 1/0 encountered.            (printed first; 2-D in MCP Local and wolframscript)
+Power::infy: Infinite expression 1/0 encountered.            (printed first; 2-D in wolframscript)
 Hold[Message[Power::infy, HoldCompleteForm[0^(-1)]], True]
 Hold[Message[First::nofirst, HoldCompleteForm[{}]], False]    (quieted: willPrint is False)
 Out= {{-1, ComplexInfinity, 1}, First[{}]}
@@ -119,8 +119,8 @@ Internal`RemoveHandler::noevent: -- Message text not found -- (Message)      (re
 ```
 
 - **Global handlers leak.** They persist across MCP calls (both methods); in MCP Local they fire for every session and
-  agent sharing the subkernel; in MCP Session they also see the server's own quieted messages (16 `Show::gtype` during
-  a single `1 + 1` call). A notebook can show stray handler output from front-end background evaluations (untested).
+  agent sharing the subkernel; in MCP Session they also see the server's own quieted messages (about 11 `Show::gtype`
+  per `1 + 1` call). A notebook can show stray handler output from front-end background evaluations (untested).
 - **Reference counted**: adding the same handler twice lists it once but needs two removals.
 - ``Internal`Handlers[]`` lists every handler type (`"Message"`, `"Message.Veto"`, `"Message.Silent"`,
   `"MessageTextFilter"`, `"GetFileEvent"`, `"NewSymbol"`, `"ValueChange"`, `"Assertions"`, `"Wolfram.System.Print"`, ...);
@@ -177,10 +177,11 @@ Internal`HandlerBlock[{"MessageTextFilter", ("[myFn] " <> #1) &}, First[{}]]
 | `Block[{$Messages = {}}, expr]` | nothing printed, everything else unchanged (`Check` fires, handlers see True) | MCP Session ignores it (`$Messages` is already `{}` there; the tool collects messages through a handler) |
 | `$MessageList` | list of `HoldForm[name]` issued in the current evaluation | **Protected**: `$MessageList = {}` gives `Set::wrsym`; use `Block[{$MessageList = {}}, expr]` |
 
-`$MessageList` is reset per tool call in MCP Local, once per script in wolframscript (a whole `-f` file is one
-evaluation) and `wolfram -script` (the third `First[{}]` statement of a file triggers `General::stop`), and **never in MCP
-Session** (it accumulates over the server's lifetime and all sessions,
-so `General::stop` can fire on the first occurrence in a call). Wrap experiments in `Block[{$MessageList = {}}, ...]`.
+`$MessageList` is reset for every input in MCP Local (each line or multi-line expression of a tool call), once per
+script in wolframscript (a whole `-f` file is one evaluation) and `wolfram -script` (the third `First[{}]` statement of a
+file triggers `General::stop`), and **never in MCP Session** (it accumulates over the server's lifetime and all sessions,
+so `General::stop` can fire on the first occurrence in a call: the third `Power::infy` of a session prints it). Wrap
+experiments in `Block[{$MessageList = {}}, ...]`.
 Quieted messages are added while inside `Quiet` (and count toward `General::stop`), but `Quiet` restores the list on exit:
 
 ```wl
@@ -239,7 +240,8 @@ Stack size added by each environment (why `StackBegin` matters):
 
 | environment | `Stack[_]` at top level | stack at `Power::infy` in `StackComplete[myFn[-3, 3]]` without `StackBegin` |
 |---|---|---|
-| MCP Local, MCP Session, remote MCP server | 2–3 frames (they hold your whole input) | 13 frames (MCP Local, MCP Session) |
+| MCP Local, MCP Session | none (`Stack[_]` as the whole input is `{}`) | 13 frames |
+| remote MCP server | 2–3 frames (they hold your whole input) | not checked |
 | wolframscript | 17–19 frames, 90–120 KB (the frames embed the script) | 28 frames, 120 KB |
 | `wolfram -script` | 3–4 frames | 14 frames |
 | CloudEvaluate | about 68 frames, 310 KB | 78 frames, 315 KB |
@@ -281,7 +283,7 @@ Message[Power::infy, HoldCompleteForm[0^(-1)]]
 - One specific message: `Hold[Message[Power::infy, ___], True]`. Heads only: `Stack[]` instead of `Stack[_]` →
   `{StackComplete, myFn, Table, otherFn, Times, Power, Message, Function, Replace, Throw}`.
 - `Take[..., Position[...][[-1, 1]]]` drops the handler's own frames after the `Message` frame. The `$ContextPath` block
-  avoids context prefixes on your symbols (``Global` `` ones in MCP Local with bug #249).
+  avoids context prefixes on your symbols.
 - The message is printed before the handler runs, and the `Throw` abandons the computation (the result is lost). Without
   `StackComplete` the `myFn` and `otherFn` frames are missing; without `StackBegin` you get the wrapper frames above.
 - Package code often issues and quiets internal messages before the public one (`URLRead` quiets `URLFetch::invhttp`,
@@ -304,9 +306,8 @@ lines (`"Stack"`; raw frames on request, see `HelperFunctions.md`);
 
 ## Filter, trim and format a stack
 
-Only frames of your own functions. Typed code lives in ``Global` `` (wolframscript, and MCP Local with AgentTools bug
-#249, see `Environments.md`) or in ``Sessions`<id>` `` (`$Context` in the MCP evaluator), so test both (add your package
-contexts):
+Only frames of your own functions. Typed code lives in ``Global` `` (wolframscript, cloud) or in ``Sessions`<id>` ``
+(`$Context` in the MCP evaluator), so test both (add your package contexts):
 
 ```wl
 Cases[stk, _[(s_Symbol)[___]] /; MemberQ[{"Global`", $Context}, Context[s]]]
@@ -403,7 +404,9 @@ Module[{bag = Internal`Bag[]},
 
 ### `$RecursionLimit` and `$IterationLimit`
 
-Lower the limit locally (defaults 1024 and 4096) and capture the stack at the message:
+Lower the limit locally (defaults 1024 and 4096) and capture the stack at the message. In MCP Local do this only after
+the subkernel has printed an ordinary message (`1/0;` in an earlier call): its first message fails under a low limit and
+leaves `$Context` broken for every session (`Environments.md`).
 
 ```wl
 recFn[n_] := 1 + recFn[n + 1];
@@ -436,11 +439,13 @@ environment:
 
 Contain it portably (checked in MCP Local, MCP Session, wolframscript and the remote MCP server; in CloudEvaluate with a
 limit of 150, because its 64 wrapper frames count toward the limit). The termination is a `Throw` with a
-`TerminatedEvaluation[...]` tag, but under `StackBegin` a `Catch` sees it only when a `CompoundExpression`, `Module`,
-`Block`, `Table` or another `Catch` lies between them (not a list, `If`, `With` or a function argument). Both MCP methods
-wrap every input in `StackBegin`, so there a `Catch[...]` that is the whole input, a list element or an argument becomes
-`TerminatedEvaluation["RecursionLimit"]` itself, while `res = Catch[...]; ...` works. Assign the result and also test
-the value:
+`TerminatedEvaluation[...]` tag, but under `StackBegin` in wolframscript a `Catch` sees it only when a
+`CompoundExpression`, `Module`, `Block`, `Table` or another `Catch` lies between them (not a list, `If`, `With` or a
+function argument). Both MCP methods run every input under a `StackBegin`-like wrapper (`Stack[_]` at the top is
+`{}`), with a slightly different rule: a `Catch[...]` that is the whole input, sits directly inside `If` or `With`, or is
+the right-hand side of a function you call becomes `TerminatedEvaluation["RecursionLimit"]` itself (its handler is not
+called), while one inside a list or a function argument, or `res = Catch[...]; ...`, works. Assign the result and also
+test the value:
 
 ```wl
 recRes = Catch[Block[{$RecursionLimit = 50}, recFn[1]], _TerminatedEvaluation, Function[{value, tag}, tag]];
@@ -518,10 +523,10 @@ Plain `Catch[expr]` (no tag), `Enclose`, `Check` and `Quiet` do not intercept a 
   for `True` record nothing. Detect it with ``Lookup[Internal`QuietStatus[], "Global"] === "Quiet"`` (`"Unquiet"` in MCP
   Local and MCP Session; do not wrap the test in `Quiet`). Wrap the code under test in `Quiet[expr, None, All]` (the
   handler then sees `True` again) or match `Hold[Message[_, ___], _]`.
-- **MCP Session**: messages render on one line; the tool collects them through its own handler, so only `Quiet`, `Off`
-  and `"Message.Veto"` hide one from the tool output; `Off`, ``Internal`AddHandler`` and limit changes affect the server.
-- **MCP Local**: message text is printed in 2-D form (fractions over three lines). Both MCP methods append
-  `General::messages` after a one-line message (MCP Local omits it when every message came out in 2-D, as `Power::infy`).
+- **MCP Local and MCP Session**: messages render on one line (`InputForm` text), and a call that issued messages gets
+  one `General::messages` line (after the messages of its first input that issued any).
+- **MCP Session**: the tool collects messages through its own handler, so only `Quiet`, `Off` and `"Message.Veto"` hide
+  one from the tool output; `Off`, ``Internal`AddHandler`` and limit changes affect the server.
 - MCP Session and the remote MCP server drop messages after 10 prints and messages in one call; return collected data as the
   value instead (`Environments.md`).
 - **Parallel subkernels**: master handlers, `Check`, `EvaluationData` and `$MessageList` do not see subkernel messages;

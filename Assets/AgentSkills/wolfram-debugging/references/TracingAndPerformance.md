@@ -128,7 +128,7 @@ Module[{bag = Internal`Bag[], k = 0, tag},
     Trace[fib[10], e : _hlp :> (Internal`StuffBag[bag, ToString[Unevaluated[e], InputForm]]; If[++k >= 5, Throw[Null, tag]])],
     tag];
   Internal`BagPart[bag, All]]
-(* {"hlp[0]", "hlp[1]", "hlp[0]", "hlp[1]", "hlp[0]"}     MCP Local with bug #249: {"Global`hlp[0]", ...} *)
+(* {"hlp[0]", "hlp[1]", "hlp[0]", "hlp[1]", "hlp[0]"} *)
 ```
 
 Count calls per function:
@@ -165,9 +165,8 @@ catchesAll[] := Catch[hlp[3]; "finished anyway", _];
   stop with `Abort[]` inside `CheckAbort`.
 - Never return a raw trace or stack: a few hundred items are tens of kilobytes. `Short` does not shorten anything in MCP
   or wolframscript output; convert items with `ToString[Unevaluated[e], InputForm, TotalWidth -> n]` (see "Output budget"
-  in `Environments.md`). Symbols whose context is not on `$ContextPath` print with it (in
-  MCP Local with bug #249 typed symbols print as ``Global`f``): put ``"Global`"`` and `$Context` on `$ContextPath` while
-  formatting (the hang locator below does).
+  in `Environments.md`). Symbols whose context is not on `$ContextPath` print with it: put ``"Global`"`` and
+  `$Context` on `$ContextPath` while formatting (the hang locator below does).
 
 ## What Trace cannot show, and what it costs
 
@@ -262,8 +261,8 @@ Module[{bag = Internal`Bag[], task, samples},
 - `StackComplete` is required: without it every call of your functions is replaced on the stack by its right-hand
   side (`driver[5]` by `Table[...]`) and never shows up. `StackBegin` drops the frames of the environment's wrapper code.
 - The filter ``MemberQ[{"Global`", $Context}, Context[h]]`` keeps your own functions in every environment (typed code is
-  in ``Sessions`<id>` `` in the MCP evaluator, but in ``Global` `` in wolframscript and in MCP Local with bug #249); use a
-  package context to profile a package.
+  in ``Sessions`<id>` `` in the MCP evaluator and in ``Global` `` in wolframscript); use a package context to profile a
+  package.
 - Always give the task a repetition count and remove it: if the MCP tool limit fires first, the `TaskRemove` never runs,
   and in MCP Session a leftover task keeps sampling the server's own stack during later calls.
 - Return strings or counts, as above, never the samples: 50 samples of this profile were 370 KB.
@@ -334,9 +333,9 @@ The guard matters: without it the step counter never fires where Trace is disabl
 limit. ``WolframDebugging`FindHang[expr, maxSteps]`` keeps a ring buffer and also reports the stack heads.
 
 Runaway recursion: `Block[{$RecursionLimit = 200, $IterationLimit = 1000}, expr]` fails fast instead of at depth 1024 or
-4096 iterations; a stack at the `$RecursionLimit::reclim` message shows the recursion (`MessagesAndStacks.md`), and
-`res = Catch[..., _TerminatedEvaluation, ...]; ...` contains the overflow (in the MCP evaluators a `Catch` that is the
-whole input or a list element does not; `Environments.md`). `While`, `FixedPoint` and
+4096 iterations (in MCP Local first let the subkernel print an ordinary message; `Environments.md`); a stack at the `$RecursionLimit::reclim` message shows the recursion (`MessagesAndStacks.md`), and
+`res = Catch[..., _TerminatedEvaluation, ...]; ...` contains the overflow (in the MCP evaluator a `Catch` that is the
+whole input or sits directly inside `If` or `With` does not; `Environments.md`). `While`, `FixedPoint` and
 `NestWhile` have no built-in limit: give them a maximum (`FixedPoint[f, x, 1000]`) or a `TimeConstrained`.
 
 ## Numeric solvers: monitors
@@ -352,10 +351,9 @@ Block[{x}, Last[Reap[FindRoot[Cos[x] == x, {x, 1}, StepMonitor :> Sow[x]]]]]
 
 `EvaluationMonitor` runs at every function evaluation, `StepMonitor` at every accepted step (FindRoot, FindMinimum,
 NMinimize, NDSolve, NIntegrate, ...). Some methods have no monitor support (`NMinimize::noopmon`): choose an
-iterative `Method`. Localize the variable: in MCP Local with bug #249 typed symbols live in a ``Global` `` shared by every
-session, and another session had left `x = Range[500]` there, so an unlocalized `FindRoot[..., {x, 1}]` returned
-`{{1, 2, ..., 500} -> 0.739...}`. Do not return `{x -> value}` from `Block[{x}, ...]`: the result is evaluated again
-after `Block` restores the outer `x`.
+iterative `Method`. Localize the variable: after an earlier call had left `x = Range[500]`, an unlocalized
+`FindRoot[..., {x, 1}]` returned `{{1, 2, ..., 500} -> 0.739...}`. Do not return `{x -> value}` from `Block[{x}, ...]`:
+the result is evaluated again after `Block` restores the outer `x`.
 
 ## Time limits: what they can interrupt
 
@@ -409,16 +407,17 @@ while it waits. `Import` of a URL inside `TimeConstrained` turns the time-out in
 default; the remote MCP server about 60 s, CloudEvaluate and deployed APIs 300 s). Wrap experiments in an inner
 `TimeConstrained[expr, t, $TimedOut]` with `t` well below it, so that your own code returns the diagnostics:
 
-- MCP Local: a normal time-out returns `Out[n]= Failure["EvaluationTimeExceeded", ...]` and keeps the session's state
-  and the Print output so far. If the code is inside a call that cannot be interrupted, the subkernel is killed after
-  about twice the limit and restarted (a 3 s limit returned after 19 s): the Failure then arrives **without** `Out[n]=`
-  and all definitions (of every session) are gone. Check `{$ProcessID, SessionTime[]}` in the next call.
-- MCP Session: the call returns only the Failure (all Print output of the call is lost), but state is kept; a call that
-  cannot be interrupted (`Run["sleep 8"]` with a 5 s limit) blocks the server until it finishes, then returns the
-  Failure.
+- The limit covers the whole tool call. A normal time-out returns `Out[n]= Failure["EvaluationTimeExceeded", ...]`
+  with the Print output so far, skips the remaining inputs of the call and keeps the session's state (both methods).
+- MCP Local: if the code is inside a call that cannot be interrupted, the subkernel is killed about 20 s after the limit
+  and restarted (a 3 s limit returned after 22 s, a 10 s limit after 28 s): the Failure then arrives **without**
+  `Out[n]=` and all definitions (of every session) are gone. Check `{$ProcessID, SessionTime[]}` in the next call.
+- MCP Session: a call that cannot be interrupted blocks the server until it finishes. `AbortProtect[Pause[9]]` with a
+  3 s limit then returned the Failure (after 9 s, state kept); `Run["sleep 8"]` with a 5 s limit returned its normal
+  result after 8 s, and the later inputs of the call still ran.
 - A `ScheduledTask` you started keeps running after a time-out; remove it (`TaskRemove`) or give it a repeat count.
 - `TestReport` inside the evaluator: the evaluator's limit is absorbed by the test harness (an innocent test fails with
-  `"EvaluationAbortedFailure"` in MCP Local, `"UncaughtThrowFailure"` in MCP Session) and the remaining tests run
-  unbounded. Pass `TimeConstraint -> n` to `TestReport` (see `Testing.md`).
+  `"EvaluationAbortedFailure"` in both methods) and the remaining tests run unbounded. Pass `TimeConstraint -> n` to
+  `TestReport` (see `Testing.md`).
 
 More on hard hangs, `Run` versus `RunProcess` and killing stuck wolframscript kernels: `HeadlessAndCrashes.md`.

@@ -54,9 +54,9 @@ price[20.]
  {},                         positions of the left-hand sides (with their tests and conditions) that match: none
  False,                      one argument against one pattern
  {False},                    the condition's value for this call
- {"Global`", {}, True},      context, attributes, has definitions
- {"Global`price"}}           every "price" that has definitions (a second one means shadowing); names in
-                             $Context come without context ({"price"} in wolframscript)
+ {"Global`", {}, True},      context ("Sessions`<id>`" in the MCP evaluator), attributes, has definitions
+ {"price"}}                  every "price" that has definitions (a second one means shadowing); names in
+                             $Context come without context
 ```
 
 - Run the checks on the arguments as the function receives them (already evaluated, unless `f` has a Hold attribute).
@@ -126,7 +126,7 @@ Each example was evaluated as written; "stays" means the call is returned uneval
 | `=` (Set) evaluated the right-hand side once | `rad = 5; area2[rad_] = Pi rad^2; Clear[rad]; {area2[1], area2[7]}` | `{25 Pi, 25 Pi}` | `:=` |
 | stale memoized values after redefining | `memo[x_] := memo[x] = x^2; memo[3]; memo[x_] := memo[x] = x^3; memo[3]` | `9` (old literal rule wins) | `Clear[memo]` before redefining |
 | same left-hand side defined again | `dup[x_] := "first"; dup[y_] := "second"; dup[1]` | `"second"`, one rule left (pattern names do not matter) | add a condition or a different pattern |
-| typo in a lower-case name | `totalCost[x_] := 2 x; totalcost[3]` | stays, no warning | (MCP Local with bug #249 warns only for undefined upper-case ``Global` `` names) |
+| typo in a lower-case name | `totalCost[x_] := 2 x; totalcost[3]` | stays, no warning | (the MCP evaluator warns only for undefined upper-case names) |
 | general rule tried first | `kind[x_?NumericQ] := "numeric"; kind[x_Integer] := "integer"; kind[1]` | `"numeric"` | define the specific rule first, or add conditions |
 | `KeyValuePattern` with an outer condition | `kv[KeyValuePattern[{"ok" -> True, "url" -> u_String}]] /; StringStartsQ[u, "http"] := u; kv[_] := "fallback"`, called with an association whose `"url"` is `"https://x"` | `"fallback"` | see the next section |
 | inner condition uses a sibling variable | `sib[x_, y_ /; y > x] := {x, y}; sib[1, 5]` | stays (`x` is not bound inside `y_ /; ...`) | `sib[x_, y_] /; y > x` |
@@ -200,25 +200,20 @@ Options[ov3] = {"A" -> 1};
 
 The head you call is not the symbol you defined. `Context[f]` and the `Names` check above reveal it.
 
-- **Same input as the load**: `Get["ShadowDemo.wl"]; {pkgFn[1], Context[pkgFn]}` in one tool call, one `-code` string or
-  one line gives `` {Global`pkgFn[1], "Global`"} ``: the whole input is parsed before `Get` runs, so `pkgFn` was created in
-  ``Global` ``. Load in its own call (or line) and use the full name, ``ShadowDemo`pkgFn[1]`` → `2`. The leftover
-  ``Global`pkgFn`` causes `pkgFn::shdw` and can be removed with ``Remove["Global`pkgFn"]``.
-- **MCP Local with AgentTools bug #249** (see `Environments.md`): code typed in a tool call is parsed into ``Global` ``,
-  but a file loaded with `Get` defines its unqualified symbols in ``Sessions`<id>` ``, and package symbols never resolve
-  unqualified in typed code. After `Get` of a file defining `loadedFn` and of a package exporting `pkgFn`, a later call
-  gave
-  ``{pkgFn[1], ShadowDemo`pkgFn[1], loadedFn[1], ToExpression["loadedFn[1]"]}`` → `{pkgFn[1], 2, loadedFn[1], 2}`. Call
-  package functions fully qualified; define helper functions in the tool call itself, or reach file-defined ones with
-  `ToExpression["name[...]"]`.
-- **MCP Session**: each evaluator session has its own ``Sessions`<id>` ``. A definition made in another session is
-  invisible (`sessF[1]` stayed unevaluated; the definition was ``Sessions`<other id>`sessF``). Reuse the session id.
+- **Same input as the load**: `Get["ShadowDemo.wl"]; {pkgFn[1], Context[pkgFn]}` as one input (one line of a tool call
+  or `-f` file, or one `-code` string) gives `` {Global`pkgFn[1], "Global`"} `` (``Sessions`<id>` `` in the MCP
+  evaluator) and `pkgFn::shdw`: the input is parsed before `Get` runs, so `pkgFn` was created in your context. Load on
+  its own line: later lines, also later lines of the same tool call, are parsed after the load and reach
+  ``ShadowDemo`pkgFn`` (`{pkgFn[1], Context[pkgFn]}` → `` {2, "ShadowDemo`"} ``). The leftover symbol in your context
+  can be removed with ``Remove["Global`pkgFn"]`` (``Remove[Evaluate[$Context <> "pkgFn"]]`` in the MCP evaluator).
+- **Another evaluator session**: each MCP evaluator session has its own ``Sessions`<id>` ``. A definition made in
+  another session is invisible (`sessF[1]` stayed unevaluated; the definition was ``Sessions`<other id>`sessF``). Reuse
+  the session id.
 - **Private package functions**: ``Pkg`Private`helper`` is not reachable as `helper`; call it by its full name
   (``ShadowDemo`Private`pkgHelper[1]`` → `2`, while `pkgHelper[1]` stays).
-- **Typos**: the MCP Local evaluator warns about undefined upper-case ``Global` `` symbols before evaluating
-  (``Symbol::undefined: Warning: Global symbol Global`Lenght is undefined.``), never about lower-case ones; the warning
-  also fires for upper-case symbols defined in the same call (with bug #249 also in an earlier call), so do not trust
-  it either way.
+- **Typos**: the MCP evaluator (both methods) warns about undefined upper-case symbols of your session before evaluating
+  (``Symbol::undefined: Warning: Global symbol Lenght is undefined.``), never about lower-case ones, and not about
+  symbols defined or localized in the same input.
 
 ## Built-ins and argument checks of your own
 

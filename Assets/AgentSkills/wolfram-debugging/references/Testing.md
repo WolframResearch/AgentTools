@@ -354,11 +354,11 @@ Module[{snap, before, changes = Internal`Bag[]},
       Internal`StuffBag[changes, #TestObject["TestID"] -> Select[Keys[now], now[#] =!= Lookup[before, #] &]]; before = now]]|>];
   Internal`BagPart[changes, All]]
 (* wolframscript: {"OD-Setup" -> {"Global`odMode"}, "OD-ChangesMode" -> {"Global`odMode"}, "OD-ReadsMode" -> {}}
-   MCP Local (where an earlier run had left odMode = "fast"): {"OD-Setup" -> {}, "OD-ChangesMode" -> {"Sessions`<id>`odMode"}, "OD-ReadsMode" -> {}} *)
+   MCP evaluator (where an earlier run had left odMode = "fast"): {"OD-Setup" -> {}, "OD-ChangesMode" -> {"Sessions`<id>`odMode"}, "OD-ReadsMode" -> {}} *)
 ```
 
    `"OD-ChangesMode"` changed `odMode`, which `"OD-ReadsMode"` reads. Run this in a fresh kernel: assigning a value a
-   symbol already had is not a change (the MCP Local result). Add your package's contexts to the list, and watch other
+   symbol already had is not a change (the MCP evaluator result). Add your package's contexts to the list, and watch other
    channels when needed (`Hold[Messages[sym]]` for `Off[sym::tag]`, `Options[f]` for `SetOptions`). Note the parentheses
    in `((before = snap[]) &)`: `before = snap[] &` would assign the function itself.
 3. Or bisect: re-run the failing test with growing sets of the preceding tests, each in a fresh kernel.
@@ -371,31 +371,18 @@ package-private flags and caches.
 | | TestReport MCP tool | `TestReport` in MCP Local | in MCP Session | wolframscript |
 |---|---|---|---|---|
 | kernel | fresh per call (`-noinit`) | the shared subkernel | the MCP server kernel | fresh per run |
-| `$Context` of test code | ``Global` `` | ``Sessions`<id>` `` (with bug #249 your typed code is in ``Global` ``) | ``Sessions`<id>` `` | ``Global` `` |
+| `$Context` of test code | ``Global` `` | ``Sessions`<id>` `` | ``Sessions`<id>` `` | ``Global` `` |
 | Trace inside tests | no | yes | no | yes |
 | test messages in the output | hidden | hidden | **shown** (Chatbook's handler ignores the harness) + `General::messages` | hidden |
 | evaluator time limit | none (per-test `timeConstraint`) | not enforced (see below) | not enforced | none |
 | state left behind | none | yes, for every session | yes, in the server | none |
 
-- **MCP Local context split** (AgentTools bug #249, see `Environments.md`): test files are read into
-  ``Sessions`<id>` ``, but affected servers put code typed in the evaluator into ``Global` ``, so a test cannot see your
-  evaluator definitions. Put ``Global` `` first on `$ContextPath`, which is searched before `$Context`: the typed
-  definitions then win even over the empty ``Sessions`<id>` `` symbols that an earlier read of the file created
-  (``WolframDebugging`RunTestsByID`` does this in MCP Local). `Context.wlt` is `VerificationTest[ctxDemoFn[2], 4, ...]`:
-
-```wl
-ClearAll[ctxDemoFn]; ctxDemoFn[x_] := 2 x;
-{#["Outcome"] & /@ TestReport[FileNameJoin[{testDir, "Context.wlt"}], ProgressReporting -> False]["Results"],
- #["Outcome"] & /@ Block[{$ContextPath = Prepend[DeleteCases[$ContextPath, "Global`"], "Global`"]},
-   TestReport[FileNameJoin[{testDir, "Context.wlt"}], ProgressReporting -> False]]["Results"]}
-(* MCP Local with bug #249: {{"Failure"}, {"Success"}}      wolframscript, MCP Session: {{"Success"}, {"Success"}} *)
-```
-
 - **The evaluator's time limit does not stop `TestReport`.** When it fires, the running (possibly passing) test fails
-  (`"EvaluationAbortedFailure"` in MCP Local, `"UncaughtThrowFailure"` in MCP Session) and the remaining tests keep
-  running past the limit (four 2-second tests under a 5-second limit took 7 s, the third one "failed"). Pass
+  with `"EvaluationAbortedFailure"` (both methods) and the remaining tests keep running past the limit (four 2-second
+  tests under a 5-second limit took 7 s, the third one "failed", and the call returned its normal result). Pass
   `TimeConstraint -> n` to `TestReport` and treat such a failure as possibly caused by the tool limit. In MCP Local a
-  call that runs far past its limit (about twice) gets the shared subkernel restarted, which loses every session's state.
+  call that is still running about 20 s after its limit gets the shared subkernel restarted, which loses every
+  session's state (fifteen 2-second tests under a 5-second limit: only the time-out Failure, after 22 s).
 - Never run a project's whole test files in the MCP evaluator: their setup code (`PacletDirectoryLoad`, `Off[...]`,
   `SetOptions`, global flags) changes the shared kernel or the server. Use the TestReport tool or wolframscript; use the
   evaluator to reproduce single inputs.
@@ -434,5 +421,4 @@ inspects definitions. Also check that the build under test is current: a stale b
   remote MCP server) inverts message outcomes.
 - ``Needs["MUnit`"]`` before overriding `VerificationTest`; `TestEvaluationFunction` does nothing for files.
 - Files of one TestReport tool call share a kernel; the evaluator time limit does not bound `TestReport`.
-- MCP evaluator: tests run in ``Sessions`<id>` ``; in MCP Local with bug #249 put ``Global` `` first on `$ContextPath`
-  to use your evaluator definitions (or use ``WolframDebugging`RunTestsByID``).
+- MCP evaluator: tests run in ``Sessions`<id>` ``, where your typed definitions are.

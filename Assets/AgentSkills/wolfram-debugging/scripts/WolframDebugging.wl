@@ -12,16 +12,14 @@
 
 (*
     LOADING
-        Load the file with Get, in its OWN tool call (or on its own line of a wolframscript -f file), then ALWAYS call the
-        helpers fully qualified, in a later call or line:
+        Load the file with Get on its OWN line (of an MCP tool call or a wolframscript -f file), then ALWAYS call the
+        helpers fully qualified, on a later line or in a later call:
 
             Get["/absolute/path/to/wolfram-debugging/scripts/WolframDebugging.wl"]
             WolframDebugging`CollectMessages[myFunction[1, 2]]
 
-        - MCP evaluator, Local method with AgentTools issue #249: tool-call code is parsed into Global` (shared by all
-          sessions), so an unqualified name never resolves to this package, not even in a later call.
-        - MCP evaluator, Session method, and wolframscript: the whole input (tool call, -code string, line of a -f file)
-          is parsed before Get runs, so an unqualified name in the same input is created in the current context first.
+        - MCP evaluator and wolframscript: each input (a line of a tool call or -f file, a whole -code string) is
+          parsed before it runs, so an unqualified name in the same input as Get is created in the current context.
         - wolframscript:  wolframscript -code 'Get["/abs/WolframDebugging.wl"]; Print[ToString[WolframDebugging`EnvironmentInfo[], InputForm]]'
         - CloudEvaluate:  load the file locally, then CloudEvaluate[WolframDebugging`CollectMessages[...]] (the
           definitions are sent along); a CloudDeploy of code that calls the helpers bundles them automatically.
@@ -952,10 +950,10 @@ EnvironmentInfo[ ] :=
             AppendTo[ notes, "Trace/TraceScan/TracePrint/On[sym] record nothing here: use StackAtMessage, StackAtCall, SampleStacks, LogCalls or WhyNoMatch (or run Trace in wolframscript)" ]
         ];
         If[ StringStartsQ[ kind, "MCP evaluator, Method Local" ],
-            AppendTo[ notes, "Servers with AgentTools issue #249 parse tool-call code into Global` (shared by every session of this server) although $Context is Sessions`... (check with {Context[sym], $Context}): call loaded packages fully qualified. A crash, Quit[] or a hard time-out silently restarts the subkernel (all definitions lost)" ]
+            AppendTo[ notes, "One subkernel is shared by every session of this server: a crash, Quit[] or a hard time-out silently restarts it (all definitions of every session lost)" ]
         ];
         If[ StringStartsQ[ kind, "MCP evaluator, Method Session" ],
-            AppendTo[ notes, "Code runs inside the MCP server: never write to \"stdout\", Run[...], Input*/Dialog or set global limits; $MessageList never resets (use Block[{$MessageList = {}}, ...]); messages after 10 outputs per call are dropped; the output of a timed-out call is lost" ]
+            AppendTo[ notes, "Code runs inside the MCP server: never write to \"stdout\", Run[...], Input*/Dialog or set global limits; $MessageList never resets (use Block[{$MessageList = {}}, ...]); messages after 10 outputs per call are dropped" ]
         ];
         If[ quiet,
             AppendTo[ notes, "The whole input runs under Quiet: message handlers see willPrint False; wrap probes in Quiet[expr, None, All]" ]
@@ -3837,10 +3835,8 @@ TestSource[ args___ ] := badCall[ TestSource, HoldComplete @ args ];
 (* ::Subsection::Closed:: *)
 (*RunTestsByID*)
 (* TestReport of the file, but VerificationTests whose TestID does not match evaluate to Null (an InheritedBlock rule
-   on VerificationTest). "Context" -> Automatic reads the file in $Context. In the MCP evaluator that is Sessions`<id>`,
-   but MCP Local servers with AgentTools issue #249 parse typed code into Global`, so there Global` also goes first on
-   $ContextPath (searched before $Context): the tests then see the typed definitions, also when an earlier read of a
-   test file created empty Sessions`<id>` symbols of the same names. *)
+   on VerificationTest). "Context" -> Automatic reads the file in $Context, where typed code lives (Sessions`<id>` in
+   the MCP evaluator). *)
 defineOptions[ RunTestsByID, {
     { "Setup"         , None     , anyValueQ                         , "None or a TestID pattern of setup tests that must also run" },
     { "Context"       , Automatic, MatchQ[ Automatic | _String ]    , "Automatic or a context name" },
@@ -3856,9 +3852,6 @@ RunTestsByID[ file_? existingFileQ, patt_, opts: OptionsPattern[ ] ] /; validOpt
 
 RunTestsByID[ args___ ] := badCall[ RunTestsByID, HoldComplete @ args ];
 
-(* True in the MCP Local sandbox subkernel; a variable, so that tests can simulate it *)
-$localMethod := StringContainsQ[ StringRiffle[ ToString /@ $CommandLine, " " ], "ChatbookSandbox" ];
-
 runTestsByID[ file_String, patt_, o_Association ] :=
     Module[ { setup, ctx, path, keepQ, tc, tr, results },
         setup = o[ "Setup" ];
@@ -3868,11 +3861,7 @@ runTestsByID[ file_String, patt_, o_Association ] :=
         ctx = Replace[ o[ "Context" ], Automatic :> $Context ];
         tc  = Replace[ o[ "TimeConstraint" ], Automatic :> Replace[ autoTimeLimit[ Infinity ], r_? NumericQ :> Ceiling @ r ] ];
         (* another context: take $Context off $ContextPath, where it would shadow ctx symbols of the same name *)
-        path = Which[
-            ctx =!= $Context     , DeleteCases[ $ContextPath, $Context ],
-            TrueQ @ $localMethod , Prepend[ DeleteCases[ $ContextPath, "Global`" ], "Global`" ],
-            True                 , $ContextPath
-        ];
+        path = If[ ctx === $Context, $ContextPath, DeleteCases[ $ContextPath, $Context ] ];
         tr = Block[ { $Context = ctx, $ContextPath = path },
             Internal`InheritedBlock[ { VerificationTest },
                 Unprotect @ VerificationTest;

@@ -324,16 +324,16 @@ MCP Session servers:
 
 - `Unprotect[Print]; Print[args___] := Null` silenced every later `Print`; an unscoped `Message` override hid all later
   messages.
-- A prepended `ToString` rule turned every later response of the server into `Out[HACKED]= HACKED`.
+- A prepended `ToString` rule turned every response of the server, from that call on, into `HACKED`.
 - A prepended `WriteLine["stdout", ...]` rule made the server go silent for good (it writes its JSON-RPC responses
   with `WriteLine`), including the response to that call.
 
-Even a scoped override of a function the evaluator uses for formatting (such as `ToString`) is active while MCP Session
-captures that call's prints and messages: a scoped `ToString` override turned the call's print line into
-`During evaluation of In[HACKED]:= HACKED`. Record raw data into a bag inside the block and format it afterwards. Never
-set `$Pre`, `$Post` or `$PrePrint` in MCP: `$Pre` and `$Post` did nothing in MCP Session, and a `$Post` that changes the
-result broke MCP Local (the result became the evaluator's internal WXF payload and every later call lost its session
-state). Wrap the expression instead. To repair a damaged System symbol, restore the saved values; a fresh session does
+Even a scoped override of a function the evaluator uses for formatting (such as `ToString`) is active while the MCP
+evaluator captures that call's prints and messages: a scoped `ToString` override turned the call's print line into
+`During evaluation of In[HACKED]:= HACKED` and its message into `HACKED: HACKED` in MCP Session, and the message into
+`Power::infy: Infinite expression HACKED encountered.` in MCP Local. Record raw data into a bag inside the block and
+format it afterwards. Do not rely on `$Pre`, `$Post` or `$PrePrint` in MCP: they have no effect in either method. Wrap
+the expression instead. To repair a damaged System symbol, restore the saved values; a fresh session does
 not help, because System symbols are shared by all sessions of a kernel.
 
 ## Watchpoints: who changes this variable?
@@ -371,8 +371,7 @@ Module[{bag = Internal`Bag[]},
   Internal`BagPart[bag, All]]
 (* {"HoldComplete[w, Null, {1, 2}, OwnValues]", "HoldComplete[w, w[[1]], 5, Part]", "HoldComplete[w, {5, 2}, {5, 2, 3}, OwnValues]",
     "HoldComplete[w, Block, True]", "HoldComplete[w, Null, 0, OwnValues]", "HoldComplete[w, 0, 1, OwnValues]", "HoldComplete[w, Block, False]",
-    "HoldComplete[w, OwnValues]", "HoldComplete[w, w[1], \"def\", Removed[\"$$Failure\"], DownValues]"}
-   MCP Local with bug #249 prints Global`w *)
+    "HoldComplete[w, OwnValues]", "HoldComplete[w, w[1], \"def\", Removed[\"$$Failure\"], DownValues]"} *)
 ```
 
 - Events carry the full old and new values (`HoldComplete[x, old, new, OwnValues]`); `Part` assignments, `Unset`
@@ -380,8 +379,8 @@ Module[{bag = Internal`Bag[]},
   definitions (`DownValues`, `UpValues`, `DefaultValues` events) are reported. A `Module` variable with the same name
   is a different symbol and is not reported.
 - **Convert events to strings before returning them.** Definition events contain a special removed-symbol object
-  (`Removed["$$Failure"]`) that cannot be serialized: in MCP Local a result containing one comes back as a bare `$Failed`
-  without `Out[n]=`.
+  (`Removed["$$Failure"]`) that cannot be serialized: in MCP Local a result containing one comes back as
+  `BinarySerialize::serializefail` and `Out[n]= $Failed` (MCP Session returns it).
 - The flag survives `ClearAll[x]` (``Internal`GetValueMonitor[x]`` stays `True`): always reset it in the cleanup.
 - It works on system variables too (`$ContextPath` during ``Needs["CodeParser`"]``: 309 events) and costs little until a
   handler is installed; a tight loop then produced about 700,000 events per second, so count or cap what you store.
@@ -449,8 +448,8 @@ Module[{log = Internal`Bag[]},
    MCP Local and MCP Session: "Sessions`<id>`" instead of "Global`" for newSymA and tmpq *)
 ```
 
-Symbols typed in an MCP call are created when the call is parsed, before any handler runs, so this only sees run-time
-symbols (``WolframDebugging`NewSymbolsDuring[expr]``).
+Symbols typed in an MCP call are created when their input (a line or a multi-line expression) is parsed, before any
+handler in it runs, so this only sees run-time symbols (``WolframDebugging`NewSymbolsDuring[expr]``).
 
 Files an evaluation writes (notification only: returning `False` does not prevent the write; `CopyFile`, `CreateFile`
 and `ExportString` are not reported):

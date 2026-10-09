@@ -49,7 +49,7 @@ Module[{cl = StringRiffle[ToString /@ $CommandLine, " "]},
 | | MCP Local | MCP Session | wolframscript | cloud (CloudEvaluate, deployed APIs, remote MCP server) |
 |---|---|---|---|---|
 | `Trace`, `TraceScan`, `On[sym]` | work | **record nothing** | work | **record nothing** |
-| symbols in typed code | ``Sessions`<id>` `` (``Global` `` with bug #249, see rule 3) | ``Sessions`<id>` `` | ``Global` `` | ``Global` `` |
+| symbols in typed code | ``Sessions`<id>` `` | ``Sessions`<id>` `` | ``Global` `` | ``Global` `` |
 | state between calls | persists in a subkernel shared by all sessions | persists inside the MCP server kernel | one run | none (fresh kernel per call) |
 | `$MessageList` | reset per call | **never reset** | one evaluation per script | per call |
 | `Print` output | lost on `Abort[]` | lost when the call times out | stdout | dropped (CloudEvaluate, deployed APIs); the remote MCP server drops `Echo` |
@@ -68,23 +68,23 @@ uses, also records no Trace. Details, and everything else that differs, are in `
    `HoldForm`). Match them with patterns such as `_[e_]` and convert with
    `ToString[Unevaluated[e], InputForm, TotalWidth -> 150]`. Never extract with `First`, `[[1]]` or `ReleaseHold`: that
    evaluates the frame again (side effects, repeated messages).
-3. **Filter user frames with both user contexts**: ``MemberQ[{"Global`", $Context}, Context[s]]``. In the MCP evaluator
-   typed code belongs to the session context ``Sessions`<id>` `` (`$Context`), but MCP Local servers affected by
-   [AgentTools issue #249](https://github.com/WolframResearch/AgentTools/issues/249) parse it into ``Global` ``, which all
-   sessions share (check with `{Context[mySym], $Context}`; details in `references/Environments.md`). The filter works in
-   both cases.
-4. **A tool call is parsed before it runs.** Put `Get`/`Needs` in its own call (or its own line of a `-f` script) and call
-   package functions by their full names, such as ``WolframDebugging`CollectMessages[...]``.
+3. **Filter user frames with both user contexts**: ``MemberQ[{"Global`", $Context}, Context[s]]``. Typed code lives in
+   the session context ``Sessions`<id>` `` (`$Context`) in the MCP evaluator and in ``Global` `` elsewhere.
+4. **Each input is parsed just before it runs.** The MCP evaluator and `-f` scripts parse line by line, so a name in
+   the same input as the `Get`/`Needs` that defines it is created in your own context. Put `Get`/`Needs` on its own
+   line and call package functions by their full names, such as ``WolframDebugging`CollectMessages[...]``.
 5. **Use `StackBegin[StackComplete[expr]]`, in that order.** `StackBegin` removes the frames of the environment's own
    wrapper code (about 15 in wolframscript and 65 in CloudEvaluate); `StackComplete` keeps the frames of your calls,
    which are otherwise replaced on the stack by their right-hand sides (`myFn[-1, 1]` becomes `Table[...]`).
 6. **Keep output small and return data as values.** Raw stacks, traces and `TestReportObject`s can be hundreds of KB.
-   `Short` has no effect in the MCP evaluator or wolframscript. `Print` output can be lost when a call aborts or times
-   out, so collect diagnostics with ``Internal`Bag``/``Internal`StuffBag`` and return them.
+   `Short` has no effect in the MCP evaluator or wolframscript. `Print` output can be lost (cloud kernels, a restarted MCP Local
+   subkernel), so collect diagnostics with ``Internal`Bag``/``Internal`StuffBag`` and return them.
 7. **Scope every change; MCP kernels are shared.** Use ``Internal`HandlerBlock`` (not ``Internal`AddHandler``),
    ``Internal`InheritedBlock``, `Block` and `WithCleanup`. Never call `Quit`, `Exit`, `Input`, `InputString`, `Dialog`,
    `ChoiceDialog` or `Run` in an MCP evaluator; never write to `"stdout"` or change `$RecursionLimit`, `$Pre`, `$Post`,
-   `Off`, `SetOptions` globally there. In MCP Session such changes can silence or kill the MCP server itself.
+   `Off`, `SetOptions` globally there. In MCP Session such changes can silence or kill the MCP server itself. In MCP
+   Local, lower `$RecursionLimit` (even in a `Block`) only after the subkernel has printed an ordinary message: its
+   first message fails under a low limit and leaves `$Context` broken for every session.
 8. **First-time effects need a fresh kernel.** MCP kernels have already loaded many packages; reproduce autoloading and
    loading problems in wolframscript.
 9. **A `Throw`-based probe can be swallowed** by `Catch[..., _]` or `EvaluationData` inside the code under test. If your
@@ -115,7 +115,8 @@ All references are in `references/` relative to this skill directory.
 ## The helper package
 
 `scripts/WolframDebugging.wl` (relative to this skill directory) packages the recipes of this skill as tested functions
-with small, bounded results. Load it in its own call, then always call the functions by their full names:
+with small, bounded results. Load it on its own line (or in its own call), then always call the functions by their
+full names:
 
 ```wl
 Get["/absolute/path/to/wolfram-debugging/scripts/WolframDebugging.wl"]

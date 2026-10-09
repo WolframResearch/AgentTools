@@ -32,9 +32,9 @@ predicting behavior (it is what actually runs, after load-time macro expansion a
 
 - Runs in the same kernel as the evaluator, so it sees your session's definitions and whatever packages that kernel has
   loaded. It bypasses ReadProtected and formats the result readably.
-- Symbols you defined need their full name: ``Sessions`<id>`f`` in the MCP evaluator (``Global`f`` in MCP Local with
-  bug #249, see `Environments.md`). A bare name gives `Error: Symbol "f" does not exist` plus a "Did you mean" list with
-  the right full name.
+- Symbols you defined need their full name, ``Sessions`<id>`f``. A bare name gives `Error: Symbol "f" does not exist`
+  plus a "Did you mean" list with the right full name (in MCP Local a bare name does find the symbols of the session
+  that made the latest evaluator call, whichever session that was).
 - The `Attributes` line omits ReadProtected (it is cleared before formatting): `CloudPut // Attributes = { Protected }`
   although `Attributes[CloudPut]` is `{Protected, ReadProtected}`.
 - Kernel functions show pseudo-rules: `+___ := "<kernel function>"` for `Plus`.
@@ -85,8 +85,7 @@ Internal`InheritedBlock[{CloudPut},
 ClearAll[rpDemo]; rpDemo[x_] := x + 1; SetAttributes[rpDemo, ReadProtected];
 {DownValues[rpDemo], ToString[Definition[rpDemo], InputForm], Language`ExtendedDefinition[rpDemo],
  Internal`InheritedBlock[{rpDemo}, ClearAttributes[rpDemo, ReadProtected]; ToString[Definition[rpDemo], InputForm]]}
-(* wolframscript: {{HoldPattern[rpDemo[x_]] :> x + 1}, "Attributes[rpDemo] = {ReadProtected}", Language`DefinitionList[], "rpDemo[x_] := x + 1"}
-   MCP Local with bug #249: the same with Global`rpDemo, Global`x in the strings *)
+(* wolframscript: {{HoldPattern[rpDemo[x_]] :> x + 1}, "Attributes[rpDemo] = {ReadProtected}", Language`DefinitionList[], "rpDemo[x_] := x + 1"} *)
 ```
 
 Helper: ``WolframDebugging`ShowDefinition[sym, n]`` (the InheritedBlock recipe with short contexts, at most `n` characters).
@@ -255,8 +254,7 @@ pacletRootOf[file_String] := SelectFirst[
 ```
 
 (The result ends in `/`, as `DirectoryName` returns it.) Helper: ``WolframDebugging`PacletRoot[file]`` (no trailing `/`,
-`Missing["NotFound", file]` outside paclets). In MCP Local with bug #249, `pacletRootOf` is created in the shared
-``Global` `` context: `ClearAll` it when done, or use the helper.
+`Missing["NotFound", file]` outside paclets).
 
 The source files of the paclet, relative to its root:
 
@@ -295,8 +293,8 @@ also land on a message line (`ResourceData` → `DataResource/Kernel/Messages.m:
 
 **CodeParser** (exact source text of each top-level definition). The parser annotates top-level `Set`/`SetDelayed`/
 `TagSet`/`UpSet` nodes with a `"Definitions"` list; with `"SourceCharacterIndex"` the `Source` is a character range for
-`StringTake`. Use fully qualified CodeParser names: typed in the same call as the `Needs`, and in MCP Local with bug #249
-even in later calls, short names are created in your own context and the pattern silently matches nothing:
+`StringTake`. Use fully qualified CodeParser names: typed in the same input as the `Needs`, short names are created in your
+own context and the pattern silently matches nothing:
 
 ```wl
 Needs["CodeParser`"];   (* full names below, so this works in the same input *)
@@ -369,13 +367,13 @@ CloudPut;
 - ``Names["*`name"]`` lists every context that has a symbol called `name` (shadowing check, see `PackageLoading.md`).
 - ``Names["*`*"]`` has about 63,000 entries in a fresh kernel and over 200,000 in MCP Local: always wrap searches in
   `Length` or `Take`.
-- Typing an unknown name creates the symbol in your context (where it can shadow a package symbol; in MCP Local with
-  bug #249 in the shared ``Global` ``). Pass names as strings:
+- Typing an unknown name creates the symbol in your context, where it can shadow a package symbol. Pass names as
+  strings:
 
 ```wl
 {Quiet[Context["dsNoSuchName"]], Names["*`dsNoSuchName"], Context[dsNoSuchName2], Names["*`dsNoSuchName2"]}
 (* wolframscript: {Context["dsNoSuchName"], {}, "Global`", {"dsNoSuchName2"}}
-   MCP Local with bug #249: {Context["dsNoSuchName"], {}, "Global`", {"Global`dsNoSuchName2"}} *)
+   MCP evaluator: {Context["dsNoSuchName"], {}, "Sessions`<id>`", {"dsNoSuchName2"}} *)
 ```
 
 ### PacletFind pitfalls
@@ -458,7 +456,8 @@ Where Trace works (MCP Local, wolframscript; not in MCP Session or the cloud), s
 ClearAll[optDemo]; Options[optDemo] = {"A" -> 1, "B" -> 2};
 optDemo[x_, opts : OptionsPattern[]] := {x, OptionValue["A"], OptionValue["B"]};
 Trace[optDemo[0, "A" -> 10], _OptionValue]
-(* {{HoldCompleteForm[OptionValue[optDemo, {"A" -> 10}, "A"]]}, {HoldCompleteForm[OptionValue[optDemo, {"A" -> 10}, "B"]]}} *)
+(* {{HoldCompleteForm[OptionValue[optDemo, {"A" -> 10}, "A"]]}, {HoldCompleteForm[OptionValue[optDemo, {"A" -> 10}, "B"]]}}
+   (MCP Local shows Sessions`<id>`optDemo; MCP Session gives {}) *)
 ```
 
 ## Environment notes

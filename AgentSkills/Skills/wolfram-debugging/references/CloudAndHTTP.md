@@ -171,7 +171,8 @@ Module[{msgs = Internal`Bag[], st = None, resp},
       Cases[st, _[e : (_myFn | _otherFn | _Table)] :> ToString[Unevaluated[e], InputForm]]]|>]
 (* <|"Status" -> 200, "Messages" -> {"Power::infy"}, "StackLength" -> 52,
      "UserFrames" -> {"myFn[-1, 1]", "Table[otherFn[i], {i, -1, 1}]", "otherFn[i]"}|>
-   (wolframscript, MCP Local; MCP Session: 53 frames, and the message is printed despite $Messages = {}) *)
+   (wolframscript, MCP Local; MCP Session: 53 frames, the message is printed despite $Messages = {}, and once the
+   session has issued Power::infy three times, General::stop is printed and recorded too) *)
 ```
 
 About 40 framework frames sit between `GenerateHTTPResponse` and the user code, hence the filter. For an uncaught
@@ -188,6 +189,7 @@ text, messages, stack from the first user frame on).
 {Trace[GenerateHTTPResponse[api, HTTPRequest["http://localhost/api", <|"Query" -> {"a" -> "-1", "b" -> "1"}|>]], _otherFn],
  Trace[api[<|"a" -> "-1", "b" -> "1"|>], _otherFn]} // Quiet
 (* {{}, {{{{HoldCompleteForm[otherFn[-1]]}, {HoldCompleteForm[otherFn[0]]}, {HoldCompleteForm[otherFn[1]]}}}}}
+   (MCP Local shows Sessions`<id>`otherFn)
    MCP Session: {{}, {}} *)
 ```
 
@@ -247,7 +249,7 @@ URLRead[HTTPRequest[First[diag], <|"Query" -> {"mode" -> #, "x" -> "3"}|>], {"St
        \"StackComplete[demoBody[\\\"msg\\\", 3]]\",\"demoBody[\\\"msg\\\", 3]\",\"Switch[\\\"msg\\\", \\\"ok\\\", 3^2, ...]\",
        \"{1\\/0, 3}\",\"1\\/0\",\"0^(-1)\"]}"|>,
     <|"StatusCode" -> 500, "Body" -> "{\"Result\":\"{\\\"UncaughtThrow\\\", 3, \\\"demo\\\"}\",\"Messages\":[],\"Stack\":[]}"|>}
-   GenerateHTTPResponse[diagApi, ...] gives the same responses locally (MCP Local with bug #249 prints Global`demoBody in the stack) *)
+   GenerateHTTPResponse[diagApi, ...] gives the same responses locally *)
 ```
 
 It does not catch an untagged `Throw[v]`, `Abort[]` or time-outs. The helper does all of these, captures `Print` output,

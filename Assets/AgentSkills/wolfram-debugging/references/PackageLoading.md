@@ -57,15 +57,15 @@ wolframscript (fresh kernel):
   HoldComplete[".../Components/NumericArrayUtilities/Kernel/Common.m", Identity, Last],
   HoldComplete["NumericArrayUtilities`", Identity, Last]},
  {"init.m", "Common.m", "GeneralUtilities.m", "GeneralUtilitiesLoader.m", "GeneralUtilities.mx", "Developer.m", "Descriptive.mx", "RobustStatistics.mx"}}
-fresh MCP Session server (GeneralUtilities already loaded): the same without the GeneralUtilities events and files
-MCP Local (everything already loaded by earlier calls): {{4, 6}, {}, {}}
+fresh MCP Local or MCP Session server (GeneralUtilities already loaded): the same without the GeneralUtilities events and files
+MCP evaluator once earlier calls have loaded everything: {{4, 6}, {}, {}}
 ```
 
 The `.mx` files (`GeneralUtilities.mx`, `Descriptive.mx`, `RobustStatistics.mx`) appear only in `$LoadedFiles`: the
 handler does not see them. MCP kernels have hundreds to thousands of entries (about 600 in a fresh MCP Session server,
-nearly 2000 in a long-running MCP Local, where every switch between evaluator sessions adds that session's saved
-`.mx` state file), so always filter it (`Select[..., StringStartsQ[#, root] &]`, `DeleteDuplicates`, `Take`) and never
-return it whole.
+nearly 2000 in a long-running MCP Local; in both methods every switch between evaluator sessions adds that session's
+saved `.mx` state file), so always filter it (`Select[..., StringStartsQ[#, root] &]`, `DeleteDuplicates`, `Take`) and
+never return it whole.
 
 ## The "GetFileEvent" handler
 
@@ -153,7 +153,7 @@ text says it reports "all file and MX load events"; in 15.0 it reports only
 ```wl
 GeneralUtilities`TraceLoading[GroupOrder[SymmetricGroup[3]]]
 (* wolframscript -f:  /path/to/file/being/read.wl:1: InputForm[GroupOrder -> GroupTheory`PermutationGroups`]
-   MCP Local:         :40: "GroupOrder" -> "GroupTheory`PermutationGroups`"
+   MCP Local:         During evaluation of In[2]:= :2: "GroupOrder" -> "GroupTheory`PermutationGroups`"
    result: 6;  run it again in the same kernel: prints nothing *)
 ```
 
@@ -327,13 +327,14 @@ With[{root = First[PacletFind[<|"Context" -> "Wolfram`AgentTools`"|>]]["Location
 
 ## Shadowed symbols and parse-before-run
 
-The whole input (an MCP tool call, a `-code` string, one top-level expression of a `-f` file) is parsed before it runs,
-so a name used in the same input as the `Get` that defines it is created in the current context first:
+Each input (one top-level expression: a line, or a multi-line expression, of an MCP tool call or of a `-f` file; a whole
+`-code` string) is parsed just before it runs, so a name used in the same input as the `Get` that defines it is created
+in the current context first:
 
 ```wl
 Get[FileNameJoin[{demoDir, "ShadowDemo.wl"}]]; {shFn[3], Context[shFn], ShadowDemo`shFn[3]}
-(* {Global`shFn[3], "Global`", 9}    (wolframscript; MCP Local with bug #249 prints shFn[3]; no General::shdw message
-   was issued in either) *)
+(* wolframscript: {Global`shFn[3], "Global`", 9}     MCP evaluator: {Sessions`<id>`shFn[3], "Sessions`<id>`", 9}
+   (no General::shdw message in either) *)
 ```
 
 ```wl
@@ -341,9 +342,8 @@ Get[FileNameJoin[{demoDir, "ShadowDemo.wl"}]]; {shFn[3], Context[shFn], ShadowDe
 (* {{"Global`shFn", "shFn"}, {"shFn"}}   -- two symbols before, only ShadowDemo`shFn after *)
 ```
 
-- Put `Get`/`Needs` in its own tool call (or its own line of a `-f` script), and call package functions by their full
-  names. In MCP Local with AgentTools bug #249 unqualified names never resolve to a package loaded with `Get`/`Needs`,
-  not even in a later call (typed code is parsed into ``Global` ``); details in `Environments.md`.
+- Put `Get`/`Needs` on its own line (or in its own tool call), and call package functions by their full names. Short
+  names work from the next input on (details in `Environments.md`).
 - ``Names["*`name"]`` lists every context with that name; ``Remove["Global`name"]`` deletes the stray copy (expressions
   parsed earlier still hold the removed symbol). `General::shdw` is not always issued, so do not wait for it.
 - Unevaluated `f[...]` right after loading: also check `UnevaluatedCalls.md`.
@@ -360,7 +360,7 @@ Module[{bag = Internal`Bag[]},
   Internal`HandlerBlock[{"NewSymbol", Internal`StuffBag[bag, #] &}, Get[FileNameJoin[{demoDir, "TypoDemo.wl"}]]];
   Internal`BagPart[bag, All]]
 (* wolframscript: {{"tdLeaked", "Global`"}, {"tdFn", "TypoDemo`"}, {"x", "TypoDemo`Private`"}, {"tdHelpr", "TypoDemo`Private`"}, {"tdHelper", "TypoDemo`Private`"}}
-   MCP Local: the same except {"tdLeaked", "Sessions`<id>`"}  -- files loaded with Get use the session context there *)
+   MCP evaluator: the same except {"tdLeaked", "Sessions`<id>`"}  -- files loaded with Get use the session context there *)
 ```
 
 Only symbols that did not exist yet are reported (load into a fresh kernel for a complete list). Filter with
@@ -393,4 +393,4 @@ Reproduce MCP startup with `wolfram -noinit -script file.wl`; more startup diffe
 - Highest version wins over a `PacletDirectoryLoad`ed checkout; a loader may prefer a stale `.mx`.
 - Re-`Get` keeps deleted rules and fails on protected symbols: `Unprotect` + `ClearAll` the contexts first.
 - Load before inspecting or overriding a stub; `DeclarePackage` stubs load when the name is parsed.
-- `Get`/`Needs` in its own call; full names for package symbols.
+- `Get`/`Needs` on its own line (or in its own call); full names for package symbols.
