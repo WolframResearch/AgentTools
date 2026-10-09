@@ -280,6 +280,7 @@ Besides `SKILL.md`, a source skill directory may contain hand-authored files tha
 - They must be valid UTF-8 text. Like the other text files, they are copied with any byte order mark removed and line endings normalized to LF.
 - They must be flat: no subdirectories, and names must match the regular expression `[A-Za-z0-9][A-Za-z0-9._-]*`. Anything else in a source skill directory (other files or directories next to `SKILL.md`, nested directories, or other names) fails the build with `UnexpectedSkillFiles`.
 - A hand-authored file may not have the same path, compared case-insensitively, as a file that the build generates for the skill: a generated `scripts/<Tool>.wls`, a shared reference copied from `AgentSkills/References/`, or `references/Scripts.md`, which is reserved even for skills without generated scripts. A collision fails the build with `SkillFileConflict`.
+- Two hand-authored files of a skill may not have paths that differ only in case (such as `references/Notes.md` and `references/notes.md`), since they would overwrite each other when the skill is installed on a case-insensitive file system. This fails the build with `SkillFileCaseConflict`.
 
 Hand-authored scripts are not generated from MCP tools and are not described in `references/Scripts.md`, so the skill's `SKILL.md` has to explain how to use them.
 
@@ -423,6 +424,7 @@ Check the console output for errors. Nothing is changed if the build fails. Comm
 - **`Plugin "..." lists skill "...", which is not a built skill directory with a SKILL.md.`** — A skill listed in `marketplace.json` is not in the manifest.
 - **`The source directory <dir> of skill <name> must contain only SKILL.md and hand-authored files in its references and scripts directories ...`** (`UnexpectedSkillFiles`) — The source skill directory contains something other than `SKILL.md` and flat, simply named files in `references/` and `scripts/`.
 - **`The hand-authored files <files> of skill <name> have the same paths as files that the build generates.`** (`SkillFileConflict`) — Rename the hand-authored file; paths are compared ignoring case.
+- **`The hand-authored files <files> of skill <name> have paths that differ only in case.`** (`SkillFileCaseConflict`) — Rename or merge the files.
 
 ### Step 6: Test the Skill
 

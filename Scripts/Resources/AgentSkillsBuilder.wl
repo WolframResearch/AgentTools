@@ -687,19 +687,30 @@ skillFiles[ name_String, entry_Association, skillsDir_String, scripts_, referenc
 (* ::Subsection::Closed:: *)
 (*readHandAuthoredSkillFiles*)
 (* The hand-authored files of a skill (other than SKILL.md) as an association of output path -> normalized text.
-   Their paths must differ from the generated files of the skill, ignoring case, since skills are also installed on
-   case-insensitive file systems. references/Scripts.md is always reserved for the generated script reference. *)
+   Their paths must differ from the generated files of the skill and from each other, ignoring case, since skills are
+   also installed on case-insensitive file systems. references/Scripts.md is always reserved for the generated script
+   reference. *)
 readHandAuthoredSkillFiles[ skillsDir_String, name_String, generated_Association ] := Enclose[
-    Module[ { paths, reserved, conflicts },
-        paths     = handAuthoredSkillFiles[ skillsDir, name ];
-        reserved  = ToLowerCase @ Append[ Keys @ generated, name <> "/references/Scripts.md" ];
-        conflicts = Select[ paths, MemberQ[ reserved, ToLowerCase[ name <> "/" <> # ] ] & ];
+    Module[ { paths, reserved, conflicts, caseDuplicates },
+        paths          = handAuthoredSkillFiles[ skillsDir, name ];
+        reserved       = ToLowerCase @ Append[ Keys @ generated, name <> "/references/Scripts.md" ];
+        conflicts      = Select[ paths, MemberQ[ reserved, ToLowerCase[ name <> "/" <> # ] ] & ];
+        caseDuplicates = Flatten @ Select[ GatherBy[ paths, ToLowerCase ], Length @ # > 1 & ];
 
         If[ conflicts =!= { },
             Confirm @ failure[
                 "SkillFileConflict",
                 "The hand-authored files `1` of skill `2` have the same paths as files that the build generates.",
                 conflicts,
+                name
+            ]
+        ];
+
+        If[ caseDuplicates =!= { },
+            Confirm @ failure[
+                "SkillFileCaseConflict",
+                "The hand-authored files `1` of skill `2` have paths that differ only in case.",
+                caseDuplicates,
                 name
             ]
         ];
