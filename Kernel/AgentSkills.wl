@@ -395,7 +395,7 @@ readSkillDirectory // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*parseSkillMarkdown*)
-(* Reads the name, description, and body of a skill directory's SKILL.md with AgentTools' own YAML parser. This is the
+(* Reads the name, description, and body of a skill directory's SKILL.md with the built-in YAML importer. This is the
    fallback for LLMSkill[File[dir]], which fails for frontmatter containing characters in U+0080-U+00FF (e.g. an accented letter),
    because it parses the decoded text with ImportString[..., "YAML"]. Returns the skill data or $Failed. *)
 parseSkillMarkdown // beginDefinition;
