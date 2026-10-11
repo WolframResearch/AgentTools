@@ -1417,9 +1417,9 @@ VerificationTest[
 VerificationTest[
     Module[ { content },
         content = ReadString @ gooseConfigFile;
-        StringContainsQ[ content, "extensions:" ] &&
-            StringContainsQ[ content, "cmd:" ] &&
-            StringContainsQ[ content, "type: stdio" ]
+        StringContainsQ[ content, "\"extensions\":" ] &&
+            StringContainsQ[ content, "\"cmd\":" ] &&
+            StringContainsQ[ content, "\"type\": \"stdio\"" ]
     ],
     True,
     SameTest -> Equal,
