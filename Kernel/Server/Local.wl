@@ -204,6 +204,7 @@ processRequest[ ] :=
         ];
 
         req = <| "jsonrpc" -> "2.0", "id" -> id |>;
+        If[ method === "initialize", applyStderrPolicy @ message ];
         response = catchAlways @ handleMethod[ method, message, req ];
         recordUsageData[ method, message, response ];
         If[ method === "tools/list", $warmupTools = True ];
@@ -216,6 +217,36 @@ processRequest[ ] :=
 (* :!CodeAnalysis::EndBlock:: *)
 
 processRequest // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*applyStderrPolicy*)
+(* Once the client identifies itself in "initialize", messages are switched off for the rest of the session unless
+   the client is known to handle stderr output (stderrEnabledQ in Shared.wl). This happens before "initialize" itself
+   is handled, so that the messages of building its result are dropped too: superQuiet writes messages to stderr when
+   it cannot open its log file. The read loop runs inside superQuiet, which Blocks $Messages, so this assignment never
+   outlives the server session. It lives here rather than in handleMethod, because the HTTP transports handle
+   "initialize" in kernels whose messages must stay on. *)
+applyStderrPolicy // beginDefinition;
+
+applyStderrPolicy[ message_Association ] :=
+    If[ ! stderrEnabledQ @ initializeClientName @ message, $Messages = { } ];
+
+applyStderrPolicy // endDefinition;
+
+(* The client name that handleMethod["initialize"] records in $clientName. *)
+initializeClientName // beginDefinition;
+
+initializeClientName[ message_Association ] :=
+    Replace[
+        message,
+        {
+            KeyValuePattern[ "params" -> KeyValuePattern[ "clientInfo" -> KeyValuePattern[ "name" -> name_String ] ] ] :> name,
+            _ :> None
+        }
+    ];
+
+initializeClientName // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

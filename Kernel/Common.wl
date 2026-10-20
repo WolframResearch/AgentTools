@@ -28,6 +28,25 @@ $resourceFunctionContext = "Wolfram`AgentTools`ResourceFunctions`";
 
 $internalFailureLogDirectory := FileNameJoin @ { $UserBaseDirectory, "Logs", "AgentTools", "InternalFailures" };
 
+(* Keys and option names whose values can be secrets (bearer tokens), which messages and failure data never show (see
+   redactSecrets). *)
+$secretKeys = { "Authentication", Authentication, "Token", "authorization", "Authorization" };
+$$secretKey = Alternatives @@ $secretKeys;
+$redacted   = "<redacted>";
+
+(* Shorter secrets that are found in an expression are redacted only where they are found (as the values of the keys
+   above, of Authorization header lines and after "Bearer"), not wherever else they occur: such short strings occur by
+   chance, and replacing them would garble the failure data. Secrets that code gives or registers are known to be
+   secrets, so they are redacted wherever they occur, whatever their length (see secretStrings). *)
+$minSecretLength = 8;
+
+(* At most this many of the secrets found in an expression are redacted wherever they occur: each one is searched for
+   in every string. *)
+$maxSecrets = 32;
+
+(* The secrets that redactSecrets replaces wherever they occur, besides the ones it finds (see withFailureSecrets). *)
+$failureSecrets = { };
+
 $resourceVersions = <|
     "ASTPattern"              -> "1.0.0",
     "ExportMarkdownString"    -> "1.0.0",
@@ -392,6 +411,34 @@ catchAlways // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*catchTopIsolated*)
+(* catchTop for code that can run as a preemptive evaluation (a SocketListen handler or a scheduled task), and for code
+   that such evaluations call. A preemptive evaluation sees the Blocks of the evaluation that it interrupted: inside a
+   catchTop there, catchTop is # &, and $catching, $failed and $messageSymbol belong to that evaluation, so a nested
+   catchTop would share its failure state and Throw its failures into it. This always starts a scope of its own, with
+   the bindings of an outermost catchTop. *)
+catchTopIsolated // beginDefinition;
+catchTopIsolated // Attributes = { HoldFirst };
+
+catchTopIsolated[ eval_ ] := catchTopIsolated[ eval, AgentTools ];
+
+catchTopIsolated[ eval_, sym_Symbol ] :=
+    Block[
+        {
+            $messageSymbol          = sym,
+            $catching               = True,
+            $failed                 = False,
+            catchTop                = # &,
+            catchTopAs              = (#1 &) &,
+            $internalFailureLogPath = None
+        },
+        Catch[ eval, $catchTopTag ]
+    ];
+
+catchTopIsolated // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*catchMine*)
 catchMine // beginDefinition;
 catchMine // Attributes = { HoldFirst };
@@ -532,11 +579,16 @@ throwInternalFailure // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*makeInternalFailureData*)
+(* Failure data is shown in messages, put into bug reports and written to the log directory, so its secrets are
+   redacted (redactSecrets). The evaluation stack is not searched: the data holds only its symbol (the delayed value of
+   "Stack"), which messages, bug reports and log files show without evaluating it, so the stack stays in memory. In a
+   preemptive evaluation (such as a SocketListen handler), it also holds the frames of the evaluation that was
+   interrupted, with any amount of the user's data. *)
 makeInternalFailureData // Attributes = { HoldFirst };
 
 makeInternalFailureData[ eval_, Failure[ tag_, as_Association ], args___ ] :=
     StackInhibit @ Module[ { $stack = Stack[ _ ] },
-        DeleteMissing @ <|
+        redactSecrets @ DeleteMissing @ <|
             "Evaluation"  :> eval,
             KeyTake[ as, $priorityFailureKeys ],
             "Stack"       :> $stack,
@@ -547,7 +599,7 @@ makeInternalFailureData[ eval_, Failure[ tag_, as_Association ], args___ ] :=
 
 makeInternalFailureData[ eval_, args___ ] :=
     StackInhibit @ Module[ { $stack = Stack[ _ ] },
-        <|
+        redactSecrets @ <|
             "Evaluation" :> eval,
             "Stack"      :> $stack,
             "Arguments"  -> { args }
@@ -555,6 +607,234 @@ makeInternalFailureData[ eval_, args___ ] :=
     ];
 
 $priorityFailureKeys = { "Information", "ConfirmationType", "Expression", "Function", "Pattern", "Test" };
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*withFailureSecrets*)
+(* Evaluates an expression with secrets that redactSecrets replaces wherever they occur, so that the data of an internal
+   failure in it never shows them. Code that handles a secret registers it here, since a failing call can hold a secret
+   on its own (e.g. a bearer token passed to an authentication check), which nothing then shows to be one. *)
+withFailureSecrets // beginDefinition;
+withFailureSecrets // Attributes = { HoldRest };
+
+withFailureSecrets[ secrets_List, eval_ ] :=
+    Block[ { $failureSecrets = Join[ $failureSecrets, Select[ secrets, StringQ ] ] }, eval ];
+
+withFailureSecrets // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*redactSecrets*)
+(* Replaces secrets with "<redacted>" in expressions that messages show or that failure data keeps, also inside held
+   expressions, without evaluating any of their parts:
+     * the values of the keys that can hold secrets ($$secretKey: an "Authentication" option, a "Token" key, an
+       Authorization header), in rules and associations
+     * the values of "Authorization:" header lines and the tokens after "Bearer", in strings and in byte arrays (such
+       as the raw bytes of an HTTP request)
+     * every other occurrence, in strings and byte arrays, of the secrets (see secretStrings): those given, those
+       registered with withFailureSecrets, and the string values of the keys, header lines and bearer tokens above
+   The time it takes grows only with the size of the expression and the number of secrets given and registered: packed
+   arrays hold only numbers and are not searched (which would unpack them), every word is searched for in all strings
+   at once, and the expression is rebuilt only if it holds a secret. Like makeInternalFailureData, these functions do
+   not use beginDefinition: they redact the data of internal failures, so they must not throw internal failures of
+   their own. *)
+redactSecrets[ expr_ ] := redactSecrets[ expr, { } ];
+
+redactSecrets[ expr_, secrets_List ] :=
+    With[ { parts = secretParts @ expr },
+        redactParts[ expr, parts, secretStrings[ Join[ secrets, $failureSecrets ], parts[ "Secrets" ] ] ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*secretParts*)
+(* The parts of an expression that can hold secrets, found without evaluating any of them:
+     "KeyRules"       whether a rule of a key that can hold secrets has a value that is not redacted yet
+     "Associations"   whether an association has such an entry (ReplaceAll cannot match the entries of associations)
+     "Originals"      the strings and byte arrays, and "Texts" the same as strings
+     "Authorization"  1 for the texts that contain "authorization" (in any case), 0 for the others
+     "Bearer"         1 for the texts that contain "bearer" (in any case), 0 for the others
+     "Secrets"        the string values of the keys that can hold secrets and of Authorization header lines, and the
+                      tokens after "Bearer" in the texts *)
+secretParts[ expr_ ] :=
+    Module[ { searched, ruleValues, keyValues, strings, bytes, texts, authorization, headers, bearer, tokens },
+        searched = expr /. _List? packedArrayQ :> Null;
+
+        ruleValues = Cases[
+            searched,
+            (Rule|RuleDelayed)[ $$secretKey, value: Except[ $redacted ] ] :> HoldComplete @ value,
+            { 0, Infinity },
+            Heads -> True
+        ];
+
+        keyValues = Cases[
+            DeleteCases[
+                KeyTake[ Cases[ searched, _Association? holdAtomQ, { 0, Infinity }, Heads -> True ], $secretKeys ],
+                $redacted,
+                { 2 }
+            ],
+            value_ :> HoldComplete @ value,
+            { 2 }
+        ];
+
+        strings       = Cases[ searched, _String, { 0, Infinity }, Heads -> True ];
+        bytes         = Cases[ searched, _ByteArray? holdAtomQ, { 0, Infinity }, Heads -> True ];
+        texts         = Join[ strings, byteArrayText /@ bytes ];
+        authorization = Boole @ StringContainsQ[ texts, "authorization", IgnoreCase -> True ];
+        headers       = StringCases[ Pick[ texts, authorization, 1 ], $authorizationHeaderLine :> "$2" ];
+        bearer        = Boole @ StringContainsQ[ texts, "bearer", IgnoreCase -> True ];
+        tokens        = StringCases[ Pick[ texts, bearer, 1 ], $bearerCredentials :> "$2" ];
+
+        <|
+            "KeyRules"      -> ruleValues =!= { },
+            "Associations"  -> keyValues =!= { },
+            "Originals"     -> Join[ strings, bytes ],
+            "Texts"         -> texts,
+            "Authorization" -> authorization,
+            "Bearer"        -> bearer,
+            "Secrets"       -> Join[
+                Cases[ Join[ ruleValues, keyValues ], HoldComplete[ value_String ] :> value ],
+                Flatten @ headers,
+                Flatten @ tokens
+            ]
+        |>
+    ];
+
+(* ISO8859-1 decodes every byte to one character, so the bytes that are not redacted stay the same. *)
+byteArrayText[ bytes_ByteArray ] := ByteArrayToString[ bytes, "ISO8859-1" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*secretStrings*)
+(* The secrets that are redacted wherever they occur: all of those given and registered (known), which code knows to be
+   secrets and of which there are few (one per socket server and one per request), and at most $maxSecrets of those
+   found, with at least $minSecretLength characters. They are sorted longest first, the order in which StringReplace
+   tries them, so that a secret that holds another one (e.g. a token and a part of it) is replaced as a whole. *)
+secretStrings[ known_List, found_List ] :=
+    ReverseSortBy[
+        DeleteDuplicates @ Join[
+            Select[ known, secretStringQ ],
+            Take[ Select[ DeleteDuplicates @ found, foundSecretQ ], UpTo[ $maxSecrets ] ]
+        ],
+        StringLength
+    ];
+
+
+(* Whether a string can be replaced wherever it occurs: not if it is only whitespace (or empty), or if it holds the
+   replacement, as an Authorization value that is already redacted does. *)
+secretStringQ[ secret_String ] := StringFreeQ[ secret, $redacted ] && ! StringMatchQ[ secret, WhitespaceCharacter... ];
+secretStringQ[ _ ] := False;
+
+
+foundSecretQ[ secret_ ] := secretStringQ @ secret && StringLength @ secret >= $minSecretLength;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*redactParts*)
+(* Replaces the parts of an expression (see secretParts) that hold secrets, and gives the expression itself if none do.
+   ReplaceAll does not search the parts that it replaces, so packed arrays are replaced with themselves. Only the
+   redacted entries of an association are replaced (ReplacePart), since making a new association from its rules would
+   evaluate its values; the same rules then redact its other values. *)
+redactParts[ expr_, parts_Association, secrets_List ] :=
+    Module[ { rules },
+        rules = With[ { redacted = $redacted },
+            Join[
+                If[ parts[ "KeyRules" ],
+                    { (rule: Rule|RuleDelayed)[ key: $$secretKey, Except[ redacted ] ] :> rule[ key, redacted ] },
+                    { }
+                ],
+                If[ parts[ "Associations" ],
+                    {
+                        as_Association? secretKeysQ :>
+                            RuleCondition[ ReplaceAll[ redactSecretKeys @ as, rules ], True ]
+                    },
+                    { }
+                ],
+                textRules[ parts, secrets ]
+            ]
+        ];
+        If[ rules === { },
+            expr,
+            rules = Dispatch @ Prepend[ rules, packed_List? packedArrayQ :> packed ];
+            ReplaceAll[ expr, rules ]
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*redactSecretKeys*)
+(* Replaces the values of an association's keys that can hold secrets. *)
+redactSecretKeys[ as_Association ] :=
+    ReplacePart[ as, Thread[ Key /@ Select[ Keys @ as, MatchQ @ $$secretKey ] -> $redacted ] ];
+
+
+(* Whether an expression is an association with a key that can hold secrets and that is not redacted yet. *)
+secretKeysQ // Attributes = { HoldAllComplete };
+secretKeysQ[ as_ ] := holdAtomQ @ as && DeleteCases[ KeyTake[ as, $secretKeys ], $redacted ] =!= <| |>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*textRules*)
+(* Rules that replace the strings and byte arrays that hold secrets with their redacted versions. Each word is searched
+   for on its own, which is much faster than searching for alternatives, and the results are combined. *)
+textRules[ parts_Association, secrets_List ] :=
+    Module[ { texts, mask },
+        texts = parts[ "Texts" ];
+        mask  = BitOr[ parts[ "Authorization" ], parts[ "Bearer" ] ];
+        mask  = Fold[ BitOr[ #1, Boole @ StringContainsQ[ texts, #2 ] ] &, mask, secrets ];
+        DeleteDuplicatesBy[
+            MapThread[
+                textRule[ #1, #2, secrets ] &,
+                { Pick[ parts[ "Originals" ], mask, 1 ], Pick[ texts, mask, 1 ] }
+            ],
+            First
+        ]
+    ];
+
+
+textRule[ original_, text_String, secrets_List ] :=
+    With[ { new = redactText[ text, secrets ] },
+        Which[
+            new === text      , Nothing,
+            StringQ @ original, original -> new,
+            True              , original -> StringToByteArray[ new, "ISO8859-1" ]
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*redactText*)
+(* Redacts the values of "Authorization:" header lines (also "Proxy-Authorization:"), the tokens after "Bearer", and
+   the secrets in a string. *)
+redactText[ text_String, secrets_List ] :=
+    StringReplace[
+        text,
+        Join[
+            {
+                $authorizationHeaderLine :> "$1" <> $redacted,
+                $bearerCredentials       :> "$1" <> $redacted
+            },
+            Thread[ secrets -> $redacted ]
+        ]
+    ];
+
+$authorizationHeaderLine = RegularExpression[ "(?i)(\\bauthorization[ \\t]*:[ \\t]*)([^\\r\\n]+)" ];
+
+(* A token ends at a quote, so that one in JSON text ends with its string. *)
+$bearerCredentials = RegularExpression[ "(?i)(\\bbearer\\s+)([^\\s\"]+)" ];
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*holdAtomQ*)
+(* Whether an expression is atomic, without evaluating it: true for a valid Association or ByteArray, but not for an
+   Association[...] or ByteArray[...] expression in held code, which a test like AssociationQ would evaluate. *)
+holdAtomQ // Attributes = { HoldAllComplete };
+holdAtomQ[ expr_ ] := AtomQ @ Unevaluated @ expr;
+
+
+(* Whether an expression is a packed array, without evaluating it. *)
+packedArrayQ // Attributes = { HoldAllComplete };
+packedArrayQ[ expr_ ] := Developer`PackedArrayQ @ Unevaluated @ expr;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
@@ -666,8 +946,7 @@ bugReportBody[ as_Association? AssociationQ ] :=
         |>;
 
         (* Log to unique file in InternalFailures subdirectory *)
-        dir = $internalFailureLogDirectory;
-        If[ ! DirectoryQ @ dir, Quiet @ CreateDirectory[ dir, CreateIntermediateDirectories -> True ] ];
+        dir = ensureInternalFailureLogDirectory @ $internalFailureLogDirectory;
         fileName = generateUniqueFailureFileName[ ];
         filePath = FileNameJoin @ { dir, fileName };
 
@@ -820,6 +1099,34 @@ extractFailureTag0 // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*ensureInternalFailureLogDirectory*)
+(* Creates the directory of the internal failure logs if needed, and makes it private to the user (mode 0700) on
+   Unix-like systems, also when it already exists: failure data shows what the failing code was working on, which can be
+   private even with its secrets redacted. On Windows, the user's profile directory, which holds $UserBaseDirectory, is
+   private already. The mode is set once per directory and session, since it takes a process. *)
+ensureInternalFailureLogDirectory // beginDefinition;
+
+ensureInternalFailureLogDirectory[ dir_String ] := (
+    If[ ! DirectoryQ @ dir, Quiet @ CreateDirectory[ dir, CreateIntermediateDirectories -> True ] ];
+    makeDirectoryPrivate @ dir;
+    dir
+);
+
+ensureInternalFailureLogDirectory // endDefinition;
+
+
+makeDirectoryPrivate // beginDefinition;
+
+makeDirectoryPrivate[ dir_String? DirectoryQ ] /; $OperatingSystem =!= "Windows" && ! TrueQ @ $CloudEvaluation :=
+    (* remembered, so the process runs once *)
+    makeDirectoryPrivate[ dir ] = (Quiet @ RunProcess[ { "chmod", "700", dir } ]; Null);
+
+makeDirectoryPrivate[ _String ] := Null;
+
+makeDirectoryPrivate // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*generateUniqueFailureFileName*)
 generateUniqueFailureFileName // beginDefinition;
 
@@ -848,7 +1155,7 @@ cleanupOldFailureLogs[ maxFiles_Integer ] :=
         (* Sort by modification time, newest first *)
         files = ReverseSortBy[ files, FileDate[ #, "Modification" ] & ];
         toDelete = Drop[ files, maxFiles ];
-        Quiet @ DeleteFile /@ toDelete;
+        Quiet[ DeleteFile /@ toDelete ];
     ];
 
 cleanupOldFailureLogs // endDefinition;

@@ -449,4 +449,254 @@ VerificationTest[
     TestID   -> "BugReportBody-ContainsExpectedSections@@Tests/InternalFailureFormatting.wlt:437,1-450,2"
 ]
 
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*Secrets*)
+(* Failure data and the messages of invalid calls never show secrets (redactSecrets): the values of keys that can hold
+   them, Authorization header lines and bearer tokens in strings and byte arrays, and other occurrences of those and of
+   the secrets that code registered (withFailureSecrets). *)
+VerificationTest[
+    Module[ { token = "0123456789abcdef0123456789abcdef", redacted },
+        redacted = Wolfram`AgentTools`Common`redactSecrets @ {
+            "POST /mcp HTTP/1.1\r\nAuthorization: Bearer " <> token <> "\r\nHost: 127.0.0.1:1234",
+            "{\"headers\":{\"Authorization\":\"Bearer " <> token <> "\"}}",
+            StringToByteArray[ "GET / HTTP/1.1\r\nproxy-authorization: Basic " <> token <> "\r\n\r\n", "ISO8859-1" ],
+            <| "Token" -> token, "Authentication" -> <| "Token" -> token |>, "Count" -> 1 |>
+        };
+        MapAt[ ByteArrayToString[ #, "ISO8859-1" ] &, redacted, 3 ]
+    ],
+    {
+        "POST /mcp HTTP/1.1\r\nAuthorization: <redacted>\r\nHost: 127.0.0.1:1234",
+        "{\"headers\":{\"Authorization\":\"Bearer <redacted>\"}}",
+        "GET / HTTP/1.1\r\nproxy-authorization: <redacted>\r\n\r\n",
+        <| "Token" -> "<redacted>", "Authentication" -> "<redacted>", "Count" -> 1 |>
+    },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-TextAndBytes@@Tests/InternalFailureFormatting.wlt:458,1-476,2"
+]
+
+(* A secret found as such (here as the value of an Authorization key, and after "Bearer" in JSON text) is redacted
+   wherever else it occurs, e.g. passed on its own to a function; so are the secrets that are given or registered
+   (withFailureSecrets). *)
+VerificationTest[
+    With[ { token = "0123456789abcdef0123456789abcdef", other = "fedcba9876543210", third = "0011223344556677" },
+        {
+            Wolfram`AgentTools`Common`redactSecrets @ {
+                HoldForm @ authorize[ token ],
+                <| "Headers" -> <| "authorization" -> "Bearer " <> token |> |>
+            },
+            With[ { json = "{\"headers\":{\"Authorization\":\"Bearer " <> other <> "\"}}" },
+                Wolfram`AgentTools`Common`redactSecrets @ { HoldForm @ configure[ json ], HoldForm @ authorize[ other ] }
+            ],
+            Wolfram`AgentTools`Common`redactSecrets[ HoldForm @ use[ other, "id:" <> other ], { other } ],
+            Wolfram`AgentTools`Common`withFailureSecrets[
+                { third },
+                Wolfram`AgentTools`Common`redactSecrets @ HoldForm @ use[ third ]
+            ],
+            Wolfram`AgentTools`Common`redactSecrets @ HoldForm @ use[ third ]
+        }
+    ],
+    {
+        { HoldForm @ authorize[ "<redacted>" ], <| "Headers" -> <| "authorization" -> "<redacted>" |> |> },
+        {
+            HoldForm @ configure[ "{\"headers\":{\"Authorization\":\"Bearer <redacted>\"}}" ],
+            HoldForm @ authorize[ "<redacted>" ]
+        },
+        HoldForm @ use[ "<redacted>", "id:" <> "<redacted>" ],
+        HoldForm @ use[ "<redacted>" ],
+        HoldForm @ use[ "0011223344556677" ]
+    },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-FoundSecretsEverywhere@@Tests/InternalFailureFormatting.wlt:481,1-511,2"
+]
+
+(* Secrets are only redacted whole: a secret that holds another one (here a token and its first half) is replaced as a
+   whole, and a short one found in the data (here a one-letter token) only as the value of its key, since replacing its
+   other occurrences would garble the data. *)
+VerificationTest[
+    With[ { token = "0123456789abcdef0123456789abcdef" },
+        {
+            Wolfram`AgentTools`Common`redactSecrets[
+                HoldForm @ use[ token, "id:" <> token ],
+                { StringTake[ token, 16 ], token }
+            ],
+            Wolfram`AgentTools`Common`redactSecrets @ { "Token" -> "e", HoldForm @ f[ "UnhandledDownValues", "e" ] }
+        }
+    ],
+    {
+        HoldForm @ use[ "<redacted>", "id:" <> "<redacted>" ],
+        { "Token" -> "<redacted>", HoldForm @ f[ "UnhandledDownValues", "e" ] }
+    },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-WholeSecretsOnly@@Tests/InternalFailureFormatting.wlt:516,1-532,2"
+]
+
+(* Secrets that are given or registered are known to be secrets, so they are redacted wherever they occur, whatever
+   their length (here a token of 7 characters); only empty and whitespace strings are not. *)
+VerificationTest[
+    With[ { token = "Zq7#Kp2" },
+        {
+            Wolfram`AgentTools`Common`withFailureSecrets[
+                { token },
+                Wolfram`AgentTools`Common`redactSecrets @ HoldForm @ use[ token, "id:Zq7#Kp2" ]
+            ],
+            Wolfram`AgentTools`Common`redactSecrets[ HoldForm @ use[ token ], { token } ],
+            Wolfram`AgentTools`Common`redactSecrets[ HoldForm @ use[ token, " " ], { "", " " } ]
+        }
+    ],
+    {
+        HoldForm @ use[ "<redacted>", "id:<redacted>" ],
+        HoldForm @ use[ "<redacted>" ],
+        HoldForm @ use[ "Zq7#Kp2", " " ]
+    },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-KnownSecretsAnyLength@@Tests/InternalFailureFormatting.wlt:536,1-554,2"
+]
+
+(* Nothing is evaluated: not the code inside held expressions (where Association[...] and ByteArray[...] are not yet
+   objects), not delayed values, and not the values that an association holds unevaluated (ReplacePart can make such
+   associations), with or without a secret. *)
+VerificationTest[
+    Module[ { count = 0, unevaluated, text },
+        unevaluated = ReplacePart[ <| "Value" -> 1, "Token" -> "x" |>, "Value" :> count++ ];
+        text = ToString[
+            Wolfram`AgentTools`Common`redactSecrets @ {
+                Hold @ f[ <| "Token" -> count++, "Other" -> count++ |>, ByteArray[ count++ ] ],
+                <| "Evaluation" :> count++, "Token" :> count++ |>,
+                unevaluated,
+                KeyDrop[ unevaluated, "Token" ]
+            },
+            InputForm
+        ];
+        { count, StringCount[ text, "<redacted>" ], StringCount[ text, "++" ] }
+    ],
+    { 0, 3, 5 },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-NothingEvaluated@@Tests/InternalFailureFormatting.wlt:559,1-576,2"
+]
+
+(* Packed arrays, which hold only numbers, are neither searched for secrets nor matched by the rules that redact them
+   (here those of a rule and of an association that hold a secret), either of which would unpack them. *)
+VerificationTest[
+    Module[ { array, redacted },
+        array = RandomReal[ 1, 10^6 ];
+        WithCleanup[
+            On[ "Packing" ],
+            redacted = Quiet[
+                Check[
+                    Wolfram`AgentTools`Common`redactSecrets @ {
+                        array,
+                        "Token" -> "0123456789abcdef",
+                        <| "Token" -> "0123456789abcdef", "Data" -> array |>
+                    },
+                    "Unpacked",
+                    "Packing"
+                ],
+                "Packing"
+            ],
+            Off[ "Packing" ]
+        ];
+        {
+            redacted === { array, "Token" -> "<redacted>", <| "Token" -> "<redacted>", "Data" -> array |> },
+            Developer`PackedArrayQ @ First @ redacted,
+            Developer`PackedArrayQ @ Last[ redacted ][ "Data" ],
+            Wolfram`AgentTools`Common`redactSecrets @ { array, 1 } === { array, 1 }
+        }
+    ],
+    { True, True, True, True },
+    SameTest -> MatchQ,
+    TestID   -> "RedactSecrets-PackedArrays@@Tests/InternalFailureFormatting.wlt:580,1-609,2"
+]
+
+(* The data of an internal failure is redacted: here the failing call only holds a token, which the code that handles
+   it registered (withFailureSecrets), or which the failure data shows to be one. The evaluation stack is not redacted,
+   since only its symbol is in the data. *)
+VerificationTest[
+    Module[ { token, registered, found },
+        token = IntegerString[ 3^160, 16 ];
+        registered = With[ { t = token },
+            Wolfram`AgentTools`Common`withFailureSecrets[
+                { t },
+                Wolfram`AgentTools`Common`Private`makeInternalFailureData[ authorize @ t, "UnhandledDownValues" ]
+            ]
+        ];
+        found = With[ { t = token },
+            Wolfram`AgentTools`Common`Private`makeInternalFailureData[
+                authorize @ t,
+                "UnhandledDownValues",
+                <| "Headers" -> <| "authorization" -> "Bearer " <> t |> |>
+            ]
+        ];
+        {
+            Extract[ registered, { Key[ "Evaluation" ] }, HoldForm ],
+            Extract[ found, { Key[ "Evaluation" ] }, HoldForm ],
+            found[ "Arguments" ],
+            StringFreeQ[ ToString[ { registered, found }, InputForm ], token ],
+            Extract[ found, { Key[ "Stack" ] }, HoldForm ]
+        }
+    ],
+    {
+        HoldForm @ authorize[ "<redacted>" ],
+        HoldForm @ authorize[ "<redacted>" ],
+        { "UnhandledDownValues", <| "Headers" -> <| "authorization" -> "<redacted>" |> |> },
+        True,
+        HoldForm[ _Symbol ]
+    },
+    SameTest -> MatchQ,
+    TestID   -> "InternalFailureData-Redacted@@Tests/InternalFailureFormatting.wlt:614,1-647,2"
+]
+
+(* The time that the failure data takes does not grow with data that is only on the evaluation stack (here in the frame
+   of a caller, as in the computation that a preemptive evaluation interrupted), and its packed arrays are not
+   unpacked. *)
+VerificationTest[
+    Module[ { outer, inner, array, associations, data, seconds, result },
+        outer[ a_, b_ ] := (Null; inner[ a, b ]; Null);
+        inner[ _, _ ] := (
+            data = Wolfram`AgentTools`Common`Private`makeInternalFailureData[ fail[ 1 ], "UnhandledDownValues" ]
+        );
+        array        = RandomReal[ 1, 5 * 10^6 ];
+        associations = Table[ <| "a" -> i, "b" -> ToString @ i |>, { i, 10^5 } ];
+        WithCleanup[
+            On[ "Packing" ],
+            { seconds, result } = AbsoluteTiming @ Quiet[
+                Check[ outer[ array, associations ], "Unpacked", "Packing" ],
+                "Packing"
+            ],
+            Off[ "Packing" ]
+        ];
+        { result, data[ "Arguments" ], seconds < 1 }
+    ],
+    { Null, { "UnhandledDownValues" }, True },
+    SameTest -> MatchQ,
+    TestID   -> "InternalFailureData-StackNotSearched@@Tests/InternalFailureFormatting.wlt:652,1-673,2"
+]
+
+(* The log directory is created private to the user, and an existing one is made private (not on Windows, whose
+   profile directories are private already). *)
+VerificationTest[
+    Module[ { root, created, existing, mode },
+        root     = CreateDirectory[ ];
+        created  = FileNameJoin @ { root, "Logs", "InternalFailures" };
+        existing = CreateDirectory @ FileNameJoin @ { root, "Existing" };
+        mode     = If[ $OperatingSystem === "Windows",
+                       "drwx------" &,
+                       StringTake[ RunProcess[ { "ls", "-ld", # }, "StandardOutput" ], 10 ] &
+                   ];
+        If[ $OperatingSystem =!= "Windows", RunProcess[ { "chmod", "775", existing } ] ];
+        WithCleanup[
+            {
+                Wolfram`AgentTools`Common`Private`ensureInternalFailureLogDirectory @ created,
+                mode @ created,
+                Wolfram`AgentTools`Common`Private`ensureInternalFailureLogDirectory @ existing,
+                mode @ existing
+            },
+            DeleteDirectory[ root, DeleteContents -> True ]
+        ] === { created, "drwx------", existing, "drwx------" }
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "InternalFailureLogDirectory-Private@@Tests/InternalFailureFormatting.wlt:677,1-700,2"
+]
+
 (* :!CodeAnalysis::EndBlock:: *)

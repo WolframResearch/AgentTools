@@ -129,6 +129,55 @@ niceLabel // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*MCPSocketServerObject*)
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*makeMCPSocketServerObjectBoxes*)
+makeMCPSocketServerObjectBoxes // beginDefinition;
+
+makeMCPSocketServerObjectBoxes[ obj_MCPSocketServerObject, fmt_ ] :=
+    BoxForm`ArrangeSummaryBox[
+        MCPSocketServerObject,
+        obj,
+        makeMCPServerIcon @ obj,
+        makeSocketServerSummaryRows @ obj,
+        makeSocketServerHiddenRows @ obj,
+        fmt
+    ];
+
+makeMCPSocketServerObjectBoxes // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeSocketServerSummaryRows*)
+makeSocketServerSummaryRows // beginDefinition;
+
+makeSocketServerSummaryRows[ obj_ ] := Flatten @ {
+    summaryItem[ "Name", obj[ "Name" ] ],
+    summaryItem[ "URL" , obj[ "URL"  ] ]
+};
+
+makeSocketServerSummaryRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*makeSocketServerHiddenRows*)
+(* The token is deliberately not shown: summary boxes end up in screenshots and shared notebooks. It is not in the
+   boxes' interpretation either, since the object does not hold it (see Server State in Server/Socket.wl). *)
+makeSocketServerHiddenRows // beginDefinition;
+
+makeSocketServerHiddenRows[ obj_ ] := Flatten @ {
+    summaryItem[ "Port" , obj[ "Port" ] ],
+    summaryItem[ "Path" , obj[ "Path" ] ],
+    summaryItem[ "Tools", nameList @ obj[ "Server" ][ "ToolNames" ] ],
+    summaryItem[ "ID"   , obj[ "ID" ] ]
+};
+
+makeSocketServerHiddenRows // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*AgentToolsObject*)
 
 (* ::**************************************************************************************************************:: *)

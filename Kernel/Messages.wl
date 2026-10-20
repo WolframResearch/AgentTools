@@ -163,4 +163,11 @@ AgentTools::CloudDeployFailed              = "Failed to deploy MCP server to the
 AgentTools::NotCloudConnected              = "A cloud connection is required to deploy an MCP server. Use CloudConnect to sign in.";
 AgentTools::InvalidCloudTarget             = "Invalid cloud deployment target: `1`.";
 
+(* Socket server messages *)
+AgentTools::InvalidSocketServerPort           = "Invalid value for the \"Port\" option: `1`. Expected Automatic or an integer from 1 to 65535.";
+AgentTools::InvalidSocketServerPath           = "Invalid value for the \"Path\" option: `1`. Expected a string that starts with \"/\" and contains no whitespace, \"?\" or \"#\".";
+AgentTools::InvalidSocketServerAuthentication = "Invalid value for the \"Authentication\" option. A token must be a nonempty string of visible ASCII characters without spaces.";
+AgentTools::InvalidKeepAliveInterval          = "Invalid value for the \"KeepAliveInterval\" option: `1`. Expected None or a positive number of seconds.";
+AgentTools::SocketServerListenFailed          = "Unable to listen for MCP connections on 127.0.0.1 (port `1`): `2`";
+
 EndPackage[ ];
