@@ -75,7 +75,7 @@ Tools with UI-enhanced behavior:
 | `WolframAlpha` | Deploys a cloud notebook with formatted Wolfram\|Alpha pods and returns `notebookUrl` in `_meta` |
 | `WolframLanguageEvaluator` | Deploys a cloud notebook with evaluation results and returns `notebookUrl` in `_meta` |
 
-These enhancements require both MCP Apps support and an active Wolfram Cloud connection. The session flag `$deployCloudNotebooks` (initialized from `$CloudConnected`) gates deployment: if a `CloudDeploy` call fails at runtime, the helper `deployCloudNotebookForMCPApp` sets the flag to `False` and the tools fall back to their standard (non-UI) results for the rest of the session rather than surfacing an internal failure.
+These enhancements require MCP Apps support and a way to host the notebook. The helper `deployCloudNotebookForMCPApp` deploys it with `CloudDeploy` when the kernel is connected to the Wolfram Cloud; otherwise — or if `CloudDeploy` fails — it uploads the notebook to a public notebook hosting API that needs no cloud connection (see [Notebook Hosting Without a Cloud Connection](#notebook-hosting-without-a-cloud-connection)). The session flag `$deployCloudNotebooks` gates delivery as a whole: it starts out `True` and is set to `False` only when the hosting API turns out to be unavailable, after which the tools fall back to their standard (non-UI) results for the rest of the session rather than surfacing an internal failure or retrying on every call. A `CloudDeploy` failure on its own only clears the `$useCloudDeploy` flag, so later notebooks go straight to the hosting API.
 
 Cloud notebooks are deployed with `AppearanceElements -> None` by default, which hides the footer links that would not be clickable inside the MCP App iframe. Some cloud accounts reject this option with `CloudDeploy::appearancenotsup`; in that case the deployment is transparently retried without `AppearanceElements`, and the unsupported status is cached in a session flag (`$includeAppearanceElements`) so subsequent deployments skip the failing attempt.
 
@@ -84,18 +84,29 @@ The fallback is per-tool:
 - `WolframLanguageEvaluator` always has a text/image result it can return, so it degrades in place.
 - `WolframAlpha` has no text-only fallback app view, so its entry in `$toolUIAssociations` is itself conditional on `$deployCloudNotebooks` — when the flag is `False`, no `_meta.ui` is attached to the tool definition and the client never sees it as a UI-enabled tool.
 
+### Notebook Hosting Without a Cloud Connection
+
+When the kernel is not cloud connected (`! TrueQ @ $CloudConnected`), or when `CloudDeploy` fails, `deployCloudNotebookForMCPApp` falls back to the public notebook hosting API at `$notebookUploadEndpoint` (`https://www.wolframcloud.com/obj/agenttoolsmngr/CAG/api/1.0/UploadNotebook`):
+
+1. `uploadNotebook` exports the notebook to a temporary `.nb` file, which is deleted again once the request completes.
+2. `uploadNotebookFile` does not send files larger than `$notebookUploadSizeLimit` (10 MB, the API's limit) at all; the result is `$Failed` for that notebook only.
+3. `notebookUploadResponse` `POST`s the file as the multipart `Notebook` field, bounded by `$notebookUploadTimeout`.
+4. `notebookUploadResult` interprets the JSON answer. On success (`{"success": true, "code": 200, "uuid": "…", "result": "https://www.wolframcloud.com/obj/<uuid>"}`) the `result` URL is returned; it has the same UUID form as a notebook deployed with `CloudDeploy`, so the `<result uuid="…">` marker and the viewers work unchanged. An error answer with a 4xx `code` (e.g. `"tag": "NotebookTooLarge"` or `"InvalidNotebookFormat"`) concerns only this notebook: the result is `$Failed` and nothing is disabled. Any other outcome — a connection failure or timeout, a server error, or a non-JSON answer such as the login redirect produced by an endpoint that is not deployed — means the API is unavailable, so `disableNotebookDelivery` sets `$deployCloudNotebooks` to `False` (there is no delivery method left to fall back to) and `$Failed` is returned.
+
+Hosted notebooks are temporary (removed within 24 hours) and, like notebooks deployed with `Permissions -> {"All" -> {"Read", "Interact"}}`, readable by anyone with the unguessable URL. The fallback steps are recorded in the server log as `CloudDeployNotebookFailed`, `NotebookUploadSkipped`, `NotebookUploadRejected`, and `NotebookUploadFailed` entries.
+
 ### Notebook Delivery: Cloud vs. Inline
 
 By default, a UI-enhanced notebook is deployed to the Wolfram Cloud and its URL is sent to the app in `_meta.notebookUrl`. An experimental alternative serializes the notebook and embeds it inline, avoiding the cloud round-trip. The delivery method is selected by the `MCP_APPS_NOTEBOOK_METHOD` environment variable:
 
 | `MCP_APPS_NOTEBOOK_METHOD` | Behavior of `deployCloudNotebookForMCPApp` |
 |----------------------------|--------------------------------------------|
-| unset (default) | Deploys the notebook with `CloudDeploy` and returns the cloud URL |
+| unset (default) | Deploys the notebook (with `CloudDeploy`, or via the notebook hosting API) and returns its URL |
 | `"Inline"` | Returns `ExportString[nb, "NB"]` — the serialized notebook itself — instead of a URL |
 
 The same `notebookUrl` field carries both forms. Each viewer app (`evaluator-viewer.html`, `notebook-viewer.html`, `wolframalpha-viewer.html`) decides how to embed based on the value: a string starting with `http` is embedded as a cloud URL, while any other value is passed to `WolframNotebookEmbedder.embed` as an inline notebook expression (`{expr: ...}`).
 
-Inline embedding is **experimental and not yet the default**. Both methods currently require an active cloud connection, since the UI-enhanced path is gated on `$deployCloudNotebooks` regardless of the delivery method (the `"Inline"` branch only asserts the flag rather than deploying).
+Inline embedding is **experimental and not yet the default**. Neither method requires a cloud connection: the UI-enhanced path is gated on `$deployCloudNotebooks` regardless of the delivery method, and the `"Inline"` branch only asserts the flag rather than deploying.
 
 When inline embedding is active, graphics can render empty in the embedded notebook. The `delayedDisplay` helper works around this for `WolframLanguageEvaluator` output: any output boxes containing `GraphicsBox`/`Graphics3DBox` are serialized and reconstructed asynchronously inside a `DynamicModule` (showing a progress indicator until ready). Outside inline mode, or for output without graphics, `delayedDisplay` returns the boxes unchanged.
 
@@ -276,8 +287,13 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `$clientSupportsUI` | `Common` | Whether the current client supports MCP Apps |
 | `$uiResourceRegistry` | `Common` | Association of loaded UI resources keyed by URI |
 | `$toolUIAssociations` | `Common` | Mapping of tool names to UI resource URIs (entries may be `RuleDelayed` to gate on `$deployCloudNotebooks`) |
-| `$deployCloudNotebooks` | `Common` | Session flag gating cloud notebook deployment; initialized from `$CloudConnected` and set to `False` after a deployment failure |
-| `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result — deploys to the cloud and returns a URL, or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; disables `$deployCloudNotebooks` on a deploy failure |
+| `$deployCloudNotebooks` | `Common` | Session flag gating notebook delivery for UI-enhanced results; starts out `True` (no cloud connection needed) and is set to `False` once the notebook hosting API turns out to be unavailable |
+| `deployCloudNotebookForMCPApp` | `Common` | Shared helper that delivers a notebook for a UI-enhanced tool result and returns its URL — via `CloudDeploy` when cloud connected, otherwise (or if `CloudDeploy` fails) via the notebook hosting API — or returns the serialized notebook when `MCP_APPS_NOTEBOOK_METHOD` is `"Inline"`; returns `$Failed` when the notebook could not be delivered |
+| `$useCloudDeploy` | `UIResources` (private) | Whether `CloudDeploy` is still worth trying (a cloud connection is required as well); cleared for the rest of the session after a `CloudDeploy` failure |
+| `cloudDeployNotebook` | `UIResources` (private) | Deploys a notebook to the user's cloud account (`AgentTools/Notebooks/<hash>.nb`, URL in UUID form) when cloud connected; returns `$Failed` otherwise or on failure |
+| `uploadNotebook` | `UIResources` (private) | Uploads a notebook to the hosting API via a temporary file (`uploadNotebookFile`, which skips files over `$notebookUploadSizeLimit`) and returns the hosted URL or `$Failed` |
+| `notebookUploadResponse` | `UIResources` (private) | The HTTP `POST` to `$notebookUploadEndpoint` on its own (bounded by `$notebookUploadTimeout`), so tests can substitute canned responses |
+| `notebookUploadResult` | `UIResources` (private) | Interprets the API's answer: the hosted URL on success, `$Failed` for a 4xx error concerning only this notebook, and `disableNotebookDelivery` (clears `$deployCloudNotebooks`) when the API gave no usable answer |
 | `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs wraps the content in a `<result uuid="…">…</result>` marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
 | `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |

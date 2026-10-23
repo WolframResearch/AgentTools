@@ -21,7 +21,26 @@ $toolUIAssociations = <|
 
 $includeAppearanceElements = False;
 $deployedNotebookRoot      = "AgentTools/Notebooks";
-$deployCloudNotebooks     := $deployCloudNotebooks = $CloudConnected; (* must be connected to deploy notebooks *)
+
+(* Notebooks for UI-enhanced tool results are deployed with CloudDeploy when the kernel is connected to the
+   cloud, and otherwise (or if CloudDeploy fails) uploaded to the public notebook hosting API below, which
+   needs no cloud connection. This session flag gates notebook delivery as a whole: it is cleared when the
+   hosting API turns out to be unavailable (see notebookUploadResult), so the tools fall back to their
+   standard (non-UI) results for the remainder of the session instead of retrying on every call. *)
+$deployCloudNotebooks = True;
+
+(* Whether CloudDeploy is still worth trying (a cloud connection is required as well). Cleared for the
+   remainder of the session after a CloudDeploy failure, so later notebooks go straight to the hosting API. *)
+$useCloudDeploy = True;
+
+(* The public notebook hosting API. A POST with the notebook file as the multipart "Notebook" field answers
+   with JSON { "success", "code", "uuid", "result" }, where "result" is the URL of the hosted notebook in UUID
+   form (https://www.wolframcloud.com/obj/<uuid>, as cloudNotebookUUID expects); errors answer with
+   "success": false and a "tag" (e.g. "NotebookTooLarge", "InvalidNotebookFormat"). Hosted notebooks are
+   temporary and are removed within 24 hours. *)
+$notebookUploadEndpoint  = "https://www.wolframcloud.com/obj/agenttoolsmngr/CAG/api/1.0/UploadNotebook";
+$notebookUploadSizeLimit = 10^7; (* bytes; the API rejects larger notebooks, so they are not sent at all *)
+$notebookUploadTimeout   = <| "Connecting" -> 10, "Reading" -> 60 |>; (* seconds allowed for the upload request *)
 
 (* A cloud object UUID (8-4-4-4-12 hexadecimal characters). Notebooks are deployed with
    CloudObjectNameFormat -> "UUID", so the deployed URL is https://www.wolframcloud.com/obj/<uuid>;
@@ -47,6 +66,11 @@ $defaultCloudBase = "https://www.wolframcloud.com";
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*deployCloudNotebookForMCPApp*)
+(* Delivers the notebook for a UI-enhanced tool result and returns the URL it can be embedded from (or, with
+   MCP_APPS_NOTEBOOK_METHOD="Inline", the serialized notebook itself). When connected to the cloud, the
+   notebook is deployed to the user's cloud account (cloudDeployNotebook); otherwise, or if that fails, it is
+   uploaded to the public notebook hosting API (uploadNotebook). Returns $Failed when the notebook could not
+   be delivered, in which case the calling tool falls back to its standard result. *)
 deployCloudNotebookForMCPApp // beginDefinition;
 
 deployCloudNotebookForMCPApp[ nb_Notebook, _ ] /; $mcpAppsNotebookMethod === "Inline" := Enclose[
@@ -58,10 +82,33 @@ deployCloudNotebookForMCPApp[ nb_Notebook, _ ] /; $mcpAppsNotebookMethod === "In
 ];
 
 deployCloudNotebookForMCPApp[ nb_Notebook, identifier_ ] := Enclose[
-    Module[ { hash, target, deployed },
+    Module[ { deployed },
 
         (* This should be true if this function is being called: *)
         ConfirmAssert[ $deployCloudNotebooks, "DeployCloudNotebooksAssert" ];
+
+        deployed = ConfirmMatch[ cloudDeployNotebook[ nb, identifier ], _String | $Failed, "CloudDeployed" ];
+
+        If[ StringQ @ deployed,
+            deployed,
+            ConfirmMatch[ uploadNotebook @ nb, _String | $Failed, "Uploaded" ]
+        ]
+    ],
+    throwInternalFailure
+];
+
+deployCloudNotebookForMCPApp // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudDeployNotebook*)
+(* Deploys the notebook to the user's cloud account and returns the URL of the cloud object. Only tried when
+   connected to the cloud (and not after an earlier failure, see $useCloudDeploy); returns $Failed otherwise,
+   so that the caller falls back to the notebook hosting API. *)
+cloudDeployNotebook // beginDefinition;
+
+cloudDeployNotebook[ nb_Notebook, identifier_ ] /; TrueQ @ $useCloudDeploy && TrueQ @ $CloudConnected := Enclose[
+    Module[ { hash, target, deployed },
 
         hash = ConfirmBy[ Hash[ Unevaluated @ identifier, Automatic, "HexString" ], StringQ, "Hash" ];
 
@@ -82,15 +129,132 @@ deployCloudNotebookForMCPApp[ nb_Notebook, identifier_ ] := Enclose[
 
         If[ MatchQ[ deployed, _CloudObject ],
             ConfirmBy[ First @ deployed, StringQ, "Result" ],
-            (* If deploying failed, disable cloud notebook deployment for the remainder of the session: *)
-            $deployCloudNotebooks = False;
+            (* Do not try CloudDeploy again this session; later notebooks go straight to the hosting API: *)
+            $useCloudDeploy = False;
+            writeLog[ "CloudDeployNotebookFailed" -> deployed ];
             $Failed
         ]
     ],
     throwInternalFailure
 ];
 
-deployCloudNotebookForMCPApp // endDefinition;
+cloudDeployNotebook[ _Notebook, _ ] := $Failed;
+
+cloudDeployNotebook // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*uploadNotebook*)
+(* Uploads the notebook to the public notebook hosting API and returns the URL of the hosted notebook. The
+   notebook is exported to a temporary file for the upload, which is deleted again once the request completes.
+   Returns $Failed if the notebook could not be uploaded (see uploadNotebookFile). *)
+uploadNotebook // beginDefinition;
+
+uploadNotebook[ nb_Notebook ] := Enclose[
+    Module[ { file },
+        file = ConfirmBy[
+            Export[ FileNameJoin @ { $TemporaryDirectory, CreateUUID[ ] <> ".nb" }, nb, "NB" ],
+            FileExistsQ,
+            "File"
+        ];
+        WithCleanup[
+            ConfirmMatch[ uploadNotebookFile @ file, _String | $Failed, "Uploaded" ],
+            Quiet @ DeleteFile @ file
+        ]
+    ],
+    throwInternalFailure
+];
+
+uploadNotebook // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*uploadNotebookFile*)
+(* POSTs the notebook file to the hosting API and returns the URL of the hosted notebook, or $Failed. Files
+   over the API's size limit are not sent at all. *)
+uploadNotebookFile // beginDefinition;
+
+uploadNotebookFile[ file_String ] := uploadNotebookFile[ file, FileByteCount @ file ];
+
+uploadNotebookFile[ file_String, size_Integer ] /; size > $notebookUploadSizeLimit := (
+    writeLog[ "NotebookUploadSkipped" -> <| "ByteCount" -> size, "Limit" -> $notebookUploadSizeLimit |> ];
+    $Failed
+);
+
+uploadNotebookFile[ file_String, size_Integer ] :=
+    notebookUploadResult @ notebookUploadResponse @ file;
+
+uploadNotebookFile // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookUploadResponse*)
+(* The HTTP round trip on its own, so that tests can substitute canned responses. Gives an HTTPResponse, or a
+   Failure when the request could not be completed at all (no network, timeout, etc.). *)
+notebookUploadResponse // beginDefinition;
+
+notebookUploadResponse[ file_String ] := Quiet @ URLRead[
+    HTTPRequest[ $notebookUploadEndpoint, <| "Method" -> "POST", "Body" -> { "Notebook" -> File @ file } |> ],
+    TimeConstraint -> $notebookUploadTimeout
+];
+
+notebookUploadResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookUploadResult*)
+(* Interprets the API's answer: the URL of the hosted notebook on success, $Failed otherwise. An error answer
+   from the API (a client error such as NotebookTooLarge or InvalidNotebookFormat) concerns only this notebook,
+   so later notebooks are still uploaded. No usable answer at all, however, means the API is unavailable (no
+   network, a server error, or the redirect to a login page that an undeployed endpoint produces), and since
+   the hosting API is the last resort after CloudDeploy, notebook delivery is disabled for the remainder of
+   the session ($deployCloudNotebooks) rather than retried on every call. *)
+notebookUploadResult // beginDefinition;
+
+notebookUploadResult[ response_HTTPResponse ] :=
+    notebookUploadResult[ response, Quiet @ Developer`ReadRawJSONString @ response[ "Body" ] ];
+
+notebookUploadResult[ response_, json_Association ] := Enclose[
+    Module[ { success, url, code },
+        success = Lookup[ json, "success" ];
+        url     = Lookup[ json, "result" ];
+        code    = Lookup[ json, "code" ];
+        Which[
+            (* The hosted notebook's URL, in the same UUID form as a CloudDeploy result: *)
+            success === True && StringQ @ url && StringStartsQ[ url, "http" ],
+                url,
+            (* A client error (e.g. NotebookTooLarge, InvalidNotebookFormat) concerns only this notebook, so
+               later notebooks are still uploaded: *)
+            success === False && IntegerQ @ code && 400 <= code < 500,
+                writeLog[ "NotebookUploadRejected" -> json ];
+                $Failed,
+            (* Any other answer (a server error, or JSON without a usable result) means the API is unavailable: *)
+            True,
+                disableNotebookDelivery @ response
+        ]
+    ],
+    throwInternalFailure
+];
+
+(* No usable answer at all -- a non-JSON body (e.g. the login redirect of an endpoint that is not deployed) or
+   a Failure because the request itself could not be completed (no network, timeout): *)
+notebookUploadResult[ response_, _ ] := disableNotebookDelivery @ response;
+notebookUploadResult[ response_ ]    := disableNotebookDelivery @ response;
+
+notebookUploadResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*disableNotebookDelivery*)
+disableNotebookDelivery // beginDefinition;
+
+disableNotebookDelivery[ response_ ] := (
+    $deployCloudNotebooks = False;
+    writeLog[ "NotebookUploadFailed" -> response ];
+    $Failed
+);
+
+disableNotebookDelivery // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

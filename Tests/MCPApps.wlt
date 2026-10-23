@@ -1263,6 +1263,410 @@ VerificationTest[
 ]
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Delivery Methods*)
+(* The notebook is deployed with CloudDeploy when connected to the cloud, and uploaded to the public notebook
+   hosting API otherwise or if CloudDeploy fails. Both round trips are replaced by mocks here: cloudDeployNotebook
+   (or, one level down, cloudDeployTryAppearanceElements) stands in for CloudDeploy, and notebookUploadResponse
+   for the HTTP request to the hosting API. *)
+$deliveryTestNotebook = Notebook @ { Cell[ "1 + 1", "Input" ] };
+$deliveryTestUUID     = "7df88e25-37dc-4a7e-915d-4df1848a40e1";
+$deliveryTestURL      = "https://www.wolframcloud.com/obj/" <> $deliveryTestUUID;
+$cloudDeployTestURL   = "https://www.wolframcloud.com/obj/4a3711c2-43a3-4039-9423-f0cf055617a8";
+
+(* A canned answer of the hosting API *)
+hostingAPIResponse[ json_Association, code_Integer ] := HTTPResponse[
+    Developer`WriteRawJSONString @ json,
+    <| "StatusCode" -> code, "ContentType" -> "application/json" |>
+];
+
+$hostingAPISuccess = hostingAPIResponse[
+    <| "success" -> True, "code" -> 200, "uuid" -> "3dd142c8-cf4e-43fb-8b48-e22d742e3884", "result" -> $deliveryTestURL |>,
+    200
+];
+
+(* Runs deployCloudNotebookForMCPApp with mocked delivery methods (cloudDeployNotebook returns cloudDeployResult;
+   the hosting API answers with uploadResponse) and returns the result together with how many times each delivery
+   method was invoked and the state of $deployCloudNotebooks afterward. The session flags default to a
+   not-connected session with delivery enabled; individual tests override them through the options. *)
+Options[ deliveryTest ] = {
+    "CloudConnected"       -> False,
+    "DeployCloudNotebooks" -> True,
+    "UseCloudDeploy"       -> True,
+    "SizeLimit"            -> Automatic
+};
+
+deliveryTest[ cloudDeployResult_, uploadResponse_, opts: OptionsPattern[ ] ] :=
+    Module[ { settings, sizeLimit, deploys = 0, uploads = 0, result },
+        settings  = Association @ { opts };
+        sizeLimit = Replace[
+            Lookup[ settings, "SizeLimit", Automatic ],
+            Automatic :> Wolfram`AgentTools`UIResources`Private`$notebookUploadSizeLimit
+        ];
+        Block[
+            {
+                $CloudConnected = Lookup[ settings, "CloudConnected", False ],
+                Wolfram`AgentTools`Common`$deployCloudNotebooks         = Lookup[ settings, "DeployCloudNotebooks", True ],
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy   = Lookup[ settings, "UseCloudDeploy", True ],
+                Wolfram`AgentTools`UIResources`Private`$notebookUploadSizeLimit = sizeLimit,
+                Wolfram`AgentTools`UIResources`Private`cloudDeployNotebook    = Function[ deploys++; cloudDeployResult ],
+                Wolfram`AgentTools`UIResources`Private`notebookUploadResponse = Function[ uploads++; uploadResponse ]
+            },
+            result = Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ $deliveryTestNotebook, "some-id" ];
+            <|
+                "Result"               -> result,
+                "CloudDeploys"         -> deploys,
+                "Uploads"              -> uploads,
+                "DeployCloudNotebooks" -> Wolfram`AgentTools`Common`$deployCloudNotebooks
+            |>
+        ]
+    ];
+
+(* Not cloud connected: the hosting API is used *)
+VerificationTest[
+    deliveryTest[ $Failed, $hostingAPISuccess, "CloudConnected" -> False ],
+    <| "Result" -> $deliveryTestURL, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-NotConnected-UsesHostingAPI@@Tests/MCPApps.wlt:1326,1-1331,2"
+]
+
+(* CloudDeploy succeeded: its URL is used and nothing is uploaded *)
+VerificationTest[
+    deliveryTest[ $cloudDeployTestURL, $hostingAPISuccess ],
+    <| "Result" -> $cloudDeployTestURL, "CloudDeploys" -> 1, "Uploads" -> 0, "DeployCloudNotebooks" -> True |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeploy-NoUpload@@Tests/MCPApps.wlt:1334,1-1339,2"
+]
+
+(* CloudDeploy failed: the hosting API is the fallback and delivery stays enabled *)
+VerificationTest[
+    deliveryTest[ $Failed, $hostingAPISuccess, "CloudConnected" -> True ],
+    <| "Result" -> $deliveryTestURL, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeployFailed-UsesHostingAPI@@Tests/MCPApps.wlt:1342,1-1347,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Hosting API Failures*)
+
+(* The request itself failed (no network, timeout): delivery is disabled for the rest of the session *)
+VerificationTest[
+    deliveryTest[ $Failed, Failure[ "ConnectionFailure", <| "MessageTemplate" -> "Unable to perform the request." |> ] ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ConnectionFailure-Disables@@Tests/MCPApps.wlt:1354,1-1359,2"
+]
+
+(* An endpoint that is not deployed redirects to a login page (no JSON): delivery is disabled *)
+VerificationTest[
+    deliveryTest[ $Failed, HTTPResponse[ "", <| "StatusCode" -> 302, "ContentType" -> "text/plain" |> ] ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-Redirect-Disables@@Tests/MCPApps.wlt:1362,1-1367,2"
+]
+
+(* A server error: delivery is disabled *)
+VerificationTest[
+    deliveryTest[
+        $Failed,
+        hostingAPIResponse[ <| "success" -> False, "code" -> 500, "tag" -> "InternalError", "result" -> Null |>, 500 ]
+    ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ServerError-Disables@@Tests/MCPApps.wlt:1370,1-1378,2"
+]
+
+(* A successful answer without a result URL is not usable either *)
+VerificationTest[
+    deliveryTest[
+        $Failed,
+        hostingAPIResponse[ <| "success" -> True, "code" -> 200, "result" -> Null |>, 200 ]
+    ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-NoResultURL-Disables@@Tests/MCPApps.wlt:1381,1-1389,2"
+]
+
+(* A client error concerns only this notebook: delivery stays enabled for later notebooks *)
+VerificationTest[
+    deliveryTest[
+        $Failed,
+        hostingAPIResponse[
+            <|
+                "success" -> False,
+                "code"    -> 400,
+                "tag"     -> "NotebookTooLarge",
+                "message" -> "The specified notebook exceeds the maximum allowed size.",
+                "result"  -> Null
+            |>,
+            400
+        ]
+    ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ClientError-StaysEnabled@@Tests/MCPApps.wlt:1392,1-1409,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Oversized Notebooks Are Not Uploaded*)
+VerificationTest[
+    deliveryTest[ $Failed, $hostingAPISuccess, "SizeLimit" -> 100 ],
+    <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 0, "DeployCloudNotebooks" -> True |>,
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TooLarge-NotUploaded@@Tests/MCPApps.wlt:1414,1-1419,2"
+]
+
+(* The size limit is the API's 10 MB *)
+VerificationTest[
+    Wolfram`AgentTools`UIResources`Private`$notebookUploadSizeLimit,
+    10^7,
+    SameTest -> Equal,
+    TestID   -> "NotebookUploadSizeLimit-10MB@@Tests/MCPApps.wlt:1422,1-1427,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Temporary Notebook File*)
+(* The notebook is uploaded from a temporary .nb file that exists only for the duration of the request and round
+   trips back to the original notebook (up to the front end's added metadata). *)
+VerificationTest[
+    Module[ { file, existed, notebook },
+        Block[
+            {
+                $CloudConnected = False,
+                Wolfram`AgentTools`Common`$deployCloudNotebooks = True,
+                Wolfram`AgentTools`UIResources`Private`notebookUploadResponse = Function[
+                    file     = #;
+                    existed  = FileExistsQ @ #;
+                    notebook = Import[ #, "NB" ];
+                    $hostingAPISuccess
+                ]
+            },
+            Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ $deliveryTestNotebook, "some-id" ]
+        ];
+        {
+            existed,
+            FileExtension @ file,
+            MatchQ[ notebook, _Notebook ],
+            ! FreeQ[ notebook, Cell[ "1 + 1", "Input", ___ ] ],
+            FileExistsQ @ file
+        }
+    ],
+    { True, "nb", True, True, False },
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFile@@Tests/MCPApps.wlt:1434,1-1460,2"
+]
+
+(* The temporary file is removed even when the upload fails *)
+VerificationTest[
+    Module[ { file },
+        Block[
+            {
+                $CloudConnected = False,
+                Wolfram`AgentTools`Common`$deployCloudNotebooks = True,
+                Wolfram`AgentTools`UIResources`Private`notebookUploadResponse = Function[
+                    file = #;
+                    Failure[ "ConnectionFailure", <| "MessageTemplate" -> "Unable to perform the request." |> ]
+                ]
+            },
+            Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ $deliveryTestNotebook, "some-id" ]
+        ];
+        { StringQ @ file, FileExistsQ @ file }
+    ],
+    { True, False },
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFileRemovedOnFailure@@Tests/MCPApps.wlt:1463,1-1481,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*notebookUploadResult*)
+(* A well-formed success answer yields the hosted URL and leaves delivery enabled *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$deployCloudNotebooks = True },
+        {
+            Wolfram`AgentTools`UIResources`Private`notebookUploadResult @ $hostingAPISuccess,
+            Wolfram`AgentTools`Common`$deployCloudNotebooks
+        }
+    ],
+    { $deliveryTestURL, True },
+    SameTest -> Equal,
+    TestID   -> "NotebookUploadResult-Success@@Tests/MCPApps.wlt:1487,1-1497,2"
+]
+
+(* A 4xx client error disables nothing *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$deployCloudNotebooks = True },
+        {
+            Wolfram`AgentTools`UIResources`Private`notebookUploadResult @ hostingAPIResponse[
+                <| "success" -> False, "code" -> 400, "tag" -> "InvalidNotebookFormat", "result" -> Null |>,
+                400
+            ],
+            Wolfram`AgentTools`Common`$deployCloudNotebooks
+        }
+    ],
+    { $Failed, True },
+    SameTest -> Equal,
+    TestID   -> "NotebookUploadResult-ClientError-StaysEnabled@@Tests/MCPApps.wlt:1500,1-1513,2"
+]
+
+(* A non-HTTPResponse (a Failure from URLRead) disables delivery *)
+VerificationTest[
+    Block[ { Wolfram`AgentTools`Common`$deployCloudNotebooks = True },
+        {
+            Wolfram`AgentTools`UIResources`Private`notebookUploadResult @ Failure[ "ConnectionFailure", <| |> ],
+            Wolfram`AgentTools`Common`$deployCloudNotebooks
+        }
+    ],
+    { $Failed, False },
+    SameTest -> Equal,
+    TestID   -> "NotebookUploadResult-NonResponse-Disables@@Tests/MCPApps.wlt:1516,1-1526,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*cloudDeployNotebook Gating*)
+(* CloudDeploy is only tried when connected to the cloud and not after an earlier failure *)
+VerificationTest[
+    Module[ { deploys = 0, result },
+        Block[
+            {
+                $CloudConnected = False,
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy = True,
+                Wolfram`AgentTools`UIResources`Private`cloudDeployTryAppearanceElements = Function[ deploys++; $Failed ]
+            },
+            result = Wolfram`AgentTools`UIResources`Private`cloudDeployNotebook[ $deliveryTestNotebook, "some-id" ];
+            { result, deploys, Wolfram`AgentTools`UIResources`Private`$useCloudDeploy }
+        ]
+    ],
+    { $Failed, 0, True },
+    SameTest -> Equal,
+    TestID   -> "CloudDeployNotebook-NotConnected-NotTried@@Tests/MCPApps.wlt:1532,1-1547,2"
+]
+
+VerificationTest[
+    Module[ { deploys = 0, result },
+        Block[
+            {
+                $CloudConnected = True,
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy = False,
+                Wolfram`AgentTools`UIResources`Private`cloudDeployTryAppearanceElements = Function[ deploys++; $Failed ]
+            },
+            result = Wolfram`AgentTools`UIResources`Private`cloudDeployNotebook[ $deliveryTestNotebook, "some-id" ];
+            { result, deploys }
+        ]
+    ],
+    { $Failed, 0 },
+    SameTest -> Equal,
+    TestID   -> "CloudDeployNotebook-AfterFailure-NotTried@@Tests/MCPApps.wlt:1549,1-1564,2"
+]
+
+(* Constructing the cloud target needs a real cloud session, so the deploying branch is exercised only when
+   connected (with CloudDeploy itself mocked); skipped otherwise. *)
+$cloudDeployNotebookTest = conditionalTest @ TrueQ @ $CloudConnected;
+
+$cloudDeployNotebookTest @ VerificationTest[
+    Module[ { targets = { }, result },
+        Block[
+            {
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy = True,
+                Wolfram`AgentTools`UIResources`Private`cloudDeployTryAppearanceElements = Function[
+                    AppendTo[ targets, #2 ];
+                    CloudObject @ $cloudDeployTestURL
+                ]
+            },
+            result = Wolfram`AgentTools`UIResources`Private`cloudDeployNotebook[ $deliveryTestNotebook, "some-id" ];
+            {
+                result,
+                MatchQ[ targets, { CloudObject[ _String? (StringEndsQ[ "/AgentTools/Notebooks/" ~~ HexadecimalCharacter.. ~~ ".nb" ]), ___ ] } ],
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy
+            }
+        ]
+    ],
+    { $cloudDeployTestURL, True, True },
+    SameTest -> Equal,
+    TestID   -> "CloudDeployNotebook-Connected-DeploysToHashedTarget@@Tests/MCPApps.wlt:1570,28-1591,2"
+]
+
+(* A CloudDeploy failure rules CloudDeploy out for the rest of the session *)
+$cloudDeployNotebookTest @ VerificationTest[
+    Module[ { result },
+        Block[
+            {
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy = True,
+                Wolfram`AgentTools`UIResources`Private`cloudDeployTryAppearanceElements = Function[ $Failed ]
+            },
+            result = Wolfram`AgentTools`UIResources`Private`cloudDeployNotebook[ $deliveryTestNotebook, "some-id" ];
+            { result, Wolfram`AgentTools`UIResources`Private`$useCloudDeploy }
+        ]
+    ],
+    { $Failed, False },
+    SameTest -> Equal,
+    TestID   -> "CloudDeployNotebook-Failure-ClearsUseCloudDeploy@@Tests/MCPApps.wlt:1594,28-1608,2"
+]
+
+(* A real deployment: the URL is in UUID form, as cloudNotebookUUID expects *)
+$cloudDeployNotebookTest @ VerificationTest[
+    Module[ { url },
+        Block[
+            {
+                Wolfram`AgentTools`Common`$deployCloudNotebooks = True,
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy = True
+            },
+            url = Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ $deliveryTestNotebook, "some-id" ];
+            {
+                StringQ @ url && StringStartsQ[ url, "https://www.wolframcloud.com/obj/" ],
+                StringMatchQ[ Wolfram`AgentTools`UIResources`Private`cloudNotebookUUID @ url, Wolfram`AgentTools`UIResources`Private`$$notebookUUID ],
+                Wolfram`AgentTools`UIResources`Private`$useCloudDeploy
+            }
+        ]
+    ],
+    { True, True, True },
+    SameTest -> Equal,
+    TestID   -> "CloudDeployNotebook-Connected-RealDeploy@@Tests/MCPApps.wlt:1611,28-1629,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*Hosting API (network-gated)*)
+(* A real upload to the hosting API. The API answers a notebook-less request with a JSON error, so anything else
+   (the login redirect of an endpoint that is not deployed yet, or no network at all) means it is unavailable and
+   the test is skipped. *)
+notebookHostingAPIAvailableQ[ ] :=
+    Module[ { response },
+        response = Quiet @ URLRead[
+            HTTPRequest[ Wolfram`AgentTools`UIResources`Private`$notebookUploadEndpoint, <| "Method" -> "POST" |> ],
+            TimeConstraint -> 10
+        ];
+        MatchQ[ response, _HTTPResponse ] &&
+            MatchQ[ Quiet @ Developer`ReadRawJSONString @ response[ "Body" ], KeyValuePattern[ "success" -> False ] ]
+    ];
+
+$notebookHostingAPITest = conditionalTest @ TrueQ @ notebookHostingAPIAvailableQ[ ];
+
+$notebookHostingAPITest @ VerificationTest[
+    Module[ { url },
+        Block[
+            {
+                $CloudConnected = False,
+                Wolfram`AgentTools`Common`$deployCloudNotebooks = True
+            },
+            url = Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ $deliveryTestNotebook, "some-id" ];
+            {
+                StringQ @ url && StringStartsQ[ url, "https://www.wolframcloud.com/obj/" ],
+                StringMatchQ[ Wolfram`AgentTools`UIResources`Private`cloudNotebookUUID @ url, Wolfram`AgentTools`UIResources`Private`$$notebookUUID ],
+                Wolfram`AgentTools`Common`$deployCloudNotebooks
+            }
+        ]
+    ],
+    { True, True, True },
+    SameTest -> Equal,
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-RealUpload@@Tests/MCPApps.wlt:1649,27-1667,2"
+]
+
+(* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*makeNotebookUIResult*)
 
@@ -1300,7 +1704,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult@@Tests/MCPApps.wlt:1272,1-1304,2"
+    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult@@Tests/MCPApps.wlt:1676,1-1708,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1329,7 +1733,7 @@ VerificationTest[
         "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable@@Tests/MCPApps.wlt:1312,1-1333,2"
+    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable@@Tests/MCPApps.wlt:1716,1-1737,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1343,7 +1747,7 @@ VerificationTest[
     ],
     "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e?syntaxMethod=editor",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-AppendsParameter@@Tests/MCPApps.wlt:1340,1-1347,2"
+    TestID   -> "NotebookEmbedURL-AppendsParameter@@Tests/MCPApps.wlt:1744,1-1751,2"
 ]
 
 (* A URL that already has a query string gets the parameter appended with & *)
@@ -1351,7 +1755,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "https://www.wolframcloud.com/obj/x?a=1" ],
     "https://www.wolframcloud.com/obj/x?a=1&syntaxMethod=editor",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-AppendsToExistingQuery@@Tests/MCPApps.wlt:1350,1-1355,2"
+    TestID   -> "NotebookEmbedURL-AppendsToExistingQuery@@Tests/MCPApps.wlt:1754,1-1759,2"
 ]
 
 (* Inline serialized notebooks are not URLs and pass through unchanged *)
@@ -1359,7 +1763,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "Notebook[{Cell[\"1 + 1\", \"Input\"]}]" ],
     "Notebook[{Cell[\"1 + 1\", \"Input\"]}]",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-InlinePassthrough@@Tests/MCPApps.wlt:1358,1-1363,2"
+    TestID   -> "NotebookEmbedURL-InlinePassthrough@@Tests/MCPApps.wlt:1762,1-1767,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1371,7 +1775,7 @@ VerificationTest[
     ],
     "e0f29bea-667b-4780-b36b-59de225e660e",
     SameTest -> MatchQ,
-    TestID   -> "CloudNotebookUUID-ExtractsUUID@@Tests/MCPApps.wlt:1368,1-1375,2"
+    TestID   -> "CloudNotebookUUID-ExtractsUUID@@Tests/MCPApps.wlt:1772,1-1779,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1384,7 +1788,7 @@ VerificationTest[
     ],
     $Failed,
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-DeployFailed@@Tests/MCPApps.wlt:1380,1-1388,2"
+    TestID   -> "MakeNotebookUIResult-DeployFailed@@Tests/MCPApps.wlt:1784,1-1792,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1406,7 +1810,7 @@ VerificationTest[
         "Notebook[{Cell[\"1 + 1\", \"Input\"]}]"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-InlineNoMarker@@Tests/MCPApps.wlt:1395,1-1410,2"
+    TestID   -> "MakeNotebookUIResult-InlineNoMarker@@Tests/MCPApps.wlt:1799,1-1814,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1422,7 +1826,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1419,1-1426,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1823,1-1830,2"
 ]
 
 VerificationTest[
@@ -1431,7 +1835,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1428,1-1435,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1832,1-1839,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1443,7 +1847,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1440,1-1447,2"
+    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1844,1-1851,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1455,7 +1859,7 @@ VerificationTest[
     ],
     RowBox @ { "1", "+", "1" },
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1452,1-1459,2"
+    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1856,1-1863,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1469,7 +1873,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1464,1-1473,2"
+    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1868,1-1877,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1492,7 +1896,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1487,1-1496,2"
+    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1891,1-1900,2"
 ]
 
 VerificationTest[
@@ -1503,7 +1907,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1498,1-1507,2"
+    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1902,1-1911,2"
 ]
 
 VerificationTest[
@@ -1514,7 +1918,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1509,1-1518,2"
+    TestID   -> "NotebookViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1913,1-1922,2"
 ]
 
 (* The eval-blocked iframe fallback can't be auto-sized, so each viewer must let the user
@@ -1533,7 +1937,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-IframeFallbackResizable@@Tests/MCPApps.wlt:1523,1-1537,2"
+    TestID   -> "NotebookViewers-IframeFallbackResizable@@Tests/MCPApps.wlt:1927,1-1941,2"
 ]
 
 (* The resize drag's move/end listeners live on window, so each viewer must scope them to the
@@ -1552,7 +1956,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-ResizeDragScopedToPointer@@Tests/MCPApps.wlt:1542,1-1556,2"
+    TestID   -> "NotebookViewers-ResizeDragScopedToPointer@@Tests/MCPApps.wlt:1946,1-1960,2"
 ]
 
 (* The embedder path must remain for hosts whose CSP does permit eval (fit-to-content sizing),
@@ -1570,7 +1974,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1560,1-1574,2"
+    TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1964,1-1978,2"
 ]
 
 (* Under strict CSP the fallback frames the notebook URL directly, so each viewer must
@@ -1590,7 +1994,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist@@Tests/MCPApps.wlt:1579,1-1594,2"
+    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist@@Tests/MCPApps.wlt:1983,1-1998,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
