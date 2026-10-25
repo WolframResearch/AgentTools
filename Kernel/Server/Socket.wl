@@ -299,8 +299,13 @@ startMCPSocketServer[ server_, options_Association ] := Enclose[
                 ];
 
                 (* One recurring task per server writes keep-alives and notices clients that left. Never one-shot tasks:
-                   bursts of them can deadlock the 15.0 kernel scheduler. *)
-                task = With[ { i = id }, SessionSubmit @ ScheduledTask[ socketMaintenanceTask @ i, interval ] ];
+                   bursts of them can deadlock the 15.0 kernel scheduler. A server without its task must not run, so a
+                   task that could not be submitted fails the start, which stops the server again. *)
+                task = ConfirmMatch[
+                    With[ { i = id }, SessionSubmit @ ScheduledTask[ socketMaintenanceTask @ i, interval ] ],
+                    _TaskObject,
+                    "Task"
+                ];
                 PreemptProtect @ If[ KeyExistsQ[ state`$servers, id ],
                     state`$servers[ id, "Task" ] = task,
                     Quiet @ TaskRemove @ task
@@ -428,16 +433,28 @@ validateKeepAliveInterval // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*socketAuthentication*)
-(* Automatic generates a token, a string is the token itself, None disables authentication, and anything else is a
-   function that decides from the bearer token (see authorizedQ). A token comes with its digest, which is all that the
-   server record keeps of it. The message for an invalid token does not show it. *)
+(* Automatic generates a token, a string is the token itself, None disables authentication, and a function decides from
+   the bearer token (see authorizedQ). A token comes with its digest, which is all that the server record keeps of it.
+   Values that cannot be functions (e.g. False, meant to disable authentication) are rejected rather than taken as a
+   function that refuses every request. The message for an invalid value does not show it. *)
 socketAuthentication // beginDefinition;
 socketAuthentication[ Automatic ] := tokenAuthentication @ generateSocketToken[ ];
 socketAuthentication[ None ] := <| "Type" -> "None" |>;
 socketAuthentication[ token: $$tokenString ] := tokenAuthentication @ token;
-socketAuthentication[ _String ] := throwFailure[ "InvalidSocketServerAuthentication" ];
-socketAuthentication[ function_ ] := <| "Type" -> "Function", "Function" -> function |>;
+socketAuthentication[ function_? authenticationFunctionQ ] := <| "Type" -> "Function", "Function" -> function |>;
+socketAuthentication[ _ ] := throwFailure[ "InvalidSocketServerAuthentication" ];
 socketAuthentication // endDefinition;
+
+
+(* Whether a value can be an authentication function: a symbol (other than True, False and Null) or a compound
+   expression such as a pure function or an operator form, but not a list or another atom. *)
+authenticationFunctionQ // beginDefinition;
+authenticationFunctionQ // Attributes = { HoldAllComplete };
+authenticationFunctionQ[ True | False | Null ] := False;
+authenticationFunctionQ[ _Symbol ] := True;
+authenticationFunctionQ[ _List | _Missing | _Failure ] := False;
+authenticationFunctionQ[ expr_ ] := ! AtomQ @ Unevaluated @ expr;
+authenticationFunctionQ // endDefinition;
 
 
 (* The new server's token is not registered yet (see catchSocket). *)
@@ -603,7 +620,7 @@ stopSocketServer[ id_String, listener_ ] :=
                    (releaseConnection), and handler events that are still due find no server. *)
                 KeyDropFrom[ state`$servers, id ],
                 Scan[
-                    finishSocketJob[ #, rejectionResponse[ state`$jobs[ # ], $serverStoppedText ] ] &,
+                    finishSocketJob[ #, jobErrorResponse[ state`$jobs[ # ], $serverStoppedText ] ] &,
                     Keys @ serverJobs @ id
                 ],
                 removeServerResources[ id, server[ "Task" ], server[ "Listener" ] ]
@@ -1334,19 +1351,14 @@ answerSocketRequest[ server_, sock_, request_, method_, message_, req_ ] :=
 answerSocketRequest // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*internalErrorResponse*)
-internalErrorResponse // beginDefinition;
-internalErrorResponse[ req_Association ] := <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>;
-internalErrorResponse // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*withSocketRequestState*)
 (* Evaluates a request with every server session global bound, so that nothing it does leaks into the kernel:
    handleMethod["initialize"] sets $clientName, $clientSupportsUI and $clientSupportsRoots, and tools read the tool
-   options. UI resources (MCP Apps) and roots (server-to-client requests over stdout) stay disabled, and $Messages is
-   Blocked as well, since a front end kernel must never lose its messages. *)
+   options. UI resources (MCP Apps) and roots (server-to-client requests over stdout) stay disabled: mcpAppsEnabledQ is
+   False too, since handleMethod["initialize"] sets $clientSupportsUI from it, and initialize would otherwise advertise
+   the MCP Apps extension to clients that support it. $Messages is Blocked as well, since a front end kernel must never
+   lose its messages. *)
 withSocketRequestState // beginDefinition;
 withSocketRequestState // Attributes = { HoldRest };
 
@@ -1361,6 +1373,7 @@ withSocketRequestState[ server_Association, eval_ ] :=
                 $clientName               = None,
                 $clientSupportsUI         = False,
                 $clientSupportsRoots      = False,
+                mcpAppsEnabledQ           = False &,
                 $logFile                  = None,
                 $toolList                 = serverState[ "ToolList"     ],
                 $llmTools                 = serverState[ "LLMTools"     ],
@@ -1593,7 +1606,7 @@ failSocketJob // beginDefinition;
 failSocketJob[ jobID_String ] :=
     PreemptProtect @ With[ { job = Lookup[ state`$jobs, jobID, None ] },
         If[ AssociationQ @ job,
-            finishSocketJob[ jobID, internalErrorResponse @ <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |> ]
+            finishSocketJob[ jobID, internalErrorResponse @ jobRequest @ job ]
         ];
         Null
     ];
@@ -1630,7 +1643,7 @@ claimSocketJob // endDefinition;
 evaluateSocketJob // beginDefinition;
 
 evaluateSocketJob[ server_Association, job_Association ] :=
-    With[ { req = <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |> },
+    With[ { req = jobRequest @ job },
         withSocketRequestState[
             server,
             CheckAbort[
@@ -1649,20 +1662,37 @@ evaluateSocketJob // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*abortedResponse*)
 abortedResponse // beginDefinition;
-abortedResponse[ job_Association ] := abortedResponse[ job[ "Method" ], <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |> ];
-abortedResponse[ "tools/call" , req_ ] := toolErrorResponse[ req, $abortedToolText ];
-abortedResponse[ "prompts/get", req_ ] := <| req, "error" -> <| "code" -> -32603, "message" -> $abortedPromptText |> |>;
+abortedResponse[ job_Association ] := abortedResponse[ job[ "Method" ], jobRequest @ job ];
+
+abortedResponse[ method_String, req_Association ] :=
+    jobErrorResponse[ method, req, If[ method === "tools/call", $abortedToolText, $abortedPromptText ] ];
+
 abortedResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
-(*toolErrorResponse*)
-toolErrorResponse // beginDefinition;
+(*jobErrorResponse*)
+(* The response that ends a deferred call with an error text (aborted, rejected, server stopped, or not encodable): a
+   tool result with "isError" -> True for tools/call, so that the model sees the text, or a JSON-RPC error for
+   prompts/get. *)
+jobErrorResponse // beginDefinition;
 
-toolErrorResponse[ req_Association, text_String ] :=
+jobErrorResponse[ job_Association, text_String ] :=
+    jobErrorResponse[ job[ "Method" ], jobRequest @ job, text ];
+
+jobErrorResponse[ "tools/call", req_Association, text_String ] :=
     <| req, "result" -> <| "content" -> { <| "type" -> "text", "text" -> text |> }, "isError" -> True |> |>;
 
-toolErrorResponse // endDefinition;
+jobErrorResponse[ _String, req_Association, text_String ] :=
+    <| req, "error" -> <| "code" -> -32603, "message" -> text |> |>;
+
+jobErrorResponse // endDefinition;
+
+
+(* The JSON-RPC envelope ("jsonrpc" and "id") of the response to a job's request. *)
+jobRequest // beginDefinition;
+jobRequest[ job_Association ] := <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |>;
+jobRequest // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -1674,7 +1704,7 @@ rejectSocketJob // beginDefinition;
 rejectSocketJob[ jobID_String, text_String ] :=
     PreemptProtect @ With[ { job = Lookup[ state`$jobs, jobID, None ] },
         If[ AssociationQ @ job,
-            Replace[ finishSocketJob[ jobID, rejectionResponse[ job, text ] ], Except[ _Association ] -> Null ],
+            Replace[ finishSocketJob[ jobID, jobErrorResponse[ job, text ] ], Except[ _Association ] -> Null ],
             Null
         ]
     ];
@@ -1684,21 +1714,6 @@ rejectSocketJob[ jobID_String, text_ ] := rejectSocketJob[ jobID, TextString @ t
 rejectSocketJob[ jobID_String ] := rejectSocketJob[ jobID, "The request was rejected." ];
 
 rejectSocketJob // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*rejectionResponse*)
-rejectionResponse // beginDefinition;
-
-rejectionResponse[ job_Association, text_String ] :=
-    With[ { req = <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |> },
-        If[ job[ "Method" ] === "tools/call",
-            toolErrorResponse[ req, text ],
-            <| req, "error" -> <| "code" -> -32603, "message" -> text |> |>
-        ]
-    ];
-
-rejectionResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -1780,26 +1795,13 @@ encodeJobOutcome[ job_Association, response_Association ] :=
     encodeJSONRPCResponse[
         If[ TrueQ @ job[ "Streaming" ], "text/event-stream", job[ "ContentType" ] ],
         response,
-        encodingErrorResponse @ job
+        jobErrorResponse[ job, $encodingFailedText ]
     ];
 
 encodeJobOutcome[ _Association, outcome: Missing[ "Cancelled" | "Disconnected" ] ] :=
     { outcome, None };
 
 encodeJobOutcome // endDefinition;
-
-
-encodingErrorResponse // beginDefinition;
-
-encodingErrorResponse[ job_Association ] :=
-    With[ { req = <| "jsonrpc" -> "2.0", "id" -> job[ "RequestID" ] |> },
-        If[ job[ "Method" ] === "tools/call",
-            toolErrorResponse[ req, $encodingFailedText ],
-            <| req, "error" -> <| "code" -> -32603, "message" -> $encodingFailedText |> |>
-        ]
-    ];
-
-encodingErrorResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -1827,7 +1829,11 @@ writeJobOutcome // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*releaseConnection*)
-(* Frees the connection that waited for a job and reads the requests that arrived on it in the meantime. *)
+(* Frees the connection that waited for a job and reads the requests that arrived on it in the meantime. The held bytes
+   are read chunk by chunk, as the handler received them (at most 8 KB each), rather than joined: framing rescans the
+   unread part of its buffer for every request, which would take quadratic time for many requests held behind a call.
+   Once a chunk makes the connection wait for another call, the next chunks are held again (feedConnection), and once
+   it closes the connection, they are dropped. *)
 releaseConnection // beginDefinition;
 
 releaseConnection[ job_Association, outcome_ ] :=
@@ -1838,7 +1844,10 @@ releaseConnection[ job_Association, outcome_ ] :=
         If[ AssociationQ @ conn && conn[ "Busy" ] === job[ "ID" ],
             If[ AssociationQ @ server && TrueQ @ job[ "KeepAlive" ] && outcome =!= Missing[ "Disconnected" ],
                 state`$connections[ sock ] = <| conn, "Busy" -> None, "Held" -> { } |>;
-                If[ conn[ "Held" ] =!= { }, receiveBytes[ server, sock, Join @@ conn[ "Held" ] ] ],
+                Scan[
+                    If[ KeyExistsQ[ state`$connections, sock ], receiveBytes[ server, sock, # ] ] &,
+                    conn[ "Held" ]
+                ],
                 KeyDropFrom[ state`$connections, sock ]
             ]
         ]
@@ -2189,9 +2198,10 @@ endEventStream // endDefinition;
 (* ::Subsubsection::Closed:: *)
 (*connectionHeader*)
 (* Without the Keep-Alive hint, Node's fetch drops idle connections after about four seconds. Persistent connections
-   matter: in 15.0, every accepted connection leaks a few file descriptors. *)
+   matter: in 15.0, every accepted connection leaks a few file descriptors. "Connection: keep-alive" is what tells an
+   HTTP/1.0 client that asked for a persistent connection that it has one (HTTP/1.1 connections are persistent anyway). *)
 connectionHeader // beginDefinition;
-connectionHeader[ True  ] := "Keep-Alive: timeout=" <> ToString @ $keepAliveTimeout <> "\r\n";
+connectionHeader[ True  ] := "Connection: keep-alive\r\nKeep-Alive: timeout=" <> ToString @ $keepAliveTimeout <> "\r\n";
 connectionHeader[ _     ] := "Connection: close\r\n";
 connectionHeader // endDefinition;
 

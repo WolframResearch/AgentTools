@@ -643,12 +643,42 @@ VerificationTest[
     TestID   -> "Start-InvalidOptions@@Tests/SocketServer.wlt:626,1-644,2"
 ]
 
+(* Values that cannot be authentication functions are rejected, rather than starting a server that refuses every
+   request (False was meant to switch authentication off). *)
+VerificationTest[
+    StartMCPSocketServer[ $socketTestServerObject, "Authentication" -> # ] & /@ { False, { "token" } },
+    { _Failure, _Failure },
+    { StartMCPSocketServer::InvalidSocketServerAuthentication, StartMCPSocketServer::InvalidSocketServerAuthentication },
+    SameTest -> MatchQ,
+    TestID   -> "Start-InvalidAuthentication@@Tests/SocketServer.wlt:648,1-654,2"
+]
+
+(* A maintenance task that cannot be submitted fails the start, which stops the server again: it would otherwise run
+   without keep-alives, time-outs, or the cleanup of calls whose clients left. *)
+VerificationTest[
+    Module[ { servers, sockets, logs, result },
+        servers = Keys @ Wolfram`AgentToolsState`SocketServer`$servers;
+        sockets = Length @ Sockets[ ];
+        logs    = CreateDirectory[ ];
+        result  = Block[
+            { SessionSubmit = $Failed &, Wolfram`AgentTools`Common`Private`$internalFailureLogDirectory = logs },
+            StartMCPSocketServer @ $socketTestServerObject
+        ];
+        DeleteDirectory[ logs, DeleteContents -> True ];
+        { result, Complement[ Keys @ Wolfram`AgentToolsState`SocketServer`$servers, servers ], Length @ Sockets[ ] === sockets }
+    ],
+    { Failure[ "AgentTools::Internal", _ ], { }, True },
+    { General::AgentToolsInternal },
+    SameTest -> MatchQ,
+    TestID   -> "Start-TaskNotSubmitted@@Tests/SocketServer.wlt:658,1-674,2"
+]
+
 VerificationTest[
     StartMCPSocketServer[ "NoSuchServer" <> CreateUUID[ ] ],
     _Failure,
     { StartMCPSocketServer::MCPServerNotFound },
     SameTest -> MatchQ,
-    TestID   -> "Start-UnknownServerName@@Tests/SocketServer.wlt:646,1-652,2"
+    TestID   -> "Start-UnknownServerName@@Tests/SocketServer.wlt:676,1-682,2"
 ]
 
 VerificationTest[
@@ -656,7 +686,7 @@ VerificationTest[
     _Failure,
     { StartMCPSocketServer::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "Start-InvalidArguments@@Tests/SocketServer.wlt:654,1-660,2"
+    TestID   -> "Start-InvalidArguments@@Tests/SocketServer.wlt:684,1-690,2"
 ]
 
 (* Messages and failures never show an authentication token: not an invalid one, not one among invalid arguments. *)
@@ -676,7 +706,7 @@ VerificationTest[
     ],
     { { _Failure, _Failure, _Failure, _Failure }, True, True },
     SameTest -> MatchQ,
-    TestID   -> "Secrets-NotInMessages@@Tests/SocketServer.wlt:663,1-680,2"
+    TestID   -> "Secrets-NotInMessages@@Tests/SocketServer.wlt:693,1-710,2"
 ]
 
 (* A server on a chosen port with a chosen path, stopped with DeleteObject. *)
@@ -699,7 +729,7 @@ VerificationTest[
     ],
     { True, True, <| "jsonrpc" -> "2.0", "id" -> 1, "result" -> <| |> |>, Null, False, Null, True },
     SameTest -> MatchQ,
-    TestID   -> "Start-PortAndPath-Stop@@Tests/SocketServer.wlt:683,1-703,2"
+    TestID   -> "Start-PortAndPath-Stop@@Tests/SocketServer.wlt:713,1-733,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -711,7 +741,7 @@ VerificationTest[
     ],
     { 401, "Bearer" },
     SameTest -> MatchQ,
-    TestID   -> "Auth-Automatic-Missing-401@@Tests/SocketServer.wlt:708,1-715,2"
+    TestID   -> "Auth-Automatic-Missing-401@@Tests/SocketServer.wlt:738,1-745,2"
 ]
 
 VerificationTest[
@@ -722,7 +752,7 @@ VerificationTest[
     },
     { 401, 401, 200 },
     SameTest -> MatchQ,
-    TestID   -> "Auth-Automatic-Tokens@@Tests/SocketServer.wlt:717,1-726,2"
+    TestID   -> "Auth-Automatic-Tokens@@Tests/SocketServer.wlt:747,1-756,2"
 ]
 
 VerificationTest[
@@ -739,7 +769,7 @@ VerificationTest[
     ],
     { None, 200, 200, <| |> },
     SameTest -> MatchQ,
-    TestID   -> "Auth-None@@Tests/SocketServer.wlt:728,1-743,2"
+    TestID   -> "Auth-None@@Tests/SocketServer.wlt:758,1-773,2"
 ]
 
 VerificationTest[
@@ -755,7 +785,7 @@ VerificationTest[
     ],
     { "my-token", 200, 401 },
     SameTest -> MatchQ,
-    TestID   -> "Auth-String@@Tests/SocketServer.wlt:745,1-759,2"
+    TestID   -> "Auth-String@@Tests/SocketServer.wlt:775,1-789,2"
 ]
 
 (* A function decides from the bearer token, or None without one; anything but True refuses the request (including a
@@ -778,7 +808,7 @@ VerificationTest[
     ],
     { { None, 200, 401, 401, 401 }, { "good", "other", None, "throw" } },
     SameTest -> MatchQ,
-    TestID   -> "Auth-Function@@Tests/SocketServer.wlt:763,1-782,2"
+    TestID   -> "Auth-Function@@Tests/SocketServer.wlt:793,1-812,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -793,7 +823,7 @@ VerificationTest[
     },
     { 404, 404, 200, 200 },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Path@@Tests/SocketServer.wlt:787,1-797,2"
+    TestID   -> "Validation-Path@@Tests/SocketServer.wlt:817,1-827,2"
 ]
 
 VerificationTest[
@@ -805,7 +835,7 @@ VerificationTest[
     ],
     ConstantArray[ { 405, "POST" }, 4 ],
     SameTest -> MatchQ,
-    TestID   -> "Validation-Method-405@@Tests/SocketServer.wlt:799,1-809,2"
+    TestID   -> "Validation-Method-405@@Tests/SocketServer.wlt:829,1-839,2"
 ]
 
 VerificationTest[
@@ -817,7 +847,7 @@ VerificationTest[
     },
     { 200, 403, 403, 403 },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Host-403@@Tests/SocketServer.wlt:811,1-821,2"
+    TestID   -> "Validation-Host-403@@Tests/SocketServer.wlt:841,1-851,2"
 ]
 
 VerificationTest[
@@ -828,7 +858,7 @@ VerificationTest[
     },
     { 200, 403, 403 },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Origin-403@@Tests/SocketServer.wlt:823,1-832,2"
+    TestID   -> "Validation-Origin-403@@Tests/SocketServer.wlt:853,1-862,2"
 ]
 
 (* The Origin is checked before the token, so a cross-site request learns nothing about it. *)
@@ -836,7 +866,7 @@ VerificationTest[
     socketTestStatus[ $socketServer, socketTestBody[ "ping", 1 ], "Headers" -> { "Origin" -> "http://evil.example", "Authorization" -> None } ],
     403,
     SameTest -> MatchQ,
-    TestID   -> "Validation-Origin-BeforeAuth@@Tests/SocketServer.wlt:835,1-840,2"
+    TestID   -> "Validation-Origin-BeforeAuth@@Tests/SocketServer.wlt:865,1-870,2"
 ]
 
 VerificationTest[
@@ -847,7 +877,7 @@ VerificationTest[
     },
     { 406, 200, 200 },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Accept-406@@Tests/SocketServer.wlt:842,1-851,2"
+    TestID   -> "Validation-Accept-406@@Tests/SocketServer.wlt:872,1-881,2"
 ]
 
 VerificationTest[
@@ -857,7 +887,7 @@ VerificationTest[
     ],
     { { 400, -32700 }, { 400, -32700 }, { 400, -32600 }, { 400, -32600 } },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Body-400@@Tests/SocketServer.wlt:853,1-861,2"
+    TestID   -> "Validation-Body-400@@Tests/SocketServer.wlt:883,1-891,2"
 ]
 
 VerificationTest[
@@ -869,7 +899,7 @@ VerificationTest[
     },
     { 400, 200, 200 },
     SameTest -> MatchQ,
-    TestID   -> "Validation-ProtocolVersion-400@@Tests/SocketServer.wlt:863,1-873,2"
+    TestID   -> "Validation-ProtocolVersion-400@@Tests/SocketServer.wlt:893,1-903,2"
 ]
 
 (* Requests that cannot be framed get an error, and the connection is closed. *)
@@ -893,7 +923,7 @@ VerificationTest[
     ],
     { { 400, "close" }, { 501, "close" }, { 413, "close" }, { 431, "close" } },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Framing-Errors@@Tests/SocketServer.wlt:876,1-897,2"
+    TestID   -> "Validation-Framing-Errors@@Tests/SocketServer.wlt:906,1-927,2"
 ]
 
 (* A request that its head refuses is answered at once, before its body arrives, and its connection is closed: a client
@@ -923,7 +953,7 @@ VerificationTest[
     ],
     { { 403, "close" }, { 403, "close" }, { 401, "close" }, { 401, "close" }, { 406, "close" } },
     SameTest -> MatchQ,
-    TestID   -> "Validation-HeadRefusedBeforeBody@@Tests/SocketServer.wlt:901,1-927,2"
+    TestID   -> "Validation-HeadRefusedBeforeBody@@Tests/SocketServer.wlt:931,1-957,2"
 ]
 
 (* Refusals close the connection, so a client that sends requests without reading the responses cannot make the server
@@ -939,7 +969,7 @@ VerificationTest[
     ],
     { 404, "close", "" },
     SameTest -> MatchQ,
-    TestID   -> "Validation-RefusalClosesConnection@@Tests/SocketServer.wlt:931,1-943,2"
+    TestID   -> "Validation-RefusalClosesConnection@@Tests/SocketServer.wlt:961,1-973,2"
 ]
 
 (* OpenCode probes the endpoint with GET on a connection that it then uses again: the 405 keeps the connection of a client
@@ -963,7 +993,7 @@ VerificationTest[
     ],
     { 405, "timeout=300", 1, 405, "close" },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Method-405-KeepAlive@@Tests/SocketServer.wlt:947,1-967,2"
+    TestID   -> "Validation-Method-405-KeepAlive@@Tests/SocketServer.wlt:977,1-997,2"
 ]
 
 (* Errors in the body close the connection too. *)
@@ -973,7 +1003,7 @@ VerificationTest[
     ],
     { 400, "close" },
     SameTest -> MatchQ,
-    TestID   -> "Validation-Body-400-Close@@Tests/SocketServer.wlt:970,1-977,2"
+    TestID   -> "Validation-Body-400-Close@@Tests/SocketServer.wlt:1000,1-1007,2"
 ]
 
 (* A message with an id that is neither a request nor a response gets an error with that id, since its client may be
@@ -992,7 +1022,7 @@ VerificationTest[
     ],
     { { 400, 7, -32600 }, { 400, 8, -32600 }, { 400, "r", -32600 }, { 400, Null, -32600 } },
     SameTest -> MatchQ,
-    TestID   -> "Validation-InvalidMessage-32600@@Tests/SocketServer.wlt:981,1-996,2"
+    TestID   -> "Validation-InvalidMessage-32600@@Tests/SocketServer.wlt:1011,1-1026,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1015,7 +1045,7 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "Initialize@@Tests/SocketServer.wlt:1001,1-1019,2"
+    TestID   -> "Initialize@@Tests/SocketServer.wlt:1031,1-1049,2"
 ]
 
 (* The server is stateless: no session ID. *)
@@ -1023,7 +1053,28 @@ VerificationTest[
     KeyExistsQ[ $socketInitialize[ "Headers" ], "mcp-session-id" ],
     False,
     SameTest -> MatchQ,
-    TestID   -> "Initialize-NoSessionID@@Tests/SocketServer.wlt:1022,1-1027,2"
+    TestID   -> "Initialize-NoSessionID@@Tests/SocketServer.wlt:1052,1-1057,2"
+]
+
+(* MCP Apps are not supported: initialize never advertises the UI extension, not even to a client that supports it. *)
+VerificationTest[
+    socketTestJSON[
+        $socketServer,
+        socketTestBody[
+            "initialize",
+            0,
+            <|
+                "protocolVersion" -> "2025-06-18",
+                "clientInfo"      -> <| "name" -> "ui-client" |>,
+                "capabilities"    -> <|
+                    "extensions" -> <| "io.modelcontextprotocol/ui" -> <| "mimeTypes" -> { "text/html;profile=mcp-app" } |> |>
+                |>
+            |>
+        ]
+    ][ "result", "capabilities" ],
+    KeyValuePattern[ "tools" -> _Association ]? (! KeyExistsQ[ #, "extensions" ] &),
+    SameTest -> MatchQ,
+    TestID   -> "Initialize-NoMCPAppsExtension@@Tests/SocketServer.wlt:1060,1-1078,2"
 ]
 
 (* Requests leave the kernel's state alone: initialize sets the client name, capabilities and (for most clients, in the
@@ -1047,7 +1098,7 @@ VerificationTest[
     ] ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "GlobalState-Unchanged@@Tests/SocketServer.wlt:1031,1-1051,2"
+    TestID   -> "GlobalState-Unchanged@@Tests/SocketServer.wlt:1082,1-1102,2"
 ]
 
 VerificationTest[
@@ -1059,7 +1110,7 @@ VerificationTest[
     },
     ConstantArray[ <| "Status" -> 202, "Body" -> "" |>, 3 ],
     SameTest -> MatchQ,
-    TestID   -> "Notifications-202@@Tests/SocketServer.wlt:1053,1-1063,2"
+    TestID   -> "Notifications-202@@Tests/SocketServer.wlt:1104,1-1114,2"
 ]
 
 (* A request without an id (or with a null id) owes no response, and it is not evaluated: a tools/call never runs in the
@@ -1084,35 +1135,35 @@ VerificationTest[
     ],
     { { 202, 202, False }, { "one" }, 1 },
     SameTest -> MatchQ,
-    TestID   -> "Notifications-RequestWithoutID-NotEvaluated@@Tests/SocketServer.wlt:1067,1-1088,2"
+    TestID   -> "Notifications-RequestWithoutID-NotEvaluated@@Tests/SocketServer.wlt:1118,1-1139,2"
 ]
 
 VerificationTest[
     socketTestJSON[ $socketServer, socketTestBody[ "ping", "p" ] ],
     <| "jsonrpc" -> "2.0", "id" -> "p", "result" -> <| |> |>,
     SameTest -> MatchQ,
-    TestID   -> "Ping@@Tests/SocketServer.wlt:1090,1-1095,2"
+    TestID   -> "Ping@@Tests/SocketServer.wlt:1141,1-1146,2"
 ]
 
 VerificationTest[
     socketTestJSON[ $socketServer, socketTestBody[ "tools/list", 1 ] ][[ "result", "tools", All, "name" ]],
     { "Echo", "Aborter", "Sleep" },
     SameTest -> MatchQ,
-    TestID   -> "ToolsList@@Tests/SocketServer.wlt:1097,1-1102,2"
+    TestID   -> "ToolsList@@Tests/SocketServer.wlt:1148,1-1153,2"
 ]
 
 VerificationTest[
     socketTestJSON[ $socketServer, socketTestBody[ "prompts/list", 1 ] ][[ "result", "prompts", All, "name" ]],
     { "Greeting" },
     SameTest -> MatchQ,
-    TestID   -> "PromptsList@@Tests/SocketServer.wlt:1104,1-1109,2"
+    TestID   -> "PromptsList@@Tests/SocketServer.wlt:1155,1-1160,2"
 ]
 
 VerificationTest[
     socketTestJSON[ $socketServer, socketTestBody[ "no/such/method", 1 ] ][ "error", "code" ],
     -32601,
     SameTest -> MatchQ,
-    TestID   -> "UnknownMethod-32601@@Tests/SocketServer.wlt:1111,1-1116,2"
+    TestID   -> "UnknownMethod-32601@@Tests/SocketServer.wlt:1162,1-1167,2"
 ]
 
 (* With the default evaluation function, tool calls are evaluated in the handler and answered as JSON. *)
@@ -1126,14 +1177,14 @@ VerificationTest[
         <| "jsonrpc" -> "2.0", "id" -> 5, "result" -> <| "content" -> { <| "type" -> "text", "text" -> "h\[Alpha]llo \:2713" |> }, "isError" -> False |> |>
     },
     SameTest -> MatchQ,
-    TestID   -> "ToolsCall-Immediate@@Tests/SocketServer.wlt:1119,1-1130,2"
+    TestID   -> "ToolsCall-Immediate@@Tests/SocketServer.wlt:1170,1-1181,2"
 ]
 
 VerificationTest[
     socketTestJSON[ $socketServer, socketTestBody[ "tools/call", 6, <| "name" -> "Aborter", "arguments" -> <| |> |> ] ][ "result" ],
     <| "content" -> { <| "type" -> "text", "text" -> "The tool call was aborted by the user." |> }, "isError" -> True |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolsCall-Immediate-Abort@@Tests/SocketServer.wlt:1132,1-1137,2"
+    TestID   -> "ToolsCall-Immediate-Abort@@Tests/SocketServer.wlt:1183,1-1188,2"
 ]
 
 VerificationTest[
@@ -1144,7 +1195,7 @@ VerificationTest[
     },
     { True, -32602, -32602 },
     SameTest -> MatchQ,
-    TestID   -> "ToolsCall-Invalid@@Tests/SocketServer.wlt:1139,1-1148,2"
+    TestID   -> "ToolsCall-Invalid@@Tests/SocketServer.wlt:1190,1-1199,2"
 ]
 
 VerificationTest[
@@ -1154,7 +1205,7 @@ VerificationTest[
     },
     { { <| "role" -> "user", "content" -> <| "type" -> "text", "text" -> "Hello!" |> |> }, -32602 },
     SameTest -> MatchQ,
-    TestID   -> "PromptsGet@@Tests/SocketServer.wlt:1150,1-1158,2"
+    TestID   -> "PromptsGet@@Tests/SocketServer.wlt:1201,1-1209,2"
 ]
 
 (* A client that only accepts event streams gets its response as a single event. *)
@@ -1169,7 +1220,7 @@ VerificationTest[
         <| "jsonrpc" -> "2.0", "id" -> 1, "result" -> <| |> |>
     },
     SameTest -> MatchQ,
-    TestID   -> "EventStreamOnly-Immediate@@Tests/SocketServer.wlt:1161,1-1173,2"
+    TestID   -> "EventStreamOnly-Immediate@@Tests/SocketServer.wlt:1212,1-1224,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1190,7 +1241,7 @@ VerificationTest[
     ],
     { 1, 2, 3 },
     SameTest -> MatchQ,
-    TestID   -> "Framing-KeepAlive@@Tests/SocketServer.wlt:1180,1-1194,2"
+    TestID   -> "Framing-KeepAlive@@Tests/SocketServer.wlt:1231,1-1245,2"
 ]
 
 (* Pipelined requests in a single write are answered in order *)
@@ -1204,7 +1255,7 @@ VerificationTest[
     ],
     { 1, 2, 3 },
     SameTest -> MatchQ,
-    TestID   -> "Framing-Pipelining@@Tests/SocketServer.wlt:1197,1-1208,2"
+    TestID   -> "Framing-Pipelining@@Tests/SocketServer.wlt:1248,1-1259,2"
 ]
 
 (* A request that arrives one byte at a time *)
@@ -1219,7 +1270,7 @@ VerificationTest[
     ],
     "\[Alpha]\[Beta]",
     SameTest -> MatchQ,
-    TestID   -> "Framing-ByteByByte@@Tests/SocketServer.wlt:1211,1-1223,2"
+    TestID   -> "Framing-ByteByByte@@Tests/SocketServer.wlt:1262,1-1274,2"
 ]
 
 (* A UTF-8 body split inside a character, across two chunks *)
@@ -1237,7 +1288,7 @@ VerificationTest[
     ],
     "x\[Alpha]y",
     SameTest -> MatchQ,
-    TestID   -> "Framing-SplitUTF8@@Tests/SocketServer.wlt:1226,1-1241,2"
+    TestID   -> "Framing-SplitUTF8@@Tests/SocketServer.wlt:1277,1-1292,2"
 ]
 
 (* A body of several chunks *)
@@ -1248,7 +1299,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Framing-LargeBody@@Tests/SocketServer.wlt:1244,1-1252,2"
+    TestID   -> "Framing-LargeBody@@Tests/SocketServer.wlt:1295,1-1303,2"
 ]
 
 VerificationTest[
@@ -1265,7 +1316,7 @@ VerificationTest[
     ],
     { 100, 200, 1 },
     SameTest -> MatchQ,
-    TestID   -> "Framing-ExpectContinue@@Tests/SocketServer.wlt:1254,1-1269,2"
+    TestID   -> "Framing-ExpectContinue@@Tests/SocketServer.wlt:1305,1-1320,2"
 ]
 
 (* HTTP/1.0 connections are closed after the response unless the client asks to keep them. *)
@@ -1280,7 +1331,24 @@ VerificationTest[
     ],
     { 200, "close", True },
     SameTest -> MatchQ,
-    TestID   -> "Framing-HTTP10-Close@@Tests/SocketServer.wlt:1272,1-1284,2"
+    TestID   -> "Framing-HTTP10-Close@@Tests/SocketServer.wlt:1323,1-1335,2"
+]
+
+(* An HTTP/1.0 client that asks for a persistent connection is told that it has one, and can use it again. *)
+VerificationTest[
+    Module[ { client, request, first, second },
+        client  = socketTestConnect @ $socketServer;
+        request = socketTestRequest[ $socketServer, socketTestBody[ "ping", # ], "Version" -> "HTTP/1.0", "Headers" -> { "Connection" -> "keep-alive" } ] &;
+        socketTestSend[ client, request @ 1 ];
+        first = socketTestRead @ client;
+        socketTestSend[ client, request @ 2 ];
+        second = socketTestRead @ client;
+        socketTestClose @ client;
+        { first[ "Status" ], first[ "Headers", "connection" ], first[ "Headers", "keep-alive" ], second[ "JSON", "id" ] }
+    ],
+    { 200, "keep-alive", "timeout=300", 2 },
+    SameTest -> MatchQ,
+    TestID   -> "Framing-HTTP10-KeepAlive@@Tests/SocketServer.wlt:1338,1-1352,2"
 ]
 
 VerificationTest[
@@ -1293,14 +1361,14 @@ VerificationTest[
     ],
     { 200, "close" },
     SameTest -> MatchQ,
-    TestID   -> "Framing-ConnectionClose@@Tests/SocketServer.wlt:1286,1-1297,2"
+    TestID   -> "Framing-ConnectionClose@@Tests/SocketServer.wlt:1354,1-1365,2"
 ]
 
 VerificationTest[
     socketTestExchange[ $socketServer, socketTestBody[ "ping", 1 ] ][ "Headers", "keep-alive" ],
     "timeout=300",
     SameTest -> MatchQ,
-    TestID   -> "Framing-KeepAliveHeader@@Tests/SocketServer.wlt:1299,1-1304,2"
+    TestID   -> "Framing-KeepAliveHeader@@Tests/SocketServer.wlt:1367,1-1372,2"
 ]
 
 (* The framing state of connections that were closed is forgotten. *)
@@ -1314,7 +1382,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "Framing-PurgeConnections@@Tests/SocketServer.wlt:1307,1-1318,2"
+    TestID   -> "Framing-PurgeConnections@@Tests/SocketServer.wlt:1375,1-1386,2"
 ]
 
 (* A partial request (head or body) that gets no more bytes for a while gets a 408 and is closed; idle connections
@@ -1341,7 +1409,7 @@ VerificationTest[
     ],
     { 408, 408, 3 },
     SameTest -> MatchQ,
-    TestID   -> "Framing-StalledRequest-408@@Tests/SocketServer.wlt:1322,1-1345,2"
+    TestID   -> "Framing-StalledRequest-408@@Tests/SocketServer.wlt:1390,1-1413,2"
 ]
 
 (* Time during which the kernel could not run the handler (as during a long PreemptProtect in a front end kernel) does
@@ -1384,7 +1452,7 @@ VerificationTest[
     ],
     { 4, True, True, 408 },
     SameTest -> MatchQ,
-    TestID   -> "Framing-StalledRequest-KernelStall@@Tests/SocketServer.wlt:1354,1-1388,2"
+    TestID   -> "Framing-StalledRequest-KernelStall@@Tests/SocketServer.wlt:1422,1-1456,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1400,7 +1468,7 @@ VerificationTest[
     ],
     _MCPSocketServerObject,
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Start@@Tests/SocketServer.wlt:1394,1-1404,2"
+    TestID   -> "Deferred-Start@@Tests/SocketServer.wlt:1462,1-1472,2"
 ]
 
 (* tools/call: the event stream starts at once and is kept alive until run[] answers the call. *)
@@ -1418,7 +1486,7 @@ VerificationTest[
     },
     { True, True, 1, 1 },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-StreamStarted@@Tests/SocketServer.wlt:1407,1-1422,2"
+    TestID   -> "Deferred-StreamStarted@@Tests/SocketServer.wlt:1475,1-1490,2"
 ]
 
 VerificationTest[
@@ -1435,7 +1503,7 @@ VerificationTest[
         "ActiveQ"    -> _Function
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Information@@Tests/SocketServer.wlt:1424,1-1439,2"
+    TestID   -> "Deferred-Information@@Tests/SocketServer.wlt:1492,1-1507,2"
 ]
 
 (* Only the "Token" property and the evaluation function's information give the token. The object holds none (it ends up
@@ -1453,7 +1521,7 @@ VerificationTest[
     ],
     { True, True, True, True, 1, True },
     SameTest -> MatchQ,
-    TestID   -> "Secrets-NotInObjectsOrRecords@@Tests/SocketServer.wlt:1443,1-1457,2"
+    TestID   -> "Secrets-NotInObjectsOrRecords@@Tests/SocketServer.wlt:1511,1-1525,2"
 ]
 
 VerificationTest[
@@ -1489,7 +1557,7 @@ VerificationTest[
         0
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Run@@Tests/SocketServer.wlt:1459,1-1493,2"
+    TestID   -> "Deferred-Run@@Tests/SocketServer.wlt:1527,1-1561,2"
 ]
 
 (* The connection can be used again after the event stream. *)
@@ -1498,7 +1566,7 @@ VerificationTest[
     socketTestRead[ $socketClient ][ "JSON", "id" ],
     42,
     SameTest -> MatchQ,
-    TestID   -> "Deferred-ConnectionReused@@Tests/SocketServer.wlt:1496,1-1502,2"
+    TestID   -> "Deferred-ConnectionReused@@Tests/SocketServer.wlt:1564,1-1570,2"
 ]
 
 (* A client that only accepts JSON gets nothing until the call has been answered. *)
@@ -1520,7 +1588,7 @@ VerificationTest[
     },
     { True, "", 43, { "application/json", "json" } },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-JSONOnly@@Tests/SocketServer.wlt:1505,1-1524,2"
+    TestID   -> "Deferred-JSONOnly@@Tests/SocketServer.wlt:1573,1-1592,2"
 ]
 
 (* Reject answers without running the call. *)
@@ -1544,7 +1612,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Reject@@Tests/SocketServer.wlt:1527,1-1548,2"
+    TestID   -> "Deferred-Reject@@Tests/SocketServer.wlt:1595,1-1616,2"
 ]
 
 VerificationTest[
@@ -1555,7 +1623,7 @@ VerificationTest[
     socketTestRead[ $socketClient ][ "JSON" ],
     <| "jsonrpc" -> "2.0", "id" -> 45, "error" -> <| "code" -> -32603, "message" -> "No prompts today." |> |>,
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Reject-Prompt@@Tests/SocketServer.wlt:1550,1-1559,2"
+    TestID   -> "Deferred-Reject-Prompt@@Tests/SocketServer.wlt:1618,1-1627,2"
 ]
 
 VerificationTest[
@@ -1565,7 +1633,7 @@ VerificationTest[
     { $socketDeferred[[ 1, 2 ]][ "Method" ], $socketDeferred[[ 1, 1 ]][ ][[ "result", "messages", 1, "content", "text" ]], socketTestRead[ $socketClient ][[ "JSON", "result", "messages", 1, "content", "text" ]] },
     { "prompts/get", "Hello!", "Hello!" },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Prompt@@Tests/SocketServer.wlt:1561,1-1569,2"
+    TestID   -> "Deferred-Prompt@@Tests/SocketServer.wlt:1629,1-1637,2"
 ]
 
 (* An abort while the call evaluates gives an error result. *)
@@ -1576,7 +1644,7 @@ VerificationTest[
     { $socketDeferred[[ 1, 1 ]][ ][ "result" ], socketTestRead[ $socketClient ][ "JSON", "result", "isError" ] },
     { <| "content" -> { <| "type" -> "text", "text" -> "The tool call was aborted by the user." |> }, "isError" -> True |>, True },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Abort@@Tests/SocketServer.wlt:1572,1-1580,2"
+    TestID   -> "Deferred-Abort@@Tests/SocketServer.wlt:1640,1-1648,2"
 ]
 
 (* An abort that the call's CheckAbort does not catch (here a TimeConstrained around run[]) still answers the call. *)
@@ -1597,7 +1665,7 @@ VerificationTest[
         0
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-AbortOutsideCall@@Tests/SocketServer.wlt:1583,1-1601,2"
+    TestID   -> "Deferred-AbortOutsideCall@@Tests/SocketServer.wlt:1651,1-1669,2"
 ]
 
 (* notifications/cancelled, sent on another connection, ends the stream without a response. *)
@@ -1616,7 +1684,7 @@ VerificationTest[
     },
     { 202, { 200, None, True }, False, Null, 0 },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Cancelled@@Tests/SocketServer.wlt:1604,1-1620,2"
+    TestID   -> "Deferred-Cancelled@@Tests/SocketServer.wlt:1672,1-1688,2"
 ]
 
 (* JSON-RPC IDs are only unique per client: a cancellation only applies to calls made with the same bearer token. A
@@ -1652,7 +1720,7 @@ VerificationTest[
     ],
     { "client-a", 202, True, 202, <| "Status" -> 202, "Body" -> "" |>, False },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Cancelled-SameTokenOnly@@Tests/SocketServer.wlt:1624,1-1656,2"
+    TestID   -> "Deferred-Cancelled-SameTokenOnly@@Tests/SocketServer.wlt:1692,1-1724,2"
 ]
 
 (* A request pipelined behind a deferred call is answered after it. *)
@@ -1671,7 +1739,34 @@ VerificationTest[
     { socketTestRead[ $socketClient ][ "JSON", "id" ], socketTestRead[ $socketClient ][ "JSON", "id" ] },
     { 49, 50 },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-PipelinedRequestWaits@@Tests/SocketServer.wlt:1659,1-1675,2"
+    TestID   -> "Deferred-PipelinedRequestWaits@@Tests/SocketServer.wlt:1727,1-1743,2"
+]
+
+(* Requests pipelined behind a deferred call, among them another deferred call, are answered in order: once the first
+   call is answered, the held requests are read until the second call holds the connection again, and the rest wait for
+   that one in turn. *)
+VerificationTest[
+    Module[ { first },
+        $socketDeferred = { };
+        socketTestSend[
+            $socketClient,
+            Join[
+                socketTestRequest[ $socketDeferredServer, socketTestBody[ "tools/call", 61, <| "name" -> "Echo", "arguments" -> <| "text" -> "a" |> |> ] ],
+                socketTestRequest[ $socketDeferredServer, socketTestBody[ "ping", 62 ] ],
+                socketTestRequest[ $socketDeferredServer, socketTestBody[ "tools/call", 63, <| "name" -> "Echo", "arguments" -> <| "text" -> "b" |> |> ] ],
+                socketTestRequest[ $socketDeferredServer, socketTestBody[ "ping", 64 ] ]
+            ]
+        ];
+        socketTestEventually[ Length @ $socketDeferred === 1 ];
+        socketTestQuiet[ $socketClient, 0.3 ];
+        $socketDeferred[[ 1, 1 ]][ ];
+        first = { Length @ $socketDeferred, socketTestRead[ $socketClient ][ "JSON", "id" ], socketTestRead[ $socketClient ][ "JSON", "id" ] };
+        $socketDeferred[[ 2, 1 ]][ ];
+        { first, socketTestRead[ $socketClient ][ "JSON", "id" ], socketTestRead[ $socketClient ][ "JSON", "id" ] }
+    ],
+    { { 2, 61, 62 }, 63, 64 },
+    SameTest -> MatchQ,
+    TestID   -> "Deferred-PipelinedDeferredCalls@@Tests/SocketServer.wlt:1748,1-1770,2"
 ]
 
 (* A client that disconnects: the call becomes inactive and is dropped. *)
@@ -1687,7 +1782,7 @@ VerificationTest[
     },
     { True, True, Null },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Disconnected@@Tests/SocketServer.wlt:1678,1-1691,2"
+    TestID   -> "Deferred-Disconnected@@Tests/SocketServer.wlt:1773,1-1786,2"
 ]
 
 (* An evaluation function that fails rejects the call. *)
@@ -1700,7 +1795,7 @@ VerificationTest[
     ],
     <| "content" -> { <| "type" -> "text", "text" -> _String |> }, "isError" -> True |>,
     SameTest -> MatchQ,
-    TestID   -> "Deferred-EvaluationFunctionFails@@Tests/SocketServer.wlt:1694,1-1704,2"
+    TestID   -> "Deferred-EvaluationFunctionFails@@Tests/SocketServer.wlt:1789,1-1799,2"
 ]
 
 (* run[] never leaves a call unanswered. An internal failure of the call's evaluation is answered with an internal
@@ -1779,7 +1874,7 @@ VerificationTest[
         3
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-RunInternalFailure@@Tests/SocketServer.wlt:1711,1-1783,2"
+    TestID   -> "Deferred-RunInternalFailure@@Tests/SocketServer.wlt:1806,1-1878,2"
 ]
 
 (* DeleteObject answers pending calls before it closes their connections. *)
@@ -1806,14 +1901,14 @@ VerificationTest[
         0
     },
     SameTest -> MatchQ,
-    TestID   -> "Deferred-DeleteObject@@Tests/SocketServer.wlt:1786,1-1810,2"
+    TestID   -> "Deferred-DeleteObject@@Tests/SocketServer.wlt:1881,1-1905,2"
 ]
 
 VerificationTest[
     socketTestClose @ $socketClient,
     Null,
     SameTest -> MatchQ,
-    TestID   -> "Deferred-Cleanup@@Tests/SocketServer.wlt:1812,1-1817,2"
+    TestID   -> "Deferred-Cleanup@@Tests/SocketServer.wlt:1907,1-1912,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1830,7 +1925,7 @@ VerificationTest[
     ],
     <| "jsonrpc" -> "2.0", "id" -> 1, "result" -> $socketEncodingFailedResult |>,
     SameTest -> MatchQ,
-    TestID   -> "Encoding-Immediate@@Tests/SocketServer.wlt:1824,1-1834,2"
+    TestID   -> "Encoding-Immediate@@Tests/SocketServer.wlt:1919,1-1929,2"
 ]
 
 (* Deferred: the event stream ends with the error (which run[] gives), and the connection can be used again; a client
@@ -1873,7 +1968,7 @@ VerificationTest[
         $socketEncodingFailedResult
     },
     SameTest -> MatchQ,
-    TestID   -> "Encoding-Deferred@@Tests/SocketServer.wlt:1838,1-1877,2"
+    TestID   -> "Encoding-Deferred@@Tests/SocketServer.wlt:1933,1-1972,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1895,7 +1990,7 @@ VerificationTest[
         <| "WolframLanguageEvaluator" -> <| "TimeConstraint" -> 5, "Method" -> "Local" |> |>
     },
     SameTest -> MatchQ,
-    TestID   -> "ToolOptions-FrontEndKernel@@Tests/SocketServer.wlt:1882,1-1899,2"
+    TestID   -> "ToolOptions-FrontEndKernel@@Tests/SocketServer.wlt:1977,1-1994,2"
 ]
 
 VerificationTest[
@@ -1904,7 +1999,7 @@ VerificationTest[
     ],
     <| "WolframLanguageEvaluator" -> <| "Method" -> "Session" |> |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptions-StandaloneKernel@@Tests/SocketServer.wlt:1901,1-1908,2"
+    TestID   -> "ToolOptions-StandaloneKernel@@Tests/SocketServer.wlt:1996,1-2003,2"
 ]
 
 (* Tool calls see the server's tool options. *)
@@ -1924,7 +2019,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptions-UsedByTools@@Tests/SocketServer.wlt:1911,1-1928,2"
+    TestID   -> "ToolOptions-UsedByTools@@Tests/SocketServer.wlt:2006,1-2023,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1945,7 +2040,7 @@ VerificationTest[
     },
     { _Failure, _Failure, False },
     SameTest -> MatchQ,
-    TestID   -> "ErrorScope-Isolated@@Tests/SocketServer.wlt:1940,1-1949,2"
+    TestID   -> "ErrorScope-Isolated@@Tests/SocketServer.wlt:2035,1-2044,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1985,7 +2080,7 @@ VerificationTest[
     ],
     { 500, "close", 1, True, True, True, "drwx------", <| |> },
     SameTest -> MatchQ,
-    TestID   -> "InternalFailure-RequestPath-Redacted@@Tests/SocketServer.wlt:1958,1-1989,2"
+    TestID   -> "InternalFailure-RequestPath-Redacted@@Tests/SocketServer.wlt:2053,1-2084,2"
 ]
 
 (* The same failure for a request whose head arrives in two parts, split inside the bearer token: the token is
@@ -2024,7 +2119,7 @@ VerificationTest[
     ],
     { 500, 1, True, True },
     SameTest -> MatchQ,
-    TestID   -> "InternalFailure-SplitToken-Redacted@@Tests/SocketServer.wlt:1994,1-2028,2"
+    TestID   -> "InternalFailure-SplitToken-Redacted@@Tests/SocketServer.wlt:2089,1-2123,2"
 ]
 
 (* A server that authenticates with a function, as Chatbook's does, has no token of its own, so only the check of the
@@ -2064,7 +2159,7 @@ VerificationTest[
     ],
     { { 500, 1, True, True, True, True }, { 500, 1, True, True, True, True } },
     SameTest -> MatchQ,
-    TestID   -> "InternalFailure-FunctionAuthentication-Redacted@@Tests/SocketServer.wlt:2034,1-2068,2"
+    TestID   -> "InternalFailure-FunctionAuthentication-Redacted@@Tests/SocketServer.wlt:2129,1-2163,2"
 ]
 
 (* The same for an internal failure after the head was checked, here while a cancellation is handled: there, only the
@@ -2104,7 +2199,7 @@ VerificationTest[
     ],
     { 500, 1, True, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "InternalFailure-NotificationHandling-Redacted@@Tests/SocketServer.wlt:2072,1-2108,2"
+    TestID   -> "InternalFailure-NotificationHandling-Redacted@@Tests/SocketServer.wlt:2167,1-2203,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2143,7 +2238,7 @@ VerificationTest[
     ],
     { "Aborted", { True, False, False, { }, False }, "TimedOut", { True, False, False, { }, False } },
     SameTest -> MatchQ,
-    TestID   -> "Start-AbortSafe@@Tests/SocketServer.wlt:2117,1-2147,2"
+    TestID   -> "Start-AbortSafe@@Tests/SocketServer.wlt:2212,1-2242,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2179,7 +2274,7 @@ VerificationTest[
     ],
     { "Aborted", False, False, { }, "The MCP server was stopped." },
     SameTest -> MatchQ,
-    TestID   -> "Stop-AbortSafe@@Tests/SocketServer.wlt:2154,1-2183,2"
+    TestID   -> "Stop-AbortSafe@@Tests/SocketServer.wlt:2249,1-2278,2"
 ]
 
 (* A server whose record was lost (as to a reload of an older version of the paclet): its clients are not left waiting
@@ -2202,7 +2297,7 @@ VerificationTest[
     ],
     { True, 1, Null, False, { } },
     SameTest -> MatchQ,
-    TestID   -> "Stop-LostRecord@@Tests/SocketServer.wlt:2187,1-2206,2"
+    TestID   -> "Stop-LostRecord@@Tests/SocketServer.wlt:2282,1-2301,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2216,7 +2311,7 @@ VerificationTest[
     },
     { "Wolfram`AgentToolsState`SocketServer`", { } },
     SameTest -> MatchQ,
-    TestID   -> "State-OutsidePacletContexts@@Tests/SocketServer.wlt:2212,1-2220,2"
+    TestID   -> "State-OutsidePacletContexts@@Tests/SocketServer.wlt:2307,1-2315,2"
 ]
 
 (* Loading the MX file runs no code: the entry points create the state if it is not there. *)
@@ -2240,7 +2335,7 @@ VerificationTest[
     ],
     { False, { True, True, True, True } },
     SameTest -> MatchQ,
-    TestID   -> "State-CreatedOnDemand@@Tests/SocketServer.wlt:2223,1-2244,2"
+    TestID   -> "State-CreatedOnDemand@@Tests/SocketServer.wlt:2318,1-2339,2"
 ]
 
 (* Reloading the paclet keeps the servers that are running: they keep answering, and DeleteObject still stops them. *)
@@ -2265,7 +2360,7 @@ VerificationTest[
     ],
     { 1, { True, True, 2 }, False, False, { } },
     SameTest -> MatchQ,
-    TestID   -> "Reload-KeepsServers@@Tests/SocketServer.wlt:2247,1-2269,2"
+    TestID   -> "Reload-KeepsServers@@Tests/SocketServer.wlt:2342,1-2364,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -2280,7 +2375,7 @@ VerificationTest[
     },
     { False, <| |>, <| |> },
     SameTest -> MatchQ,
-    TestID   -> "Cleanup@@Tests/SocketServer.wlt:2274,1-2284,2"
+    TestID   -> "Cleanup@@Tests/SocketServer.wlt:2369,1-2379,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

@@ -166,7 +166,7 @@ AgentTools::InvalidCloudTarget             = "Invalid cloud deployment target: `
 (* Socket server messages *)
 AgentTools::InvalidSocketServerPort           = "Invalid value for the \"Port\" option: `1`. Expected Automatic or an integer from 1 to 65535.";
 AgentTools::InvalidSocketServerPath           = "Invalid value for the \"Path\" option: `1`. Expected a string that starts with \"/\" and contains no whitespace, \"?\" or \"#\".";
-AgentTools::InvalidSocketServerAuthentication = "Invalid value for the \"Authentication\" option. A token must be a nonempty string of visible ASCII characters without spaces.";
+AgentTools::InvalidSocketServerAuthentication = "Invalid value for the \"Authentication\" option. Expected Automatic, None, a token (a nonempty string of visible ASCII characters without spaces) or a function.";
 AgentTools::InvalidKeepAliveInterval          = "Invalid value for the \"KeepAliveInterval\" option: `1`. Expected None or a positive number of seconds.";
 AgentTools::SocketServerListenFailed          = "Unable to listen for MCP connections on 127.0.0.1 (port `1`): `2`";
 

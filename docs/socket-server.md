@@ -228,8 +228,9 @@ unexpected (internal) error while a request is read is answered with a 500, and 
 order; requests behind a deferred call on the same connection are read once it has been answered.
 
 Connections are persistent unless the client asks otherwise (`Connection: close`, or HTTP/1.0 without
-`Connection: keep-alive`), and every response carries `Keep-Alive: timeout=300`, which keeps Node's `fetch` from
-dropping idle connections after four seconds. Responses are written with `SocketWriteMessage` as one `ByteArray`; it
+`Connection: keep-alive`), and every response on a persistent connection carries `Connection: keep-alive` (which an
+HTTP/1.0 client needs to keep it) and `Keep-Alive: timeout=300`, which keeps Node's `fetch` from dropping idle
+connections after four seconds. Responses are written with `SocketWriteMessage` as one `ByteArray`; it
 never blocks and fails only once the client is gone.
 
 ## Authentication
@@ -244,8 +245,10 @@ never blocks and fails only once the client is gone.
 Tokens are compared in constant time (their SHA-256 digests are compared byte by byte). An authentication function is
 called in the handler for every request, so it must be fast and make no front end calls; anything but `True`,
 including a `Throw` or an abort, refuses the request. With a function, the server has no token of its own (`"Token"`
-is `None`), which lets the caller issue and revoke tokens per client, as Chatbook does per ACP connection. The message
-for an invalid token value does not show it.
+is `None`), which lets the caller issue and revoke tokens per client, as Chatbook does per ACP connection. A function
+is a symbol or a compound expression such as a pure function or an operator form; other values (e.g. `False`, `True`,
+a number or a list) give a message rather than a server that refuses every request. The message for an invalid value
+does not show it.
 
 ## Security
 
@@ -275,8 +278,9 @@ for an invalid token value does not show it.
 
 Every request, and every `run[ ]`, `Block`s the server session globals that the transport-agnostic code uses:
 `$MCPTransport` (`"StreamableHTTP"`), `$MCPEvaluationEnvironment` (`"Local"`), `$currentMCPServer`, `$mcpEvaluation`,
-`$clientName`, `$clientSupportsUI` and `$clientSupportsRoots` (both `False`: MCP Apps and roots are not supported),
-`$toolList`, `$llmTools`, `$promptList`, `$promptLookup`, `$toolOptions`, `$logFile` and `$Messages`. So nothing a
+`$clientName`, `$clientSupportsUI` and `$clientSupportsRoots` (both `False`: MCP Apps and roots are not supported, so
+`mcpAppsEnabledQ` is `False` as well, and `initialize` never advertises the MCP Apps extension), `$toolList`,
+`$llmTools`, `$promptList`, `$promptLookup`, `$toolOptions`, `$logFile` and `$Messages`. So nothing a
 request does, such as `initialize` recording the client's name and capabilities, leaks into the kernel. The server
 does not record usage data, start other tasks, or touch stdout.
 

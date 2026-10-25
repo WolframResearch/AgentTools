@@ -36,6 +36,9 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
    transport (Cloud.wl) to describe a server for the /api/info landing-page endpoint. *)
 `serverToolListData;
 
+(* The JSON-RPC -32603 response that every transport sends when handling a request fails: defined in Shared.wl. *)
+`internalErrorResponse;
+
 (* Streamable HTTP helpers shared by the HTTP transports: defined in HTTP.wl, used by the cloud (Cloud.wl) and socket
    (Socket.wl) transports. *)
 `acceptsEventStreamQ;

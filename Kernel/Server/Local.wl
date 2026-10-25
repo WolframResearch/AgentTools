@@ -210,7 +210,7 @@ processRequest[ ] :=
         If[ method === "tools/list", $warmupTools = True ];
         writeLog[ "Response" -> response ];
         If[ FailureQ @ response,
-            <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>,
+            internalErrorResponse @ req,
             response
         ]
     ];

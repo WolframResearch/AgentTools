@@ -222,7 +222,7 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
                         $promptLookup = state[ "PromptLookup" ],
                         $toolOptions  = state[ "ToolOptions" ]
                     },
-                    dispatchCloudMethod[ method, id, message, req, contentType ]
+                    dispatchCloudMethod[ method, message, req, contentType ]
                 ]
             ]
         ]
@@ -256,14 +256,14 @@ ensureHTTPResponse // endDefinition;
    processRequest. initialize responses additionally carry a fresh self-describing Mcp-Session-Id. *)
 dispatchCloudMethod // beginDefinition;
 
-dispatchCloudMethod[ method_, id_, message_, req_, contentType_ ] :=
+dispatchCloudMethod[ method_, message_, req_, contentType_ ] :=
     Module[ { response, respHeaders },
         Switch[ jsonRPCMessageType @ message,
             "Request",
                 response    = catchAlways @ handleMethod[ method, message, req ];
                 respHeaders = sessionIDResponseHeaders @ method;
                 If[ FailureQ @ response,
-                    jsonResponse[ <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>, contentType, respHeaders ],
+                    jsonResponse[ internalErrorResponse @ req, contentType, respHeaders ],
                     jsonResponse[ response, contentType, respHeaders ]
                 ],
             "Notification" | "Response",

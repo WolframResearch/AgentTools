@@ -54,7 +54,7 @@ toHeaderAssociation // endDefinition;
 (* Decode the request body to a JSON value; return the association for a JSON object, else $Failed
    (which the caller maps to a 400). *)
 parseRequestBody // beginDefinition;
-parseRequestBody[ request_Association ] := parseRequestBodyString @ requestBodyString @ request;
+parseRequestBody[ request_Association ] := Replace[ requestBodyJSON @ request, Except[ _Association ] -> $Failed ];
 parseRequestBody[ _ ] := $Failed;
 parseRequestBody // endDefinition;
 
@@ -65,14 +65,6 @@ requestBodyString[ bytes_ByteArray, _ ] := Quiet @ ByteArrayToString @ bytes;
 requestBodyString[ _, body_String ] := body;
 requestBodyString[ _, _ ] := Missing[ "NotAvailable" ];
 requestBodyString // endDefinition;
-
-parseRequestBodyString // beginDefinition;
-parseRequestBodyString[ str_String ] :=
-    With[ { parsed = readRequestJSON @ str },
-        If[ AssociationQ @ parsed, parsed, $Failed ]
-    ];
-parseRequestBodyString[ _ ] := $Failed;
-parseRequestBodyString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)

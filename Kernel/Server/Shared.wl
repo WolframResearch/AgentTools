@@ -441,6 +441,14 @@ normalizeArgument // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*internalErrorResponse*)
+(* The response to a request whose handling failed (e.g. handleMethod gave a Failure), for any transport. *)
+internalErrorResponse // beginDefinition;
+internalErrorResponse[ req_Association ] := <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>;
+internalErrorResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*handleMethod*)
 handleMethod // beginDefinition;
 
