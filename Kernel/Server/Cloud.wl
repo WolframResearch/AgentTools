@@ -201,11 +201,14 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
         (* 7. Dispatch inside the capability + per-request server-state Block, mirroring the local read
               loop (startMCPServer). initializeServerState rebuilds the tool/prompt tables from obj alone,
               so the handler never assumes a prior initialize ran; $clientSupportsUI comes from the
-              session ID (or, for initialize itself, is reset by handleMethod from the client message). *)
+              session ID (or, for initialize itself, is reset by handleMethod from the client message).
+              $clientName is Blocked too, so the name an initialize request sets does not outlive the request
+              in a kernel that handles several of them. *)
         Block[
             {
                 $currentMCPServer    = obj,
                 $mcpEvaluation       = True,
+                $clientName          = None,
                 $clientSupportsUI    = uiEnabled,
                 $clientSupportsRoots = False
             },
@@ -219,7 +222,7 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
                         $promptLookup = state[ "PromptLookup" ],
                         $toolOptions  = state[ "ToolOptions" ]
                     },
-                    dispatchCloudMethod[ method, id, message, req, contentType ]
+                    dispatchCloudMethod[ method, message, req, contentType ]
                 ]
             ]
         ]
@@ -246,37 +249,36 @@ ensureHTTPResponse // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*dispatchCloudMethod*)
-(* Route the single JSON-RPC message. A request (a method plus a non-null id, not a notification)
-   returns its result in a 200; a notification / response / id->Null returns 202 with an empty body. A
+(* Route the single JSON-RPC message (see jsonRPCMessageType in HTTP.wl). A request (a method plus a
+   string or number id, not a notification) returns its result in a 200; a notification / response /
+   id->Null returns 202 with an empty body; anything else is not a JSON-RPC message and gets a 400. A
    dispatch or tool failure is reported in-band as JSON-RPC -32603 within a 200, mirroring the local
    processRequest. initialize responses additionally carry a fresh self-describing Mcp-Session-Id. *)
 dispatchCloudMethod // beginDefinition;
 
-dispatchCloudMethod[ method_, id_, message_, req_, contentType_ ] :=
+dispatchCloudMethod[ method_, message_, req_, contentType_ ] :=
     Module[ { response, respHeaders },
-        If[ replyOwedQ[ method, id ],
-            response    = catchAlways @ handleMethod[ method, message, req ];
-            respHeaders = sessionIDResponseHeaders @ method;
-            If[ FailureQ @ response,
-                jsonResponse[ <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>, contentType, respHeaders ],
-                jsonResponse[ response, contentType, respHeaders ]
-            ],
-            (* No reply owed: still dispatch notifications for their side effects, then 202 empty. *)
-            If[ StringQ @ method, catchAlways @ handleMethod[ method, message, req ] ];
-            emptyResponse[ 202 ]
+        Switch[ jsonRPCMessageType @ message,
+            "Request",
+                response    = catchAlways @ handleMethod[ method, message, req ];
+                respHeaders = sessionIDResponseHeaders @ method;
+                If[ FailureQ @ response,
+                    jsonResponse[ internalErrorResponse @ req, contentType, respHeaders ],
+                    jsonResponse[ response, contentType, respHeaders ]
+                ],
+            "Notification" | "Response",
+                (* No reply owed: still dispatch notifications for their side effects, then 202 empty. A request
+                   that came without an id (e.g. a tools/call) is accepted but not evaluated. *)
+                If[ StringQ @ method && StringStartsQ[ method, "notifications/" ],
+                    catchAlways @ handleMethod[ method, message, req ]
+                ];
+                emptyResponse[ 202 ],
+            _,
+                emptyResponse[ 400 ]
         ]
     ];
 
 dispatchCloudMethod // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsubsection::Closed:: *)
-(*replyOwedQ*)
-(* A JSON-RPC reply is owed only for requests: a method plus a non-null id, excluding notifications. *)
-replyOwedQ // beginDefinition;
-replyOwedQ[ method_String, id_ ] := id =!= Null && ! StringStartsQ[ method, "notifications/" ];
-replyOwedQ[ _, _ ] := False;
-replyOwedQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -300,61 +302,10 @@ currentTrackedFeatures // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
-(*HTTP Request Accessors*)
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*requestMethod*)
-requestMethod // beginDefinition;
-requestMethod[ request_Association ] := Replace[ Lookup[ request, "Method", "POST" ], Except[ _String ] -> "POST" ];
-requestMethod[ _ ] := "POST";
-requestMethod // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*requestHeaders*)
-(* HTTPRequestData returns headers as a list of rules with lowercased names; normalize to a lowercased
-   association so header lookups are case-insensitive regardless of the transport's representation. *)
-requestHeaders // beginDefinition;
-requestHeaders[ request_Association ] := toHeaderAssociation @ Lookup[ request, "Headers", { } ];
-requestHeaders[ _ ] := <| |>;
-requestHeaders // endDefinition;
-
-toHeaderAssociation // beginDefinition;
-toHeaderAssociation[ headers: { ___Rule } ] := KeyMap[ ToLowerCase, Association @ headers ];
-toHeaderAssociation[ headers_Association ] := KeyMap[ ToLowerCase, headers ];
-toHeaderAssociation[ _ ] := <| |>;
-toHeaderAssociation // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*parseRequestBody*)
-(* Decode the request body to a JSON value; return the association for a JSON object, else $Failed
-   (which the caller maps to a 400). *)
-parseRequestBody // beginDefinition;
-parseRequestBody[ request_Association ] := parseRequestBodyString @ requestBodyString @ request;
-parseRequestBody[ _ ] := $Failed;
-parseRequestBody // endDefinition;
-
-requestBodyString // beginDefinition;
-requestBodyString[ request_Association ] :=
-    requestBodyString[ Lookup[ request, "BodyByteArray", Missing[ ] ], Lookup[ request, "Body", Missing[ ] ] ];
-requestBodyString[ bytes_ByteArray, _ ] := Quiet @ ByteArrayToString @ bytes;
-requestBodyString[ _, body_String ] := body;
-requestBodyString[ _, _ ] := Missing[ "NotAvailable" ];
-requestBodyString // endDefinition;
-
-parseRequestBodyString // beginDefinition;
-parseRequestBodyString[ str_String ] :=
-    With[ { parsed = Quiet @ Developer`ReadRawJSONString @ str },
-        If[ AssociationQ @ parsed, parsed, $Failed ]
-    ];
-parseRequestBodyString[ _ ] := $Failed;
-parseRequestBodyString // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Section::Closed:: *)
 (*Transport Validation*)
+(* The transport-agnostic request accessors and checks (requestMethod, requestHeaders, parseRequestBody,
+   responseContentType, supportedProtocolHeaderQ, jsonRPCMessageType) and makeResponseString are shared with the
+   socket transport and live in HTTP.wl; the checks below are specific to the cloud. *)
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -385,43 +336,6 @@ allowedOriginHostQ // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*responseContentType*)
-(* Choose the response media type from the Accept header, preferring application/json and falling back
-   to text/event-stream. An absent Accept (client accepts anything) defaults to application/json; a
-   present Accept listing neither yields None, which the caller maps to a 406. *)
-responseContentType // beginDefinition;
-responseContentType[ headers_Association ] := responseContentType @ Lookup[ headers, "accept", Missing[ "Absent" ] ];
-responseContentType[ _Missing ] := "application/json";
-responseContentType[ accept_String ] := parseAcceptHeader @ accept;
-responseContentType[ _ ] := None;
-responseContentType // endDefinition;
-
-parseAcceptHeader // beginDefinition;
-parseAcceptHeader[ accept_String ] :=
-    Module[ { types },
-        types = ToLowerCase @ StringTrim @ First @ StringSplit[ #, ";" ] & /@ StringSplit[ accept, "," ];
-        Which[
-            ContainsAny[ types, { "application/json", "*/*", "application/*" } ], "application/json",
-            MemberQ[ types, "text/event-stream" ],                                 "text/event-stream",
-            True,                                                                  None
-        ]
-    ];
-parseAcceptHeader // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*supportedProtocolHeaderQ*)
-(* The MCP-Protocol-Version request header must name a supported revision on non-initialize requests.
-   An absent header is allowed (the spec says assume 2025-03-26, which is supported). *)
-supportedProtocolHeaderQ // beginDefinition;
-supportedProtocolHeaderQ[ headers_Association ] := supportedProtocolHeaderQ @ Lookup[ headers, "mcp-protocol-version", Missing[ "Absent" ] ];
-supportedProtocolHeaderQ[ _Missing ] := True;
-supportedProtocolHeaderQ[ version_String ] := MemberQ[ $supportedProtocolVersions, version ];
-supportedProtocolHeaderQ[ _ ] := False;
-supportedProtocolHeaderQ // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
 (*sessionIDHeader*)
 sessionIDHeader // beginDefinition;
 sessionIDHeader[ headers_Association ] := Replace[ Lookup[ headers, "mcp-session-id", "" ], Except[ _String ] -> "" ];
@@ -434,25 +348,12 @@ sessionIDHeader // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
-(*makeResponseString*)
-(* Serialize a JSON-RPC result for the negotiated media type: compact JSON, or a single Server-Sent
-   Events data frame for text/event-stream. Sanitizes PUA characters before encoding, matching the
-   stdio transport's write path (see sanitizeResponse in Shared.wl). *)
-makeResponseString // beginDefinition;
-makeResponseString[ "application/json", result_ ] :=
-    Developer`WriteRawJSONString[ sanitizeResponse @ result, "Compact" -> True ];
-makeResponseString[ "text/event-stream", result_ ] :=
-    "data: " <> Developer`WriteRawJSONString[ sanitizeResponse @ result, "Compact" -> True ] <> "\n\n";
-makeResponseString // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
 (*jsonResponse*)
-(* A 200 response carrying the serialized JSON-RPC result. ContentType reflects the negotiated media
-   type (not always application/json -- a bug in the prototype). The body is UTF-8, and CharacterEncoding
-   -> "UTF-8" makes the advertised charset match: application/json stays bare (JSON is UTF-8 by spec),
-   while a text/event-stream response correctly advertises charset=utf-8 rather than a mismatched
-   iso-8859-1. *)
+(* A 200 response carrying the serialized JSON-RPC result (makeResponseString, in HTTP.wl). ContentType
+   reflects the negotiated media type (not always application/json -- a bug in the prototype). The body is
+   UTF-8, and CharacterEncoding -> "UTF-8" makes the advertised charset match: application/json stays bare
+   (JSON is UTF-8 by spec), while a text/event-stream response correctly advertises charset=utf-8 rather
+   than a mismatched iso-8859-1. *)
 jsonResponse // beginDefinition;
 jsonResponse[ result_, contentType_String, headers_List ] :=
     HTTPResponse[

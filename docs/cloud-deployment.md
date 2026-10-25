@@ -364,7 +364,8 @@ The `/mcp` endpoint implements a stateless subset of the MCP Streamable HTTP tra
 | Situation | Response |
 |-----------|----------|
 | `POST` request (has `id` + `method`) | `200` with the JSON-RPC result (content type negotiated from `Accept`). |
-| `POST` notification / response / `id -> Null` | `202` with an empty body. |
+| `POST` notification / response / `id -> Null` | `202` with an empty body. Only `notifications/...` methods are dispatched: a request without an `id` (e.g. a `tools/call`) is not evaluated. |
+| `POST` message that is none of these (e.g. an `id` with a non-string `method`) | `400`. |
 | Unknown method | `200` with an in-band JSON-RPC `-32601` error. |
 | Internal / tool failure | `200` with an in-band JSON-RPC `-32603` error. |
 | `GET` / `DELETE` (no session to stream or tear down) | `405`. |
@@ -402,6 +403,8 @@ client's requested `protocolVersion` when it is supported, otherwise returning t
   helpers, and the `/api/info` and `/api/admin` handlers
 - `Kernel/Server/Shared.wl` — transport-agnostic core shared with the local server (dispatch, tool/prompt
   resolution, result formatting, `initializeServerState`, protocol-version negotiation)
+- `Kernel/Server/HTTP.wl` — Streamable HTTP helpers shared with the [socket server](socket-server.md) (request
+  accessors, `Accept` negotiation, the `MCP-Protocol-Version` check, `makeResponseString`)
 - `Assets/Cloud/` — landing page (`index.html` + `assets/`) and admin page (`admin.html`)
 - `Kernel/Messages.wl` — `CloudDeployFailed`, `NotCloudConnected`, `InvalidCloudTarget`
 - `Tests/CloudDeployment.wlt` — tests

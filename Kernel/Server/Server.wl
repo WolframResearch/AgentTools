@@ -2,11 +2,12 @@
 (*Package Header*)
 BeginPackage[ "Wolfram`AgentTools`Server`" ];
 
-(* Server session state shared among the Server subcontexts (Shared / Local / Cloud).
+(* Server session state shared among the Server subcontexts (Shared / Local / Cloud / Socket).
    These are read by the transport-agnostic handlers in Shared.wl and bound (via Block)
    by each transport. They are not read elsewhere in the paclet, so they live here rather
    than in CommonSymbols.wl. `handleMethod` and `initializeServerState` are declared in
    CommonSymbols.wl instead, since they are needed paclet-wide. *)
+`$clientName;
 `$currentMCPServer;
 `$llmTools;
 `$logFile;
@@ -14,6 +15,10 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
 `$promptLookup;
 `$toolList;
 `$warmupTask;
+
+(* Whether the current client can handle stderr output: defined in Shared.wl, also used by the stdio transport to
+   decide whether to switch off messages for the session (Local.wl). *)
+`stderrEnabledQ;
 
 (* Usage data (UsageData.wl): per-session tracking state and the hooks called by the local transport. *)
 `$mcpClientInformation;
@@ -31,6 +36,21 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
    transport (Cloud.wl) to describe a server for the /api/info landing-page endpoint. *)
 `serverToolListData;
 
+(* The JSON-RPC -32603 response that every transport sends when handling a request fails: defined in Shared.wl. *)
+`internalErrorResponse;
+
+(* Streamable HTTP helpers shared by the HTTP transports: defined in HTTP.wl, used by the cloud (Cloud.wl) and socket
+   (Socket.wl) transports. *)
+`acceptsEventStreamQ;
+`jsonRPCMessageType;
+`makeResponseString;
+`parseRequestBody;
+`requestBodyJSON;
+`requestHeaders;
+`requestMethod;
+`responseContentType;
+`supportedProtocolHeaderQ;
+
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`AgentTools`"        ];
@@ -42,12 +62,13 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 
 (* Exported descriptors of where the current MCP server is running, for tools that adapt their behavior
    to the host. Both are None outside a server session; each transport Blocks them for the duration of a
-   session (local) or request (cloud) before the server state is built:
+   session (local) or request (cloud, socket) before the server state is built:
 
-     $MCPEvaluationEnvironment  "Local" for the stdio server started by StartMCPServer, or "Cloud" for a
-                                cloud-deployed server handled by RunCloudMCPServer.
+     $MCPEvaluationEnvironment  "Local" for the stdio server started by StartMCPServer and for the socket
+                                server started by StartMCPSocketServer, or "Cloud" for a cloud-deployed
+                                server handled by RunCloudMCPServer.
      $MCPTransport              "StandardInputOutput" for the stdio transport, or "StreamableHTTP" for
-                                the cloud (Streamable HTTP) transport.
+                                the cloud and socket (Streamable HTTP) transports.
 
    Tools consult these through the "Overrides" key of their LLMTool data (see applyToolOverrides in
    Shared.wl): a delayed association of tool properties merged in when the server state is built, e.g.
@@ -86,10 +107,18 @@ $subcontexts = {
     (* Local stdio transport: StartMCPServer, the read loop, warmup, superQuiet *)
     "Wolfram`AgentTools`Server`Local`",
 
+    (* Streamable HTTP helpers shared by the cloud and socket transports: request accessors, Accept negotiation,
+       the protocol-version header check, JSON/SSE response strings *)
+    "Wolfram`AgentTools`Server`HTTP`",
+
     (* Cloud HTTP transport: CloudDeployMCPServer, CloudDeployMCPServerBundle, RunCloudMCPServer,
        the CloudDeploy UpValue, page/asset deployment, the self-describing session-ID codec, and the
        admin/info APIs *)
-    "Wolfram`AgentTools`Server`Cloud`"
+    "Wolfram`AgentTools`Server`Cloud`",
+
+    (* Socket HTTP transport: StartMCPSocketServer and MCPSocketServerObject, a Streamable HTTP server on a
+       127.0.0.1 SocketListen listener inside the current kernel (including a front end kernel) *)
+    "Wolfram`AgentTools`Server`Socket`"
 };
 
 Scan[ Needs[ # -> None ] &, $subcontexts ];

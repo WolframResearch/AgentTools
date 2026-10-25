@@ -589,7 +589,10 @@ through the shared `handleMethod`:
 - **Request** (has `id` + `method`) ⇒ dispatch; return the JSON-RPC result as the negotiated content
   type with **`200`**. A handler-level problem is reported *in the JSON-RPC body*, not as an HTTP
   error: unknown method ⇒ error `-32601`; internal/tool failure ⇒ error `-32603` (still HTTP `200`).
-- **Notification / Response / `id -> Null`** (no reply owed) ⇒ **`202 Accepted`** with an empty body.
+- **Notification / Response / `id -> Null`** (no reply owed) ⇒ **`202 Accepted`** with an empty body. Only
+  `notifications/...` methods are dispatched; a request without an `id` is accepted but not evaluated.
+- **Anything else** (not a valid JSON-RPC message, e.g. an `id` with a `method` that is not a string) ⇒
+  **`400 Bad Request`**. The classification (`jsonRPCMessageType`) is shared with the socket transport (`HTTP.wl`).
 
 **Session ID (client-capability round-trip).** Before dispatch, the handler reads the `Mcp-Session-Id`
 request header (case-insensitively) and decodes it via `getFeaturesFromSessionID` into the capability
@@ -918,7 +921,7 @@ Any tag used with `throwFailure` must be declared here. Reuse existing tags (`In
 | `Kernel/Server/Server.wl` | **New.** Entry point loading `Shared.wl`, `Local.wl`, `Cloud.wl`. |
 | `Kernel/Server/Shared.wl` | **New.** Transport-agnostic core moved from `StartMCPServer.wl` (dispatch, tool/prompt resolution, `evaluateTool`, result formatting, `initResponse`, bootstrapping, logging helpers) + `initializeServerState` + protocol-version negotiation. |
 | `Kernel/Server/Local.wl` | **New.** `StartMCPServer`, stdio read loop, `superQuiet`, log-file plumbing, `toolWarmup`. |
-| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, page/asset deployment, `responseContentType`/`makeResponseString`, the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
+| `Kernel/Server/Cloud.wl` | **New.** `CloudDeployMCPServer`, `RunCloudMCPServer`, the directory-bundle deployment (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue, page/asset deployment, `responseContentType`/`makeResponseString` (since moved to `Kernel/Server/HTTP.wl`, shared with the socket transport), the `Mcp-Session-Id` capability encode/decode (`$trackedFeatureList`, `$idVersion`, `makeSessionIDFromFeatureList`, `getFeaturesFromSessionID`), `/api/info`, `/api/admin`, the definition-bundling deploy helper, key CRUD. |
 | `Kernel/StartMCPServer.wl` | Reduced to a thin shim (or removed) once contents migrate to `Server/`. |
 | `Kernel/Main.wl` | Replace ``…`StartMCPServer` `` in `$AgentToolsContexts` (`:62–86`) with the `Server` contexts; add `CloudDeployMCPServer`, `RunCloudMCPServer` to the exported list (`:14–35`) and `$AgentToolsProtectedNames` (`:101–123`). |
 | `Kernel/CommonSymbols.wl` | Declare newly-shared symbols (`handleMethod`, `initializeServerState`, `$preferredProtocolVersion`, `$supportedProtocolVersions`, deployment-path helpers). |

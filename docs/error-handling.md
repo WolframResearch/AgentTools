@@ -56,6 +56,15 @@ This effectively expands to using `catchTop` with `MyFunction` as the message sy
 MyFunction[ args___ ] := catchTop[ internalImplementation @ args, MyFunction ];
 ```
 
+#### `catchTopIsolated[eval]` / `catchTopIsolated[eval, sym]`
+
+Like `catchTop`, but it always starts an error boundary of its own, even inside another `catchTop`. Use it for code that
+can run as a preemptive evaluation (a `SocketListen` handler or a scheduled task) and for functions that such code
+calls. A preemptive evaluation sees the `Block`s of the evaluation that it interrupted: inside a `catchTop` there,
+`catchTop` is the identity and `$catching`, `$failed` and `$messageSymbol` belong to the interrupted evaluation, so a
+nested `catchTop` would share its failure state and throw its failures into it. The socket MCP server's entry points
+use it (`catchSocket` in `Kernel/Server/Socket.wl`).
+
 ### Error Throwing: `throwFailure`, `throwInternalFailure`
 
 #### `throwFailure[tag, args___]`
@@ -312,10 +321,37 @@ Use when you want to handle errors instead of propagating them to the nearest `c
 When `throwInternalFailure` is called, the system automatically:
 
 1. Captures debug data (paclet version, system info, etc.)
-2. Records the evaluation stack
-3. Generates a GitHub issue URL with pre-filled information
-4. Saves failure data to `$UserBaseDirectory/Logs/AgentTools/LastInternalFailureData.mx`
-5. Sets `$LastAgentToolsFailure` for programmatic access
+2. Records the evaluation stack (kept in memory only: the failure data holds it as a delayed value, never written)
+3. Redacts secrets in the failure data (`redactSecrets`, see below)
+4. Generates a GitHub issue URL with pre-filled information
+5. Saves the failure data to a new file in `$UserBaseDirectory/Logs/AgentTools/InternalFailures` (keeping the 50 most
+   recent), a directory that is made private to the user (mode 0700) on Unix-like systems
+6. Sets `$LastAgentToolsFailure` for programmatic access
+
+The failure data holds the failing call with its arguments, which messages show and the bug report and log file keep,
+so `makeInternalFailureData` redacts it with `redactSecrets[expr, secrets]`. Without evaluating anything, also inside
+held expressions, this replaces with `"<redacted>"`:
+
+- the values of keys that can hold secrets (`"Token"`, `"Authentication"`, `Authentication`, `"Authorization"`,
+  `"authorization"`), in rules and associations
+- the values of `Authorization:` header lines and the tokens after `Bearer`, in strings and in byte arrays decoded as
+  text (such as the raw bytes of an HTTP request)
+- every other occurrence, in strings and byte arrays, of the given `secrets`, of the secrets registered with
+  `withFailureSecrets[secrets, eval]` while the failure happened, and of the values and tokens found as above
+
+A failing call can hold a secret on its own, such as a bearer token passed to an authentication check, which nothing in
+the failure data shows to be one. So code that handles secrets registers them with `withFailureSecrets`: the socket MCP
+server registers the tokens of its servers and the bearer token of the request it handles. The evaluation stack is not
+searched for secrets, since it can hold any amount of data (in a preemptive evaluation, also that of the evaluation it
+interrupted).
+
+Secrets are only recognized whole. The other occurrences of the secrets found in the data are redacted only for those of
+at least 8 characters (shorter strings occur by chance, and replacing them would garble the data), and for at most 32 of
+them. The given and registered secrets are known to be secrets, so all their other occurrences are redacted, whatever
+their length. The time taken grows only with the size of the failure data and the number of given and registered
+secrets, and packed arrays are not searched. The socket MCP server also uses `redactSecrets` for the messages of
+invalid calls. Keys that hold secrets should use one of these names; a new kind of secret needs a new key name or
+pattern in `Common.wl`.
 
 ## Best Practices
 

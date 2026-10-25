@@ -40,8 +40,10 @@ System`DeployAgentTools;
 `MCPServerObject;
 `MCPServerObjectQ;
 `MCPServerObjects;
+`MCPSocketServerObject;
 `RunCloudMCPServer;
 `StartMCPServer;
+`StartMCPSocketServer;
 `TestReportToolFunction;
 `UninstallAgentSkills;
 `UninstallMCPServer;
@@ -142,8 +144,10 @@ $AgentToolsProtectedNames = "Wolfram`AgentTools`" <> # & /@ {
     "MCPServerObject",
     "MCPServerObjectQ",
     "MCPServerObjects",
+    "MCPSocketServerObject",
     "RunCloudMCPServer",
     "StartMCPServer",
+    "StartMCPSocketServer",
     "TestReportToolFunction",
     "UninstallAgentSkills",
     "UninstallMCPServer",

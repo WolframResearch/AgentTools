@@ -441,14 +441,24 @@ normalizeArgument // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*internalErrorResponse*)
+(* The response to a request whose handling failed (e.g. handleMethod gave a Failure), for any transport. *)
+internalErrorResponse // beginDefinition;
+internalErrorResponse[ req_Association ] := <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>;
+internalErrorResponse // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*handleMethod*)
 handleMethod // beginDefinition;
 
+(* Records the client's identity and capabilities in the session globals, which each transport Blocks per session
+   (stdio) or per request (HTTP). Transport-specific reactions to the client belong to the transports, e.g. the stdio
+   transport switching off messages for clients that cannot handle stderr (see applyStderrPolicy in Local.wl). *)
 handleMethod[ "initialize", msg_, req_ ] := (
     $clientName = Replace[ msg[[ "params", "clientInfo", "name" ]], Except[ _String ] :> None ];
     $clientSupportsUI = mcpAppsEnabledQ[ ] && clientSupportsUIQ @ msg;
     $clientSupportsRoots = ! MissingQ @ msg[ "params", "capabilities", "roots" ];
-    If[ ! stderrEnabledQ[ ], $Messages = { } ];
     <| req, "result" -> initResponse[ $currentMCPServer, msg ] |>
 );
 
@@ -994,7 +1004,8 @@ writeLog // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*stderrEnabledQ*)
-(* stderr output causes issues with several clients, so we disable it unless we know it's safe to use *)
+(* stderr output causes issues with several clients, so we disable it unless we know it's safe to use. Declared in
+   Server.wl, since the stdio transport also uses it to decide whether to switch off messages (Local.wl). *)
 stderrEnabledQ // beginDefinition;
 stderrEnabledQ[ ] := stderrEnabledQ @ $clientName;
 stderrEnabledQ[ "claude-ai" ] := True;

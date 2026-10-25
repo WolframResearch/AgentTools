@@ -518,6 +518,97 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
+(*Messages after initialize*)
+
+(* The stdio read loop switches off messages for the rest of the session once a client that cannot handle stderr has
+   sent initialize (applyStderrPolicy); claude-ai keeps them. The read loop runs inside superQuiet's Block of $Messages,
+   simulated here by an outer Block. handleMethod itself no longer touches $Messages, so the HTTP transports cannot
+   switch off the messages of the kernel they run in. *)
+stdioInitializeMessages[ clientName_String ] :=
+    Block[
+        {
+            InputString = Function @ Developer`WriteRawJSONString[
+                <|
+                    "jsonrpc" -> "2.0",
+                    "id"      -> 0,
+                    "method"  -> "initialize",
+                    "params"  -> <| "protocolVersion" -> "2025-06-18", "clientInfo" -> <| "name" -> clientName |> |>
+                |>,
+                "Compact" -> True
+            ],
+            $Messages = Streams[ "stdout" ],
+            Wolfram`AgentTools`Server`$clientName               = None,
+            Wolfram`AgentTools`Server`$currentMCPServer         = MCPServerObject @ <| "Name" -> "StdioTest", "Location" -> None, "LLMEvaluator" -> <| |> |>,
+            Wolfram`AgentTools`Server`$logFile                  = None,
+            Wolfram`AgentTools`Common`$clientSupportsUI         = False,
+            Wolfram`AgentTools`Common`$clientSupportsRoots      = False
+        },
+        {
+            Wolfram`AgentTools`Server`Local`Private`processRequest[ ],
+            Wolfram`AgentTools`Server`$clientName,
+            $Messages
+        }
+    ];
+
+VerificationTest[
+    stdioInitializeMessages[ "test-client" ],
+    { KeyValuePattern[ "result" -> KeyValuePattern[ "serverInfo" -> KeyValuePattern[ "name" -> "StdioTest" ] ] ], "test-client", { } },
+    SameTest -> MatchQ,
+    TestID   -> "ProcessRequest-Initialize-MessagesOff@@Tests/StartMCPServer.wlt:553,1-558,2"
+]
+
+VerificationTest[
+    Rest @ stdioInitializeMessages[ "claude-ai" ],
+    { "claude-ai", Streams[ "stdout" ] },
+    SameTest -> MatchQ,
+    TestID   -> "ProcessRequest-Initialize-ClaudeAIKeepsMessages@@Tests/StartMCPServer.wlt:560,1-565,2"
+]
+
+(* Messages are switched off before initialize is handled, so that the messages of building its result are dropped as
+   well: superQuiet writes messages to stderr when it cannot open its log file. Here initResponse records the value of
+   $Messages when it runs. *)
+VerificationTest[
+    Module[ { seen = { }, result },
+        result = Internal`InheritedBlock[ { Wolfram`AgentTools`Server`Shared`Private`initResponse },
+            DownValues @ Wolfram`AgentTools`Server`Shared`Private`initResponse = Prepend[
+                DownValues @ Wolfram`AgentTools`Server`Shared`Private`initResponse,
+                HoldPattern @ Wolfram`AgentTools`Server`Shared`Private`initResponse[ ___ ] :> Null /; (AppendTo[ seen, $Messages ]; False)
+            ];
+            stdioInitializeMessages[ "test-client" ]
+        ];
+        { result, DeleteDuplicates @ seen }
+    ],
+    {
+        { KeyValuePattern[ "result" -> KeyValuePattern[ "serverInfo" -> KeyValuePattern[ "name" -> "StdioTest" ] ] ], "test-client", { } },
+        { { } }
+    },
+    SameTest -> MatchQ,
+    TestID   -> "ProcessRequest-Initialize-MessagesOffBeforeHandling@@Tests/StartMCPServer.wlt:570,1-587,2"
+]
+
+VerificationTest[
+    Block[
+        {
+            $Messages = Streams[ "stdout" ],
+            Wolfram`AgentTools`Server`$clientName          = None,
+            Wolfram`AgentTools`Server`$currentMCPServer    = MCPServerObject @ <| "Name" -> "StdioTest", "Location" -> None, "LLMEvaluator" -> <| |> |>,
+            Wolfram`AgentTools`Common`$clientSupportsUI    = False,
+            Wolfram`AgentTools`Common`$clientSupportsRoots = False
+        },
+        Wolfram`AgentTools`Common`handleMethod[
+            "initialize",
+            <| "params" -> <| "clientInfo" -> <| "name" -> "test-client" |> |> |>,
+            <| "jsonrpc" -> "2.0", "id" -> 0 |>
+        ];
+        { Wolfram`AgentTools`Server`$clientName, $Messages }
+    ],
+    { "test-client", Streams[ "stdout" ] },
+    SameTest -> MatchQ,
+    TestID   -> "HandleMethod-Initialize-KeepsMessages@@Tests/StartMCPServer.wlt:589,1-608,2"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*runToolInitialization*)
 VerificationTest[
     $initTestValue = 0;
@@ -539,7 +630,7 @@ VerificationTest[
     $initTestValue,
     11,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-RunsBothInits@@Tests/StartMCPServer.wlt:522,1-543,2"
+    TestID   -> "RunToolInitialization-RunsBothInits@@Tests/StartMCPServer.wlt:613,1-634,2"
 ]
 
 VerificationTest[
@@ -554,14 +645,14 @@ VerificationTest[
     $initTestValue2,
     0,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-NoInitIsNoOp@@Tests/StartMCPServer.wlt:545,1-558,2"
+    TestID   -> "RunToolInitialization-NoInitIsNoOp@@Tests/StartMCPServer.wlt:636,1-649,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runToolInitialization[ { } ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-EmptyListIsNoOp@@Tests/StartMCPServer.wlt:560,1-565,2"
+    TestID   -> "RunToolInitialization-EmptyListIsNoOp@@Tests/StartMCPServer.wlt:651,1-656,2"
 ]
 
 VerificationTest[
@@ -583,7 +674,7 @@ VerificationTest[
     $initTestValue3,
     42,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-MixedInitAndNoInit@@Tests/StartMCPServer.wlt:567,1-587,2"
+    TestID   -> "RunToolInitialization-MixedInitAndNoInit@@Tests/StartMCPServer.wlt:658,1-678,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -595,7 +686,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsurePacletsForStart-InstalledPacletSucceeds@@Tests/StartMCPServer.wlt:592,1-599,2"
+    TestID   -> "EnsurePacletsForStart-InstalledPacletSucceeds@@Tests/StartMCPServer.wlt:683,1-690,2"
 ]
 
 VerificationTest[
@@ -604,7 +695,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsurePacletsForStart-BuiltInServerSucceeds@@Tests/StartMCPServer.wlt:601,1-608,2"
+    TestID   -> "EnsurePacletsForStart-BuiltInServerSucceeds@@Tests/StartMCPServer.wlt:692,1-699,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -616,7 +707,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsureDependenciesForStart-InstalledPacletDeps@@Tests/StartMCPServer.wlt:613,1-620,2"
+    TestID   -> "EnsureDependenciesForStart-InstalledPacletDeps@@Tests/StartMCPServer.wlt:704,1-711,2"
 ]
 
 VerificationTest[
@@ -625,7 +716,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsureDependenciesForStart-NoPacletDepsIsNoOp@@Tests/StartMCPServer.wlt:622,1-629,2"
+    TestID   -> "EnsureDependenciesForStart-NoPacletDepsIsNoOp@@Tests/StartMCPServer.wlt:713,1-720,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -640,7 +731,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ builtInServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-BuiltInIsNoOp@@Tests/StartMCPServer.wlt:634,1-644,2"
+    TestID   -> "RunServerInitialization-BuiltInIsNoOp@@Tests/StartMCPServer.wlt:725,1-735,2"
 ]
 
 VerificationTest[
@@ -652,7 +743,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ fileServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-FileBasedIsNoOp@@Tests/StartMCPServer.wlt:646,1-656,2"
+    TestID   -> "RunServerInitialization-FileBasedIsNoOp@@Tests/StartMCPServer.wlt:737,1-747,2"
 ]
 
 VerificationTest[
@@ -668,7 +759,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ pacletServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-PacletServerNoInit@@Tests/StartMCPServer.wlt:658,1-672,2"
+    TestID   -> "RunServerInitialization-PacletServerNoInit@@Tests/StartMCPServer.wlt:749,1-763,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -678,7 +769,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`disambiguateToolNames[ { } ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-EmptyList@@Tests/StartMCPServer.wlt:677,1-682,2"
+    TestID   -> "DisambiguateToolNames-EmptyList@@Tests/StartMCPServer.wlt:768,1-773,2"
 ]
 
 VerificationTest[
@@ -688,7 +779,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha", "Beta" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-NoCollisions@@Tests/StartMCPServer.wlt:684,1-692,2"
+    TestID   -> "DisambiguateToolNames-NoCollisions@@Tests/StartMCPServer.wlt:775,1-783,2"
 ]
 
 VerificationTest[
@@ -698,7 +789,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-TwoCollisions@@Tests/StartMCPServer.wlt:694,1-702,2"
+    TestID   -> "DisambiguateToolNames-TwoCollisions@@Tests/StartMCPServer.wlt:785,1-793,2"
 ]
 
 VerificationTest[
@@ -709,7 +800,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Search2", "Search3" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-ThreeCollisions@@Tests/StartMCPServer.wlt:704,1-713,2"
+    TestID   -> "DisambiguateToolNames-ThreeCollisions@@Tests/StartMCPServer.wlt:795,1-804,2"
 ]
 
 VerificationTest[
@@ -721,7 +812,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha", "Search1", "Beta", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-MixedCollisions@@Tests/StartMCPServer.wlt:715,1-725,2"
+    TestID   -> "DisambiguateToolNames-MixedCollisions@@Tests/StartMCPServer.wlt:806,1-816,2"
 ]
 
 VerificationTest[
@@ -732,7 +823,7 @@ VerificationTest[
     { result["Search1"]["Description"], result["Search2"]["Description"] },
     { "Search JIRA", "Search Slack" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-ValuesPreserved@@Tests/StartMCPServer.wlt:727,1-736,2"
+    TestID   -> "DisambiguateToolNames-ValuesPreserved@@Tests/StartMCPServer.wlt:818,1-827,2"
 ]
 
 VerificationTest[
@@ -741,7 +832,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-SingleTool@@Tests/StartMCPServer.wlt:738,1-745,2"
+    TestID   -> "DisambiguateToolNames-SingleTool@@Tests/StartMCPServer.wlt:829,1-836,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -760,7 +851,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-RestrictedDigitCharacter@@Tests/StartMCPServer.wlt:753,1-764,2"
+    TestID   -> "ToolSchema-RestrictedDigitCharacter@@Tests/StartMCPServer.wlt:844,1-855,2"
 ]
 
 (* The basic "String" Interpreter produces a redundant "(?ms).*" pattern -- toolSchema drops it. *)
@@ -774,7 +865,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-PlainStringDropsMatchAnyPattern@@Tests/StartMCPServer.wlt:767,1-778,2"
+    TestID   -> "ToolSchema-PlainStringDropsMatchAnyPattern@@Tests/StartMCPServer.wlt:858,1-869,2"
 ]
 
 (* No parameters -> empty properties and no required keys. *)
@@ -784,7 +875,7 @@ VerificationTest[
     ],
     <| "type" -> "object", "properties" -> <| |>, "required" -> { } |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-NoParameters@@Tests/StartMCPServer.wlt:781,1-788,2"
+    TestID   -> "ToolSchema-NoParameters@@Tests/StartMCPServer.wlt:872,1-879,2"
 ]
 
 (* Non-string types have no "pattern" field, so toolSchema passes them through untouched. *)
@@ -798,7 +889,7 @@ VerificationTest[
         "required" -> { "n" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-NumberType@@Tests/StartMCPServer.wlt:791,1-802,2"
+    TestID   -> "ToolSchema-NumberType@@Tests/StartMCPServer.wlt:882,1-893,2"
 ]
 
 VerificationTest[
@@ -811,7 +902,7 @@ VerificationTest[
         "required" -> { "i" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-IntegerType@@Tests/StartMCPServer.wlt:804,1-815,2"
+    TestID   -> "ToolSchema-IntegerType@@Tests/StartMCPServer.wlt:895,1-906,2"
 ]
 
 VerificationTest[
@@ -824,7 +915,7 @@ VerificationTest[
         "required" -> { "b" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-BooleanType@@Tests/StartMCPServer.wlt:817,1-828,2"
+    TestID   -> "ToolSchema-BooleanType@@Tests/StartMCPServer.wlt:908,1-919,2"
 ]
 
 (* Optional parameter is absent from "required". *)
@@ -838,7 +929,7 @@ VerificationTest[
         "required" -> { }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-OptionalParameter@@Tests/StartMCPServer.wlt:831,1-842,2"
+    TestID   -> "ToolSchema-OptionalParameter@@Tests/StartMCPServer.wlt:922,1-933,2"
 ]
 
 (* Help text shows up as "description" on the parameter schema. *)
@@ -854,7 +945,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-ParameterWithHelp@@Tests/StartMCPServer.wlt:845,1-858,2"
+    TestID   -> "ToolSchema-ParameterWithHelp@@Tests/StartMCPServer.wlt:936,1-949,2"
 ]
 
 (* Multiple parameters of mixed types preserve order in "required". *)
@@ -871,7 +962,7 @@ VerificationTest[
         "required" -> { "a", "b" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-MultipleParameters@@Tests/StartMCPServer.wlt:861,1-875,2"
+    TestID   -> "ToolSchema-MultipleParameters@@Tests/StartMCPServer.wlt:952,1-966,2"
 ]
 
 (* Restricted enumeration: the "(?ms)(?:red|green|blue)" pattern from LLMTool should lose its leading flags. *)
@@ -887,7 +978,7 @@ VerificationTest[
         "required" -> { "color" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-RestrictedEnumeration@@Tests/StartMCPServer.wlt:878,1-891,2"
+    TestID   -> "ToolSchema-RestrictedEnumeration@@Tests/StartMCPServer.wlt:969,1-982,2"
 ]
 
 (* Private-use-area (PUA) characters in strings are escaped via safeString/convertPUACharacters. *)
@@ -907,7 +998,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-PUACharactersEscaped@@Tests/StartMCPServer.wlt:894,1-911,2"
+    TestID   -> "ToolSchema-PUACharactersEscaped@@Tests/StartMCPServer.wlt:985,1-1002,2"
 ]
 
 (* Return value is an Association suitable for direct use as a JSON Schema object. *)
@@ -917,7 +1008,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-ReturnsAssociation@@Tests/StartMCPServer.wlt:914,1-921,2"
+    TestID   -> "ToolSchema-ReturnsAssociation@@Tests/StartMCPServer.wlt:1005,1-1012,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -929,7 +1020,7 @@ VerificationTest[
     data[ "name" ],
     "Search1",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-NameOverride@@Tests/StartMCPServer.wlt:926,1-933,2"
+    TestID   -> "CreateMCPToolData-NameOverride@@Tests/StartMCPServer.wlt:1017,1-1024,2"
 ]
 
 VerificationTest[
@@ -938,7 +1029,7 @@ VerificationTest[
     data[ "description" ],
     "Search things",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-DescriptionPreserved@@Tests/StartMCPServer.wlt:935,1-942,2"
+    TestID   -> "CreateMCPToolData-DescriptionPreserved@@Tests/StartMCPServer.wlt:1026,1-1033,2"
 ]
 
 VerificationTest[
@@ -947,7 +1038,7 @@ VerificationTest[
     dataOriginal[ "name" ],
     "MyTool",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-SingleArgUsesToolName@@Tests/StartMCPServer.wlt:944,1-951,2"
+    TestID   -> "CreateMCPToolData-SingleArgUsesToolName@@Tests/StartMCPServer.wlt:1035,1-1042,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -963,7 +1054,7 @@ VerificationTest[
     { disambiguated["Search1"]["Description"], disambiguated["Search2"]["Description"] },
     { "Search JIRA", "Search Slack" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateIntegration-LookupRouting@@Tests/StartMCPServer.wlt:956,1-967,2"
+    TestID   -> "DisambiguateIntegration-LookupRouting@@Tests/StartMCPServer.wlt:1047,1-1058,2"
 ]
 
 VerificationTest[
@@ -975,7 +1066,7 @@ VerificationTest[
     toolDataList[[ All, "name" ]],
     { "Search1", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateIntegration-WireNames@@Tests/StartMCPServer.wlt:969,1-979,2"
+    TestID   -> "DisambiguateIntegration-WireNames@@Tests/StartMCPServer.wlt:1060,1-1070,2"
 ]
 
 VerificationTest[
@@ -989,7 +1080,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Evaluate1", "Search2", "Evaluate2", "Unique" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-MultipleGroups@@Tests/StartMCPServer.wlt:981,1-993,2"
+    TestID   -> "DisambiguateToolNames-MultipleGroups@@Tests/StartMCPServer.wlt:1072,1-1084,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1012,7 +1103,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1002,1-1016,2"
+    TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1093,1-1107,2"
 ]
 
 (* Responses are sanitized before JSON encoding so PUA characters never reach the wire.
@@ -1040,7 +1131,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON@@Tests/StartMCPServer.wlt:1021,1-1044,2"
+    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON@@Tests/StartMCPServer.wlt:1112,1-1135,2"
 ]
 
 (* Non-string values and association structure pass through sanitization unchanged. *)
@@ -1048,7 +1139,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
+    TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1138,1-1143,2"
 ]
 
 (* Association keys are sanitized too: forwarded associations (e.g. _meta) can carry arbitrary keys. *)
@@ -1066,7 +1157,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-PUAKeysSanitized@@Tests/StartMCPServer.wlt:1055,1-1070,2"
+    TestID   -> "SanitizeResponse-PUAKeysSanitized@@Tests/StartMCPServer.wlt:1146,1-1161,2"
 ]
 
 (* Strings without PUA characters are returned unchanged. *)
@@ -1076,7 +1167,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1073,1-1080,2"
+    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1164,1-1171,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1088,7 +1179,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1085,1-1092,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1176,1-1183,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
