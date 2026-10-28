@@ -228,6 +228,10 @@ While only `WolframAlphaContext` *requires* an [LLMKit subscription](https://www
 
 > **Note:** MCP Apps tools require a client that supports the `io.modelcontextprotocol/ui` extension. When UI support is available, the `WolframAlpha` and `WolframLanguageEvaluator` tools are automatically enhanced with interactive notebook viewers. See [docs/mcp-apps.md](docs/mcp-apps.md) for details.
 
+### License Tools
+
+- **WolframLicenseStatus** - Report the status of the standalone MCP server's time-limited license (added automatically to servers running under one)
+
 See [docs/tools.md](docs/tools.md) for detailed information about each tool.
 
 ## Creating Custom Servers

@@ -110,6 +110,12 @@ $DefaultMCPTools = <|
 
 > **Note:** When a client supports the `io.modelcontextprotocol/ui` extension, the `WolframAlpha` and `WolframLanguageEvaluator` tools are automatically enhanced with UI capabilities (e.g., deploying cloud notebooks and returning `_meta` with `notebookUrl`). See [mcp-apps.md](mcp-apps.md) for details.
 
+#### License Tools
+
+| Tool | Description | Server |
+|------|-------------|--------|
+| `WolframLicenseStatus` | Reports the status of the standalone MCP server's time-limited license: expiration date, days remaining, and instructions URL | (available, not in default servers; added automatically under a [time-limited license](#environment-specific-overrides)) |
+
 ## Tool Definition Format
 
 ### Structure
@@ -405,6 +411,8 @@ Overrides replace whole properties (e.g. the entire `"Parameters"` list); `<| |>
 
 Two further exported symbols describe the product rather than the transport: `$StandaloneMCPServer` is `True` when the kernel is the standalone MCP server product (a kernel that only runs the MCP server, without a full Mathematica installation), and `$StandaloneMCPServerInformation` holds the information that product publishes about itself. Both are set by the standalone application and are `False` and `<| |>` everywhere else; see [usage-data.md](usage-data.md#standalone-mcp-server).
 
+The standalone product runs under its own time-limited license, which the standalone application describes with keys of `$StandaloneMCPServerInformation`: `"ExpirationDate"`, `"Expired"`, `"InstructionsURL"`, `"ProductName"`, and `"WarningDays"` (default 14). License handling is on only when `"Expired"` or `"ExpirationDate"` is present, and the license is read again on every request (`licenseStatus` in `Kernel/Tools/LicenseStatus.wl`). With a license, the server appends the license status to the `initialize` instructions, adds the `WolframLicenseStatus` tool unless the server already lists it, fails every other tool call with an error result (without running the tool) and every prompt request with a JSON-RPC error once the license has expired, and appends a reminder to every other tool result while the days remaining are at most `"WarningDays"`. The standalone application detects license support with `KeyExistsQ[$DefaultMCPTools, "WolframLicenseStatus"]`, so the tool must keep that name and stay in `$DefaultMCPTools`. See [Specs/StandaloneLicense.md](../Specs/StandaloneLicense.md) for details.
+
 ## Tool Output Format
 
 Tools must return strings. For structured output, use consistent formats:
@@ -590,6 +598,7 @@ InstallMCPServer[
 - `Kernel/Tools/SymbolDefinition.wl` - Symbol definition lookup tool
 - `Kernel/Tools/Notebooks.wl` - ReadNotebook and WriteNotebook tools
 - `Kernel/Tools/TestReport.wl` - Test runner tool
+- `Kernel/Tools/LicenseStatus.wl` - WolframLicenseStatus tool and the standalone MCP server's license status (`licenseStatus`, `licenseInstructions`)
 - `Kernel/Tools/CodeInspector/` - Code inspection tool
 - `Kernel/Tools/PacletDocumentation/` - Documentation editing tools
 - `Kernel/Tools/PacletTools/` - Paclet check/build/submit tools

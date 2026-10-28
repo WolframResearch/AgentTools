@@ -179,6 +179,11 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `toolUIMetadata;
 `withToolUIMetadata;
 
+(* Standalone MCP server license (Tools/LicenseStatus.wl): *)
+`$licenseToolName;
+`licenseInstructions;
+`licenseStatus;
+
 (* Tool options: *)
 `$toolOptions;
 `$defaultToolOptions;

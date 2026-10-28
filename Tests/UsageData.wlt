@@ -819,6 +819,61 @@ VerificationTest[
     TestID   -> "StandaloneMCPServer-JSON@@Tests/UsageData.wlt:803,1-820,2"
 ]
 
+(* The keys that describe the standalone MCP server's time-limited license (see Specs/StandaloneLicense.md) are part
+   of the information, so the payload includes them, with the expiration date as an ISO 8601 string in UTC *)
+VerificationTest[
+    Block[
+        {
+            $StandaloneMCPServer            = True,
+            $StandaloneMCPServerInformation = <|
+                "Version"         -> "1.0.0",
+                "ExpirationDate"  -> DateObject[ { 2026, 11, 1, 0, 30, 0 }, TimeZone -> -7 ],
+                "Expired"         -> False,
+                "InstructionsURL" -> "https://example.com/renew",
+                "ProductName"     -> "Wolfram MCP Server",
+                "WarningDays"     -> 7
+            |>
+        },
+        withUsageSession[
+            recordUsageData[ "initialize", $initMessage, $initResponse ];
+            readUsageJSON[ usageDataJSON @ sessionData[ ] ][ "StandaloneMCPServerInformation" ]
+        ]
+    ],
+    <|
+        "Version"         -> "1.0.0",
+        "ExpirationDate"  -> "2026-11-01T07:30:00.000Z",
+        "Expired"         -> False,
+        "InstructionsURL" -> "https://example.com/renew",
+        "ProductName"     -> "Wolfram MCP Server",
+        "WarningDays"     -> 7
+    |>,
+    SameTest -> SameQ,
+    TestID   -> "StandaloneMCPServer-JSON-License@@Tests/UsageData.wlt:824,1-852,2"
+]
+
+(* A missing expiration date (which counts as expired) is kept as None and becomes its InputForm string *)
+VerificationTest[
+    Block[
+        {
+            $StandaloneMCPServer            = True,
+            $StandaloneMCPServerInformation = <| "Version" -> "1.0.0", "ExpirationDate" -> None, "Expired" -> True |>
+        },
+        withUsageSession[
+            recordUsageData[ "initialize", $initMessage, $initResponse ];
+            {
+                sessionData[ ][ "StandaloneMCPServerInformation" ],
+                readUsageJSON[ usageDataJSON @ sessionData[ ] ][ "StandaloneMCPServerInformation" ]
+            }
+        ]
+    ],
+    {
+        <| "Version" -> "1.0.0", "ExpirationDate" -> None, "Expired" -> True |>,
+        <| "Version" -> "1.0.0", "ExpirationDate" -> "None", "Expired" -> True |>
+    },
+    SameTest -> SameQ,
+    TestID   -> "StandaloneMCPServer-JSON-LicenseNoExpirationDate@@Tests/UsageData.wlt:855,1-875,2"
+]
+
 (* Values the standalone application must not set: the payload cannot be built, and as with every other tracking
    failure nothing propagates (the failure is only logged) and no file is written *)
 VerificationTest[
@@ -832,7 +887,7 @@ VerificationTest[
     },
     { { _Failure, False }, { _Failure, False } },
     SameTest -> MatchQ,
-    TestID   -> "StandaloneMCPServer-InvalidValuesIsolated@@Tests/UsageData.wlt:824,1-836,2"
+    TestID   -> "StandaloneMCPServer-InvalidValuesIsolated@@Tests/UsageData.wlt:879,1-891,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -864,7 +919,7 @@ VerificationTest[
         "SystemID"                       -> $SystemID
     },
     SameTest -> MatchQ,
-    TestID   -> "UsageData-JSONPayload@@Tests/UsageData.wlt:841,1-868,2"
+    TestID   -> "UsageData-JSONPayload@@Tests/UsageData.wlt:896,1-923,2"
 ]
 
 (* The JSON is exactly what is stored in the session file, with the values that JSON cannot represent (e.g. None or
@@ -879,7 +934,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "UsageData-JSONRoundTrip@@Tests/UsageData.wlt:872,1-883,2"
+    TestID   -> "UsageData-JSONRoundTrip@@Tests/UsageData.wlt:927,1-938,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -898,14 +953,14 @@ VerificationTest[
     ],
     { True, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "UsageData-KeepAliveTouchesFile@@Tests/UsageData.wlt:888,1-902,2"
+    TestID   -> "UsageData-KeepAliveTouchesFile@@Tests/UsageData.wlt:943,1-957,2"
 ]
 
 VerificationTest[
     withUsageSession[ { touchUsageStatsFile[ ], FileExistsQ @ usageStatsFile[ ] } ],
     { Null, False },
     SameTest -> SameQ,
-    TestID   -> "UsageData-KeepAliveWithoutFile@@Tests/UsageData.wlt:904,1-909,2"
+    TestID   -> "UsageData-KeepAliveWithoutFile@@Tests/UsageData.wlt:959,1-964,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -927,7 +982,7 @@ VerificationTest[
     ],
     { True, False, False },
     SameTest -> SameQ,
-    TestID   -> "UsageData-StaleUsageFileQ@@Tests/UsageData.wlt:914,1-931,2"
+    TestID   -> "UsageData-StaleUsageFileQ@@Tests/UsageData.wlt:969,1-986,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -962,7 +1017,7 @@ VerificationTest[
     ],
     { { "corrupt", "expired", "finished", "older" }, { "older", "finished" }, { "fresh" }, False },
     SameTest -> SameQ,
-    TestID   -> "SubmitUsageData-SubmitsFinishedSessions@@Tests/UsageData.wlt:939,1-966,2"
+    TestID   -> "SubmitUsageData-SubmitsFinishedSessions@@Tests/UsageData.wlt:994,1-1021,2"
 ]
 
 (* A failed submission keeps the file and stops the batch *)
@@ -987,7 +1042,7 @@ VerificationTest[
     ],
     { { }, 1, { "first", "second" } },
     SameTest -> SameQ,
-    TestID   -> "SubmitUsageData-FailureStopsBatch@@Tests/UsageData.wlt:969,1-991,2"
+    TestID   -> "SubmitUsageData-FailureStopsBatch@@Tests/UsageData.wlt:1024,1-1046,2"
 ]
 
 (* While another process holds the lock, this one skips its turn without waiting long *)
@@ -1012,14 +1067,14 @@ VerificationTest[
     ],
     { { }, 0, { "finished" }, True },
     SameTest -> SameQ,
-    TestID   -> "SubmitUsageData-LockHeld@@Tests/UsageData.wlt:994,1-1016,2"
+    TestID   -> "SubmitUsageData-LockHeld@@Tests/UsageData.wlt:1049,1-1071,2"
 ]
 
 VerificationTest[
     submitUsageData @ FileNameJoin @ { $TemporaryDirectory, "does-not-exist-" <> CreateUUID[ ] },
     { },
     SameTest -> SameQ,
-    TestID   -> "SubmitUsageData-NoDirectory@@Tests/UsageData.wlt:1018,1-1023,2"
+    TestID   -> "SubmitUsageData-NoDirectory@@Tests/UsageData.wlt:1073,1-1078,2"
 ]
 
 (* The current session's file is never submitted, even when it looks old *)
@@ -1037,7 +1092,7 @@ VerificationTest[
     ],
     { { }, 0, True },
     SameTest -> SameQ,
-    TestID   -> "SubmitUsageData-CurrentSessionExcluded@@Tests/UsageData.wlt:1026,1-1041,2"
+    TestID   -> "SubmitUsageData-CurrentSessionExcluded@@Tests/UsageData.wlt:1081,1-1096,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1055,7 +1110,7 @@ VerificationTest[
     ],
     False,
     SameTest -> SameQ,
-    TestID   -> "SubmitUsagePayload-Unreachable@@Tests/UsageData.wlt:1048,1-1059,2"
+    TestID   -> "SubmitUsagePayload-Unreachable@@Tests/UsageData.wlt:1103,1-1114,2"
 ]
 
 (* The development endpoint accepts a JSON body (skipped on CI, where network access is not guaranteed) *)
@@ -1073,7 +1128,7 @@ skipIfGitHubActions @ VerificationTest[
     |>,
     True,
     SameTest -> SameQ,
-    TestID   -> "SubmitUsagePayload-Endpoint@@Tests/UsageData.wlt:1062,23-1077,2"
+    TestID   -> "SubmitUsagePayload-Endpoint@@Tests/UsageData.wlt:1117,23-1132,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1094,7 +1149,7 @@ skipIfScript @ VerificationTest[
     ],
     _ProcessObject,
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-ServerStarts@@Tests/UsageData.wlt:1090,16-1098,2"
+    TestID   -> "UsageData-Integration-ServerStarts@@Tests/UsageData.wlt:1145,16-1153,2"
 ]
 
 skipIfScript @ VerificationTest[
@@ -1102,28 +1157,28 @@ skipIfScript @ VerificationTest[
     MCPInitialize[ "ClientName" -> $usageClientName ],
     KeyValuePattern[ "result" -> _Association ],
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-Initialize@@Tests/UsageData.wlt:1100,16-1106,2"
+    TestID   -> "UsageData-Integration-Initialize@@Tests/UsageData.wlt:1155,16-1161,2"
 ]
 
 skipIfScript @ VerificationTest[
     SendMCPRequest[ "tools/call", <| "name" -> "WolframLanguageEvaluator", "arguments" -> <| "code" -> "Prime[1000]" |> |> ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> False ] ],
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-ToolCall@@Tests/UsageData.wlt:1108,16-1113,2"
+    TestID   -> "UsageData-Integration-ToolCall@@Tests/UsageData.wlt:1163,16-1168,2"
 ]
 
 skipIfScript @ VerificationTest[
     SendMCPRequest[ "tools/call", <| "name" -> "NoSuchTool", "arguments" -> <| |> |> ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> True ] ],
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-UnknownToolCall@@Tests/UsageData.wlt:1115,16-1120,2"
+    TestID   -> "UsageData-Integration-UnknownToolCall@@Tests/UsageData.wlt:1170,16-1175,2"
 ]
 
 skipIfScript @ VerificationTest[
     SendMCPRequest[ "prompts/get", <| "name" -> "NoSuchPrompt", "arguments" -> <| |> |> ],
     KeyValuePattern[ "error" -> _Association ],
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-UnknownPrompt@@Tests/UsageData.wlt:1122,16-1127,2"
+    TestID   -> "UsageData-Integration-UnknownPrompt@@Tests/UsageData.wlt:1177,16-1182,2"
 ]
 
 skipIfScript @ VerificationTest[
@@ -1133,7 +1188,7 @@ skipIfScript @ VerificationTest[
     ],
     _String? FileExistsQ,
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-SessionFileWritten@@Tests/UsageData.wlt:1129,16-1137,2"
+    TestID   -> "UsageData-Integration-SessionFileWritten@@Tests/UsageData.wlt:1184,16-1192,2"
 ]
 
 skipIfScript @ VerificationTest[
@@ -1145,7 +1200,7 @@ skipIfScript @ VerificationTest[
         KeyValuePattern @ { "Type" -> "PromptGet", "Name" -> Null, "Success" -> False }
     },
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-Events@@Tests/UsageData.wlt:1139,16-1149,2"
+    TestID   -> "UsageData-Integration-Events@@Tests/UsageData.wlt:1194,16-1204,2"
 ]
 
 skipIfScript @ VerificationTest[
@@ -1162,7 +1217,7 @@ skipIfScript @ VerificationTest[
     },
     { "WolframLanguage", "2024-11-05", True, True, True, True, True, False, <| |> },
     SameTest -> SameQ,
-    TestID   -> "UsageData-Integration-Payload@@Tests/UsageData.wlt:1151,16-1166,2"
+    TestID   -> "UsageData-Integration-Payload@@Tests/UsageData.wlt:1206,16-1221,2"
 ]
 
 skipIfScript @ VerificationTest[
@@ -1171,7 +1226,7 @@ skipIfScript @ VerificationTest[
     FileExistsQ @ $usageFile,
     False,
     SameTest -> SameQ,
-    TestID   -> "UsageData-Integration-Cleanup@@Tests/UsageData.wlt:1168,16-1175,2"
+    TestID   -> "UsageData-Integration-Cleanup@@Tests/UsageData.wlt:1223,16-1230,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1189,7 +1244,7 @@ skipIfScript @ VerificationTest[
     ],
     _Missing,
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Integration-OptedOutWritesNothing@@Tests/UsageData.wlt:1180,16-1193,2"
+    TestID   -> "UsageData-Integration-OptedOutWritesNothing@@Tests/UsageData.wlt:1235,16-1248,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1199,7 +1254,7 @@ VerificationTest[
     DeleteObject @ $customServer,
     Null,
     SameTest -> MatchQ,
-    TestID   -> "UsageData-Cleanup@@Tests/UsageData.wlt:1198,1-1203,2"
+    TestID   -> "UsageData-Cleanup@@Tests/UsageData.wlt:1253,1-1258,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
