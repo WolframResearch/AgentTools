@@ -91,7 +91,11 @@ initializeServerState[ obj0_MCPServerObject ] := Enclose[
         (* Run server-level initialization for custom and paclet-backed servers *)
         runServerInitialization @ obj;
 
-        llmTools = disambiguateToolNames @ applyToolOverrides @ ConfirmMatch[ obj[ "Tools" ], { ___LLMTool }, "Tools" ];
+        llmTools = withLicenseTool @ disambiguateToolNames @ applyToolOverrides @ ConfirmMatch[
+            obj[ "Tools" ],
+            { ___LLMTool },
+            "Tools"
+        ];
 
         (* Run tool initialization for all tools at startup *)
         runToolInitialization @ Values @ llmTools;
@@ -286,6 +290,20 @@ disambiguateToolNames // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
+(*withLicenseTool*)
+(* A server running under the standalone MCP server's time-limited license gets the WolframLicenseStatus tool, unless
+   it already lists a tool by that name (see Tools/LicenseStatus.wl). *)
+withLicenseTool // beginDefinition;
+
+withLicenseTool[ tools_Association ] /; licenseStatus[ ] =!= None && ! KeyExistsQ[ tools, $licenseToolName ] :=
+    Append[ tools, $licenseToolName -> $DefaultMCPTools[ $licenseToolName ] ];
+
+withLicenseTool[ tools_Association ] := tools;
+
+withLicenseTool // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
 (*createMCPToolData*)
 createMCPToolData // beginDefinition;
 
@@ -456,7 +474,7 @@ handleMethod[ "ping"          , msg_, req_ ] := <| req, "result" -> <| |> |>;
 handleMethod[ "resources/list", msg_, req_ ] := <| req, "result" -> <| "resources" -> listUIResources[ ] |> |>;
 handleMethod[ "resources/read", msg_, req_ ] := handleResourceRead[ msg, req ];
 handleMethod[ "prompts/list"  , msg_, req_ ] := <| req, "result" -> <| "prompts" -> $promptList |> |>;
-handleMethod[ "prompts/get"   , msg_, req_ ] := <| req, "result" -> getPrompt[ msg, req ] |>;
+handleMethod[ "prompts/get"   , msg_, req_ ] := handlePromptGet[ msg, req ];
 handleMethod[ "tools/list"    , msg_, req_ ] := <| req, "result" -> <| "tools" -> withToolUIMetadata @ $toolList |> |>;
 handleMethod[ "tools/call"    , msg_, req_ ] := <| req, "result" -> evaluateTool[ msg, req ] |>;
 
@@ -524,6 +542,22 @@ resourceReadErrorMessage[ uri_String ] :=
     "UI resource not found: " <> uri;
 
 resourceReadErrorMessage // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*handlePromptGet*)
+(* Once the standalone MCP server's time-limited license has expired, prompts fail with the expiration message instead
+   of running, like tool calls (see evaluateTool and Tools/LicenseStatus.wl) *)
+handlePromptGet // beginDefinition;
+
+handlePromptGet[ msg_, req_ ] := handlePromptGet[ msg, req, licenseStatus[ ] ];
+
+handlePromptGet[ msg_, req_, license: KeyValuePattern[ "Expired" -> True ] ] :=
+    <| req, "error" -> <| "code" -> -32603, "message" -> license[ "Message" ] |> |>;
+
+handlePromptGet[ msg_, req_, _ ] := <| req, "result" -> getPrompt[ msg, req ] |>;
+
+handlePromptGet // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -787,12 +821,20 @@ resultToContent // endDefinition;
 evaluateTool // beginDefinition;
 
 evaluateTool[ msg_, req_ ] := Enclose[
-    Catch @ Module[ { params, toolName, args, tool, result, content, toolResultAssoc },
+    Catch @ Module[ { params, toolName, args, license, tool, result, content, toolResultAssoc },
         Quiet @ TaskRemove @ $warmupTask; (* We're in a tool call, so it no longer makes sense to warm up tools *)
         writeLog[ "ToolCall" -> msg ];
         params = ConfirmBy[ Lookup[ msg, "params", <| |> ], AssociationQ ];
         toolName = ConfirmBy[ Lookup[ params, "name" ], StringQ ];
         args = Lookup[ params, "arguments", <| |> ];
+
+        (* The standalone MCP server's time-limited license (read again on every call) applies to every tool except
+           WolframLicenseStatus: once it has expired, the requested tool is not run and the call returns the expiration
+           message as an error (see Tools/LicenseStatus.wl) *)
+        license = If[ toolName === $licenseToolName, None, licenseStatus[ ] ];
+        If[ MatchQ[ license, KeyValuePattern[ "Expired" -> True ] ],
+            Throw @ <| "content" -> { <| "type" -> "text", "text" -> license[ "Message" ] |> }, "isError" -> True |>
+        ];
 
         (* Check if the tool exists before calling it *)
         tool = Lookup[ $llmTools, toolName, Missing[ "UnknownTool", toolName ] ];
@@ -817,6 +859,11 @@ evaluateTool[ msg_, req_ ] := Enclose[
             (* Default: auto-detect graphics *)
             True,
                 resultToContent @ result
+        ];
+
+        (* In the license's warning period, remind the user that it expires soon *)
+        If[ MatchQ[ license, KeyValuePattern[ "Warning" -> True ] ],
+            content = Append[ content, <| "type" -> "text", "text" -> license[ "Message" ] |> ]
         ];
 
         toolResultAssoc = <| "content" -> ConfirmMatch[ content, { __Association } ], "isError" -> FailureQ @ result |>;
@@ -907,7 +954,11 @@ initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_ ] :=
 initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, clientMsg_Association ] := Enclose[
     Module[ { tools, instructions },
         tools = If[ Length @ tools0 > 0, <| "listChanged" -> True |>, <| |> ];
-        instructions = ConfirmMatch[ makeInstructions @ prompts, _Missing | _String, "Instructions" ];
+        instructions = ConfirmMatch[
+            withLicenseInstructions @ makeInstructions @ prompts,
+            _Missing | _String,
+            "Instructions"
+        ];
         DeleteMissing @ <|
             "protocolVersion" -> negotiateProtocolVersion @ clientMsg,
             "instructions"    -> instructions,
@@ -977,6 +1028,17 @@ makeInstructions[ _ ] :=
     Missing[ "NotAvailable" ];
 
 makeInstructions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*withLicenseInstructions*)
+(* Appends the status of the standalone MCP server's time-limited license, if there is one, to the instructions *)
+withLicenseInstructions // beginDefinition;
+withLicenseInstructions[ instructions_ ] := withLicenseInstructions[ instructions, licenseInstructions[ ] ];
+withLicenseInstructions[ instructions_, None ] := instructions;
+withLicenseInstructions[ _Missing, license_String ] := license;
+withLicenseInstructions[ instructions_String, license_String ] := instructions <> "\n\n" <> license;
+withLicenseInstructions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)

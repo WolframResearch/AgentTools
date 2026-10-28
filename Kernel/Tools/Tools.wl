@@ -111,6 +111,9 @@ $subcontexts = {
     (* Tools: ReadNotebook, WriteNotebook *)
     "Wolfram`AgentTools`Tools`Notebooks`",
 
+    (* Tools: WolframLicenseStatus *)
+    "Wolfram`AgentTools`Tools`LicenseStatus`",
+
     (* Tools: CreateSymbolPacletDocumentation, EditSymbolPacletDocumentation *)
     "Wolfram`AgentTools`Tools`PacletDocumentation`",
 
