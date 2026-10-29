@@ -38,7 +38,7 @@ AgentTools::UnsupportedOperatingSystem    = "Unsupported operating system: `1`."
 AgentTools::MCPTimeout                    = "MCP request `1` timed out after `2` seconds.";
 AgentTools::UnknownTool                   = "Unknown tool: `1`.";
 AgentTools::InvalidTOMLFormat             = "Invalid TOML format in file `1` at line `2`: `3`.";
-AgentTools::InvalidYAMLFormat             = "Invalid YAML format in file `1` at line `2`: `3`.";
+AgentTools::InvalidYAMLFormat             = "Invalid YAML format in file `1`.";
 
 (* PacletDocumentation messages *)
 AgentTools::NotebookFileExists            = "Notebook already exists: `1`.";

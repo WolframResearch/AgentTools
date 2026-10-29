@@ -110,7 +110,7 @@ VerificationTest[
 ]
 
 VerificationTest[
-    StringStartsQ[ ReadString @ skillFile[ FileNameJoin @ { $project, ".claude", "skills" }, "mem-skill" ], "---\nname: mem-skill\n" ],
+    StringStartsQ[ ReadString @ skillFile[ FileNameJoin @ { $project, ".claude", "skills" }, "mem-skill" ], "---\n\"name\": \"mem-skill\"\n" ],
     True,
     TestID -> "Bundle-Project-GeneratedSkillMarkdown@@Tests/DeployAgentToolsSkills.wlt:112,1-116,2"
 ]
