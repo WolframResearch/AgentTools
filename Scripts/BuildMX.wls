@@ -57,6 +57,20 @@ copyTemporary0[ dir_, tmp_, file_ ] :=
     ];
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*copyResourceFunctions*)
+(* The local resource function definitions (see ResourceFunctions/README.md) are not paclet extension files, so
+   copyTemporary skips them, but importResourceFunction looks for them next to the copy of the paclet it is loaded from
+   when inlining the definitions into the MX file. They are copied after expandTags so their Confirm tags are left alone. *)
+copyResourceFunctions[ dir_, tmp_ ] :=
+    With[ { source = FileNameJoin @ { dir, "ResourceFunctions" } },
+        If[ DirectoryQ @ source,
+            CopyDirectory[ source, FileNameJoin @ { tmp, "ResourceFunctions" } ],
+            None
+        ]
+    ];
+
+(* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*relativePath*)
 relativePath[ dir0_, file0_ ] :=
@@ -140,7 +154,16 @@ getNewTags[ root_, file_ ] :=
 
 $tagTemplate = StringTemplate[ "\"`Tag`@@`File`:`Line1`,`Column1`-`Line2`,`Column2`\"" ];
 
-astPattern := astPattern = ResourceFunction[ "ASTPattern", "Function" ];
+(* Prefer the local copy of the ASTPattern resource function (see ResourceFunctions/README.md), so that the build does not
+   need the Function Repository. The Block keeps its BeginPackage/EndPackage from changing this script's context path. *)
+$localASTPatternFile = FileNameJoin @ { $pacletDir, "ResourceFunctions", "ASTPattern.wl" };
+
+astPattern := astPattern =
+    If[ FileExistsQ @ $localASTPatternFile,
+        Block[ { $Context = $Context, $ContextPath = $ContextPath }, Get @ $localASTPatternFile ];
+        Symbol[ "Wolfram`AgentTools`ResourceFunctions`ASTPattern`ASTPattern" ],
+        ResourceFunction[ "ASTPattern", "Function" ]
+    ];
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -175,6 +198,9 @@ If[ $assertions,
     cicd`ConsoleLog[ "Inserting confirmation source info..." ];
     cicd`ScriptConfirm @ expandTags @ tmp
 ];
+
+cicd`ConsoleLog[ "Copying local resource function definitions..." ];
+cicd`ScriptConfirmMatch[ copyResourceFunctions[ $pacletDir, tmp ], _String | None ];
 
 cicd`ConsoleLog[ "Loading paclet..." ];
 PacletDirectoryUnload @ $pacletDir;

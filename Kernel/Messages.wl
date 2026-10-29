@@ -37,6 +37,14 @@ AgentTools::InvalidProjectDirectory       = "Invalid project directory specifica
 AgentTools::UnsupportedOperatingSystem    = "Unsupported operating system: `1`.";
 AgentTools::MCPTimeout                    = "MCP request `1` timed out after `2` seconds.";
 AgentTools::UnknownTool                   = "Unknown tool: `1`.";
+AgentTools::CloudUnavailable              = "The tool \"`1`\" could not complete because the Wolfram Cloud could not be reached.";
+AgentTools::DocumentationSearchFailed     = "Documentation search is currently unavailable (`1`). This usually means that the Wolfram Cloud could not be reached; try again later.";
+AgentTools::WolframAlphaSearchFailed      = "Wolfram|Alpha search is currently unavailable (`1`). This usually means that the Wolfram Cloud could not be reached; try again later.";
+AgentTools::RequestAborted                = "The evaluation of the `1` request was aborted.";
+AgentTools::ResourceFunctionUnavailable   = "The resource function \"`1`\" is not available: there is no local definition and the Wolfram Function Repository could not be reached.";
+AgentTools::ToolAborted                   = "The evaluation of the tool \"`1`\" was aborted.";
+AgentTools::UncaughtThrow                 = "An uncaught exception occurred while handling the `1` request: `2`";
+AgentTools::UncaughtToolThrow             = "The tool \"`1`\" failed with an uncaught exception: `2`";
 AgentTools::InvalidTOMLFormat             = "Invalid TOML format in file `1` at line `2`: `3`.";
 AgentTools::InvalidYAMLFormat             = "Invalid YAML format in file `1` at line `2`: `3`.";
 
