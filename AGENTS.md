@@ -183,6 +183,14 @@ The `Enclose` wrapper is only necessary if you are using any `Confirm`, `Confirm
 - Whenever you modify source code, you should also write and run tests for the changes you made.
 - If you are using a package-scoped symbol defined in a different file, ensure that it is declared in a context that's reachable (e.g. `CommonSymbols.wl`).
 
+## Code style and review
+
+Code review is the bottleneck, so simple and reviewable beats complete:
+
+- Prefer the smaller design. Do not chase edge cases that are unlikely in practice; note them as a comment instead.
+- After making changes, consider whether it's more complicated than it needs to be. Try to simplify when appropriate.
+- A good PR that gets merged is better than a perfect one that never gets reviewed because it's too large or complex.
+
 ## Special Considerations
 
 While working on this paclet, you are also working on the code that's running the MCP server providing your Wolfram tools. Sometimes you might run into issues related to this and you'll need to carefully consider how current changes might be affecting the MCP server.
