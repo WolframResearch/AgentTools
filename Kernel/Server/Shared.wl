@@ -82,7 +82,7 @@ parseToolOptions0 // endDefinition;
 (* ::Subsection::Closed:: *)
 (*parseQuantityString*)
 (* The Quantity given as an InputForm string, e.g. "Quantity[1, \"Months\"]", or the string itself if it isn't one.
-   The string is only parsed, never evaluated. *)
+   Only a parsed Quantity[number, "Unit"] is evaluated, nothing else in the string. *)
 parseQuantityString // beginDefinition;
 
 parseQuantityString[ s_String ] := Replace[

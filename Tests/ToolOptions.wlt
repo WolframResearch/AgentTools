@@ -390,11 +390,13 @@ VerificationTest[
         result = InstallMCPServer[ configFile, server, "ToolOptions" -> opts, "VerifyLLMKit" -> False ];
         data = Developer`ReadRawJSONString @ ReadString @ First @ configFile;
         env = data[ "mcpServers", name, "env" ];
+        UninstallMCPServer[ configFile, server ];
+        DeleteObject @ server;
         Quiet @ DeleteFile @ First @ configFile;
         Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ env[ "MCP_TOOL_OPTIONS" ] === opts
     ],
     True,
-    TestID -> "InstallMCPServer-ToolOptionsNonJSONValuesRoundTrip@@Tests/ToolOptions.wlt:375,1-398,2"
+    TestID -> "InstallMCPServer-ToolOptionsNonJSONValuesRoundTrip@@Tests/ToolOptions.wlt:375,1-400,2"
 ]
 
 VerificationTest[
@@ -416,7 +418,7 @@ VerificationTest[
         KeyExistsQ[ env, "MCP_TOOL_OPTIONS" ]
     ],
     False,
-    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar@@Tests/ToolOptions.wlt:400,1-420,2"
+    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar@@Tests/ToolOptions.wlt:402,1-422,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -425,7 +427,7 @@ VerificationTest[
 VerificationTest[
     Wolfram`AgentTools`InstallMCPServer`Private`validateToolOptions[ <| |>, MCPServerObject[ "Wolfram" ] ],
     <| |>,
-    TestID -> "ValidateToolOptions-Empty@@Tests/ToolOptions.wlt:425,1-429,2"
+    TestID -> "ValidateToolOptions-Empty@@Tests/ToolOptions.wlt:427,1-431,2"
 ]
 
 VerificationTest[
@@ -435,7 +437,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-ValidOptions@@Tests/ToolOptions.wlt:431,1-439,2"
+    TestID   -> "ValidateToolOptions-ValidOptions@@Tests/ToolOptions.wlt:433,1-441,2"
 ]
 
 VerificationTest[
@@ -443,7 +445,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptions },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-InvalidType@@Tests/ToolOptions.wlt:441,1-447,2"
+    TestID   -> "ValidateToolOptions-InvalidType@@Tests/ToolOptions.wlt:443,1-449,2"
 ]
 
 VerificationTest[
@@ -454,7 +456,7 @@ VerificationTest[
     KeyValuePattern[ "NonexistentTool" -> KeyValuePattern[ "Foo" -> "Bar" ] ],
     { AgentTools::UnrecognizedToolOption },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedToolName@@Tests/ToolOptions.wlt:449,1-458,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedToolName@@Tests/ToolOptions.wlt:451,1-460,2"
 ]
 
 VerificationTest[
@@ -465,7 +467,7 @@ VerificationTest[
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "NonexistentOption" -> "value" ] ],
     { AgentTools::UnrecognizedToolOptionName },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedOptionName@@Tests/ToolOptions.wlt:460,1-469,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedOptionName@@Tests/ToolOptions.wlt:462,1-471,2"
 ]
 
 VerificationTest[
@@ -476,7 +478,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-NonAssociationValue@@Tests/ToolOptions.wlt:471,1-480,2"
+    TestID   -> "ValidateToolOptions-NonAssociationValue@@Tests/ToolOptions.wlt:473,1-482,2"
 ]
 
 VerificationTest[
@@ -487,7 +489,7 @@ VerificationTest[
     <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-MixedValidAndInvalid@@Tests/ToolOptions.wlt:482,1-491,2"
+    TestID   -> "ValidateToolOptions-MixedValidAndInvalid@@Tests/ToolOptions.wlt:484,1-493,2"
 ]
 
 VerificationTest[
@@ -498,7 +500,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-BooleanValue@@Tests/ToolOptions.wlt:493,1-502,2"
+    TestID   -> "ValidateToolOptions-BooleanValue@@Tests/ToolOptions.wlt:495,1-504,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -508,7 +510,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`$toolOptions,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptionsInitialized@@Tests/ToolOptions.wlt:507,1-512,2"
+    TestID   -> "ToolOptionsInitialized@@Tests/ToolOptions.wlt:509,1-514,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
