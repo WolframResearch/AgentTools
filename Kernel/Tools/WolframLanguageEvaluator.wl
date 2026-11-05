@@ -42,6 +42,10 @@ $maxSessionCount   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionCo
 $maxSessionBytes   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionBytes" ];
 $maxSessionAge     := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionAge"   ];
 
+$allowedReadPaths    := toolOptionValue[ "WolframLanguageEvaluator", "AllowedReadPaths"    ];
+$allowedWritePaths   := toolOptionValue[ "WolframLanguageEvaluator", "AllowedWritePaths"   ];
+$allowedExecutePaths := toolOptionValue[ "WolframLanguageEvaluator", "AllowedExecutePaths" ];
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Prompts*)
@@ -107,7 +111,11 @@ $defaultToolOptions[ "WolframLanguageEvaluator" ] = <|
     "MaxCharacterCount" -> 10000,
     "MaxSessionCount"   -> 100,
     "MaxSessionBytes"   -> 1073741824, (* 1 GB *)
-    "MaxSessionAge"     -> Quantity[ 1, "Months" ]
+    "MaxSessionAge"     -> Quantity[ 1, "Months" ],
+    (* Sandbox permissions for the "Local" method (Automatic: Chatbook's defaults; see sandboxPermissionOptions) *)
+    "AllowedReadPaths"    -> Automatic,
+    "AllowedWritePaths"   -> Automatic,
+    "AllowedExecutePaths" -> Automatic
 |>;
 
 (* ::**************************************************************************************************************:: *)
@@ -180,7 +188,8 @@ chatbookToolEvaluate[ code_String, property_, timeConstraint_Integer ] :=
                     "MaxCharacterCount"     -> $maxCharacterCount,
                     "Method"                -> getEvaluatorMethod[ ],
                     "PropagateMessages"     -> True,
-                    "TimeConstraint"        -> timeConstraint
+                    "TimeConstraint"        -> timeConstraint,
+                    Sequence @@ sandboxPermissionOptions[ ]
                 ]
             ];
             $line = nextLineNumber[ result, line + 1 ];
@@ -198,6 +207,23 @@ getEvaluatorMethod[ ] := getEvaluatorMethod @ $evaluatorMethod;
 getEvaluatorMethod[ Automatic ] := If[ $CloudEvaluation, "Cloud", "Session" ];
 getEvaluatorMethod[ other_ ] := other;
 getEvaluatorMethod // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*sandboxPermissionOptions*)
+(* The file access permissions of the "Local" method's sandbox kernel (the other methods ignore them). Chatbook only
+   applies them when it starts that kernel, which then keeps them for its lifetime. Since the kernel is usually started
+   by session bookkeeping (localKernelEvaluate) before any user code runs, every call that can start it must pass
+   them. *)
+sandboxPermissionOptions // beginDefinition;
+
+sandboxPermissionOptions[ ] := {
+    "AllowedExecutePaths" -> $allowedExecutePaths,
+    "AllowedReadPaths"    -> $allowedReadPaths,
+    "AllowedWritePaths"   -> $allowedWritePaths
+};
+
+sandboxPermissionOptions // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -615,10 +641,21 @@ localKernelEvaluate // beginDefinition;
 localKernelEvaluate // Attributes = { HoldAllComplete };
 
 localKernelEvaluate[ eval_ ] /; chatbookLinePropertyQ[ ] :=
-    cb`WolframLanguageToolEvaluate[ HoldComplete @ eval, "Result", "Line" -> None, "Method" -> "Local" ];
+    cb`WolframLanguageToolEvaluate[
+        HoldComplete @ eval,
+        "Result",
+        "Line"   -> None,
+        "Method" -> "Local",
+        Sequence @@ sandboxPermissionOptions[ ]
+    ];
 
 localKernelEvaluate[ eval_ ] :=
-    cb`WolframLanguageToolEvaluate[ HoldComplete @ WithCleanup[ eval, $Line-- ], "Result", "Method" -> "Local" ];
+    cb`WolframLanguageToolEvaluate[
+        HoldComplete @ WithCleanup[ eval, $Line-- ],
+        "Result",
+        "Method" -> "Local",
+        Sequence @@ sandboxPermissionOptions[ ]
+    ];
 
 localKernelEvaluate // endDefinition;
 
