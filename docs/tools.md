@@ -535,7 +535,8 @@ $myOption := toolOptionValue[ "YourTool", "OptionName" ];
 
 The `"Allowed*Paths"` options set the file access permissions of the sandboxed kernel used by the `"Local"`
 method, and are passed to Chatbook's `WolframLanguageToolEvaluate` options of the same names. The other methods
-ignore them. Each one takes a path string, a list of path strings, or one of these:
+don't use them, but Chatbook checks them for every method, so an invalid value makes every evaluation fail. Each one
+takes a path string, a list of path strings, or one of these:
 
 - `Automatic`: Chatbook's defaults. Reading is allowed everywhere. Writing is limited to the temporary directory,
   the paclet directories and some application data directories (including AgentTools' own, where sessions are
@@ -545,11 +546,11 @@ ignore them. Each one takes a path string, a list of path strings, or one of the
 
 Including `Automatic` in a list extends Chatbook's default list, e.g. `{Automatic, "C:/Users/me/project"}` (for
 `"AllowedReadPaths"` this replaces the "everywhere" default with a default list of Wolfram directories). A list
-without `Automatic` replaces the defaults entirely, which can break things the sandbox needs: reading the Wolfram
-installation, loading AgentTools inside the sandbox kernel (needed for sessions and `SymbolDefinition`), or saving
-sessions under `$UserBaseDirectory/ApplicationData/Wolfram/AgentTools`. Paths are used as given (no `~` or
-environment variable expansion). A path covers everything that starts with it, so a directory covers its contents,
-but `"C:/proj"` also covers `"C:/proj2"`.
+without `Automatic` (or `None`) replaces the defaults entirely, which can break things the sandbox needs: reading
+the Wolfram installation, loading AgentTools inside the sandbox kernel (needed for sessions and `SymbolDefinition`),
+or saving sessions under `$UserBaseDirectory/ApplicationData/Wolfram/AgentTools`. Paths are used as given (no `~`
+or environment variable expansion). A path covers everything that starts with it, so a directory covers its
+contents, but `"C:/proj"` also covers `"C:/proj2"`.
 
 The permissions are applied when Chatbook starts the sandbox kernel, which then keeps them, so they are fixed for
 the lifetime of the server process. Since the kernel is usually started by session bookkeeping rather than by the
