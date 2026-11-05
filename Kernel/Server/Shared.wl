@@ -34,6 +34,33 @@ $logTimeStamp := DateString[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Tool Options JSON*)
+(* Tool options are passed from InstallMCPServer to the server as JSON in the MCP_TOOL_OPTIONS environment variable.
+   Values that JSON can't represent are written as their InputForm with this prefix, so that they can't be confused with
+   strings: the symbol None is written as "_wl_None", but the string "None" as "None". A string value that itself
+   starts with the prefix would be read back as an expression, which isn't expected to happen in practice. *)
+$expressionPrefix = "_wl_";
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*toolOptionsJSONString*)
+toolOptionsJSONString // beginDefinition;
+
+toolOptionsJSONString[ options_Association ] :=
+    Developer`WriteRawJSONString[ options, "Compact" -> True, "ConversionFunction" -> toolOptionExpressionString ];
+
+toolOptionsJSONString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*toolOptionExpressionString*)
+toolOptionExpressionString // beginDefinition;
+toolOptionExpressionString // Attributes = { HoldAllComplete };
+toolOptionExpressionString[ expr_ ] := $expressionPrefix <> ToString[ Unevaluated @ expr, InputForm ];
+toolOptionExpressionString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
 (*parseToolOptions*)
 parseToolOptions // beginDefinition;
 parseToolOptions[ env_String ] := parseToolOptions0 @ Quiet @ Developer`ReadRawJSONString @ env;
@@ -63,37 +90,15 @@ parseToolOptions0[ tool_String, opts_ ] := Enclose[
     throwInternalFailure
 ];
 
+(* Values that JSON can't represent were written with $expressionPrefix (see toolOptionsJSONString): *)
 parseToolOptions0[ tool_String, optionName_String, optionValue_ ] :=
     optionName -> ReplaceAll[
         optionValue,
-        (* Values that don't have a corresponding JSON representation, written as InputForm strings by jsonConvert: *)
-        {
-            "All"       -> All,
-            "Automatic" -> Automatic,
-            "Infinity"  -> Infinity,
-            "None"      -> None,
-            s_String /; StringStartsQ[ s, "Quantity[" ] :> parseQuantityString @ s
-        }
+        s_String /; StringStartsQ[ s, $expressionPrefix ] :>
+            ToExpression[ StringDrop[ s, StringLength @ $expressionPrefix ], InputForm ]
     ];
 
 parseToolOptions0 // endDefinition;
-
-(* ::**************************************************************************************************************:: *)
-(* ::Subsection::Closed:: *)
-(*parseQuantityString*)
-(* The Quantity given as an InputForm string, e.g. "Quantity[1, \"Months\"]", or the string itself if it isn't one.
-   Only a parsed Quantity[number, "Unit"] is evaluated, nothing else in the string. *)
-parseQuantityString // beginDefinition;
-
-parseQuantityString[ s_String ] := Replace[
-    Quiet @ ToExpression[ s, InputForm, HoldComplete ],
-    {
-        HoldComplete[ q: Quantity[ _Integer|_Real, _String ] ] :> q,
-        _ :> s
-    }
-];
-
-parseQuantityString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
