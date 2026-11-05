@@ -41,6 +41,7 @@ $maxCharacterCount := toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacter
 $maxSessionCount   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionCount" ];
 $maxSessionBytes   := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionBytes" ];
 $maxSessionAge     := toolOptionValue[ "WolframLanguageEvaluator", "MaxSessionAge"   ];
+$memoryConstraint  := toolOptionValue[ "WolframLanguageEvaluator", "MemoryConstraint" ];
 
 $allowedReadPaths    := toolOptionValue[ "WolframLanguageEvaluator", "AllowedReadPaths"    ];
 $allowedWritePaths   := toolOptionValue[ "WolframLanguageEvaluator", "AllowedWritePaths"   ];
@@ -108,6 +109,7 @@ $defaultToolOptions[ "WolframLanguageEvaluator" ] = <|
     "Method"            -> Automatic,
     "ImageExportMethod" -> None,
     "TimeConstraint"    -> 60,
+    "MemoryConstraint"  -> Automatic, (* Automatic: Chatbook's default; older Chatbook versions (< 2.7.36) ignore it *)
     "MaxCharacterCount" -> 10000,
     "MaxSessionCount"   -> 100,
     "MaxSessionBytes"   -> 1073741824, (* 1 GB *)
@@ -183,6 +185,7 @@ chatbookToolEvaluate[ code_String, property_, timeConstraint_Integer ] :=
                     "AppendURIInstructions" -> False,
                     "IncludeDefinitions"    -> False,
                     "MaxCharacterCount"     -> $maxCharacterCount,
+                    "MemoryConstraint"      -> $memoryConstraint,
                     "Method"                -> getEvaluatorMethod[ ],
                     "PropagateMessages"     -> True,
                     "TimeConstraint"        -> timeConstraint,
