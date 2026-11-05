@@ -82,7 +82,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
     ],
     Automatic,
-    TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:79,1-85,2"
+    TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:80,1-86,2"
 ]
 
 VerificationTest[
@@ -214,7 +214,7 @@ VerificationTest[
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
-        "{\"WolframLanguageEvaluator\":{\"ImageExportMethod\":\"None\",\"Method\":\"Automatic\"}}"
+        "{\"WolframLanguageEvaluator\":{\"ImageExportMethod\":\"_wl_None\",\"Method\":\"_wl_Automatic\"}}"
     ],
     KeyValuePattern[
         "WolframLanguageEvaluator" -> KeyValuePattern @ { "ImageExportMethod" -> None, "Method" -> Automatic }
@@ -223,13 +223,42 @@ VerificationTest[
     TestID   -> "ParseToolOptions-SymbolConversion@@Tests/ToolOptions.wlt:215,1-224,2"
 ]
 
+(* Values that JSON can't represent are written with a "_wl_" prefix (see toolOptionsJSONString) and restored when
+   parsed: *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
+        "{\"Tool\":{\"A\":[\"_wl_All\",\"_wl_Automatic\",\"C:/x\"],\"B\":\"_wl_Infinity\"," <>
+            "\"C\":\"_wl_Quantity[2, \\\"Weeks\\\"]\",\"D\":\"_wl_Hold[$TemporaryDirectory]\"}}"
+    ],
+    <|
+        "Tool" -> <|
+            "A" -> { All, Automatic, "C:/x" },
+            "B" -> Infinity,
+            "C" -> Quantity[ 2, "Weeks" ],
+            "D" -> Hold[ $TemporaryDirectory ]
+        |>
+    |>,
+    SameTest -> SameQ,
+    TestID   -> "ParseToolOptions-PrefixedExpressions@@Tests/ToolOptions.wlt:228,1-243,2"
+]
+
+(* Strings without the prefix are always strings: *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
+        "{\"Tool\":{\"A\":[\"All\",\"Automatic\",\"None\"],\"B\":\"Infinity\",\"C\":\"Quantity[2, \\\"Weeks\\\"]\"}}"
+    ],
+    <| "Tool" -> <| "A" -> { "All", "Automatic", "None" }, "B" -> "Infinity", "C" -> "Quantity[2, \"Weeks\"]" |> |>,
+    SameTest -> SameQ,
+    TestID   -> "ParseToolOptions-PlainStringsUnchanged@@Tests/ToolOptions.wlt:246,1-253,2"
+]
+
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[
         "{\"WolframLanguageEvaluator\":123,\"WolframAlphaContext\":{\"MaxItems\":3}}"
     ],
     <| "WolframAlphaContext" -> <| "MaxItems" -> 3 |> |>,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-Non-AssociationValues@@Tests/ToolOptions.wlt:226,1-233,2"
+    TestID   -> "ParseToolOptions-Non-AssociationValues@@Tests/ToolOptions.wlt:255,1-262,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -238,40 +267,40 @@ VerificationTest[
 VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
-        json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
+        json = Wolfram`AgentTools`Common`toolOptionsJSONString @ opts;
         parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
         ]
     ],
     "Local",
-    TestID -> "RoundTrip-MethodPreserved@@Tests/ToolOptions.wlt:238,1-249,2"
+    TestID -> "RoundTrip-MethodPreserved@@Tests/ToolOptions.wlt:267,1-278,2"
 ]
 
 VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageEvaluator" -> <| "Method" -> "Local", "TimeConstraint" -> 120 |> |>;
-        json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
+        json = Wolfram`AgentTools`Common`toolOptionsJSONString @ opts;
         parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
         ]
     ],
     120,
-    TestID -> "RoundTrip-TimeConstraintPreserved@@Tests/ToolOptions.wlt:251,1-262,2"
+    TestID -> "RoundTrip-TimeConstraintPreserved@@Tests/ToolOptions.wlt:280,1-291,2"
 ]
 
 VerificationTest[
     Module[ { opts, json, parsed },
         opts = <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>;
-        json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
+        json = Wolfram`AgentTools`Common`toolOptionsJSONString @ opts;
         parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageContext", "MaxItems" ]
         ]
     ],
     5,
-    TestID -> "RoundTrip-MaxItemsPreserved@@Tests/ToolOptions.wlt:264,1-275,2"
+    TestID -> "RoundTrip-MaxItemsPreserved@@Tests/ToolOptions.wlt:293,1-304,2"
 ]
 
 VerificationTest[
@@ -280,7 +309,7 @@ VerificationTest[
             "WolframLanguageEvaluator" -> <| "Method" -> "Local" |>,
             "WolframLanguageContext"   -> <| "MaxItems" -> 20 |>
         |>;
-        json = Developer`WriteRawJSONString[ opts, "Compact" -> True ];
+        json = Wolfram`AgentTools`Common`toolOptionsJSONString @ opts;
         parsed = Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ json;
         Block[ { Wolfram`AgentTools`Common`$toolOptions = parsed },
             {
@@ -292,7 +321,7 @@ VerificationTest[
         ]
     ],
     { "Local", 20, None },
-    TestID -> "RoundTrip-MultipleToolsPreserved@@Tests/ToolOptions.wlt:277,1-296,2"
+    TestID -> "RoundTrip-MultipleToolsPreserved@@Tests/ToolOptions.wlt:306,1-325,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -317,7 +346,7 @@ VerificationTest[
         KeyExistsQ[ env, "MCP_TOOL_OPTIONS" ]
     ],
     True,
-    TestID -> "InstallMCPServer-ToolOptionsEnvVarExists@@Tests/ToolOptions.wlt:301,1-321,2"
+    TestID -> "InstallMCPServer-ToolOptionsEnvVarExists@@Tests/ToolOptions.wlt:330,1-350,2"
 ]
 
 VerificationTest[
@@ -341,7 +370,36 @@ VerificationTest[
     ],
     KeyValuePattern @ { "Method" -> "Local", "TimeConstraint" -> 120 },
     SameTest -> MatchQ,
-    TestID   -> "InstallMCPServer-ToolOptionsRoundTrip@@Tests/ToolOptions.wlt:323,1-345,2"
+    TestID   -> "InstallMCPServer-ToolOptionsRoundTrip@@Tests/ToolOptions.wlt:352,1-374,2"
+]
+
+(* Values that JSON can't represent survive the round trip through the server configuration, and strings stay strings: *)
+VerificationTest[
+    Module[ { configFile, name, server, opts, result, data, env },
+        configFile = File @ FileNameJoin @ { $TemporaryDirectory, StringJoin[ "mcp_test_toolOpts4_", CreateUUID[], ".json" ] };
+        name = StringJoin[ "TestServer_ToolOpts4_", CreateUUID[] ];
+        server = CreateMCPServer[
+            name,
+            LLMConfiguration @ <| "Tools" -> { LLMTool[ "PrimeFinder", { "n" -> "Integer" }, Prime[ #n ] & ] } |>
+        ];
+        opts = <|
+            "WolframLanguageEvaluator" -> <|
+                "Method"            -> "Automatic",
+                "ImageExportMethod" -> None,
+                "MaxSessionCount"   -> Infinity,
+                "MaxSessionAge"     -> Quantity[ 2, "Weeks" ]
+            |>
+        |>;
+        result = InstallMCPServer[ configFile, server, "ToolOptions" -> opts, "VerifyLLMKit" -> False ];
+        data = Developer`ReadRawJSONString @ ReadString @ First @ configFile;
+        env = data[ "mcpServers", name, "env" ];
+        UninstallMCPServer[ configFile, server ];
+        DeleteObject @ server;
+        Quiet @ DeleteFile @ First @ configFile;
+        Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ env[ "MCP_TOOL_OPTIONS" ] === opts
+    ],
+    True,
+    TestID -> "InstallMCPServer-ToolOptionsNonJSONValuesRoundTrip@@Tests/ToolOptions.wlt:377,1-403,2"
 ]
 
 VerificationTest[
@@ -363,7 +421,7 @@ VerificationTest[
         KeyExistsQ[ env, "MCP_TOOL_OPTIONS" ]
     ],
     False,
-    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar@@Tests/ToolOptions.wlt:347,1-367,2"
+    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar@@Tests/ToolOptions.wlt:405,1-425,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -372,7 +430,7 @@ VerificationTest[
 VerificationTest[
     Wolfram`AgentTools`InstallMCPServer`Private`validateToolOptions[ <| |>, MCPServerObject[ "Wolfram" ] ],
     <| |>,
-    TestID -> "ValidateToolOptions-Empty@@Tests/ToolOptions.wlt:372,1-376,2"
+    TestID -> "ValidateToolOptions-Empty@@Tests/ToolOptions.wlt:430,1-434,2"
 ]
 
 VerificationTest[
@@ -382,7 +440,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-ValidOptions@@Tests/ToolOptions.wlt:378,1-386,2"
+    TestID   -> "ValidateToolOptions-ValidOptions@@Tests/ToolOptions.wlt:436,1-444,2"
 ]
 
 VerificationTest[
@@ -390,7 +448,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptions },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-InvalidType@@Tests/ToolOptions.wlt:388,1-394,2"
+    TestID   -> "ValidateToolOptions-InvalidType@@Tests/ToolOptions.wlt:446,1-452,2"
 ]
 
 VerificationTest[
@@ -401,7 +459,7 @@ VerificationTest[
     KeyValuePattern[ "NonexistentTool" -> KeyValuePattern[ "Foo" -> "Bar" ] ],
     { AgentTools::UnrecognizedToolOption },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedToolName@@Tests/ToolOptions.wlt:396,1-405,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedToolName@@Tests/ToolOptions.wlt:454,1-463,2"
 ]
 
 VerificationTest[
@@ -412,7 +470,7 @@ VerificationTest[
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "NonexistentOption" -> "value" ] ],
     { AgentTools::UnrecognizedToolOptionName },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedOptionName@@Tests/ToolOptions.wlt:407,1-416,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedOptionName@@Tests/ToolOptions.wlt:465,1-474,2"
 ]
 
 VerificationTest[
@@ -423,7 +481,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-NonAssociationValue@@Tests/ToolOptions.wlt:418,1-427,2"
+    TestID   -> "ValidateToolOptions-NonAssociationValue@@Tests/ToolOptions.wlt:476,1-485,2"
 ]
 
 VerificationTest[
@@ -434,7 +492,7 @@ VerificationTest[
     <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-MixedValidAndInvalid@@Tests/ToolOptions.wlt:429,1-438,2"
+    TestID   -> "ValidateToolOptions-MixedValidAndInvalid@@Tests/ToolOptions.wlt:487,1-496,2"
 ]
 
 VerificationTest[
@@ -445,7 +503,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-BooleanValue@@Tests/ToolOptions.wlt:440,1-449,2"
+    TestID   -> "ValidateToolOptions-BooleanValue@@Tests/ToolOptions.wlt:498,1-507,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -455,7 +513,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`$toolOptions,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptionsInitialized@@Tests/ToolOptions.wlt:454,1-459,2"
+    TestID   -> "ToolOptionsInitialized@@Tests/ToolOptions.wlt:512,1-517,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

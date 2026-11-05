@@ -1045,7 +1045,7 @@ addEnvironmentVariables[ server0_Association, extraEnv0_Association ] := Enclose
         If[ AssociationQ @ $installToolOptions && $installToolOptions =!= <| |>,
             extraEnv = <|
                 extraEnv,
-                "MCP_TOOL_OPTIONS" -> Developer`WriteRawJSONString[ $installToolOptions, "Compact" -> True ]
+                "MCP_TOOL_OPTIONS" -> toolOptionsJSONString @ $installToolOptions
             |>
         ];
 

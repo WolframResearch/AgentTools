@@ -482,8 +482,8 @@ Tools can define configurable options that users can customize at install time v
 
 1. **Default values** are defined per-tool in `$defaultToolOptions` (alongside tool definitions in `Kernel/Tools/`)
 2. **User overrides** are passed via `"ToolOptions"` when calling `InstallMCPServer`
-3. **At install time**, options are serialized to the `MCP_TOOL_OPTIONS` environment variable in the server configuration
-4. **At runtime**, `$toolOptions` is populated from this environment variable at server startup
+3. **At install time**, options are serialized to the `MCP_TOOL_OPTIONS` environment variable in the server configuration (`toolOptionsJSONString` in `Kernel/Server/Shared.wl`). Values that JSON can't represent are written as their `InputForm` with a `_wl_` prefix, e.g. `None` as `"_wl_None"` and `Quantity[1, "Months"]` as `"_wl_Quantity[1, \"Months\"]"`, so they can't be confused with strings
+4. **At runtime**, `$toolOptions` is populated from this environment variable at server startup (`parseToolOptions`). Strings that start with `_wl_` are converted back with `ToExpression`, and all other strings stay strings (the string `"None"` is not the symbol `None`)
 5. **Tool code** reads options via `toolOptionValue[toolName, optionName]`, which falls back from user override to default
 
 ### Defining Default Options

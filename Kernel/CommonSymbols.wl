@@ -188,6 +188,7 @@ BeginPackage[ "Wolfram`AgentTools`Common`" ];
 `$toolOptions;
 `$defaultToolOptions;
 `toolOptionValue;
+`toolOptionsJSONString;
 
 (* Paclet extension support: *)
 `clearPacletDefinitionCache;
