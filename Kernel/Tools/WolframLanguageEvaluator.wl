@@ -174,17 +174,14 @@ chatbookToolEvaluate // beginDefinition;
 chatbookToolEvaluate[ code_String, property_, timeConstraint_Integer ] :=
     With[ { line = $line++, lineQ = chatbookLinePropertyQ[ ] },
         Module[ { result },
-            result = Block[
-                { (* FIXME: Expose these as options in WolframLanguageToolEvaluate *)
-                    Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False,
-                    Wolfram`Chatbook`Sandbox`Private`$cloudLineNumber    = line
-                },
+            result = Block[ { Wolfram`Chatbook`Sandbox`Private`$cloudLineNumber = line },
                 catchAlways @ cb`WolframLanguageToolEvaluate[
                     code,
                     If[ lineQ, addLineProperty @ property, property ],
                     "Line"                  -> line,
                     "AppendRetryNotice"     -> False,
                     "AppendURIInstructions" -> False,
+                    "IncludeDefinitions"    -> False,
                     "MaxCharacterCount"     -> $maxCharacterCount,
                     "Method"                -> getEvaluatorMethod[ ],
                     "PropagateMessages"     -> True,
@@ -562,24 +559,11 @@ useEvaluatorKernel // endDefinition;
 
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
-(* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
 
 evaluateInLocalKernel // beginDefinition;
 evaluateInLocalKernel // Attributes = { HoldAllComplete };
 
-evaluateInLocalKernel[ eval_ ] :=
-    Block[ (* FIXME: Expose this as an option in WolframLanguageToolEvaluate *)
-        { Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False },
-        evaluateInLocalKernel0 @ eval
-    ];
-
-evaluateInLocalKernel // endDefinition;
-
-
-evaluateInLocalKernel0 // beginDefinition;
-evaluateInLocalKernel0 // Attributes = { HoldAllComplete };
-
-evaluateInLocalKernel0[ eval_ ] := Enclose[
+evaluateInLocalKernel[ eval_ ] := Enclose[
     Module[ { heldResult, result },
         ConfirmMatch[ initializePacletInLocalKernel[ ], Null, "InitializePacletInLocalKernel" ];
 
@@ -604,7 +588,7 @@ evaluateInLocalKernel0[ eval_ ] := Enclose[
     throwInternalFailure
 ];
 
-evaluateInLocalKernel0 // endDefinition;
+evaluateInLocalKernel // endDefinition;
 
 caughtWrapper // Attributes = { HoldAllComplete };
 
@@ -644,8 +628,9 @@ localKernelEvaluate[ eval_ ] /; chatbookLinePropertyQ[ ] :=
     cb`WolframLanguageToolEvaluate[
         HoldComplete @ eval,
         "Result",
-        "Line"   -> None,
-        "Method" -> "Local",
+        "IncludeDefinitions" -> False,
+        "Line"               -> None,
+        "Method"             -> "Local",
         Sequence @@ sandboxPermissionOptions[ ]
     ];
 
@@ -653,7 +638,8 @@ localKernelEvaluate[ eval_ ] :=
     cb`WolframLanguageToolEvaluate[
         HoldComplete @ WithCleanup[ eval, $Line-- ],
         "Result",
-        "Method" -> "Local",
+        "IncludeDefinitions" -> False,
+        "Method"             -> "Local",
         Sequence @@ sandboxPermissionOptions[ ]
     ];
 
@@ -949,18 +935,15 @@ enterSessionContextInKernel // endDefinition;
    Chatbook versions before 2.7.28: there the user's code runs in a persistent subkernel whose own $Line
    produces the In/Out label, and the "Line" option does not reach it. (For in-process methods the "Line"
    option drives the label directly, and newer Chatbook versions apply it in the subkernel too, so this is
-   a no-op.) Routed through evaluateInLocalKernel0 so it targets the subkernel; its $Line-- rollback
+   a no-op.) Routed through evaluateInLocalKernel so it targets the subkernel; its $Line-- rollback
    cancels the main-loop increment, leaving $Line set to exactly the next user line. Called at session
    boundaries (see withSession); within a session the subkernel's $Line then advances in lockstep with
    $line. *)
 syncEvalKernelLine // beginDefinition;
 (* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
-(* :!CodeAnalysis::Disable::PrivateContextSymbol:: *)
 syncEvalKernelLine[ line_Integer ] /; getEvaluatorMethod[ ] === "Local" && ! chatbookLinePropertyQ[ ] :=
-    Block[ { Wolfram`Chatbook`Sandbox`Private`$includeDefinitions = False },
-        With[ { n = line }, evaluateInLocalKernel0[ $Line = n ] ]
-    ];
+    With[ { n = line }, evaluateInLocalKernel[ $Line = n ] ];
 (* :!CodeAnalysis::EndBlock:: *)
 syncEvalKernelLine[ _Integer ] := Null;
 syncEvalKernelLine // endDefinition;

@@ -153,7 +153,7 @@ Create distributable agent skills that use functionality from this paclet.
 
 ## Blocked / Dependencies
 
-- [ ] Expose `$includeDefinitions` as an option in `WolframLanguageToolEvaluate`
+- [x] Expose `$includeDefinitions` as an option in `WolframLanguageToolEvaluate`
   - Source: `Kernel/Tools/WolframLanguageEvaluator.wl`
 
 - [ ] WolframAlpha multiple queries support
