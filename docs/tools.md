@@ -524,6 +524,7 @@ $myOption := toolOptionValue[ "YourTool", "OptionName" ];
 | `"Method"` | String | `Automatic` | Evaluation method. `"Session"` uses the server kernel; `"Local"` spawns a separate sandboxed kernel; `"Cloud"` runs each evaluation in a fresh Wolfram Cloud kernel. `Automatic` means `"Cloud"` when the server itself runs in the cloud (see [cloud-deployment.md](cloud-deployment.md)) and `"Session"` otherwise. |
 | `"ImageExportMethod"` | String | `None` | How to export graphics. `None`, `"Local"`, `"Cloud"`, or `"CloudPublic"`. |
 | `"TimeConstraint"` | Integer | `60` | Default time limit (seconds) when the LLM doesn't specify `timeConstraint`. The LLM can still override this per-call. |
+| `"MemoryConstraint"` | Positive integer or `Automatic` | `Automatic` | Memory limit in bytes for each top-level input of an evaluation (`Infinity` for no limit). An input that exceeds it fails, and the inputs after it are skipped. `Automatic` uses Chatbook's default, 95% of the memory available when the input starts. Needs Chatbook 2.7.36+, and has no effect with older versions. With 2.7.36+, any other value (e.g. `0` or a real number) makes every evaluation fail. |
 | `"MaxSessionCount"` | Integer | `100` | Maximum number of saved evaluator sessions to keep (oldest pruned first; the current session is always kept). |
 | `"MaxSessionBytes"` | Integer | `1073741824` | Total byte budget for saved evaluator sessions. |
 | `"MaxSessionAge"` | Quantity | `Quantity[1, "Months"]` | Saved evaluator sessions older than this are pruned. |
