@@ -66,11 +66,34 @@ parseToolOptions0[ tool_String, opts_ ] := Enclose[
 parseToolOptions0[ tool_String, optionName_String, optionValue_ ] :=
     optionName -> ReplaceAll[
         optionValue,
-        (* Symbols that don't have a corresponding JSON representation: *)
-        { "Automatic" -> Automatic, "None" -> None }
+        (* Values that don't have a corresponding JSON representation, written as InputForm strings by jsonConvert: *)
+        {
+            "All"       -> All,
+            "Automatic" -> Automatic,
+            "Infinity"  -> Infinity,
+            "None"      -> None,
+            s_String /; StringStartsQ[ s, "Quantity[" ] :> parseQuantityString @ s
+        }
     ];
 
 parseToolOptions0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*parseQuantityString*)
+(* The Quantity given as an InputForm string, e.g. "Quantity[1, \"Months\"]", or the string itself if it isn't one.
+   The string is only parsed, never evaluated. *)
+parseQuantityString // beginDefinition;
+
+parseQuantityString[ s_String ] := Replace[
+    Quiet @ ToExpression[ s, InputForm, HoldComplete ],
+    {
+        HoldComplete[ q: Quantity[ _Integer|_Real, _String ] ] :> q,
+        _ :> s
+    }
+];
+
+parseQuantityString // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)

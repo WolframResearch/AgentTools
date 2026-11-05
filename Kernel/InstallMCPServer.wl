@@ -1045,7 +1045,8 @@ addEnvironmentVariables[ server0_Association, extraEnv0_Association ] := Enclose
         If[ AssociationQ @ $installToolOptions && $installToolOptions =!= <| |>,
             extraEnv = <|
                 extraEnv,
-                "MCP_TOOL_OPTIONS" -> Developer`WriteRawJSONString[ $installToolOptions, "Compact" -> True ]
+                (* Values that JSON can't represent (e.g. None) are written as strings, see parseToolOptions *)
+                "MCP_TOOL_OPTIONS" -> writeRawJSONString[ $installToolOptions, "Compact" -> True ]
             |>
         ];
 
