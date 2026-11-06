@@ -255,14 +255,22 @@ dispatchCloudMethod // beginDefinition;
 dispatchCloudMethod[ method_, id_, message_, req_, contentType_ ] :=
     Module[ { response, respHeaders },
         If[ replyOwedQ[ method, id ],
-            response    = catchAlways @ handleMethod[ method, message, req ];
+            response    = catchUncaughtThrows[
+                catchAlways @ handleMethod[ method, message, req ],
+                uncaughtRequestThrow[ method, ##1 ] &
+            ];
             respHeaders = sessionIDResponseHeaders @ method;
             If[ FailureQ @ response,
                 jsonResponse[ <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>, contentType, respHeaders ],
                 jsonResponse[ response, contentType, respHeaders ]
             ],
             (* No reply owed: still dispatch notifications for their side effects, then 202 empty. *)
-            If[ StringQ @ method, catchAlways @ handleMethod[ method, message, req ] ];
+            If[ StringQ @ method,
+                catchUncaughtThrows[
+                    catchAlways @ handleMethod[ method, message, req ],
+                    uncaughtRequestThrow[ method, ##1 ] &
+                ]
+            ];
             emptyResponse[ 202 ]
         ]
     ];
