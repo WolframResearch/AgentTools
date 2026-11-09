@@ -451,14 +451,19 @@ formatDefinition // endDefinition;
 formatDefinitionReadable // beginDefinition;
 
 formatDefinitionReadable[ defs_List, cPath_List, symbolContext_String ] :=
-    TimeConstrained[
-        Block[ { $ContextPath = cPath, $Context = symbolContext },
-            StringRiffle[
-                formatSingleDefinition /@ defs,
-                "\n\n"
-            ]
+    If[ resourceFunctionAvailableQ @ readableForm,
+        TimeConstrained[
+            Block[ { $ContextPath = cPath, $Context = symbolContext },
+                StringRiffle[
+                    formatSingleDefinition /@ defs,
+                    "\n\n"
+                ]
+            ],
+            $readableFormTimeout
         ],
-        $readableFormTimeout
+        (* The ReadableForm resource function could not be imported (see importResourceFunction), so formatDefinition
+           falls back to InputForm *)
+        $Failed
     ];
 
 formatDefinitionReadable // endDefinition;

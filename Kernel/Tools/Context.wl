@@ -286,16 +286,7 @@ relatedWolframAlphaResults[ context_String, level_String ] := Enclose[
         includeWLResults = Replace[ $waIncludeWLResults, Except[ True|False ] :> Automatic ];
         docOptions = ConfirmMatch[ documentationProvidedOptions[ ], { ___Rule }, "DocumentationProvidedOptions" ];
 
-        result = Quiet[
-            cb`RelatedWolframAlphaResults[
-                context,
-                "Prompt",
-                "MaxItems"         -> maxItems,
-                "IncludeWLResults" -> includeWLResults,
-                Sequence @@ docOptions
-            ],
-            { WolframAlpha::kbserr }
-        ];
+        result = relatedWolframAlphaResults0[ context, maxItems, includeWLResults, docOptions ];
 
         (* A user who has exceeded their LLMKit usage limit gets a Failure here; turn it into a useful
            message instead of letting it become an opaque internal failure. *)
@@ -309,6 +300,9 @@ relatedWolframAlphaResults[ context_String, level_String ] := Enclose[
                 "UsageLimitMessage"
             ],
             (* else *)
+            (* Any other failure from Chatbook (typically because the Wolfram Cloud could not be reached) becomes a tool
+               failure with a useful message rather than an opaque internal failure. *)
+            If[ FailureQ @ result, throwFailure[ "WolframAlphaSearchFailed", failureTag @ result ] ];
             StringTrim @ ConfirmBy[ result, StringQ, "Prompt" ]
         ]
     ],
@@ -316,6 +310,25 @@ relatedWolframAlphaResults[ context_String, level_String ] := Enclose[
 ];
 
 relatedWolframAlphaResults // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*relatedWolframAlphaResults0*)
+relatedWolframAlphaResults0 // beginDefinition;
+
+relatedWolframAlphaResults0[ context_String, maxItems_, includeWLResults_, docOptions_List ] :=
+    Quiet[
+        cb`RelatedWolframAlphaResults[
+            context,
+            "Prompt",
+            "MaxItems"         -> maxItems,
+            "IncludeWLResults" -> includeWLResults,
+            Sequence @@ docOptions
+        ],
+        { WolframAlpha::kbserr }
+    ];
+
+relatedWolframAlphaResults0 // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -384,6 +397,9 @@ relatedDocumentation[ context_String ] := Enclose[
                 "UsageLimitMessage"
             ],
             (* else *)
+            (* Any other failure from Chatbook (typically because the Wolfram Cloud could not be reached to compute
+               embeddings) becomes a tool failure with a useful message rather than an opaque internal failure. *)
+            If[ FailureQ @ result, throwFailure[ "DocumentationSearchFailed", failureTag @ result ] ];
             prompt = ConfirmBy[ result, StringQ, "Prompt" ];
 
             formatted = If[ StringTrim @ prompt === "",
@@ -421,6 +437,16 @@ relatedDocumentation0[ context_, max: $$maxItemsSpec, subscribed: True|False ] :
     ];
 
 relatedDocumentation0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*failureTag*)
+(* A short identifier of a Failure for messages, e.g. "General::ChatbookInternal" *)
+failureTag // beginDefinition;
+failureTag[ Failure[ tag_String, _ ] ] := tag;
+failureTag[ Failure[ tag_, _ ] ] := ToString[ Unevaluated @ tag, InputForm ];
+failureTag[ _ ] := "unknown";
+failureTag // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

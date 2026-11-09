@@ -307,6 +307,16 @@ catchAlways @ riskySubOperation[ ]
 
 Use when you want to handle errors instead of propagating them to the nearest `catchTop`. Typically used in combination with `Quiet` to suppress messages.
 
+### `catchUncaughtThrows[eval, handler]`
+
+The MCP server's exception boundary (`Kernel/Server/Shared.wl`). `catchTop` and friends only catch the paclet's own `$catchTopTag` throws. A `Throw` with any other tag (for example ``CloudObject`Private`NetworkCallFailure``, which the cloud framework throws when the Wolfram Cloud cannot be reached), a tagless `Throw`, or an `Abort[]` would unwind through the whole server, and in the local transport that ends the read loop and with it the server process. `catchUncaughtThrows` evaluates `eval` and hands any such exception to `handler[value, tag]`, where `tag` is `None` for a tagless `Throw` and `Abort` for an abort, returning the handler's result:
+
+```wl
+result = catchUncaughtThrows[ stealthCatchTop @ tool @ args, uncaughtToolThrow[ toolName, ##1 ] & ];
+```
+
+It wraps tool evaluation in `evaluateTool` (where `uncaughtToolThrow` turns the exception into the tool's error result, with `AgentTools::CloudUnavailable` for the cloud network-failure tag), `handleMethod` in both transports (where `uncaughtRequestThrow` produces a failure that becomes a JSON-RPC internal error response), and tool warmup in the local read loop. Always place it *outside* `catchTop`/`stealthCatchTop`, so the paclet's own failures are handled first.
+
 ## Bug Report Generation
 
 When `throwInternalFailure` is called, the system automatically:
@@ -325,6 +335,7 @@ When `throwInternalFailure` is called, the system automatically:
 - Define all message tags in `Kernel/Messages.wl`
 - Use `catchMine` for exported functions
 - Let errors propagate naturally; avoid catching and re-throwing unless you plan to handle them in a different way
+- Code that runs inside the MCP server must not let a `Throw` with a foreign tag escape: keep `catchUncaughtThrows` around every place where tool or request handling is evaluated (see above)
 
 ## Example: Complete Function Implementation
 
