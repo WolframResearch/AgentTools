@@ -14,11 +14,12 @@ Needs[ "Wolfram`AgentTools`Common`" ];
    (Assets/AgentSkills, built by Scripts/BuildAgentSkills.wls). The values are delayed so that each directory is resolved
    in the paclet that is actually loaded, and nothing machine-specific is stored in the MX file. *)
 $defaultAgentSkills = <|
-    "wolfram-alpha"     :> builtInSkillDirectory[ "wolfram-alpha"     ],
-    "wolfram-debugging" :> builtInSkillDirectory[ "wolfram-debugging" ],
-    "wolfram-language"  :> builtInSkillDirectory[ "wolfram-language"  ],
-    "wolfram-notebooks" :> builtInSkillDirectory[ "wolfram-notebooks" ],
-    "wolfram-paclets"   :> builtInSkillDirectory[ "wolfram-paclets"   ]
+    "wolfram-agent-tools" :> builtInSkillDirectory[ "wolfram-agent-tools" ],
+    "wolfram-alpha"       :> builtInSkillDirectory[ "wolfram-alpha"       ],
+    "wolfram-debugging"   :> builtInSkillDirectory[ "wolfram-debugging"   ],
+    "wolfram-language"    :> builtInSkillDirectory[ "wolfram-language"    ],
+    "wolfram-notebooks"   :> builtInSkillDirectory[ "wolfram-notebooks"   ],
+    "wolfram-paclets"     :> builtInSkillDirectory[ "wolfram-paclets"     ]
 |>;
 
 (* Entries that are never copied, hashed, or counted as modifications (compared case-insensitively): *)

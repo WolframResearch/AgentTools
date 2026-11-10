@@ -334,7 +334,7 @@ Complete skill directories in `Assets/AgentSkills/<skill-name>/`, committed to t
 
 The skills themselves follow the open Agent Skills standard and are portable. For distribution via **Claude Code** specifically, skills are packaged into two plugins within a single marketplace named **wolfram-agent-skills**:
 
-- **wolfram-language-development** — Bundles the `wolfram-language`, `wolfram-debugging`, `wolfram-notebooks`, and `wolfram-paclets` skills for a full Wolfram Language development environment.
+- **wolfram-language-development** — Bundles the `wolfram-language`, `wolfram-debugging`, `wolfram-notebooks`, `wolfram-paclets`, and `wolfram-agent-tools` skills for a full Wolfram Language development environment.
 - **wolfram-alpha** — Bundles the `wolfram-alpha` skill for Wolfram|Alpha queries and context retrieval.
 
 The marketplace is defined by `.claude-plugin/marketplace.json` in the repository root. Plugins point their `source` at the built skills (`./Assets/AgentSkills`), and skills are referenced via relative paths from that directory.

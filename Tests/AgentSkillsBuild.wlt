@@ -65,7 +65,7 @@ $skillsAssetLocation := PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "
 
 $skillsManifest = Get @ $skillsManifestPath;
 
-$expectedSkillNames = { "wolfram-alpha", "wolfram-debugging", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
+$expectedSkillNames = { "wolfram-agent-tools", "wolfram-alpha", "wolfram-debugging", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
 
 (* Files every built skill must contain, in addition to its scripts (and references/Scripts.md if it has scripts) *)
 $requiredSkillFiles = {
@@ -530,7 +530,7 @@ VerificationTest[
 VerificationTest[
     Association[ #[ "name" ] -> Sort @ #[ "skills" ] & /@ $skillsMarketplace[ "plugins" ] ],
     <|
-        "wolfram-language-development" -> { "./wolfram-debugging", "./wolfram-language", "./wolfram-notebooks", "./wolfram-paclets" },
+        "wolfram-language-development" -> { "./wolfram-agent-tools", "./wolfram-debugging", "./wolfram-language", "./wolfram-notebooks", "./wolfram-paclets" },
         "wolfram-alpha"                -> { "./wolfram-alpha" }
     |>,
     SameTest -> SameQ,

@@ -1,4 +1,11 @@
 <|
+    "wolfram-agent-tools" -> <|
+        "References" -> {
+            "GetWolframEngine",
+            "SetUpWolframMCPServer"
+        },
+        "Scripts" -> { }
+    |>,
     "wolfram-alpha" -> <|
         "References" -> {
             "GetWolframEngine",
