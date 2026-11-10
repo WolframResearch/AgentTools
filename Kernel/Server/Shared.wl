@@ -559,7 +559,7 @@ resourceReadError // endDefinition;
 resourceReadErrorMessage // beginDefinition;
 
 resourceReadErrorMessage[ failure_Failure, msg_ ] :=
-    With[ { failureMsg = failure[ "Message" ] },
+    With[ { failureMsg = failureMessageText @ failure },
         If[ StringQ @ failureMsg, failureMsg, resourceReadErrorMessage[ msg ] ]
     ];
 
@@ -683,7 +683,7 @@ catchPromptFunction // endDefinition;
 formatPromptError // beginDefinition;
 
 formatPromptError[ failure_Failure ] :=
-    With[ { msg = failure[ "Message" ] },
+    With[ { msg = failureMessageText @ failure },
         If[ StringQ @ msg,
             "[Error] " <> msg,
             "[Error] Failed to generate prompt content."
@@ -922,10 +922,29 @@ safeString[ failure: Failure[ "AgentTools::Internal" | "General::ChatbookInterna
         formatted /; StringQ @ formatted
     ];
 
-safeString[ failure_Failure ] := With[ { s = failure[ "Message" ] }, "[Error] " <> safeString @ s /; StringQ @ s ];
+safeString[ failure_Failure ] :=
+    With[ { s = failureMessageText @ failure }, "[Error] " <> safeString @ s /; StringQ @ s ];
 safeString[ string_String ] := convertPUACharacters @ string; (* avoid mangling due to StandardForm strings *)
 safeString[ arg_ ] := convertPUACharacters @ ToString @ Unevaluated @ arg;
 safeString // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*failureMessageText*)
+(* The plain text of a failure's message. The "Message" property embeds the parameters as linear syntax box markup,
+   so the template and parameters are formatted with StringForm instead. Otherwise, ToString renders any markup in
+   the message as text (e.g. LLMTool's "ConfirmationFailed" failures, whose template already contains it).
+   TODO: parameters with 2D forms (e.g. fractions) and strings with newlines are laid out as multi-line blocks,
+   and long parameters are not shortened. *)
+failureMessageText // beginDefinition;
+
+failureMessageText[
+    Failure[ _, KeyValuePattern @ { "MessageTemplate" -> template_String, "MessageParameters" -> params: { __ } } ]
+] := ToString @ StringForm[ template, Sequence @@ params ];
+
+failureMessageText[ failure_Failure ] := Replace[ failure[ "Message" ], s_String :> ToString @ s ];
+
+failureMessageText // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
