@@ -347,6 +347,50 @@ VerificationTest[
     TestID   -> "SafeString-RegularFailureFallback@@Tests/InternalFailureFormatting.wlt:333,1-348,2"
 ]
 
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`safeString[
+        Failure[ "BadThing", <| "MessageTemplate" -> "Something went wrong: `1`", "MessageParameters" -> { "x" } |> ]
+    ],
+    "[Error] Something went wrong: x",
+    SameTest -> Equal,
+    TestID   -> "SafeString-FailureWithParameters-GH#271@@Tests/InternalFailureFormatting.wlt:350,1-357,2"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`safeString[
+        Failure[
+            "BadThing",
+            <| "MessageTemplate" -> "Cannot read `1` (confidence `2`).", "MessageParameters" -> { File[ "data.txt" ], 1.5 } |>
+        ]
+    ],
+    "[Error] Cannot read File[data.txt] (confidence 1.5).",
+    SameTest -> Equal,
+    TestID   -> "SafeString-FailureWithExpressionParameters-GH#271@@Tests/InternalFailureFormatting.wlt:359,1-369,2"
+]
+
+(* LLMTool returns Failure[ "ConfirmationFailed", ... ] for bad arguments, whose template already contains box markup *)
+VerificationTest[
+    tool = LLMTool[ <|
+        "Name"        -> "CharacterCount",
+        "Description" -> "Counts characters",
+        "Function"    -> (StringLength[ #text ] &),
+        "Parameters"  -> {
+            "text" -> <| "Interpreter" -> "String", "Help" -> "Input text", "Required" -> True |>,
+            "n"    -> <| "Interpreter" -> Restricted[ "Integer", { 1, 10 } ], "Help" -> "A number", "Required" -> False |>
+        }
+    |> ];
+    {
+        Wolfram`AgentTools`Server`Shared`Private`safeString @ tool @ <| |>,
+        Wolfram`AgentTools`Server`Shared`Private`safeString @ tool @ <| "text" -> "hi", "n" -> "abc" |>
+    },
+    {
+        s1_String /; StringStartsQ[ s1, "[Error] Missing required parameter \"text\"" ] && StringFreeQ[ s1, "Box" ],
+        s2_String /; StringContainsQ[ s2, "could not interpret value \"abc\"" ] && StringFreeQ[ s2, "Box" ]
+    },
+    SameTest -> MatchQ,
+    TestID   -> "SafeString-LLMToolParameterFailures-GH#271@@Tests/InternalFailureFormatting.wlt:372,1-392,2"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*cleanupOldFailureLogs*)
@@ -357,7 +401,7 @@ VerificationTest[
     True,
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-NoError@@Tests/InternalFailureFormatting.wlt:354,1-361,2"
+    TestID   -> "CleanupOldFailureLogs-NoError@@Tests/InternalFailureFormatting.wlt:398,1-405,2"
 ]
 
 VerificationTest[
@@ -368,7 +412,7 @@ VerificationTest[
     ] <= 50,
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-MaxFiles@@Tests/InternalFailureFormatting.wlt:363,1-372,2"
+    TestID   -> "CleanupOldFailureLogs-MaxFiles@@Tests/InternalFailureFormatting.wlt:407,1-416,2"
 ]
 
 VerificationTest[
@@ -394,7 +438,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-KeepsNewestFiles@@Tests/InternalFailureFormatting.wlt:374,1-398,2"
+    TestID   -> "CleanupOldFailureLogs-KeepsNewestFiles@@Tests/InternalFailureFormatting.wlt:418,1-442,2"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -409,7 +453,7 @@ VerificationTest[
     StringQ @ bugReportText,
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-ReturnsString@@Tests/InternalFailureFormatting.wlt:404,1-413,2"
+    TestID   -> "BugReportBody-ReturnsString@@Tests/InternalFailureFormatting.wlt:448,1-457,2"
 ]
 
 VerificationTest[
@@ -420,7 +464,7 @@ VerificationTest[
     ! StringContainsQ[ bugReportText, "## Settings" ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-NoSettingsSection@@Tests/InternalFailureFormatting.wlt:415,1-424,2"
+    TestID   -> "BugReportBody-NoSettingsSection@@Tests/InternalFailureFormatting.wlt:459,1-468,2"
 ]
 
 VerificationTest[
@@ -431,7 +475,7 @@ VerificationTest[
     ! StringContainsQ[ bugReportText, "%%" ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-NoTemplatePlaceholders@@Tests/InternalFailureFormatting.wlt:426,1-435,2"
+    TestID   -> "BugReportBody-NoTemplatePlaceholders@@Tests/InternalFailureFormatting.wlt:470,1-479,2"
 ]
 
 VerificationTest[
@@ -446,7 +490,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-ContainsExpectedSections@@Tests/InternalFailureFormatting.wlt:437,1-450,2"
+    TestID   -> "BugReportBody-ContainsExpectedSections@@Tests/InternalFailureFormatting.wlt:481,1-494,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

@@ -882,7 +882,7 @@ VerificationTest[
     KeyValuePattern[ {
         "error" -> KeyValuePattern[ {
             "code"    -> -32602,
-            "message" -> _String? (StringContainsQ[ "ui://wolfram/unknown" ])
+            "message" -> "UI resource not found: ui://wolfram/unknown."
         } ]
     } ],
     SameTest -> MatchQ,

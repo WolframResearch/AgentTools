@@ -767,6 +767,15 @@ VerificationTest[
 ]
 
 VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`formatPromptError[
+        Failure[ "TestError", <| "MessageTemplate" -> "Bad value: `1`", "MessageParameters" -> { "x" } |> ]
+    ],
+    "[Error] Bad value: x",
+    SameTest -> SameQ,
+    TestID   -> "FormatPromptError-WithParameters-GH#271@@Tests/Prompts.wlt:769,1-776,2"
+]
+
+VerificationTest[
     StringMatchQ[
         Wolfram`AgentTools`Server`Shared`Private`formatPromptError[
             Failure[ "TestError", <| |> ]
@@ -775,14 +784,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatPromptError-NoMessage@@Tests/Prompts.wlt:769,1-779,2"
+    TestID   -> "FormatPromptError-NoMessage@@Tests/Prompts.wlt:778,1-788,2"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`formatPromptError[ "not a failure" ],
     "[Error] Failed to generate prompt content.",
     SameTest -> SameQ,
-    TestID   -> "FormatPromptError-NonFailure@@Tests/Prompts.wlt:781,1-786,2"
+    TestID   -> "FormatPromptError-NonFailure@@Tests/Prompts.wlt:790,1-795,2"
 ]
 
 (* ::Subsection:: *)
@@ -795,7 +804,7 @@ VerificationTest[
     ],
     <| "type" -> "text", "text" -> "[Error] Function failed" |>,
     SameTest -> SameQ,
-    TestID   -> "MakePromptContent-FunctionReturnsFailure@@Tests/Prompts.wlt:791,1-799,2"
+    TestID   -> "MakePromptContent-FunctionReturnsFailure@@Tests/Prompts.wlt:800,1-808,2"
 ]
 
 VerificationTest[
@@ -805,7 +814,7 @@ VerificationTest[
     ][ "text" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "MakePromptContent-FunctionThrowsFailure@@Tests/Prompts.wlt:801,1-809,2"
+    TestID   -> "MakePromptContent-FunctionThrowsFailure@@Tests/Prompts.wlt:810,1-818,2"
 ]
 
 (* ::Section:: *)
@@ -818,14 +827,14 @@ VerificationTest[
     Wolfram`AgentTools`Prompts`Search`Private`formatSearchPrompt[ "test query", "some results" ],
     "<search-query>test query</search-query>\n<search-results>\nsome results\n</search-results>\nUse the above search results to answer the user's query below.\n<user-query>test query</user-query>",
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-BasicOutput@@Tests/Prompts.wlt:817,1-822,2"
+    TestID   -> "FormatSearchPrompt-BasicOutput@@Tests/Prompts.wlt:826,1-831,2"
 ]
 
 VerificationTest[
     StringQ @ Wolfram`AgentTools`Prompts`Search`Private`formatSearchPrompt[ "query", "results" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-ReturnsString@@Tests/Prompts.wlt:824,1-829,2"
+    TestID   -> "FormatSearchPrompt-ReturnsString@@Tests/Prompts.wlt:833,1-838,2"
 ]
 
 VerificationTest[
@@ -835,7 +844,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-ContainsSearchQueryTag@@Tests/Prompts.wlt:831,1-839,2"
+    TestID   -> "FormatSearchPrompt-ContainsSearchQueryTag@@Tests/Prompts.wlt:840,1-848,2"
 ]
 
 VerificationTest[
@@ -845,7 +854,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-ContainsSearchResultsTag@@Tests/Prompts.wlt:841,1-849,2"
+    TestID   -> "FormatSearchPrompt-ContainsSearchResultsTag@@Tests/Prompts.wlt:850,1-858,2"
 ]
 
 VerificationTest[
@@ -855,7 +864,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-ContainsUserQueryTag@@Tests/Prompts.wlt:851,1-859,2"
+    TestID   -> "FormatSearchPrompt-ContainsUserQueryTag@@Tests/Prompts.wlt:860,1-868,2"
 ]
 
 VerificationTest[
@@ -865,7 +874,7 @@ VerificationTest[
     ],
     2,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-QueryAppearsInBothTags@@Tests/Prompts.wlt:861,1-869,2"
+    TestID   -> "FormatSearchPrompt-QueryAppearsInBothTags@@Tests/Prompts.wlt:870,1-878,2"
 ]
 
 VerificationTest[
@@ -875,7 +884,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-ContainsInstructionalText@@Tests/Prompts.wlt:871,1-879,2"
+    TestID   -> "FormatSearchPrompt-ContainsInstructionalText@@Tests/Prompts.wlt:880,1-888,2"
 ]
 
 (* ::Subsection:: *)
@@ -887,7 +896,7 @@ skipIfGitHubActions @ VerificationTest[
     $wolframSearchPromptOutput = $DefaultMCPPrompts[ "WolframSearch" ][ "Content" ][ <| "query" -> "test query" |> ],
     _String | { KeyValuePattern[ "type" -> "text" ], ___ },
     SameTest -> MatchQ,
-    TestID   -> "WolframSearch-ReturnsValidOutput@@Tests/Prompts.wlt:886,23-891,2"
+    TestID   -> "WolframSearch-ReturnsValidOutput@@Tests/Prompts.wlt:895,23-900,2"
 ]
 
 skipIfGitHubActions @ VerificationTest[
@@ -900,14 +909,14 @@ skipIfGitHubActions @ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframSearch-UsesNewFormat@@Tests/Prompts.wlt:893,23-904,2"
+    TestID   -> "WolframSearch-UsesNewFormat@@Tests/Prompts.wlt:902,23-913,2"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     $wlSearchPromptOutput = $DefaultMCPPrompts[ "WolframLanguageSearch" ][ "Content" ][ <| "query" -> "test query" |> ],
     _String | { KeyValuePattern[ "type" -> "text" ], ___ },
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageSearch-ReturnsValidOutput@@Tests/Prompts.wlt:906,23-911,2"
+    TestID   -> "WolframLanguageSearch-ReturnsValidOutput@@Tests/Prompts.wlt:915,23-920,2"
 ]
 
 skipIfGitHubActions @ VerificationTest[
@@ -920,14 +929,14 @@ skipIfGitHubActions @ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageSearch-UsesNewFormat@@Tests/Prompts.wlt:913,23-924,2"
+    TestID   -> "WolframLanguageSearch-UsesNewFormat@@Tests/Prompts.wlt:922,23-933,2"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     $waSearchPromptOutput = $DefaultMCPPrompts[ "WolframAlphaSearch" ][ "Content" ][ <| "query" -> "test query" |> ],
     _String | { KeyValuePattern[ "type" -> "text" ], ___ },
     SameTest -> MatchQ,
-    TestID   -> "WolframAlphaSearch-ReturnsValidOutput@@Tests/Prompts.wlt:926,23-931,2"
+    TestID   -> "WolframAlphaSearch-ReturnsValidOutput@@Tests/Prompts.wlt:935,23-940,2"
 ]
 
 skipIfGitHubActions @ VerificationTest[
@@ -940,7 +949,7 @@ skipIfGitHubActions @ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframAlphaSearch-UsesNewFormat@@Tests/Prompts.wlt:933,23-944,2"
+    TestID   -> "WolframAlphaSearch-UsesNewFormat@@Tests/Prompts.wlt:942,23-953,2"
 ]
 
 (* ::Subsection:: *)
@@ -950,14 +959,14 @@ VerificationTest[
     Wolfram`AgentTools`Prompts`Notebook`Private`formatNotebookPrompt[ "/path/to/file.nb", "# Heading\n\nContent" ],
     "<notebook-path>/path/to/file.nb</notebook-path>\n<notebook-content>\n# Heading\n\nContent\n</notebook-content>",
     SameTest -> SameQ,
-    TestID   -> "FormatNotebookPrompt-BasicOutput@@Tests/Prompts.wlt:949,1-954,2"
+    TestID   -> "FormatNotebookPrompt-BasicOutput@@Tests/Prompts.wlt:958,1-963,2"
 ]
 
 VerificationTest[
     StringQ @ Wolfram`AgentTools`Prompts`Notebook`Private`formatNotebookPrompt[ "/path/to/file.nb", "content" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatNotebookPrompt-ReturnsString@@Tests/Prompts.wlt:956,1-961,2"
+    TestID   -> "FormatNotebookPrompt-ReturnsString@@Tests/Prompts.wlt:965,1-970,2"
 ]
 
 VerificationTest[
@@ -967,7 +976,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatNotebookPrompt-ContainsPathTag@@Tests/Prompts.wlt:963,1-971,2"
+    TestID   -> "FormatNotebookPrompt-ContainsPathTag@@Tests/Prompts.wlt:972,1-980,2"
 ]
 
 VerificationTest[
@@ -977,7 +986,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatNotebookPrompt-ContainsContentTag@@Tests/Prompts.wlt:973,1-981,2"
+    TestID   -> "FormatNotebookPrompt-ContainsContentTag@@Tests/Prompts.wlt:982,1-990,2"
 ]
 
 (* ::Subsection:: *)
@@ -991,7 +1000,7 @@ VerificationTest[
     ],
     <| "type" -> "text", "text" -> "hello" |>,
     SameTest -> SameQ,
-    TestID   -> "MakePromptContent-ContentArray@@Tests/Prompts.wlt:987,1-995,2"
+    TestID   -> "MakePromptContent-ContentArray@@Tests/Prompts.wlt:996,1-1004,2"
 ]
 
 (* Structured content with Content key is also consolidated *)
@@ -1002,7 +1011,7 @@ VerificationTest[
     ],
     <| "type" -> "text", "text" -> "hello" |>,
     SameTest -> SameQ,
-    TestID   -> "MakePromptContent-StructuredContent@@Tests/Prompts.wlt:998,1-1006,2"
+    TestID   -> "MakePromptContent-StructuredContent@@Tests/Prompts.wlt:1007,1-1015,2"
 ]
 
 VerificationTest[
@@ -1018,7 +1027,7 @@ VerificationTest[
         KeyValuePattern[ { "type" -> "image", "data" -> "base64data" } ]
     },
     SameTest -> MatchQ,
-    TestID   -> "FormatSearchPrompt-MultimodalContent@@Tests/Prompts.wlt:1008,1-1022,2"
+    TestID   -> "FormatSearchPrompt-MultimodalContent@@Tests/Prompts.wlt:1017,1-1031,2"
 ]
 
 VerificationTest[
@@ -1030,7 +1039,7 @@ VerificationTest[
     ],
     { KeyValuePattern[ { "type" -> "text", "text" -> _? (StringContainsQ[ "my query" ]) } ] },
     SameTest -> MatchQ,
-    TestID   -> "FormatSearchPrompt-MultimodalTextOnly@@Tests/Prompts.wlt:1024,1-1034,2"
+    TestID   -> "FormatSearchPrompt-MultimodalTextOnly@@Tests/Prompts.wlt:1033,1-1043,2"
 ]
 
 VerificationTest[
@@ -1044,7 +1053,7 @@ VerificationTest[
     ],
     3,
     SameTest -> SameQ,
-    TestID   -> "FormatSearchPrompt-MultimodalMultipleImages@@Tests/Prompts.wlt:1036,1-1048,2"
+    TestID   -> "FormatSearchPrompt-MultimodalMultipleImages@@Tests/Prompts.wlt:1045,1-1057,2"
 ]
 
 (* ::Subsection:: *)
@@ -1057,7 +1066,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "NotebookPrompt-NonexistentFile@@Tests/Prompts.wlt:1053,1-1061,2"
+    TestID   -> "NotebookPrompt-NonexistentFile@@Tests/Prompts.wlt:1062,1-1070,2"
 ]
 
 VerificationTest[
@@ -1067,7 +1076,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "NotebookPrompt-InvalidExtension@@Tests/Prompts.wlt:1063,1-1071,2"
+    TestID   -> "NotebookPrompt-InvalidExtension@@Tests/Prompts.wlt:1072,1-1080,2"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
