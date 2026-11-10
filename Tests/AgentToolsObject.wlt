@@ -63,7 +63,7 @@ VerificationTest[
     #[ "AgentSkillNames" ] & /@ $DefaultAgentTools,
     <|
         "Wolfram"                  -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" },
-        "WolframAlpha"             -> { "wolfram-alpha", "wolfram-agent-tools" },
+        "WolframAlpha"             -> { "wolfram-alpha" },
         "WolframLanguage"          -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging", "wolfram-agent-tools" },
         "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging", "wolfram-agent-tools" }
     |>,

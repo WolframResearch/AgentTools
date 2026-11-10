@@ -27,7 +27,7 @@ An **`AgentToolsObject`** is a named bundle of MCP servers and agent skills. `De
 | Bundle | MCP server | Agent skills |
 |--------|------------|--------------|
 | `"Wolfram"` | `Wolfram` | wolfram-language, wolfram-alpha, wolfram-debugging, wolfram-agent-tools |
-| `"WolframAlpha"` | `WolframAlpha` | wolfram-alpha, wolfram-agent-tools |
+| `"WolframAlpha"` | `WolframAlpha` | wolfram-alpha |
 | `"WolframLanguage"` | `WolframLanguage` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging, wolfram-agent-tools |
 | `"WolframPacletDevelopment"` | `WolframPacletDevelopment` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging, wolfram-agent-tools |
 

@@ -43,7 +43,7 @@ Wolfram 15 includes an older built-in copy of AgentTools. The first command inst
 | Toolset | MCP tools | Agent skills installed by `DeployAgentTools` |
 | --- | --- | --- |
 | `Wolfram` | `WolframContext`, `WolframLanguageEvaluator`, `WolframAlpha` | `wolfram-language`, `wolfram-alpha`, `wolfram-debugging`, `wolfram-agent-tools` |
-| `WolframAlpha` | `WolframAlphaContext`, `WolframAlpha` | `wolfram-alpha`, `wolfram-agent-tools` |
+| `WolframAlpha` | `WolframAlphaContext`, `WolframAlpha` | `wolfram-alpha` |
 | `WolframLanguage` | `WolframLanguageContext`, `WolframLanguageEvaluator`, `ReadNotebook`, `WriteNotebook`, `SymbolDefinition`, `CodeInspector`, `TestReport` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`, `wolfram-debugging`, `wolfram-agent-tools` |
 | `WolframPacletDevelopment` | The `WolframLanguage` tools plus `CreateSymbolDoc`, `EditSymbolDoc`, `EditSymbolDocExamples`, `CheckPaclet`, `BuildPaclet`, `SubmitPaclet` | `wolfram-language`, `wolfram-notebooks`, `wolfram-paclets`, `wolfram-debugging`, `wolfram-agent-tools` |
 

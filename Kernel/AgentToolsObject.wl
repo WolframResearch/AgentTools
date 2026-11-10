@@ -73,7 +73,7 @@ $defaultAgentTools[ "WolframAlpha" ] = <|
     "Description" -> "Tools for Wolfram|Alpha natural language queries",
     "Location"    -> "BuiltIn",
     "MCPServers"  -> { "WolframAlpha" },
-    "AgentSkills" -> { "wolfram-alpha", "wolfram-agent-tools" }
+    "AgentSkills" -> { "wolfram-alpha" }
 |>;
 
 (* ::**************************************************************************************************************:: *)

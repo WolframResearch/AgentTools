@@ -107,7 +107,7 @@ The built skills in `Assets/AgentSkills/` are AgentTools' built-in skills. Each 
 | Bundle | Agent skills |
 | --- | --- |
 | `Wolfram` | wolfram-language, wolfram-alpha, wolfram-debugging, wolfram-agent-tools |
-| `WolframAlpha` | wolfram-alpha, wolfram-agent-tools |
+| `WolframAlpha` | wolfram-alpha |
 | `WolframLanguage` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging, wolfram-agent-tools |
 | `WolframPacletDevelopment` | wolfram-language, wolfram-notebooks, wolfram-paclets, wolfram-debugging, wolfram-agent-tools |
 

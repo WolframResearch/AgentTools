@@ -377,7 +377,7 @@ $defaultAgentTools[ "Wolfram" ] = <|
     "MCPServers"  -> { "Wolfram" },
     "AgentSkills" -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" }
 |>;
-(* likewise "WolframAlpha" -> { "wolfram-alpha", "wolfram-agent-tools" },
+(* likewise "WolframAlpha" -> { "wolfram-alpha" },
    "WolframLanguage" and "WolframPacletDevelopment" ->
        { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging", "wolfram-agent-tools" } *)
 ```
