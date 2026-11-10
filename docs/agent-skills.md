@@ -98,7 +98,7 @@ Like `wolfram-debugging`, this skill has no generated scripts. `SKILL.md` is a s
 | `references/CloudDeployment.md` | Deploying an MCP server to the Wolfram Cloud and managing API keys |
 | `references/ToolOptions.md` | `"ToolOptions"` and the other install options |
 
-These references restate parts of the developer documentation in `docs/` for consumers of the paclet. Update them when the corresponding functionality changes.
+These references restate parts of the developer documentation in `docs/` for consumers of the paclet. Update them when the corresponding functionality changes, and raise the minimum AgentTools version named in `SKILL.md` when the skill starts to rely on newer functionality.
 
 ## Built-in Skills
 

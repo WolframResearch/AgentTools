@@ -1,7 +1,7 @@
 ---
 name: wolfram-agent-tools
 description: Use when the user wants to build, customize, or share Wolfram Language tooling for AI agents with the AgentTools paclet. Typical requests are writing a custom tool or MCP server, making an agent skill that uses Wolfram Language, bundling or distributing these (for example in a paclet), deploying an MCP server to the Wolfram Cloud, and changing how an installed Wolfram MCP server or its tools are configured (options, limits, switching or removing toolsets). Not needed just to use the Wolfram tools.
-compatibility: Requires the Wolfram MCP server or wolframscript on PATH
+compatibility: Requires a local Wolfram 15.0+ kernel, through the local Wolfram MCP server or wolframscript on PATH
 metadata:
   author: Wolfram Research
   version: 2.2.25
@@ -14,15 +14,33 @@ and agent skills. Paths are relative to this skill directory.
 
 ## Prerequisites
 
-You need a Wolfram kernel (15.0 or later): the MCP evaluator (for example `mcp__Wolfram__WolframLanguageEvaluator`)
-or `wolframscript`. If you have neither, read `references/GetWolframEngine.md`.
+You need a local Wolfram kernel (15.0 or later): the evaluator of a local Wolfram MCP server (for example
+`mcp__Wolfram__WolframLanguageEvaluator`) or `wolframscript`. The evaluator of Wolfram Cloud MCP, or of any other MCP
+server in the Wolfram Cloud, is not enough: its code runs in the cloud, so it cannot install or configure anything on
+this machine. If you have no local kernel, read `references/GetWolframEngine.md`.
 
-Wolfram 15 ships an older copy of AgentTools, so update it once, then load it:
+This skill describes AgentTools 2.2.25 or later. Wolfram 15 ships an older copy, so update it once:
 
 ```wl
-PacletInstall["Wolfram/AgentTools", UpdatePacletSites -> True]["Version"]
+{
+    PacletObject["Wolfram/AgentTools"]["Version"],                             (* the version installed now *)
+    PacletInstall["Wolfram/AgentTools", UpdatePacletSites -> True]["Version"]  (* the latest version *)
+}
+```
+
+Then load it in a separate call:
+
+```wl
 Needs["Wolfram`AgentTools`"]
 ```
+
+If `PacletInstall` gives a version older than 2.2.25, much of what this skill describes is missing (those functions
+come back unevaluated), so tell the user.
+
+**The MCP evaluator can be running an older AgentTools.** By default it evaluates code in the MCP server's own kernel,
+which loaded AgentTools when the server started, and `Needs` does not load it again. If `PacletInstall` gave a newer
+version than `PacletObject` did, that kernel keeps the old version until the server restarts: ask the user to restart
+it (or the client), and use `wolframscript` until then.
 
 **Run `Needs` on its own before anything else.** An MCP evaluator call and `wolframscript -code '...'` both parse
 the whole input before `Needs` runs, so AgentTools symbols in the same input can end up in the wrong context, and a
