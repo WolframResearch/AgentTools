@@ -431,7 +431,7 @@ VerificationTest[
         None,
         "AgentToolsObject:Bundle/memory-skill",
         None,
-        <| "SKILL.md" -> "---\nname: memory-skill\ndescription: In memory\n---\n\nBody text\n" |>,
+        <| "SKILL.md" -> "---\n\"name\": \"memory-skill\"\n\"description\": \"In memory\"\n---\n\nBody text\n" |>,
         True
     },
     SameTest -> SameQ,
@@ -453,7 +453,7 @@ VerificationTest[
         source = toAgentSkillSource @ skill;
         { source[ "SourceDirectory" ], source[ "Files", "SKILL.md" ] }
     ],
-    { None, "---\nname: moved-skill\ndescription: Moved\nallowed-tools: Bash\nx-custom: 1\n---\n\nBody\n" },
+    { None, "---\n\"name\": \"moved-skill\"\n\"description\": \"Moved\"\n\"allowed-tools\": \"Bash\"\n\"x-custom\": 1\n---\n\nBody\n" },
     SameTest -> SameQ,
     TestID   -> "ToAgentSkillSource-LLMSkill-StaleLocation@@Tests/AgentSkills.wlt:444,1-459,2"
 ]
@@ -475,18 +475,18 @@ VerificationTest[
     ][ "Files", "SKILL.md" ],
     StringJoin[
         "---\n",
-        "name: full-skill\n",
-        "description: \"Does things: well\"\n",
-        "license: MIT\n",
-        "compatibility: Requires wolframscript\n",
-        "allowed-tools: Bash Read\n",
-        "metadata:\n",
-        "  author: me\n",
-        "  version: \"1.5\"\n",
-        "  count: \"3\"\n",
-        "  flag: \"true\"\n",
-        "x-extra: value\n",
-        "another: z\n",
+        "\"name\": \"full-skill\"\n",
+        "\"description\": \"Does things: well\"\n",
+        "\"license\": \"MIT\"\n",
+        "\"compatibility\": \"Requires wolframscript\"\n",
+        "\"allowed-tools\": \"Bash Read\"\n",
+        "\"metadata\":\n",
+        "  \"author\": \"me\"\n",
+        "  \"version\": \"1.5\"\n",
+        "  \"count\": \"3\"\n",
+        "  \"flag\": \"true\"\n",
+        "\"x-extra\": \"value\"\n",
+        "\"another\": \"z\"\n",
         "---\n",
         "\n",
         "Line one\n",
@@ -508,14 +508,14 @@ VerificationTest[
             "AdditionalFrontmatter" -> <| "allowed-tools" -> "Bash" |>
         |>
     ][ "Files", "SKILL.md" ],
-    "---\nname: allowed-skill\ndescription: Allowed\nallowed-tools: Read\n---\n\nBody\n",
+    "---\n\"name\": \"allowed-skill\"\n\"description\": \"Allowed\"\n\"allowed-tools\": \"Read\"\n---\n\nBody\n",
     SameTest -> SameQ,
     TestID   -> "GeneratedSkillFile-AllowedTools@@Tests/AgentSkills.wlt:500,1-514,2"
 ]
 
 VerificationTest[
     toAgentSkillSource[ <| "Name" -> "empty-body", "Description" -> "Nothing else" |> ][ "Files", "SKILL.md" ],
-    "---\nname: empty-body\ndescription: Nothing else\n---\n",
+    "---\n\"name\": \"empty-body\"\n\"description\": \"Nothing else\"\n---\n",
     SameTest -> SameQ,
     TestID   -> "GeneratedSkillFile-EmptyBody@@Tests/AgentSkills.wlt:516,1-521,2"
 ]
@@ -853,7 +853,7 @@ VerificationTest[
         "Name"       -> "paclet-def-skill",
         "Identifier" -> "Pub/TestPaclet/paclet-def-skill",
         "Version"    -> "2.0.1",
-        "Files"      -> <| "SKILL.md" -> "---\nname: paclet-def-skill\ndescription: Paclet skill paclet-def-skill\n---\n\nBody\n" |>
+        "Files"      -> <| "SKILL.md" -> "---\n\"name\": \"paclet-def-skill\"\n\"description\": \"Paclet skill paclet-def-skill\"\n---\n\nBody\n" |>
     |>,
     SameTest -> SameQ,
     TestID   -> "ToAgentSkillSource-PacletSkill-Association@@Tests/AgentSkills.wlt:850,1-860,2"
@@ -1211,7 +1211,7 @@ VerificationTest[
         {
             InstallAgentSkills[ File @ root, bundle ],
             readTestFile @ FileNameJoin @ { root, "bundle-dir-skill", "scripts", "tool.txt" },
-            StringContainsQ[ readTestFile @ FileNameJoin @ { root, "bundle-assoc-skill", "SKILL.md" }, "license: MIT\n" ],
+            StringContainsQ[ readTestFile @ FileNameJoin @ { root, "bundle-assoc-skill", "SKILL.md" }, "\"license\": \"MIT\"\n" ],
             UninstallAgentSkills[ File @ root, bundle ],
             FileNames[ All, root ]
         }
