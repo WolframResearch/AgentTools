@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/Files.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/Files.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -28,7 +28,7 @@ VerificationTest[
     ],
     _File,
     SameTest -> MatchQ,
-    TestID   -> "EnsureFilePath-AbsolutePath-GH#108@@Tests/Files.wlt:25,1-32,2"
+    TestID   -> "EnsureFilePath-AbsolutePath-GH#108"
 ]
 
 VerificationTest[
@@ -41,7 +41,7 @@ VerificationTest[
     ],
     _File,
     SameTest -> MatchQ,
-    TestID   -> "EnsureFilePath-RelativePath-GH#108@@Tests/Files.wlt:34,1-45,2"
+    TestID   -> "EnsureFilePath-RelativePath-GH#108"
 ]
 
 VerificationTest[
@@ -50,7 +50,7 @@ VerificationTest[
     ],
     _File,
     SameTest -> MatchQ,
-    TestID   -> "EnsureFilePath-FileWrapper-GH#108@@Tests/Files.wlt:47,1-54,2"
+    TestID   -> "EnsureFilePath-FileWrapper-GH#108"
 ]
 
 VerificationTest[
@@ -63,7 +63,7 @@ VerificationTest[
     ],
     _File,
     SameTest -> MatchQ,
-    TestID   -> "EnsureFilePath-FileWrapper-RelativePath-GH#108@@Tests/Files.wlt:56,1-67,2"
+    TestID   -> "EnsureFilePath-FileWrapper-RelativePath-GH#108"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -82,7 +82,7 @@ VerificationTest[
     ],
     "{\"int\":1,\"real\":2.5,\"string\":\"x\",\"true\":true,\"false\":false,\"null\":null,\"list\":[1,\"a\"],\"object\":{\"k\":1}}",
     SameTest -> SameQ,
-    TestID   -> "WriteRawJSONString-JSONValues@@Tests/Files.wlt:78,1-86,2"
+    TestID   -> "WriteRawJSONString-JSONValues"
 ]
 
 (* Anything else becomes its InputForm string, wherever it appears *)
@@ -102,7 +102,7 @@ VerificationTest[
         "nested"  -> <| "q" -> "Quantity[1, \"Hours\"]" |>
     |>,
     SameTest -> SameQ,
-    TestID   -> "WriteRawJSONString-NonJSONValuesAsStrings@@Tests/Files.wlt:89,1-106,2"
+    TestID   -> "WriteRawJSONString-NonJSONValuesAsStrings"
 ]
 
 (* Dates become ISO 8601 strings in UTC with millisecond precision *)
@@ -120,7 +120,7 @@ VerificationTest[
         "day"   -> "2026-08-01T00:00:00.000Z"
     |>,
     SameTest -> SameQ,
-    TestID   -> "WriteRawJSONString-Dates@@Tests/Files.wlt:109,1-124,2"
+    TestID   -> "WriteRawJSONString-Dates"
 ]
 
 (* A "ConversionFunction" given by the caller takes precedence over jsonConvert *)
@@ -128,7 +128,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`writeRawJSONString[ <| "none" -> None |>, "ConversionFunction" -> ("custom" &), "Compact" -> True ],
     "{\"none\":\"custom\"}",
     SameTest -> SameQ,
-    TestID   -> "WriteRawJSONString-ConversionFunctionOverride@@Tests/Files.wlt:127,1-132,2"
+    TestID   -> "WriteRawJSONString-ConversionFunctionOverride"
 ]
 
 (* jsonConvert holds its argument, so an expression is converted as it is rather than evaluated again *)
@@ -140,7 +140,7 @@ VerificationTest[
     },
     { "None", "Infinity", "1 + 1", "Hold[1 + 1]", "2026-08-01T12:00:00.000Z" },
     SameTest -> SameQ,
-    TestID   -> "JSONConvert-HoldsArgument@@Tests/Files.wlt:137,1-144,2"
+    TestID   -> "JSONConvert-HoldsArgument"
 ]
 (* :!CodeAnalysis::EndBlock:: *)
 
@@ -160,7 +160,7 @@ VerificationTest[
     ],
     { True, <| "int" -> 1, "none" -> "None", "date" -> "2026-08-01T12:00:00.000Z" |> },
     SameTest -> SameQ,
-    TestID   -> "WriteRawJSONFile-NonJSONValuesAsStrings@@Tests/Files.wlt:149,1-164,2"
+    TestID   -> "WriteRawJSONFile-NonJSONValuesAsStrings"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -177,7 +177,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "GlobalSettings-FileLocation@@Tests/Files.wlt:173,1-181,2"
+    TestID   -> "GlobalSettings-FileLocation"
 ]
 
 (* Nothing has been set yet: reading gives no settings and creates nothing *)
@@ -191,7 +191,7 @@ VerificationTest[
     },
     { <| |>, Missing[ "KeyAbsent", "Anything" ], "default", False, False },
     SameTest -> SameQ,
-    TestID   -> "GlobalSettings-Unset@@Tests/Files.wlt:184,1-195,2"
+    TestID   -> "GlobalSettings-Unset"
 ]
 
 (* Setting a value creates the file (and its directory) and returns the value *)
@@ -206,7 +206,7 @@ VerificationTest[
     },
     { 1, True, <| "A" -> 1 |>, 1, 1, <| "A" -> 1 |> },
     SameTest -> SameQ,
-    TestID   -> "GlobalSettings-SetAndGet@@Tests/Files.wlt:198,1-210,2"
+    TestID   -> "GlobalSettings-SetAndGet"
 ]
 
 (* New values are merged into the existing settings, so setting one never loses another *)
@@ -219,7 +219,7 @@ VerificationTest[
     ),
     <| "A" -> False, "B" -> { "x", "y" } |>,
     SameTest -> SameQ,
-    TestID   -> "GlobalSettings-Merge@@Tests/Files.wlt:213,1-223,2"
+    TestID   -> "GlobalSettings-Merge"
 ]
 
 (* A file that cannot be read, or that does not hold an association, counts as no settings and is replaced by the
@@ -238,7 +238,7 @@ VerificationTest[
     ],
     { <| |>, <| |>, <| "A" -> 1 |> },
     SameTest -> SameQ,
-    TestID   -> "GlobalSettings-Unreadable@@Tests/Files.wlt:227,1-242,2"
+    TestID   -> "GlobalSettings-Unreadable"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

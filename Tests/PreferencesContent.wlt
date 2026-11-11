@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/PreferencesContent.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/PreferencesContent.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -26,7 +26,7 @@ VerificationTest[
     CreatePreferencesContent[ ],
     Deploy[ _Pane ],
     SameTest -> MatchQ,
-    TestID   -> "CreatePreferencesContent-SmokeTest@@Tests/PreferencesContent.wlt:25,1-30,2"
+    TestID   -> "CreatePreferencesContent-SmokeTest"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -37,7 +37,7 @@ VerificationTest[
     _Failure,
     { CreatePreferencesContent::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "CreatePreferencesContent-InvalidArguments@@Tests/PreferencesContent.wlt:35,1-41,2"
+    TestID   -> "CreatePreferencesContent-InvalidArguments"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -64,7 +64,7 @@ VerificationTest[
         ___
     ],
     SameTest -> MatchQ,
-    TestID   -> "PreferencesContent-UsageDataCheckbox-Structure@@Tests/PreferencesContent.wlt:51,1-68,2"
+    TestID   -> "PreferencesContent-UsageDataCheckbox-Structure"
 ]
 
 (* Toggling the checkbox writes the global setting (the Dynamic's setter is applied by hand, since there is no
@@ -90,7 +90,7 @@ VerificationTest[
     ],
     { True, False, False, False, <| "SubmitUsageData" -> False |>, True, True },
     SameTest -> SameQ,
-    TestID   -> "PreferencesContent-UsageDataCheckbox-Setter@@Tests/PreferencesContent.wlt:72,1-94,2"
+    TestID   -> "PreferencesContent-UsageDataCheckbox-Setter"
 ]
 
 (* Toggling the checkbox only writes the setting: no deployment is touched, and nothing is queued *)
@@ -101,7 +101,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "PreferencesContent-UsageDataCheckbox-NoRedeploy@@Tests/PreferencesContent.wlt:97,1-105,2"
+    TestID   -> "PreferencesContent-UsageDataCheckbox-NoRedeploy"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

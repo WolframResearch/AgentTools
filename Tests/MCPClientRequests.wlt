@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/MCPClientRequests.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/MCPClientRequests.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -26,7 +26,7 @@ VerificationTest[
     AssociationQ @ Wolfram`AgentTools`Common`$mcpClientRequests,
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-RegistryIsAssociation@@Tests/MCPClientRequests.wlt:25,1-30,2"
+    TestID   -> "MCPClientRequests-RegistryIsAssociation"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -65,7 +65,7 @@ VerificationTest[
     ],
     { True, True, True, True, True, True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-SendRegistersEntry@@Tests/MCPClientRequests.wlt:40,1-69,2"
+    TestID   -> "MCPClientRequests-SendRegistersEntry"
 ]
 
 VerificationTest[
@@ -83,7 +83,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-SendUUIDsAreUnique@@Tests/MCPClientRequests.wlt:71,1-87,2"
+    TestID   -> "MCPClientRequests-SendUUIDsAreUnique"
 ]
 
 (* Requests are sanitized before JSON encoding so PUA characters never reach the wire,
@@ -111,7 +111,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-SendSanitizesPUACharacters@@Tests/MCPClientRequests.wlt:91,1-115,2"
+    TestID   -> "MCPClientRequests-SendSanitizesPUACharacters"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -145,7 +145,7 @@ VerificationTest[
     ],
     { False, True },
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseCallsHandlerAndRemoves@@Tests/MCPClientRequests.wlt:123,1-149,2"
+    TestID   -> "MCPClientRequests-ResponseCallsHandlerAndRemoves"
 ]
 
 (* Unknown response IDs are silently ignored - no handler call, no registry mutation. *)
@@ -164,7 +164,7 @@ VerificationTest[
     ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseUnknownIDIsNoOp@@Tests/MCPClientRequests.wlt:152,1-168,2"
+    TestID   -> "MCPClientRequests-ResponseUnknownIDIsNoOp"
 ]
 
 (* The handler still fires for error responses - interpretation is the handler's job. *)
@@ -189,7 +189,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "error" -> KeyValuePattern[ "code" -> -32601 ] ],
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-ResponseHandlerFiresOnError@@Tests/MCPClientRequests.wlt:171,1-193,2"
+    TestID   -> "MCPClientRequests-ResponseHandlerFiresOnError"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -201,7 +201,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`handleNotification[ "notifications/cancelled", <| |> ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationUnknownIsNoOp@@Tests/MCPClientRequests.wlt:200,1-205,2"
+    TestID   -> "MCPClientRequests-NotificationUnknownIsNoOp"
 ]
 
 (* notifications/initialized dispatches to onClientInitialized with the message.
@@ -220,7 +220,7 @@ VerificationTest[
     ],
     <| "method" -> "notifications/initialized" |>,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationInitializedDispatch@@Tests/MCPClientRequests.wlt:210,1-224,2"
+    TestID   -> "MCPClientRequests-NotificationInitializedDispatch"
 ]
 
 (* notifications/roots/list_changed dispatches to onRootsListChanged with the message. *)
@@ -237,7 +237,7 @@ VerificationTest[
     ],
     <| "method" -> "notifications/roots/list_changed" |>,
     SameTest -> MatchQ,
-    TestID   -> "MCPClientRequests-NotificationRootsListChangedDispatch@@Tests/MCPClientRequests.wlt:227,1-241,2"
+    TestID   -> "MCPClientRequests-NotificationRootsListChangedDispatch"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

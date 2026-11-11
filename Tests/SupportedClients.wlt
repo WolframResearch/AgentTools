@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/SupportedClients.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/SupportedClients.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -26,7 +26,7 @@ VerificationTest[
     DetectedMCPClients[ ],
     KeyValuePattern[ { } ]?AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "DetectedMCPClients-ReturnShape@@Tests/SupportedClients.wlt:25,1-30,2"
+    TestID   -> "DetectedMCPClients-ReturnShape"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -35,7 +35,7 @@ VerificationTest[
 VerificationTest[
     SubsetQ[ Keys @ $SupportedMCPClients, Keys @ DetectedMCPClients[ ] ],
     True,
-    TestID -> "DetectedMCPClients-Subset@@Tests/SupportedClients.wlt:35,1-39,2"
+    TestID -> "DetectedMCPClients-Subset"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -46,7 +46,7 @@ VerificationTest[
         Keys[ detected ] === Select[ Keys @ $SupportedMCPClients, KeyExistsQ[ detected, # ] & ]
     ],
     True,
-    TestID -> "DetectedMCPClients-Ordering@@Tests/SupportedClients.wlt:44,1-50,2"
+    TestID -> "DetectedMCPClients-Ordering"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -57,7 +57,7 @@ VerificationTest[
     _Failure,
     { DetectedMCPClients::InvalidArguments },
     SameTest -> MatchQ,
-    TestID   -> "DetectedMCPClients-InvalidArguments@@Tests/SupportedClients.wlt:55,1-61,2"
+    TestID   -> "DetectedMCPClients-InvalidArguments"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -107,7 +107,7 @@ VerificationTest[
     $SupportedClients,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "SupportedClients-ReturnsAssociation@@Tests/SupportedClients.wlt:106,1-111,2"
+    TestID   -> "SupportedClients-ReturnsAssociation"
 ]
 
 VerificationTest[
@@ -118,14 +118,14 @@ VerificationTest[
         "QwenCode", "VisualStudioCode", "Windsurf", "Zed"
     },
     SameTest -> Equal,
-    TestID   -> "SupportedClients-KeysSorted@@Tests/SupportedClients.wlt:113,1-122,2"
+    TestID   -> "SupportedClients-KeysSorted"
 ]
 
 VerificationTest[
     MemberQ[ Attributes @ $SupportedClients, Protected ],
     True,
     SameTest -> Equal,
-    TestID   -> "SupportedClients-Protected@@Tests/SupportedClients.wlt:124,1-129,2"
+    TestID   -> "SupportedClients-Protected"
 ]
 
 VerificationTest[
@@ -135,7 +135,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "SupportedClients-DerivedSupportFlags@@Tests/SupportedClients.wlt:131,1-139,2"
+    TestID   -> "SupportedClients-DerivedSupportFlags"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -145,7 +145,7 @@ VerificationTest[
     $SupportedMCPClients === Select[ $SupportedClients, KeyExistsQ[ #, "InstallLocation" ] & ],
     True,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-InstallLocationSubset@@Tests/SupportedClients.wlt:144,1-149,2"
+    TestID   -> "SupportedMCPClients-InstallLocationSubset"
 ]
 
 (* Every current client supports MCP, so the value is unchanged for backward compatibility *)
@@ -153,7 +153,7 @@ VerificationTest[
     Keys @ $SupportedMCPClients === Keys @ $SupportedClients,
     True,
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-AllCurrentClients@@Tests/SupportedClients.wlt:152,1-157,2"
+    TestID   -> "SupportedMCPClients-AllCurrentClients"
 ]
 
 (* $SupportedMCPClients is not cached, so it follows a Block of $SupportedClients *)
@@ -169,7 +169,7 @@ VerificationTest[
     ],
     { "Cursor" },
     SameTest -> Equal,
-    TestID   -> "SupportedMCPClients-FollowsSupportedClients@@Tests/SupportedClients.wlt:160,1-173,2"
+    TestID   -> "SupportedMCPClients-FollowsSupportedClients"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -179,14 +179,14 @@ VerificationTest[
     Keys @ Select[ $SupportedClients, ! #[ "SkillsSupport" ] & ],
     { "AmazonQ", "ClaudeDesktop", "LMStudio" },
     SameTest -> Equal,
-    TestID   -> "SupportedClients-SkillsSupport-Unsupported@@Tests/SupportedClients.wlt:178,1-183,2"
+    TestID   -> "SupportedClients-SkillsSupport-Unsupported"
 ]
 
 VerificationTest[
     Keys @ Select[ $SupportedClients, ! #[ "SkillsProjectSupport" ] & ],
     { "AmazonQ", "ClaudeDesktop", "LMStudio" },
     SameTest -> Equal,
-    TestID   -> "SupportedClients-SkillsProjectSupport-Unsupported@@Tests/SupportedClients.wlt:185,1-190,2"
+    TestID   -> "SupportedClients-SkillsProjectSupport-Unsupported"
 ]
 
 VerificationTest[
@@ -197,7 +197,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "SupportedClients-SkillsSupport-MatchesKeys@@Tests/SupportedClients.wlt:192,1-201,2"
+    TestID   -> "SupportedClients-SkillsSupport-MatchesKeys"
 ]
 
 (* ProjectSupport keeps its MCP-only meaning (e.g. Cursor has project skills but no project MCP config) *)
@@ -210,7 +210,7 @@ VerificationTest[
     },
     { False, True, True, False },
     SameTest -> Equal,
-    TestID   -> "SupportedClients-ProjectSupport-MCPOnly@@Tests/SupportedClients.wlt:204,1-214,2"
+    TestID   -> "SupportedClients-ProjectSupport-MCPOnly"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -243,7 +243,7 @@ VerificationTest[
         "Zed"              -> { ".agents", "skills" }
     |>,
     SameTest -> Equal,
-    TestID   -> "SupportedClients-SkillsProjectPath-Values@@Tests/SupportedClients.wlt:219,1-247,2"
+    TestID   -> "SupportedClients-SkillsProjectPath-Values"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -258,7 +258,7 @@ VerificationTest[
     DirectoryQ @ $skillsTestHome,
     True,
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-Setup@@Tests/SupportedClients.wlt:256,1-262,2"
+    TestID   -> "SkillsLocation-Setup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -297,7 +297,7 @@ VerificationTest[
         "Zed"              -> { ".agents", "skills" }
     |>,
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-AllClients@@Tests/SupportedClients.wlt:268,1-301,2"
+    TestID   -> "SkillsLocation-AllClients"
 ]
 
 (* The locations are the same on every operating system *)
@@ -310,7 +310,7 @@ VerificationTest[
     ],
     { _File },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-SameOnEveryOS@@Tests/SupportedClients.wlt:304,1-314,2"
+    TestID   -> "SkillsLocation-SameOnEveryOS"
 ]
 
 VerificationTest[
@@ -320,7 +320,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-DefaultOperatingSystem@@Tests/SupportedClients.wlt:316,1-324,2"
+    TestID   -> "SkillsLocation-DefaultOperatingSystem"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -339,7 +339,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-Aliases@@Tests/SupportedClients.wlt:329,1-343,2"
+    TestID   -> "SkillsLocation-Aliases"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -351,7 +351,7 @@ VerificationTest[
     ],
     { ".gemini", "antigravity", "skills" },
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-Antigravity-Unmigrated@@Tests/SupportedClients.wlt:348,1-355,2"
+    TestID   -> "SkillsLocation-Antigravity-Unmigrated"
 ]
 
 VerificationTest[
@@ -366,7 +366,7 @@ VerificationTest[
     ],
     { { ".gemini", "config", "skills" }, { ".gemini", "config", "mcp_config.json" } },
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-Antigravity-Migrated@@Tests/SupportedClients.wlt:357,1-370,2"
+    TestID   -> "SkillsLocation-Antigravity-Migrated"
 ]
 
 VerificationTest[
@@ -375,7 +375,7 @@ VerificationTest[
     ],
     { $skillsTestHome, ".gemini", "config", "skills" },
     SameTest -> Equal,
-    TestID   -> "AntigravitySkillsLocation-Helper@@Tests/SupportedClients.wlt:372,1-379,2"
+    TestID   -> "AntigravitySkillsLocation-Helper"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -386,7 +386,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedSkillsClient", _ ],
     { AgentTools::UnsupportedSkillsClient },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-Unsupported-ClaudeDesktop@@Tests/SupportedClients.wlt:384,1-390,2"
+    TestID   -> "SkillsLocation-Unsupported-ClaudeDesktop"
 ]
 
 VerificationTest[
@@ -394,7 +394,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedSkillsClient", _ ],
     { AgentTools::UnsupportedSkillsClient },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-Unsupported-LMStudio@@Tests/SupportedClients.wlt:392,1-398,2"
+    TestID   -> "SkillsLocation-Unsupported-LMStudio"
 ]
 
 (* "Q" is an alias of AmazonQ, so the failure names the canonical client *)
@@ -403,7 +403,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedSkillsClient", KeyValuePattern[ "MessageParameters" :> { "AmazonQ" } ] ],
     { AgentTools::UnsupportedSkillsClient },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-Unsupported-AmazonQAlias@@Tests/SupportedClients.wlt:401,1-407,2"
+    TestID   -> "SkillsLocation-Unsupported-AmazonQAlias"
 ]
 
 VerificationTest[
@@ -411,7 +411,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedSkillsClient", _ ],
     { AgentTools::UnsupportedSkillsClient },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-Unsupported-UnknownClient@@Tests/SupportedClients.wlt:409,1-415,2"
+    TestID   -> "SkillsLocation-Unsupported-UnknownClient"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -430,7 +430,7 @@ VerificationTest[
     ],
     { AgentTools::UnknownSkillsLocation },
     SameTest -> MatchQ,
-    TestID   -> "SkillsLocation-UnknownSkillsLocation@@Tests/SupportedClients.wlt:420,1-434,2"
+    TestID   -> "SkillsLocation-UnknownSkillsLocation"
 ]
 
 VerificationTest[
@@ -442,7 +442,7 @@ VerificationTest[
     ],
     { ".unknownos", "skills" },
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-PerOSAssociation@@Tests/SupportedClients.wlt:436,1-446,2"
+    TestID   -> "SkillsLocation-PerOSAssociation"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -455,7 +455,7 @@ VerificationTest[
     ],
     { ".claude", "skills" },
     SameTest -> Equal,
-    TestID   -> "ProjectSkillsLocation-ClaudeCode@@Tests/SupportedClients.wlt:451,1-459,2"
+    TestID   -> "ProjectSkillsLocation-ClaudeCode"
 ]
 
 VerificationTest[
@@ -465,7 +465,7 @@ VerificationTest[
     ],
     { ".claude", "skills" },
     SameTest -> Equal,
-    TestID   -> "ProjectSkillsLocation-FileWrapper@@Tests/SupportedClients.wlt:461,1-469,2"
+    TestID   -> "ProjectSkillsLocation-FileWrapper"
 ]
 
 VerificationTest[
@@ -480,7 +480,7 @@ VerificationTest[
         { ".windsurf", "skills" }
     },
     SameTest -> Equal,
-    TestID   -> "ProjectSkillsLocation-AliasesAndClients@@Tests/SupportedClients.wlt:471,1-484,2"
+    TestID   -> "ProjectSkillsLocation-AliasesAndClients"
 ]
 
 VerificationTest[
@@ -493,7 +493,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "ProjectSkillsLocation-AllSupportedClients@@Tests/SupportedClients.wlt:486,1-497,2"
+    TestID   -> "ProjectSkillsLocation-AllSupportedClients"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -515,7 +515,7 @@ VerificationTest[
         General::stop
     },
     SameTest -> MatchQ,
-    TestID   -> "ProjectSkillsLocation-Unsupported@@Tests/SupportedClients.wlt:502,1-519,2"
+    TestID   -> "ProjectSkillsLocation-Unsupported"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -526,7 +526,7 @@ VerificationTest[
     Failure[ "AgentTools::InvalidProjectDirectory", _ ],
     { AgentTools::InvalidProjectDirectory },
     SameTest -> MatchQ,
-    TestID   -> "ProjectSkillsLocation-InvalidDirectory-Integer@@Tests/SupportedClients.wlt:524,1-530,2"
+    TestID   -> "ProjectSkillsLocation-InvalidDirectory-Integer"
 ]
 
 VerificationTest[
@@ -534,7 +534,7 @@ VerificationTest[
     Failure[ "AgentTools::InvalidProjectDirectory", _ ],
     { AgentTools::InvalidProjectDirectory },
     SameTest -> MatchQ,
-    TestID   -> "ProjectSkillsLocation-InvalidDirectory-Symbol@@Tests/SupportedClients.wlt:532,1-538,2"
+    TestID   -> "ProjectSkillsLocation-InvalidDirectory-Symbol"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -549,7 +549,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedMCPClient", _ ],
     { AgentTools::UnsupportedMCPClient },
     SameTest -> MatchQ,
-    TestID   -> "InstallLocation-NoInstallLocation-UnsupportedMCPClient@@Tests/SupportedClients.wlt:545,1-553,2"
+    TestID   -> "InstallLocation-NoInstallLocation-UnsupportedMCPClient"
 ]
 
 VerificationTest[
@@ -562,7 +562,7 @@ VerificationTest[
     Failure[ "AgentTools::UnsupportedMCPClient", _ ],
     { AgentTools::UnsupportedMCPClient },
     SameTest -> MatchQ,
-    TestID   -> "ProjectInstallLocation-NoInstallLocation-UnsupportedMCPClient@@Tests/SupportedClients.wlt:555,1-566,2"
+    TestID   -> "ProjectInstallLocation-NoInstallLocation-UnsupportedMCPClient"
 ]
 
 VerificationTest[
@@ -577,7 +577,7 @@ VerificationTest[
     ],
     { { ".skillsonly", "skills" }, { ".skillsonly", "skills" } },
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-SkillsOnlyClient@@Tests/SupportedClients.wlt:568,1-581,2"
+    TestID   -> "SkillsLocation-SkillsOnlyClient"
 ]
 
 VerificationTest[
@@ -597,7 +597,7 @@ VerificationTest[
     ],
     { "Cursor" },
     SameTest -> Equal,
-    TestID   -> "DetectedMCPClients-SkipsClientsWithoutInstallLocation@@Tests/SupportedClients.wlt:583,1-601,2"
+    TestID   -> "DetectedMCPClients-SkipsClientsWithoutInstallLocation"
 ]
 
 VerificationTest[
@@ -613,7 +613,7 @@ VerificationTest[
     ],
     "Cursor",
     SameTest -> Equal,
-    TestID   -> "GuessClientName-SkipsClientsWithoutInstallLocation@@Tests/SupportedClients.wlt:603,1-617,2"
+    TestID   -> "GuessClientName-SkipsClientsWithoutInstallLocation"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -624,7 +624,7 @@ VerificationTest[
     DirectoryQ @ $skillsTestHome,
     False,
     SameTest -> Equal,
-    TestID   -> "SkillsLocation-Cleanup@@Tests/SupportedClients.wlt:622,1-628,2"
+    TestID   -> "SkillsLocation-Cleanup"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

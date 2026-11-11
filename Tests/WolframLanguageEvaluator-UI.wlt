@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/WolframLanguageEvaluator-UI.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/WolframLanguageEvaluator-UI.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -29,14 +29,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toContentList[ "hello" ],
     { <| "type" -> "text", "text" -> "hello" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-String@@Tests/WolframLanguageEvaluator-UI.wlt:28,1-33,2"
+    TestID   -> "toContentList-String"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toContentList[ "" ],
     { <| "type" -> "text", "text" -> "" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-EmptyString@@Tests/WolframLanguageEvaluator-UI.wlt:35,1-40,2"
+    TestID   -> "toContentList-EmptyString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -46,7 +46,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toContentList[ { <| "type" -> "text", "text" -> "a" |> } ],
     { <| "type" -> "text", "text" -> "a" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-List@@Tests/WolframLanguageEvaluator-UI.wlt:45,1-50,2"
+    TestID   -> "toContentList-List"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -58,7 +58,7 @@ VerificationTest[
     ],
     { <| "type" -> "text", "text" -> "x" |>, <| "type" -> "image", "data" -> "abc" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-AssociationContent@@Tests/WolframLanguageEvaluator-UI.wlt:55,1-62,2"
+    TestID   -> "toContentList-AssociationContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -68,21 +68,21 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toOutputBoxes[ HoldForm[ 1 + 1 ] ],
     _,
     SameTest -> MatchQ,
-    TestID   -> "toOutputBoxes-HoldForm@@Tests/WolframLanguageEvaluator-UI.wlt:67,1-72,2"
+    TestID   -> "toOutputBoxes-HoldForm"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toOutputBoxes[ HoldCompleteForm[ {1, 2, 3} ] ],
     _,
     SameTest -> MatchQ,
-    TestID   -> "toOutputBoxes-HoldCompleteForm@@Tests/WolframLanguageEvaluator-UI.wlt:74,1-79,2"
+    TestID   -> "toOutputBoxes-HoldCompleteForm"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`toOutputBoxes[ Failure[ "KernelQuit", <| "ExitCode" -> 0 |> ] ],
     _InterpretationBox,
     SameTest -> MatchQ,
-    TestID   -> "toOutputBoxes-Failure-Bug478002@@Tests/WolframLanguageEvaluator-UI.wlt:81,1-86,2"
+    TestID   -> "toOutputBoxes-Failure-Bug478002"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -92,7 +92,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`$outputSizeLimit,
     _Integer?Positive,
     SameTest -> MatchQ,
-    TestID   -> "outputSizeLimit-IsPositiveInteger@@Tests/WolframLanguageEvaluator-UI.wlt:91,1-96,2"
+    TestID   -> "outputSizeLimit-IsPositiveInteger"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -108,7 +108,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "evaluateWolframLanguage-NoUI@@Tests/WolframLanguageEvaluator-UI.wlt:105,1-112,2"
+    TestID   -> "evaluateWolframLanguage-NoUI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -120,7 +120,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "evaluateWolframLanguage-WithUI@@Tests/WolframLanguageEvaluator-UI.wlt:117,1-124,2"
+    TestID   -> "evaluateWolframLanguage-WithUI"
 ]
 
 VerificationTest[
@@ -130,7 +130,7 @@ VerificationTest[
         StringQ @ $evalUIResult
     ],
     True,
-    TestID -> "evaluateWolframLanguage-WithUI-HasContent@@Tests/WolframLanguageEvaluator-UI.wlt:126,1-134,2"
+    TestID -> "evaluateWolframLanguage-WithUI-HasContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -145,7 +145,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "evaluateWolframLanguage-NoDeploy@@Tests/WolframLanguageEvaluator-UI.wlt:139,1-149,2"
+    TestID   -> "evaluateWolframLanguage-NoDeploy"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -159,14 +159,14 @@ VerificationTest[
     Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", "plain string", 1 ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-PlainStringFails@@Tests/WolframLanguageEvaluator-UI.wlt:158,1-163,2"
+    TestID   -> "makeEvaluatorUIResult-PlainStringFails"
 ]
 
 VerificationTest[
     Quiet @ Wolfram`AgentTools`Tools`WolframLanguageEvaluator`Private`makeEvaluatorUIResult[ "1+1", $Failed, 1 ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-FailedInput@@Tests/WolframLanguageEvaluator-UI.wlt:165,1-170,2"
+    TestID   -> "makeEvaluatorUIResult-FailedInput"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -180,7 +180,7 @@ VerificationTest[
     ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-MissingResultKey@@Tests/WolframLanguageEvaluator-UI.wlt:175,1-184,2"
+    TestID   -> "makeEvaluatorUIResult-MissingResultKey"
 ]
 
 VerificationTest[
@@ -191,7 +191,7 @@ VerificationTest[
     ],
     $Failed | _Failure,
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-MissingStringKey@@Tests/WolframLanguageEvaluator-UI.wlt:186,1-195,2"
+    TestID   -> "makeEvaluatorUIResult-MissingStringKey"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -217,7 +217,7 @@ VerificationTest[
     ],
     { KeyValuePattern[ "Content" -> { __Association } ], { "In[3]:=", "Out[4]=" } },
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-MultipleInputLabels@@Tests/WolframLanguageEvaluator-UI.wlt:203,1-221,2"
+    TestID   -> "makeEvaluatorUIResult-MultipleInputLabels"
 ]
 
 (* Without an output label in the result string, the output cell gets the line number of the input. *)
@@ -238,7 +238,7 @@ VerificationTest[
     ],
     { "In[5]:=", "Out[5]=" },
     SameTest -> MatchQ,
-    TestID   -> "makeEvaluatorUIResult-DefaultOutputLabel@@Tests/WolframLanguageEvaluator-UI.wlt:224,1-242,2"
+    TestID   -> "makeEvaluatorUIResult-DefaultOutputLabel"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

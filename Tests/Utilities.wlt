@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/Utilities.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/Utilities.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -46,7 +46,7 @@ VerificationTest[
     definitionNames @ Language`ExtendedFullDefinition[ expr ][[ All, 1 ]],
     { "expr" },
     SameTest -> MatchQ,
-    TestID   -> "ExtendedFullDefinition-BaselineMissesNoEntryDependencies@@Tests/Utilities.wlt:45,1-50,2"
+    TestID   -> "ExtendedFullDefinition-BaselineMissesNoEntryDependencies"
 ]
 
 (* The fix: `extendedFullDefinition` unpacks the NOENTRY flag first, so it also discovers `primeFinder`
@@ -55,7 +55,7 @@ VerificationTest[
     definitionNames @ Wolfram`AgentTools`Common`extendedFullDefinition[ expr ][[ All, 1 ]],
     { "expr", "n", "primeFinder" },
     SameTest -> MatchQ,
-    TestID   -> "ExtendedFullDefinition-FindsNoEntryDependencies@@Tests/Utilities.wlt:54,1-59,2"
+    TestID   -> "ExtendedFullDefinition-FindsNoEntryDependencies"
 ]
 
 (* An expression with no dependent definitions yields an empty DefinitionList. *)
@@ -63,7 +63,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`extendedFullDefinition[ 123 ],
     Language`DefinitionList[ ],
     SameTest -> MatchQ,
-    TestID   -> "ExtendedFullDefinition-NoDependencies@@Tests/Utilities.wlt:62,1-67,2"
+    TestID   -> "ExtendedFullDefinition-NoDependencies"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -75,7 +75,7 @@ VerificationTest[
     ByteArrayQ @ Wolfram`AgentTools`Common`binarySerializeWithDefinitions[ Unevaluated[ expr ] ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BinarySerializeWithDefinitions-ReturnsByteArray@@Tests/Utilities.wlt:74,1-79,2"
+    TestID   -> "BinarySerializeWithDefinitions-ReturnsByteArray"
 ]
 
 (* Round trip: after serialization the dependent definition is truly gone (before -> False), and
@@ -97,7 +97,7 @@ VerificationTest[
     ],
     { False, 677 },
     SameTest -> MatchQ,
-    TestID   -> "BinarySerializeWithDefinitions-RestoresDefinitions@@Tests/Utilities.wlt:84,1-101,2"
+    TestID   -> "BinarySerializeWithDefinitions-RestoresDefinitions"
 ]
 
 (* With no dependent definitions, the output is identical to a plain BinarySerialize. *)
@@ -105,7 +105,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`binarySerializeWithDefinitions[ 123 ] === BinarySerialize[ 123 ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BinarySerializeWithDefinitions-EquivalentWhenNoDependencies@@Tests/Utilities.wlt:104,1-109,2"
+    TestID   -> "BinarySerializeWithDefinitions-EquivalentWhenNoDependencies"
 ]
 
 (* BinarySerialize options are threaded through: PerformanceGoal -> "Size" yields a smaller result.
@@ -116,7 +116,7 @@ VerificationTest[
         Length @ Wolfram`AgentTools`Common`binarySerializeWithDefinitions[ expr ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BinarySerializeWithDefinitions-PerformanceGoalOption@@Tests/Utilities.wlt:114,1-120,2"
+    TestID   -> "BinarySerializeWithDefinitions-PerformanceGoalOption"
 ]
 
 (* Options are split between the two targets: an Language`ExtendedFullDefinition option (ExcludedContexts)
@@ -130,7 +130,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "BinarySerializeWithDefinitions-SplitsOptions@@Tests/Utilities.wlt:125,1-134,2"
+    TestID   -> "BinarySerializeWithDefinitions-SplitsOptions"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -148,35 +148,35 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms).*" ],
     "[\\s\\S]*",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-DotStarWithDotAll@@Tests/Utilities.wlt:147,1-152,2"
+    TestID   -> "ToJSRegex-DotStarWithDotAll"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\d+" ],
     "\\d+",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-DigitCharacterPlus@@Tests/Utilities.wlt:154,1-159,2"
+    TestID   -> "ToJSRegex-DigitCharacterPlus"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "\\d+" ],
     "\\d+",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-NoLeadingFlags@@Tests/Utilities.wlt:161,1-166,2"
+    TestID   -> "ToJSRegex-NoLeadingFlags"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?i)foo" ],
     "foo",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-IgnoreCaseFlagStripped@@Tests/Utilities.wlt:168,1-173,2"
+    TestID   -> "ToJSRegex-IgnoreCaseFlagStripped"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "" ],
     "",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-EmptyString@@Tests/Utilities.wlt:175,1-180,2"
+    TestID   -> "ToJSRegex-EmptyString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -186,98 +186,98 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:alpha:]]" ],
     "[a-zA-Z]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXAlpha@@Tests/Utilities.wlt:185,1-190,2"
+    TestID   -> "ToJSRegex-POSIXAlpha"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:digit:]]" ],
     "[0-9]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXDigit@@Tests/Utilities.wlt:192,1-197,2"
+    TestID   -> "ToJSRegex-POSIXDigit"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:alnum:]]" ],
     "[a-zA-Z0-9]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXAlnum@@Tests/Utilities.wlt:199,1-204,2"
+    TestID   -> "ToJSRegex-POSIXAlnum"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:upper:]]" ],
     "[A-Z]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXUpper@@Tests/Utilities.wlt:206,1-211,2"
+    TestID   -> "ToJSRegex-POSIXUpper"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:lower:]]" ],
     "[a-z]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXLower@@Tests/Utilities.wlt:213,1-218,2"
+    TestID   -> "ToJSRegex-POSIXLower"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:xdigit:]]" ],
     "[0-9a-fA-F]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXXdigit@@Tests/Utilities.wlt:220,1-225,2"
+    TestID   -> "ToJSRegex-POSIXXdigit"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:space:]]" ],
     "[\\s]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXSpace@@Tests/Utilities.wlt:227,1-232,2"
+    TestID   -> "ToJSRegex-POSIXSpace"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:blank:]]" ],
     "[ \\t]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXBlank@@Tests/Utilities.wlt:234,1-239,2"
+    TestID   -> "ToJSRegex-POSIXBlank"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:cntrl:]]" ],
     "[\\x00-\\x1F\\x7F]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXCntrl@@Tests/Utilities.wlt:241,1-246,2"
+    TestID   -> "ToJSRegex-POSIXCntrl"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:print:]]" ],
     "[\\x20-\\x7E]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXPrint@@Tests/Utilities.wlt:248,1-253,2"
+    TestID   -> "ToJSRegex-POSIXPrint"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:graph:]]" ],
     "[\\x21-\\x7E]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXGraph@@Tests/Utilities.wlt:255,1-260,2"
+    TestID   -> "ToJSRegex-POSIXGraph"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:punct:]]" ],
     "[!-/:-@[-`{-~]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXPunct@@Tests/Utilities.wlt:262,1-267,2"
+    TestID   -> "ToJSRegex-POSIXPunct"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:alpha:][:digit:]]" ],
     "[a-zA-Z0-9]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXCombined@@Tests/Utilities.wlt:269,1-274,2"
+    TestID   -> "ToJSRegex-POSIXCombined"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[^[:alpha:]]" ],
     "[^a-zA-Z]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-POSIXNegated@@Tests/Utilities.wlt:276,1-281,2"
+    TestID   -> "ToJSRegex-POSIXNegated"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -287,14 +287,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\Aprefix.*suffix\\z" ],
     "^prefix[\\s\\S]*suffix$",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-StartOfStringEndOfString@@Tests/Utilities.wlt:286,1-291,2"
+    TestID   -> "ToJSRegex-StartOfStringEndOfString"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)foo\\Z" ],
     "foo$",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-CapitalZEnd@@Tests/Utilities.wlt:293,1-298,2"
+    TestID   -> "ToJSRegex-CapitalZEnd"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -304,56 +304,56 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{A0}" ],
     "\\xA0",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-Unicode2Digit@@Tests/Utilities.wlt:303,1-308,2"
+    TestID   -> "ToJSRegex-Unicode2Digit"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{0}" ],
     "\\x00",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-Unicode1DigitPadded@@Tests/Utilities.wlt:310,1-315,2"
+    TestID   -> "ToJSRegex-Unicode1DigitPadded"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{abc}" ],
     "\\u0ABC",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-Unicode3DigitPadded@@Tests/Utilities.wlt:317,1-322,2"
+    TestID   -> "ToJSRegex-Unicode3DigitPadded"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{ABCD}" ],
     "\\uABCD",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-Unicode4Digit@@Tests/Utilities.wlt:324,1-329,2"
+    TestID   -> "ToJSRegex-Unicode4Digit"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{1F600}" ],
     "\\uD83D\\uDE00",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-Unicode5DigitSupplementary@@Tests/Utilities.wlt:331,1-336,2"
+    TestID   -> "ToJSRegex-Unicode5DigitSupplementary"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{10000}" ],
     "\\uD800\\uDC00",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-UnicodeFirstSupplementary@@Tests/Utilities.wlt:338,1-343,2"
+    TestID   -> "ToJSRegex-UnicodeFirstSupplementary"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{10FFFF}" ],
     "\\uDBFF\\uDFFF",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-UnicodeMaxSupplementary@@Tests/Utilities.wlt:345,1-350,2"
+    TestID   -> "ToJSRegex-UnicodeMaxSupplementary"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[[:alpha:]\\x{f6b2}-\\x{f6b5}]" ],
     "[a-zA-Z\\uF6B2-\\uF6B5]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-LetterCharacterWithPUA@@Tests/Utilities.wlt:352,1-357,2"
+    TestID   -> "ToJSRegex-LetterCharacterWithPUA"
 ]
 
 (* Zero-padded escapes must be classified by numeric value, not string length. *)
@@ -361,21 +361,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{0000A0}" ],
     "\\xA0",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-UnicodeZeroPaddedLatin1@@Tests/Utilities.wlt:360,1-365,2"
+    TestID   -> "ToJSRegex-UnicodeZeroPaddedLatin1"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{00ABCD}" ],
     "\\uABCD",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-UnicodeZeroPaddedBMP@@Tests/Utilities.wlt:367,1-372,2"
+    TestID   -> "ToJSRegex-UnicodeZeroPaddedBMP"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\x{000010FFFF}" ],
     "\\uDBFF\\uDFFF",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-UnicodeZeroPaddedSupplementary@@Tests/Utilities.wlt:374,1-379,2"
+    TestID   -> "ToJSRegex-UnicodeZeroPaddedSupplementary"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -385,21 +385,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)(?:(?-m-s)\\d+)" ],
     "(?:\\d+)",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-StripInnerModifier@@Tests/Utilities.wlt:384,1-389,2"
+    TestID   -> "ToJSRegex-StripInnerModifier"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)(?:(?-s)abc)" ],
     "(?:abc)",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-StripInnerModifierSOnly@@Tests/Utilities.wlt:391,1-396,2"
+    TestID   -> "ToJSRegex-StripInnerModifierSOnly"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)(?:(?-m-s)a.b)" ],
     "(?:a[\\s\\S]b)",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-InnerDotOverMatches@@Tests/Utilities.wlt:398,1-403,2"
+    TestID   -> "ToJSRegex-InnerDotOverMatches"
 ]
 
 (* Mid-pattern modifiers outside the "(?:(?-...)" wrapper form must pass through untouched,
@@ -408,14 +408,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "a(?-s)b" ],
     "a(?-s)b",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-MidPatternModifierPreserved@@Tests/Utilities.wlt:407,1-412,2"
+    TestID   -> "ToJSRegex-MidPatternModifierPreserved"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "foo(?-m-s)bar" ],
     "foo(?-m-s)bar",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-MidPatternCombinedModifierPreserved@@Tests/Utilities.wlt:414,1-419,2"
+    TestID   -> "ToJSRegex-MidPatternCombinedModifierPreserved"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -425,35 +425,35 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)a\\.b" ],
     "a\\.b",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-EscapedDotUntouched@@Tests/Utilities.wlt:424,1-429,2"
+    TestID   -> "ToJSRegex-EscapedDotUntouched"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[.]" ],
     "[.]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-DotInClassUntouched@@Tests/Utilities.wlt:431,1-436,2"
+    TestID   -> "ToJSRegex-DotInClassUntouched"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)[.xyz\\.]" ],
     "[.xyz\\.]",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-DotInLargerClassUntouched@@Tests/Utilities.wlt:438,1-443,2"
+    TestID   -> "ToJSRegex-DotInLargerClassUntouched"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)\\(.+?\\)" ],
     "\\([\\s\\S]+?\\)",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-ShortestGroup@@Tests/Utilities.wlt:445,1-450,2"
+    TestID   -> "ToJSRegex-ShortestGroup"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms)^# .+$" ],
     "^# [\\s\\S]+$",
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-LineAnchorsPreserved@@Tests/Utilities.wlt:452,1-457,2"
+    TestID   -> "ToJSRegex-LineAnchorsPreserved"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -466,14 +466,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms).*" ],
     Except[ _? (StringContainsQ[ "(?" ]) ],
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-NoFlagGroupInOutput@@Tests/Utilities.wlt:465,1-470,2"
+    TestID   -> "ToJSRegex-NoFlagGroupInOutput"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`toJSRegex[ "(?ms).*" ],
     Except[ _? (StringStartsQ[ "/" ]) ],
     SameTest -> MatchQ,
-    TestID   -> "ToJSRegex-NoLiteralDelimiters@@Tests/Utilities.wlt:472,1-477,2"
+    TestID   -> "ToJSRegex-NoLiteralDelimiters"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -508,21 +508,21 @@ VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $usageLimitFailure ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitFailureQ-APIError@@Tests/Utilities.wlt:507,1-512,2"
+    TestID   -> "LLMKitUsageLimitFailureQ-APIError"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $wrappedUsageLimitFailure ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitFailureQ-Wrapped@@Tests/Utilities.wlt:514,1-519,2"
+    TestID   -> "LLMKitUsageLimitFailureQ-Wrapped"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ "A normal documentation result." ],
     False,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitFailureQ-PlainString@@Tests/Utilities.wlt:521,1-526,2"
+    TestID   -> "LLMKitUsageLimitFailureQ-PlainString"
 ]
 
 (* An unrelated API failure must NOT be treated as a usage-limit failure (it should remain an internal failure). *)
@@ -532,14 +532,14 @@ VerificationTest[
     ],
     False,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitFailureQ-UnrelatedFailure@@Tests/Utilities.wlt:529,1-536,2"
+    TestID   -> "LLMKitUsageLimitFailureQ-UnrelatedFailure"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitFailureQ[ $Failed ],
     False,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitFailureQ-NonFailure@@Tests/Utilities.wlt:538,1-543,2"
+    TestID   -> "LLMKitUsageLimitFailureQ-NonFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -549,14 +549,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitMessage[ $usageLimitFailure ],
     "credits-per-month-limit-exceeded - User has exceeded credits limit.",
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitMessage-ExtractsServiceMessage@@Tests/Utilities.wlt:548,1-553,2"
+    TestID   -> "LLMKitUsageLimitMessage-ExtractsServiceMessage"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`llmKitUsageLimitMessage[ $wrappedUsageLimitFailure ],
     "credits-per-month-limit-exceeded - User has exceeded credits limit.",
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitMessage-ExtractsFromWrapped@@Tests/Utilities.wlt:555,1-560,2"
+    TestID   -> "LLMKitUsageLimitMessage-ExtractsFromWrapped"
 ]
 
 (* Falls back to a generic message when the service response carries no human-readable message. *)
@@ -566,7 +566,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LLMKitUsageLimitMessage-FallbackString@@Tests/Utilities.wlt:563,1-570,2"
+    TestID   -> "LLMKitUsageLimitMessage-FallbackString"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -593,7 +593,7 @@ VerificationTest[
     },
     { "set", $Failed },
     SameTest -> SameQ,
-    TestID   -> "EnvironmentBlock-SetsAndRestores@@Tests/Utilities.wlt:589,1-597,2"
+    TestID   -> "EnvironmentBlock-SetsAndRestores"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -605,7 +605,7 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> None, Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-NotSet@@Tests/Utilities.wlt:604,1-609,2"
+    TestID   -> "LLMKitEnabledQ-NotSet"
 ]
 
 (* Disabled when the variable is "false" *)
@@ -613,7 +613,7 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "false", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     False,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-FalseLowercase@@Tests/Utilities.wlt:612,1-617,2"
+    TestID   -> "LLMKitEnabledQ-FalseLowercase"
 ]
 
 (* The check is case-insensitive *)
@@ -621,14 +621,14 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "False", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     False,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-FalseMixedCase@@Tests/Utilities.wlt:620,1-625,2"
+    TestID   -> "LLMKitEnabledQ-FalseMixedCase"
 ]
 
 VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "FALSE", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     False,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-FalseUppercase@@Tests/Utilities.wlt:627,1-632,2"
+    TestID   -> "LLMKitEnabledQ-FalseUppercase"
 ]
 
 (* Any other value leaves LLMKit enabled *)
@@ -636,14 +636,14 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "true", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-TrueString@@Tests/Utilities.wlt:635,1-640,2"
+    TestID   -> "LLMKitEnabledQ-TrueString"
 ]
 
 VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "1", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-OneString@@Tests/Utilities.wlt:642,1-647,2"
+    TestID   -> "LLMKitEnabledQ-OneString"
 ]
 
 (* A value that reads as boolean False also disables LLMKit *)
@@ -651,14 +651,14 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "0", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     False,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-ZeroDisables@@Tests/Utilities.wlt:650,1-655,2"
+    TestID   -> "LLMKitEnabledQ-ZeroDisables"
 ]
 
 VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "no", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     False,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-NoDisables@@Tests/Utilities.wlt:657,1-662,2"
+    TestID   -> "LLMKitEnabledQ-NoDisables"
 ]
 
 (* A value that does not interpret as a Boolean leaves LLMKit enabled *)
@@ -666,7 +666,7 @@ VerificationTest[
     environmentBlock[ "LLMKIT_ENABLED" -> "maybe", Wolfram`AgentTools`Common`llmKitEnabledQ[ ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "LLMKitEnabledQ-NonBooleanEnabled@@Tests/Utilities.wlt:665,1-670,2"
+    TestID   -> "LLMKitEnabledQ-NonBooleanEnabled"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -692,7 +692,7 @@ VerificationTest[
     ],
     { False, False },
     SameTest -> SameQ,
-    TestID   -> "LLMKitSubscribedQ-DisabledShortCircuits@@Tests/Utilities.wlt:680,1-696,2"
+    TestID   -> "LLMKitSubscribedQ-DisabledShortCircuits"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -708,7 +708,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`chatbookVersionCheck[ ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ChatbookVersionCheck@@Tests/Utilities.wlt:707,1-712,2"
+    TestID   -> "ChatbookVersionCheck"
 ]
 
 (* The minimum Chatbook version must support the "PropagateMessages" option that the
@@ -717,5 +717,5 @@ VerificationTest[
     Quiet @ Options[ Wolfram`Chatbook`WolframLanguageToolEvaluate, "PropagateMessages" ],
     { _Rule | _RuleDelayed },
     SameTest -> MatchQ,
-    TestID   -> "ChatbookVersionCheck-PropagateMessagesSupported@@Tests/Utilities.wlt:716,1-721,2"
+    TestID   -> "ChatbookVersionCheck-PropagateMessagesSupported"
 ]

@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/UninstallMCPServer.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/UninstallMCPServer.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 If[ StringQ @ Environment[ "GITHUB_ACTIONS" ], SetOptions[ InstallMCPServer, "VerifyLLMKit" -> False ] ];
@@ -57,7 +57,7 @@ VerificationTest[
 
     2,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-Setup@@Tests/UninstallMCPServer.wlt:41,1-61,2"
+    TestID   -> "UninstallMCPServer-Setup"
 ]
 
 VerificationTest[
@@ -65,7 +65,7 @@ VerificationTest[
     uninstallResult = UninstallMCPServer[configFile, "WolframLanguage"],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-SingleServer@@Tests/UninstallMCPServer.wlt:63,1-69,2"
+    TestID   -> "UninstallMCPServer-SingleServer"
 ]
 
 VerificationTest[
@@ -75,7 +75,7 @@ VerificationTest[
     !KeyExistsQ[jsonContent["mcpServers"], "Wolfram"],
     True,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-VerifySingleServerRemoval@@Tests/UninstallMCPServer.wlt:71,1-79,2"
+    TestID   -> "UninstallMCPServer-VerifySingleServerRemoval"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -88,7 +88,7 @@ VerificationTest[
     InstallMCPServer[crossVariantConfig, "WolframLanguage"],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-CrossVariantSetup@@Tests/UninstallMCPServer.wlt:84,1-92,2"
+    TestID   -> "UninstallMCPServer-CrossVariantSetup"
 ]
 
 VerificationTest[
@@ -96,7 +96,7 @@ VerificationTest[
     UninstallMCPServer[crossVariantConfig, "Wolfram"],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-CrossVariant@@Tests/UninstallMCPServer.wlt:94,1-100,2"
+    TestID   -> "UninstallMCPServer-CrossVariant"
 ]
 
 VerificationTest[
@@ -105,14 +105,14 @@ VerificationTest[
     crossVariantJSON["mcpServers"] === <||>,
     True,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-VerifyCrossVariantRemoval@@Tests/UninstallMCPServer.wlt:102,1-109,2"
+    TestID   -> "UninstallMCPServer-VerifyCrossVariantRemoval"
 ]
 
 VerificationTest[
     cleanupTestFiles[crossVariantConfig],
     {Null},
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-CrossVariantCleanup@@Tests/UninstallMCPServer.wlt:111,1-116,2"
+    TestID   -> "UninstallMCPServer-CrossVariantCleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -123,7 +123,7 @@ VerificationTest[
     uninstallAllResult = UninstallMCPServer[configFile],
     { ___Success },
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-AllServers@@Tests/UninstallMCPServer.wlt:121,1-127,2"
+    TestID   -> "UninstallMCPServer-AllServers"
 ]
 
 VerificationTest[
@@ -132,7 +132,7 @@ VerificationTest[
     jsonContent["mcpServers"] === <| |>,
     True,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-VerifyAllServersRemoval@@Tests/UninstallMCPServer.wlt:129,1-136,2"
+    TestID   -> "UninstallMCPServer-VerifyAllServersRemoval"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -152,7 +152,7 @@ VerificationTest[
     installResult = InstallMCPServer[configFile, server],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-ServerObjectSetup@@Tests/UninstallMCPServer.wlt:141,1-156,2"
+    TestID   -> "UninstallMCPServer-ServerObjectSetup"
 ]
 
 VerificationTest[
@@ -160,7 +160,7 @@ VerificationTest[
     uninstallObjectResult = UninstallMCPServer[configFile, server],
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-ByObject@@Tests/UninstallMCPServer.wlt:158,1-164,2"
+    TestID   -> "UninstallMCPServer-ByObject"
 ]
 
 VerificationTest[
@@ -169,7 +169,7 @@ VerificationTest[
     !KeyExistsQ[jsonContent["mcpServers"], name],
     True,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-VerifyObjectRemoval@@Tests/UninstallMCPServer.wlt:166,1-173,2"
+    TestID   -> "UninstallMCPServer-VerifyObjectRemoval"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -194,7 +194,7 @@ VerificationTest[
 
     _Success,
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-MultipleInstallsSetup@@Tests/UninstallMCPServer.wlt:178,1-198,2"
+    TestID   -> "UninstallMCPServer-MultipleInstallsSetup"
 ]
 
 VerificationTest[
@@ -202,7 +202,7 @@ VerificationTest[
     uninstallAllInstancesResult = UninstallMCPServer[All, server],
     { _Success, _Success },
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-AllInstances@@Tests/UninstallMCPServer.wlt:200,1-206,2"
+    TestID   -> "UninstallMCPServer-AllInstances"
 ]
 
 VerificationTest[
@@ -215,7 +215,7 @@ VerificationTest[
 
     True,
     SameTest -> Equal,
-    TestID   -> "UninstallMCPServer-VerifyAllInstancesRemoval@@Tests/UninstallMCPServer.wlt:208,1-219,2"
+    TestID   -> "UninstallMCPServer-VerifyAllInstancesRemoval"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -227,7 +227,7 @@ VerificationTest[
     cleanupTestFiles[{configFile, configFile1, configFile2}],
     {Null..},
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-Cleanup@@Tests/UninstallMCPServer.wlt:224,1-231,2"
+    TestID   -> "UninstallMCPServer-Cleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -240,7 +240,7 @@ VerificationTest[
     _Failure,
     {UninstallMCPServer::MCPServerNotFound},
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-NonExistentServer@@Tests/UninstallMCPServer.wlt:236,1-244,2"
+    TestID   -> "UninstallMCPServer-NonExistentServer"
 ]
 
 VerificationTest[
@@ -249,14 +249,14 @@ VerificationTest[
     _Missing,
     { },  (* No messages expected since notFoundQ just returns Missing *)
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-NonExistentFile@@Tests/UninstallMCPServer.wlt:246,1-253,2"
+    TestID   -> "UninstallMCPServer-NonExistentFile"
 ]
 
 VerificationTest[
     cleanupTestFiles[configFile],
     {Null},
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-ErrorCleanup@@Tests/UninstallMCPServer.wlt:255,1-260,2"
+    TestID   -> "UninstallMCPServer-ErrorCleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -270,7 +270,7 @@ VerificationTest[
     },
     { Missing[ "NotInstalled", _File ], False },
     SameTest -> MatchQ,
-    TestID   -> "UninstallMCPServer-MissingFile-NoDirectoriesCreated@@Tests/UninstallMCPServer.wlt:265,1-274,2"
+    TestID   -> "UninstallMCPServer-MissingFile-NoDirectoriesCreated"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -304,7 +304,7 @@ VerificationTest[
     DirectoryQ @ $removeTestDir,
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Setup@@Tests/UninstallMCPServer.wlt:289,1-308,2"
+    TestID   -> "RemoveMCPConfigEntry-Setup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -318,7 +318,7 @@ VerificationTest[
     removeEntry[ removeJSONFile, None, "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-JSON@@Tests/UninstallMCPServer.wlt:313,1-322,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON"
 ]
 
 VerificationTest[
@@ -327,7 +327,7 @@ VerificationTest[
     ],
     { { "Other" }, <| "command" -> "other" |>, "dark" },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-JSON-Content@@Tests/UninstallMCPServer.wlt:324,1-331,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON-Content"
 ]
 
 VerificationTest[
@@ -338,7 +338,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-JSON-AbsentKey@@Tests/UninstallMCPServer.wlt:333,1-342,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON-AbsentKey"
 ]
 
 (* An unknown client name uses the generic JSON format *)
@@ -346,7 +346,7 @@ VerificationTest[
     removeEntry[ writeConfig[ "unknown-client.json", "{\"mcpServers\": {\"Wolfram\": {}}}" ], "NotARealClient", "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-JSON-UnknownClient@@Tests/UninstallMCPServer.wlt:345,1-350,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON-UnknownClient"
 ]
 
 VerificationTest[
@@ -356,7 +356,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], False },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-MissingFile@@Tests/UninstallMCPServer.wlt:352,1-360,2"
+    TestID   -> "RemoveMCPConfigEntry-MissingFile"
 ]
 
 VerificationTest[
@@ -365,14 +365,14 @@ VerificationTest[
     Failure[ "AgentTools::InvalidMCPConfiguration", _ ],
     { AgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-JSON-Invalid@@Tests/UninstallMCPServer.wlt:362,1-369,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON-Invalid"
 ]
 
 VerificationTest[
     ReadString @ First @ removeInvalidJSONFile,
     "{\"mcpServers\": {\"Wolfram\": ",
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-JSON-InvalidUnchanged@@Tests/UninstallMCPServer.wlt:371,1-376,2"
+    TestID   -> "RemoveMCPConfigEntry-JSON-InvalidUnchanged"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -388,7 +388,7 @@ VerificationTest[
     removeEntry[ removeVSCodeSettingsFile, "VisualStudioCode", "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-VSCodeLegacySettings@@Tests/UninstallMCPServer.wlt:383,1-392,2"
+    TestID   -> "RemoveMCPConfigEntry-VSCodeLegacySettings"
 ]
 
 VerificationTest[
@@ -397,7 +397,7 @@ VerificationTest[
     ],
     { { "Other" }, 12 },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-VSCodeLegacySettings-Content@@Tests/UninstallMCPServer.wlt:394,1-401,2"
+    TestID   -> "RemoveMCPConfigEntry-VSCodeLegacySettings-Content"
 ]
 
 (* Aliases are resolved, and the newer mcp.json format uses a top-level "servers" key *)
@@ -414,7 +414,7 @@ VerificationTest[
     },
     { Missing[ "NotInstalled", _ ], True, <| "servers" -> <| |> |> },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-VSCodeMCPJSON@@Tests/UninstallMCPServer.wlt:404,1-418,2"
+    TestID   -> "RemoveMCPConfigEntry-VSCodeMCPJSON"
 ]
 
 VerificationTest[
@@ -428,7 +428,7 @@ VerificationTest[
     },
     { True, KeyValuePattern @ { "theme" -> "One Dark", "context_servers" -> <| |> } },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Zed@@Tests/UninstallMCPServer.wlt:420,1-432,2"
+    TestID   -> "RemoveMCPConfigEntry-Zed"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -452,7 +452,7 @@ VerificationTest[
     removeEntry[ removeCodexFile, "Codex", "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Codex@@Tests/UninstallMCPServer.wlt:437,1-456,2"
+    TestID   -> "RemoveMCPConfigEntry-Codex"
 ]
 
 VerificationTest[
@@ -461,7 +461,7 @@ VerificationTest[
     ],
     { { "Other" }, "other", "o3" },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Codex-Content@@Tests/UninstallMCPServer.wlt:458,1-465,2"
+    TestID   -> "RemoveMCPConfigEntry-Codex-Content"
 ]
 
 VerificationTest[
@@ -473,7 +473,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Codex-AbsentKey@@Tests/UninstallMCPServer.wlt:467,1-477,2"
+    TestID   -> "RemoveMCPConfigEntry-Codex-AbsentKey"
 ]
 
 (* The TOML reader is lenient; a config path that can't be read as a file (here a directory) is invalid *)
@@ -486,7 +486,7 @@ VerificationTest[
     Failure[ "AgentTools::InvalidMCPConfiguration", _ ],
     { AgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Codex-Invalid@@Tests/UninstallMCPServer.wlt:480,1-490,2"
+    TestID   -> "RemoveMCPConfigEntry-Codex-Invalid"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -511,7 +511,7 @@ VerificationTest[
     removeEntry[ removeGooseFile, "Goose", "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Goose@@Tests/UninstallMCPServer.wlt:495,1-515,2"
+    TestID   -> "RemoveMCPConfigEntry-Goose"
 ]
 
 VerificationTest[
@@ -520,7 +520,7 @@ VerificationTest[
     ],
     { { "developer" }, "builtin", "gpt-4o" },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Goose-Content@@Tests/UninstallMCPServer.wlt:517,1-524,2"
+    TestID   -> "RemoveMCPConfigEntry-Goose-Content"
 ]
 
 VerificationTest[
@@ -531,7 +531,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Goose-AbsentKey@@Tests/UninstallMCPServer.wlt:526,1-535,2"
+    TestID   -> "RemoveMCPConfigEntry-Goose-AbsentKey"
 ]
 
 VerificationTest[
@@ -543,14 +543,14 @@ VerificationTest[
     Failure[ "AgentTools::InvalidMCPConfiguration", _ ],
     { AgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Goose-Invalid@@Tests/UninstallMCPServer.wlt:537,1-547,2"
+    TestID   -> "RemoveMCPConfigEntry-Goose-Invalid"
 ]
 
 VerificationTest[
     StringContainsQ[ ReadString @ First @ removeInvalidGooseFile, "bad-indent" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Goose-InvalidUnchanged@@Tests/UninstallMCPServer.wlt:549,1-554,2"
+    TestID   -> "RemoveMCPConfigEntry-Goose-InvalidUnchanged"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -576,7 +576,7 @@ VerificationTest[
     removeEntry[ removeContinueFile, "Continue", "Wolfram" ],
     True,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Continue-Global@@Tests/UninstallMCPServer.wlt:559,1-580,2"
+    TestID   -> "RemoveMCPConfigEntry-Continue-Global"
 ]
 
 VerificationTest[
@@ -585,7 +585,7 @@ VerificationTest[
     ],
     { { "Other" }, { <| "name" -> "GPT", "provider" -> "openai" |> }, "Local Config" },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Continue-Global-Content@@Tests/UninstallMCPServer.wlt:582,1-589,2"
+    TestID   -> "RemoveMCPConfigEntry-Continue-Global-Content"
 ]
 
 VerificationTest[
@@ -596,7 +596,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Continue-AbsentKey@@Tests/UninstallMCPServer.wlt:591,1-600,2"
+    TestID   -> "RemoveMCPConfigEntry-Continue-AbsentKey"
 ]
 
 (* Project scope: a standalone block file in .continue/mcpServers/ *)
@@ -618,7 +618,7 @@ VerificationTest[
     },
     { True, { } },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Continue-Project@@Tests/UninstallMCPServer.wlt:603,1-622,2"
+    TestID   -> "RemoveMCPConfigEntry-Continue-Project"
 ]
 
 VerificationTest[
@@ -630,7 +630,7 @@ VerificationTest[
     Failure[ "AgentTools::InvalidMCPConfiguration", _ ],
     { AgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-Continue-Invalid@@Tests/UninstallMCPServer.wlt:624,1-634,2"
+    TestID   -> "RemoveMCPConfigEntry-Continue-Invalid"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -650,7 +650,7 @@ VerificationTest[
     },
     { True, { "Other" } },
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE@@Tests/UninstallMCPServer.wlt:639,1-654,2"
+    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE"
 ]
 
 VerificationTest[
@@ -661,7 +661,7 @@ VerificationTest[
     ],
     { Missing[ "NotInstalled", File[ _String ] ], True },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE-AbsentKey@@Tests/UninstallMCPServer.wlt:656,1-665,2"
+    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE-AbsentKey"
 ]
 
 (* The extension's file must be a JSON array *)
@@ -677,7 +677,7 @@ VerificationTest[
     { Failure[ "AgentTools::InvalidMCPConfiguration", _ ], "{\"mcpServers\": {\"Wolfram\": {}}}" },
     { AgentTools::InvalidMCPConfiguration },
     SameTest -> MatchQ,
-    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE-Invalid@@Tests/UninstallMCPServer.wlt:668,1-681,2"
+    TestID   -> "RemoveMCPConfigEntry-AugmentCodeIDE-Invalid"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -688,7 +688,7 @@ VerificationTest[
     DirectoryQ @ $removeTestDir,
     False,
     SameTest -> Equal,
-    TestID   -> "RemoveMCPConfigEntry-Cleanup@@Tests/UninstallMCPServer.wlt:686,1-692,2"
+    TestID   -> "RemoveMCPConfigEntry-Cleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -719,7 +719,7 @@ VerificationTest[
         { <| "ClientName" -> "Cursor", "ConfigurationFile" -> File[ _String ] |> }
     },
     SameTest -> MatchQ,
-    TestID   -> "ClearMCPInstallationRecord-RemovesMatchingRecords@@Tests/UninstallMCPServer.wlt:699,1-723,2"
+    TestID   -> "ClearMCPInstallationRecord-RemovesMatchingRecords"
 ]
 
 VerificationTest[
@@ -740,7 +740,7 @@ VerificationTest[
     ],
     { { }, False },
     SameTest -> Equal,
-    TestID   -> "ClearMCPInstallationRecord-DeletesEmptyFile@@Tests/UninstallMCPServer.wlt:725,1-744,2"
+    TestID   -> "ClearMCPInstallationRecord-DeletesEmptyFile"
 ]
 
 VerificationTest[
@@ -761,7 +761,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> Equal,
-    TestID   -> "ClearMCPInstallationRecord-NoMatchingRecords@@Tests/UninstallMCPServer.wlt:746,1-765,2"
+    TestID   -> "ClearMCPInstallationRecord-NoMatchingRecords"
 ]
 
 VerificationTest[
@@ -775,7 +775,7 @@ VerificationTest[
     ],
     { { }, False },
     SameTest -> Equal,
-    TestID   -> "ClearMCPInstallationRecord-NoFile@@Tests/UninstallMCPServer.wlt:767,1-779,2"
+    TestID   -> "ClearMCPInstallationRecord-NoFile"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

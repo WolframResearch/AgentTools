@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/CloudBase.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/CloudBase.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -34,7 +34,7 @@ VerificationTest[
     ],
     "https://www.test.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "SetCloudBaseFromEnvironment-Set@@Tests/CloudBase.wlt:28,1-38,2"
+    TestID   -> "SetCloudBaseFromEnvironment-Set"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -49,7 +49,7 @@ VerificationTest[
     ],
     "https://www.test.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "SetCloudBaseFromEnvironment-Trimmed@@Tests/CloudBase.wlt:43,1-53,2"
+    TestID   -> "SetCloudBaseFromEnvironment-Trimmed"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -64,7 +64,7 @@ VerificationTest[
     ],
     "sentinel",
     SameTest -> Equal,
-    TestID   -> "SetCloudBaseFromEnvironment-NotSet@@Tests/CloudBase.wlt:58,1-68,2"
+    TestID   -> "SetCloudBaseFromEnvironment-NotSet"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -79,7 +79,7 @@ VerificationTest[
     ],
     "sentinel",
     SameTest -> Equal,
-    TestID   -> "SetCloudBaseFromEnvironment-Empty@@Tests/CloudBase.wlt:73,1-83,2"
+    TestID   -> "SetCloudBaseFromEnvironment-Empty"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -93,7 +93,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`currentCloudBase[ "https://www.wolframcloud.com" ],
     "https://www.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-Default@@Tests/CloudBase.wlt:92,1-97,2"
+    TestID   -> "CurrentCloudBase-Default"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -103,7 +103,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`currentCloudBase[ "https://www.test.wolframcloud.com/" ],
     "https://www.test.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-TrailingSlash@@Tests/CloudBase.wlt:102,1-107,2"
+    TestID   -> "CurrentCloudBase-TrailingSlash"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -113,7 +113,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`currentCloudBase[ "www.test.wolframcloud.com" ],
     "https://www.test.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-NoScheme@@Tests/CloudBase.wlt:112,1-117,2"
+    TestID   -> "CurrentCloudBase-NoScheme"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -123,14 +123,14 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`currentCloudBase[ $Failed ],
     "https://www.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-NonString@@Tests/CloudBase.wlt:122,1-127,2"
+    TestID   -> "CurrentCloudBase-NonString"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`UIResources`Private`currentCloudBase[ "" ],
     "https://www.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-EmptyString@@Tests/CloudBase.wlt:129,1-134,2"
+    TestID   -> "CurrentCloudBase-EmptyString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -142,7 +142,7 @@ VerificationTest[
     ],
     "https://www.test.wolframcloud.com",
     SameTest -> Equal,
-    TestID   -> "CurrentCloudBase-ReadsCloudBase@@Tests/CloudBase.wlt:139,1-146,2"
+    TestID   -> "CurrentCloudBase-ReadsCloudBase"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -159,7 +159,7 @@ VerificationTest[
     ],
     "<script>var WOLFRAM_CLOUDBASE = \"https://www.test.wolframcloud.com\";</script>",
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToHTML-Rewrites@@Tests/CloudBase.wlt:155,1-163,2"
+    TestID   -> "ApplyCloudBaseToHTML-Rewrites"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -172,7 +172,7 @@ VerificationTest[
     ],
     "<script>var WOLFRAM_CLOUDBASE = \"https://www.wolframcloud.com\";</script>",
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToHTML-DefaultNoOp@@Tests/CloudBase.wlt:168,1-176,2"
+    TestID   -> "ApplyCloudBaseToHTML-DefaultNoOp"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -185,7 +185,7 @@ VerificationTest[
     ],
     "<html><body>Test</body></html>",
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToHTML-NoAssignment@@Tests/CloudBase.wlt:181,1-189,2"
+    TestID   -> "ApplyCloudBaseToHTML-NoAssignment"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -220,7 +220,7 @@ VerificationTest[
         |>
     |>,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-Prepends@@Tests/CloudBase.wlt:198,1-224,2"
+    TestID   -> "ApplyCloudBaseToMeta-Prepends"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -233,7 +233,7 @@ VerificationTest[
     ],
     <| "ui" -> <| "csp" -> <| "resourceDomains" -> { "https://unpkg.com" } |> |> |>,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-UnrelatedListUnchanged@@Tests/CloudBase.wlt:229,1-237,2"
+    TestID   -> "ApplyCloudBaseToMeta-UnrelatedListUnchanged"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -246,7 +246,7 @@ VerificationTest[
     ],
     <| "ui" -> <| "csp" -> <| "connectDomains" -> { "https://www.wolframcloud.com", "data:" } |> |> |>,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-DefaultNoOp@@Tests/CloudBase.wlt:242,1-250,2"
+    TestID   -> "ApplyCloudBaseToMeta-DefaultNoOp"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -259,7 +259,7 @@ VerificationTest[
     ],
     <| "ui" -> <| "prefersBorder" -> True |> |>,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-NoCSP@@Tests/CloudBase.wlt:255,1-263,2"
+    TestID   -> "ApplyCloudBaseToMeta-NoCSP"
 ]
 
 VerificationTest[
@@ -269,7 +269,7 @@ VerificationTest[
     ],
     <| |>,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-EmptyMeta@@Tests/CloudBase.wlt:265,1-273,2"
+    TestID   -> "ApplyCloudBaseToMeta-EmptyMeta"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -283,7 +283,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "ApplyCloudBaseToMeta-Idempotent@@Tests/CloudBase.wlt:278,1-287,2"
+    TestID   -> "ApplyCloudBaseToMeta-Idempotent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -306,7 +306,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "CloudBaseIntegration-DefaultAssignmentPresent@@Tests/CloudBase.wlt:298,1-310,2"
+    TestID   -> "CloudBaseIntegration-DefaultAssignmentPresent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -324,7 +324,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "CloudBaseIntegration-CustomBaseRewritesViewers@@Tests/CloudBase.wlt:315,1-328,2"
+    TestID   -> "CloudBaseIntegration-CustomBaseRewritesViewers"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -339,7 +339,7 @@ VerificationTest[
     ],
     { "https://www.test.wolframcloud.com", "https://www.wolframcloud.com", "data:" },
     SameTest -> Equal,
-    TestID   -> "CloudBaseIntegration-CustomBaseConnectDomains@@Tests/CloudBase.wlt:333,1-343,2"
+    TestID   -> "CloudBaseIntegration-CustomBaseConnectDomains"
 ]
 
 VerificationTest[
@@ -351,7 +351,7 @@ VerificationTest[
     ],
     { "https://www.test.wolframcloud.com", "https://www.wolframcloud.com", "https://wolfr.am" },
     SameTest -> Equal,
-    TestID   -> "CloudBaseIntegration-CustomBaseFrameDomains@@Tests/CloudBase.wlt:345,1-355,2"
+    TestID   -> "CloudBaseIntegration-CustomBaseFrameDomains"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -366,7 +366,7 @@ VerificationTest[
     ],
     { "https://www.wolframcloud.com", "data:" },
     SameTest -> Equal,
-    TestID   -> "CloudBaseIntegration-DefaultBaseCSPUnchanged@@Tests/CloudBase.wlt:360,1-370,2"
+    TestID   -> "CloudBaseIntegration-DefaultBaseCSPUnchanged"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

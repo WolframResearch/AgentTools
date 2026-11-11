@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/PacletDocumentationTools.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/PacletDocumentationTools.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -23,21 +23,21 @@ VerificationTest[
     $createDocTool = $DefaultMCPTools[ "CreateSymbolDoc" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "CreateSymbolDoc-GetTool@@Tests/PacletDocumentationTools.wlt:22,1-27,2"
+    TestID   -> "CreateSymbolDoc-GetTool"
 ]
 
 VerificationTest[
     $editDocTool = $DefaultMCPTools[ "EditSymbolDoc" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "EditSymbolDoc-GetTool@@Tests/PacletDocumentationTools.wlt:29,1-34,2"
+    TestID   -> "EditSymbolDoc-GetTool"
 ]
 
 VerificationTest[
     $editExamplesTool = $DefaultMCPTools[ "EditSymbolDocExamples" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "EditSymbolDocExamples-GetTool@@Tests/PacletDocumentationTools.wlt:36,1-41,2"
+    TestID   -> "EditSymbolDocExamples-GetTool"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -58,7 +58,7 @@ VerificationTest[
         AssociationQ[result] && KeyExistsQ[result, "file"] && KeyExistsQ[result, "uri"]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-BasicCreation@@Tests/PacletDocumentationTools.wlt:48,1-62,2"
+    TestID -> "CreateSymbolPacletDocumentation-BasicCreation"
 ]
 
 (* Test file is created at correct location *)
@@ -76,7 +76,7 @@ VerificationTest[
         result["file"] === expectedPath
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-FileLocation@@Tests/PacletDocumentationTools.wlt:65,1-80,2"
+    TestID -> "CreateSymbolPacletDocumentation-FileLocation"
 ]
 
 (* Test URI is constructed correctly without publisher ID *)
@@ -93,7 +93,7 @@ VerificationTest[
         result["uri"]
     ],
     "TestPaclet/ref/TestFunc",
-    TestID -> "CreateSymbolPacletDocumentation-URIWithoutPublisher@@Tests/PacletDocumentationTools.wlt:83,1-97,2"
+    TestID -> "CreateSymbolPacletDocumentation-URIWithoutPublisher"
 ]
 
 (* Test URI is constructed correctly with publisher ID *)
@@ -111,7 +111,7 @@ VerificationTest[
         result["uri"]
     ],
     "JohnDoe/MathUtils/ref/AddOne",
-    TestID -> "CreateSymbolPacletDocumentation-URIWithPublisher@@Tests/PacletDocumentationTools.wlt:100,1-115,2"
+    TestID -> "CreateSymbolPacletDocumentation-URIWithPublisher"
 ]
 
 (* Test URI when publisher ID is included in pacletName *)
@@ -128,7 +128,7 @@ VerificationTest[
         result["uri"]
     ],
     "Publisher/PackageName/ref/MyFunc",
-    TestID -> "CreateSymbolPacletDocumentation-URIWithPublisherInPacletName@@Tests/PacletDocumentationTools.wlt:118,1-132,2"
+    TestID -> "CreateSymbolPacletDocumentation-URIWithPublisherInPacletName"
 ]
 
 (* Test created notebook is valid Notebook expression *)
@@ -146,7 +146,7 @@ VerificationTest[
         MatchQ[nb, _Notebook]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-ValidNotebook@@Tests/PacletDocumentationTools.wlt:135,1-150,2"
+    TestID -> "CreateSymbolPacletDocumentation-ValidNotebook"
 ]
 
 (* Test notebook contains ObjectName cell *)
@@ -165,7 +165,7 @@ VerificationTest[
         Length[cells] > 0
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasObjectNameCell@@Tests/PacletDocumentationTools.wlt:153,1-169,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasObjectNameCell"
 ]
 
 (* Test notebook contains Usage cell *)
@@ -184,7 +184,7 @@ VerificationTest[
         Length[cells] > 0
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasUsageCell@@Tests/PacletDocumentationTools.wlt:172,1-188,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasUsageCell"
 ]
 
 (* Test creation with multiple usage cases *)
@@ -201,7 +201,7 @@ VerificationTest[
         AssociationQ[result]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-MultipleUsageCases@@Tests/PacletDocumentationTools.wlt:191,1-205,2"
+    TestID -> "CreateSymbolPacletDocumentation-MultipleUsageCases"
 ]
 
 (* Test creation with all optional parameters *)
@@ -227,7 +227,7 @@ VerificationTest[
         AssociationQ[result] && FileExistsQ[result["file"]] === False (* file was deleted with dir *)
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-AllOptionalParameters@@Tests/PacletDocumentationTools.wlt:208,1-231,2"
+    TestID -> "CreateSymbolPacletDocumentation-AllOptionalParameters"
 ]
 
 (* Test error: empty usage *)
@@ -245,7 +245,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-ErrorEmptyUsage@@Tests/PacletDocumentationTools.wlt:234,1-249,2"
+    TestID -> "CreateSymbolPacletDocumentation-ErrorEmptyUsage"
 ]
 
 (* Test error: invalid usage format (no bullet points) *)
@@ -263,7 +263,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-ErrorInvalidUsageFormat@@Tests/PacletDocumentationTools.wlt:252,1-267,2"
+    TestID -> "CreateSymbolPacletDocumentation-ErrorInvalidUsageFormat"
 ]
 
 (* Test error: file already exists - verifies message is issued *)
@@ -297,7 +297,7 @@ VerificationTest[
     True,
     { AgentTools::NotebookFileExists },
     SameTest -> MatchQ,
-    TestID -> "CreateSymbolPacletDocumentation-ErrorFileExists@@Tests/PacletDocumentationTools.wlt:270,1-301,2"
+    TestID -> "CreateSymbolPacletDocumentation-ErrorFileExists"
 ]
 
 (* Test that directories are created automatically *)
@@ -319,7 +319,7 @@ VerificationTest[
         AssociationQ[result] && StringQ[result["file"]]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-CreatesDirectories@@Tests/PacletDocumentationTools.wlt:304,1-323,2"
+    TestID -> "CreateSymbolPacletDocumentation-CreatesDirectories"
 ]
 
 (* Test notebook has correct TaggingRules for paclet *)
@@ -338,7 +338,7 @@ VerificationTest[
         Length[taggingRules] > 0 && MatchQ[First[taggingRules], _Association | {___Rule}]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasTaggingRules@@Tests/PacletDocumentationTools.wlt:326,1-342,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasTaggingRules"
 ]
 
 (* Test TaggingRules contains correct paclet base *)
@@ -363,7 +363,7 @@ VerificationTest[
         pacletValue === "Publisher/MyPaclet"
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-TaggingRulesPacletBase@@Tests/PacletDocumentationTools.wlt:345,1-367,2"
+    TestID -> "CreateSymbolPacletDocumentation-TaggingRulesPacletBase"
 ]
 
 (* Test notebook contains Notes cells when notes provided *)
@@ -384,7 +384,7 @@ VerificationTest[
         Length[notesCells] >= 2
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasNotesCells@@Tests/PacletDocumentationTools.wlt:370,1-388,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasNotesCells"
 ]
 
 (* Test notebook contains placeholder Notes cell when no notes provided *)
@@ -403,7 +403,7 @@ VerificationTest[
         Length[notesCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-PlaceholderNotes@@Tests/PacletDocumentationTools.wlt:391,1-407,2"
+    TestID -> "CreateSymbolPacletDocumentation-PlaceholderNotes"
 ]
 
 (* Test notebook contains See Also section *)
@@ -423,7 +423,7 @@ VerificationTest[
         Length[seeAlsoCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasSeeAlsoSection@@Tests/PacletDocumentationTools.wlt:410,1-427,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasSeeAlsoSection"
 ]
 
 (* Test See Also section contains button boxes for specified symbols *)
@@ -443,7 +443,7 @@ VerificationTest[
         Length[buttonBoxes] >= 2
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-SeeAlsoContainsSymbols@@Tests/PacletDocumentationTools.wlt:430,1-447,2"
+    TestID -> "CreateSymbolPacletDocumentation-SeeAlsoContainsSymbols"
 ]
 
 (* Test notebook contains Tech Notes section *)
@@ -463,7 +463,7 @@ VerificationTest[
         Length[tutorialsCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasTechNotesSection@@Tests/PacletDocumentationTools.wlt:450,1-467,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasTechNotesSection"
 ]
 
 (* Test Tech Notes contains link buttons *)
@@ -483,7 +483,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-TechNotesContainsLinks@@Tests/PacletDocumentationTools.wlt:470,1-487,2"
+    TestID -> "CreateSymbolPacletDocumentation-TechNotesContainsLinks"
 ]
 
 (* Test notebook contains Related Guides section *)
@@ -503,7 +503,7 @@ VerificationTest[
         Length[moreAboutCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasRelatedGuidesSection@@Tests/PacletDocumentationTools.wlt:490,1-507,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasRelatedGuidesSection"
 ]
 
 (* Test Related Guides contains link buttons *)
@@ -523,7 +523,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-RelatedGuidesContainsLinks@@Tests/PacletDocumentationTools.wlt:510,1-527,2"
+    TestID -> "CreateSymbolPacletDocumentation-RelatedGuidesContainsLinks"
 ]
 
 (* Test notebook contains Related Links section with URL *)
@@ -543,7 +543,7 @@ VerificationTest[
         Length[relatedLinksCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasRelatedLinksSection@@Tests/PacletDocumentationTools.wlt:530,1-547,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasRelatedLinksSection"
 ]
 
 (* Test Related Links contains hyperlink buttons with URL *)
@@ -563,7 +563,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-RelatedLinksContainsHyperlinks@@Tests/PacletDocumentationTools.wlt:550,1-567,2"
+    TestID -> "CreateSymbolPacletDocumentation-RelatedLinksContainsHyperlinks"
 ]
 
 (* Test notebook contains Keywords section *)
@@ -583,7 +583,7 @@ VerificationTest[
         Length[keywordsCells] >= 3
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasKeywordsSection@@Tests/PacletDocumentationTools.wlt:570,1-587,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasKeywordsSection"
 ]
 
 (* Test Keywords cells contain specified keywords *)
@@ -603,7 +603,7 @@ VerificationTest[
         MemberQ[keywordsCells, "test"] && MemberQ[keywordsCells, "example"]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-KeywordsContainSpecifiedContent@@Tests/PacletDocumentationTools.wlt:590,1-607,2"
+    TestID -> "CreateSymbolPacletDocumentation-KeywordsContainSpecifiedContent"
 ]
 
 (* Test notebook contains History cell with newInVersion *)
@@ -623,7 +623,7 @@ VerificationTest[
         Length[historyCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasHistoryCell@@Tests/PacletDocumentationTools.wlt:610,1-627,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasHistoryCell"
 ]
 
 (* Test History cell contains version number *)
@@ -644,7 +644,7 @@ VerificationTest[
         Length[historyData] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HistoryContainsVersion@@Tests/PacletDocumentationTools.wlt:630,1-648,2"
+    TestID -> "CreateSymbolPacletDocumentation-HistoryContainsVersion"
 ]
 
 (* Test notebook contains Basic Examples section with content *)
@@ -664,7 +664,7 @@ VerificationTest[
         Length[exampleCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasBasicExamplesContent@@Tests/PacletDocumentationTools.wlt:651,1-668,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasBasicExamplesContent"
 ]
 
 (* Test Basic Examples generates Output cells *)
@@ -684,7 +684,7 @@ VerificationTest[
         Length[outputCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-BasicExamplesHasOutputCells@@Tests/PacletDocumentationTools.wlt:671,1-688,2"
+    TestID -> "CreateSymbolPacletDocumentation-BasicExamplesHasOutputCells"
 ]
 
 (* Test Basic Examples with multiple groups creates ExampleDelimiter cells *)
@@ -704,7 +704,7 @@ VerificationTest[
         Length[delimiterCells] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-BasicExamplesHasDelimiters@@Tests/PacletDocumentationTools.wlt:691,1-708,2"
+    TestID -> "CreateSymbolPacletDocumentation-BasicExamplesHasDelimiters"
 ]
 
 (* Test notebook contains PrimaryExamplesSection *)
@@ -723,7 +723,7 @@ VerificationTest[
         Length[primarySection] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasPrimaryExamplesSection@@Tests/PacletDocumentationTools.wlt:711,1-727,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasPrimaryExamplesSection"
 ]
 
 (* Test notebook contains ExtendedExamplesSection with CellTags *)
@@ -746,7 +746,7 @@ VerificationTest[
         Length[extendedSection] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasExtendedExamplesSection@@Tests/PacletDocumentationTools.wlt:730,1-750,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasExtendedExamplesSection"
 ]
 
 (* Test notebook contains ExampleSection cells for extended sections *)
@@ -766,7 +766,7 @@ VerificationTest[
         Length[exampleSections] >= 5
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasExtendedSections@@Tests/PacletDocumentationTools.wlt:753,1-770,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasExtendedSections"
 ]
 
 (* Test custom context parameter is used *)
@@ -787,7 +787,7 @@ VerificationTest[
         Length[contextRefs] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-CustomContextUsed@@Tests/PacletDocumentationTools.wlt:773,1-791,2"
+    TestID -> "CreateSymbolPacletDocumentation-CustomContextUsed"
 ]
 
 (* Test context is correctly built from publisher and paclet name *)
@@ -808,7 +808,7 @@ VerificationTest[
         Length[contextRefs] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-ContextFromPublisher@@Tests/PacletDocumentationTools.wlt:794,1-812,2"
+    TestID -> "CreateSymbolPacletDocumentation-ContextFromPublisher"
 ]
 
 (* Test context is correctly built from paclet name with embedded publisher *)
@@ -828,7 +828,7 @@ VerificationTest[
         Length[contextRefs] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-ContextFromEmbeddedPublisher@@Tests/PacletDocumentationTools.wlt:815,1-832,2"
+    TestID -> "CreateSymbolPacletDocumentation-ContextFromEmbeddedPublisher"
 ]
 
 (* Test Usage cell contains correct syntax *)
@@ -848,7 +848,7 @@ VerificationTest[
         Length[usageContent] >= 1
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-UsageContainsSyntax@@Tests/PacletDocumentationTools.wlt:835,1-852,2"
+    TestID -> "CreateSymbolPacletDocumentation-UsageContainsSyntax"
 ]
 
 (* Test Usage cell contains argument formatting *)
@@ -868,7 +868,7 @@ VerificationTest[
         Length[usageContent] >= 2
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-UsageContainsArgumentFormatting@@Tests/PacletDocumentationTools.wlt:855,1-872,2"
+    TestID -> "CreateSymbolPacletDocumentation-UsageContainsArgumentFormatting"
 ]
 
 (* Test that StyleDefinitions is set correctly *)
@@ -887,7 +887,7 @@ VerificationTest[
         Length[styleDef] >= 1 && MatchQ[First[styleDef], _FrontEnd`FileName]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-HasStyleDefinitions@@Tests/PacletDocumentationTools.wlt:875,1-891,2"
+    TestID -> "CreateSymbolPacletDocumentation-HasStyleDefinitions"
 ]
 
 (* Test Notes section handles tables correctly *)
@@ -907,7 +907,7 @@ VerificationTest[
         MatchQ[nb, _Notebook]
     ],
     True,
-    TestID -> "CreateSymbolPacletDocumentation-NotesWithTable@@Tests/PacletDocumentationTools.wlt:894,1-911,2"
+    TestID -> "CreateSymbolPacletDocumentation-NotesWithTable"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -944,7 +944,7 @@ VerificationTest[
         result["operation"]
     ],
     "appendExample",
-    TestID -> "EditSymbolPacletDocumentationExamples-AppendExample@@Tests/PacletDocumentationTools.wlt:934,1-948,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-AppendExample"
 ]
 
 (* Test prependExample operation *)
@@ -961,7 +961,7 @@ VerificationTest[
         result["operation"]
     ],
     "prependExample",
-    TestID -> "EditSymbolPacletDocumentationExamples-PrependExample@@Tests/PacletDocumentationTools.wlt:951,1-965,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-PrependExample"
 ]
 
 (* Test setExamples operation *)
@@ -978,7 +978,7 @@ VerificationTest[
         result["operation"]
     ],
     "setExamples",
-    TestID -> "EditSymbolPacletDocumentationExamples-SetExamples@@Tests/PacletDocumentationTools.wlt:968,1-982,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-SetExamples"
 ]
 
 (* Test clearExamples operation *)
@@ -994,7 +994,7 @@ VerificationTest[
         result["operation"]
     ],
     "clearExamples",
-    TestID -> "EditSymbolPacletDocumentationExamples-ClearExamples@@Tests/PacletDocumentationTools.wlt:985,1-998,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-ClearExamples"
 ]
 
 (* Test insertExample operation *)
@@ -1020,7 +1020,7 @@ VerificationTest[
         result["operation"]
     ],
     "insertExample",
-    TestID -> "EditSymbolPacletDocumentationExamples-InsertExample@@Tests/PacletDocumentationTools.wlt:1001,1-1024,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-InsertExample"
 ]
 
 (* Test replaceExample operation *)
@@ -1038,7 +1038,7 @@ VerificationTest[
         result["operation"]
     ],
     "replaceExample",
-    TestID -> "EditSymbolPacletDocumentationExamples-ReplaceExample@@Tests/PacletDocumentationTools.wlt:1027,1-1042,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-ReplaceExample"
 ]
 
 (* Test removeExample operation *)
@@ -1063,7 +1063,7 @@ VerificationTest[
         result["operation"]
     ],
     "removeExample",
-    TestID -> "EditSymbolPacletDocumentationExamples-RemoveExample@@Tests/PacletDocumentationTools.wlt:1045,1-1067,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-RemoveExample"
 ]
 
 (* Test invalid section name *)
@@ -1081,7 +1081,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentationExamples-InvalidSection@@Tests/PacletDocumentationTools.wlt:1070,1-1085,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-InvalidSection"
 ]
 
 (* Test invalid operation *)
@@ -1099,7 +1099,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentationExamples-InvalidOperation@@Tests/PacletDocumentationTools.wlt:1088,1-1103,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-InvalidOperation"
 ]
 
 (* Test notebook not found *)
@@ -1115,7 +1115,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentationExamples-NotebookNotFound@@Tests/PacletDocumentationTools.wlt:1106,1-1119,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-NotebookNotFound"
 ]
 
 (* Test that generatedContent is returned for append *)
@@ -1132,7 +1132,7 @@ VerificationTest[
         StringQ[result["generatedContent"]] && StringContainsQ[result["generatedContent"], "wl-output"]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentationExamples-GeneratedContentReturned@@Tests/PacletDocumentationTools.wlt:1122,1-1136,2"
+    TestID -> "EditSymbolPacletDocumentationExamples-GeneratedContentReturned"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1176,7 +1176,7 @@ VerificationTest[
         result["operation"]
     ],
     "setUsage",
-    TestID -> "EditSymbolPacletDocumentation-SetUsage-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1167,1-1180,2"
+    TestID -> "EditSymbolPacletDocumentation-SetUsage-BasicFunctionality"
 ]
 
 (* Test setUsage operation - verify usage cell is updated *)
@@ -1195,7 +1195,7 @@ VerificationTest[
         Length[usageContent] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetUsage-VerifyUpdate@@Tests/PacletDocumentationTools.wlt:1183,1-1199,2"
+    TestID -> "EditSymbolPacletDocumentation-SetUsage-VerifyUpdate"
 ]
 
 (* Test setNotes operation - basic functionality *)
@@ -1211,7 +1211,7 @@ VerificationTest[
         result["operation"]
     ],
     "setNotes",
-    TestID -> "EditSymbolPacletDocumentation-SetNotes-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1202,1-1215,2"
+    TestID -> "EditSymbolPacletDocumentation-SetNotes-BasicFunctionality"
 ]
 
 (* Test setNotes operation - verify notes cells are replaced *)
@@ -1230,7 +1230,7 @@ VerificationTest[
         Length[notesCells] >= 3
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetNotes-VerifyReplacement@@Tests/PacletDocumentationTools.wlt:1218,1-1234,2"
+    TestID -> "EditSymbolPacletDocumentation-SetNotes-VerifyReplacement"
 ]
 
 (* Test addNote operation at end (default) *)
@@ -1246,7 +1246,7 @@ VerificationTest[
         result["operation"]
     ],
     "addNote",
-    TestID -> "EditSymbolPacletDocumentation-AddNote-AtEnd@@Tests/PacletDocumentationTools.wlt:1237,1-1250,2"
+    TestID -> "EditSymbolPacletDocumentation-AddNote-AtEnd"
 ]
 
 (* Test addNote operation at start *)
@@ -1263,7 +1263,7 @@ VerificationTest[
         result["operation"]
     ],
     "addNote",
-    TestID -> "EditSymbolPacletDocumentation-AddNote-AtStart@@Tests/PacletDocumentationTools.wlt:1253,1-1267,2"
+    TestID -> "EditSymbolPacletDocumentation-AddNote-AtStart"
 ]
 
 (* Test addNote operation at specific position *)
@@ -1280,7 +1280,7 @@ VerificationTest[
         result["operation"]
     ],
     "addNote",
-    TestID -> "EditSymbolPacletDocumentation-AddNote-AtPosition@@Tests/PacletDocumentationTools.wlt:1270,1-1284,2"
+    TestID -> "EditSymbolPacletDocumentation-AddNote-AtPosition"
 ]
 
 (* Test setDetailsTable operation *)
@@ -1296,7 +1296,7 @@ VerificationTest[
         result["operation"]
     ],
     "setDetailsTable",
-    TestID -> "EditSymbolPacletDocumentation-SetDetailsTable-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1287,1-1300,2"
+    TestID -> "EditSymbolPacletDocumentation-SetDetailsTable-BasicFunctionality"
 ]
 
 (* Test setSeeAlso operation - basic functionality *)
@@ -1312,7 +1312,7 @@ VerificationTest[
         result["operation"]
     ],
     "setSeeAlso",
-    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1303,1-1316,2"
+    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-BasicFunctionality"
 ]
 
 (* Test setSeeAlso operation - verify button boxes are created *)
@@ -1330,7 +1330,7 @@ VerificationTest[
         Length[buttonBoxes] >= 2
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-VerifyButtonBoxes@@Tests/PacletDocumentationTools.wlt:1319,1-1334,2"
+    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-VerifyButtonBoxes"
 ]
 
 (* Test setTechNotes operation - basic functionality *)
@@ -1346,7 +1346,7 @@ VerificationTest[
         result["operation"]
     ],
     "setTechNotes",
-    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1337,1-1350,2"
+    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-BasicFunctionality"
 ]
 
 (* Test setTechNotes operation - verify links are created *)
@@ -1364,7 +1364,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-VerifyLinks@@Tests/PacletDocumentationTools.wlt:1353,1-1368,2"
+    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-VerifyLinks"
 ]
 
 (* Test setRelatedGuides operation - basic functionality *)
@@ -1380,7 +1380,7 @@ VerificationTest[
         result["operation"]
     ],
     "setRelatedGuides",
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1371,1-1384,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-BasicFunctionality"
 ]
 
 (* Test setRelatedGuides operation - verify links are created *)
@@ -1398,7 +1398,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-VerifyLinks@@Tests/PacletDocumentationTools.wlt:1387,1-1402,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-VerifyLinks"
 ]
 
 (* Test setRelatedLinks operation - basic functionality *)
@@ -1414,7 +1414,7 @@ VerificationTest[
         result["operation"]
     ],
     "setRelatedLinks",
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1405,1-1418,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-BasicFunctionality"
 ]
 
 (* Test setRelatedLinks operation - verify hyperlinks are created *)
@@ -1432,7 +1432,7 @@ VerificationTest[
         Length[buttonBoxes] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-VerifyHyperlinks@@Tests/PacletDocumentationTools.wlt:1421,1-1436,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-VerifyHyperlinks"
 ]
 
 (* Test setKeywords operation - basic functionality *)
@@ -1448,7 +1448,7 @@ VerificationTest[
         result["operation"]
     ],
     "setKeywords",
-    TestID -> "EditSymbolPacletDocumentation-SetKeywords-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1439,1-1452,2"
+    TestID -> "EditSymbolPacletDocumentation-SetKeywords-BasicFunctionality"
 ]
 
 (* Test setKeywords operation - verify keywords cells are updated *)
@@ -1466,7 +1466,7 @@ VerificationTest[
         MemberQ[keywordsCells, "alpha"] && MemberQ[keywordsCells, "beta"] && MemberQ[keywordsCells, "gamma"]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetKeywords-VerifyKeywords@@Tests/PacletDocumentationTools.wlt:1455,1-1470,2"
+    TestID -> "EditSymbolPacletDocumentation-SetKeywords-VerifyKeywords"
 ]
 
 (* Test setHistory operation - basic functionality *)
@@ -1482,7 +1482,7 @@ VerificationTest[
         result["operation"]
     ],
     "setHistory",
-    TestID -> "EditSymbolPacletDocumentation-SetHistory-BasicFunctionality@@Tests/PacletDocumentationTools.wlt:1473,1-1486,2"
+    TestID -> "EditSymbolPacletDocumentation-SetHistory-BasicFunctionality"
 ]
 
 (* Test setHistory operation - verify version number is present *)
@@ -1501,7 +1501,7 @@ VerificationTest[
         Length[historyData] >= 3
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetHistory-VerifyVersions@@Tests/PacletDocumentationTools.wlt:1489,1-1505,2"
+    TestID -> "EditSymbolPacletDocumentation-SetHistory-VerifyVersions"
 ]
 
 (* Test that file path is returned correctly *)
@@ -1517,7 +1517,7 @@ VerificationTest[
         StringQ[result["file"]] && StringEndsQ[result["file"], ".nb"]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-ReturnsFilePath@@Tests/PacletDocumentationTools.wlt:1508,1-1521,2"
+    TestID -> "EditSymbolPacletDocumentation-ReturnsFilePath"
 ]
 
 (* Test error: invalid operation *)
@@ -1534,7 +1534,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-ErrorInvalidOperation@@Tests/PacletDocumentationTools.wlt:1524,1-1538,2"
+    TestID -> "EditSymbolPacletDocumentation-ErrorInvalidOperation"
 ]
 
 (* Test error: notebook not found *)
@@ -1549,7 +1549,7 @@ VerificationTest[
         FailureQ[result] || result === $Failed || !AssociationQ[parseToolResult[result]]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-ErrorNotebookNotFound@@Tests/PacletDocumentationTools.wlt:1541,1-1553,2"
+    TestID -> "EditSymbolPacletDocumentation-ErrorNotebookNotFound"
 ]
 
 (* Test setUsage with single usage case *)
@@ -1567,7 +1567,7 @@ VerificationTest[
         Length[usageCells] >= 1 && result["operation"] === "setUsage"
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetUsage-SingleCase@@Tests/PacletDocumentationTools.wlt:1556,1-1571,2"
+    TestID -> "EditSymbolPacletDocumentation-SetUsage-SingleCase"
 ]
 
 (* Test setNotes with empty string creates placeholder *)
@@ -1585,7 +1585,7 @@ VerificationTest[
         Length[notesCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetNotes-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1574,1-1589,2"
+    TestID -> "EditSymbolPacletDocumentation-SetNotes-EmptyCreatesPlaceholder"
 ]
 
 (* Test setSeeAlso with empty string creates placeholder *)
@@ -1604,7 +1604,7 @@ VerificationTest[
         Length[placeholderCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1592,1-1608,2"
+    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-EmptyCreatesPlaceholder"
 ]
 
 (* Test setSeeAlso with comma-separated symbols on same line *)
@@ -1622,7 +1622,7 @@ VerificationTest[
         Length[buttonBoxes] >= 4
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-CommaSeparated@@Tests/PacletDocumentationTools.wlt:1611,1-1626,2"
+    TestID -> "EditSymbolPacletDocumentation-SetSeeAlso-CommaSeparated"
 ]
 
 (* Test setKeywords with newline-separated keywords *)
@@ -1640,7 +1640,7 @@ VerificationTest[
         MemberQ[keywordsCells, "keyword1"] && MemberQ[keywordsCells, "keyword2"] && MemberQ[keywordsCells, "keyword3"]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetKeywords-NewlineSeparated@@Tests/PacletDocumentationTools.wlt:1629,1-1644,2"
+    TestID -> "EditSymbolPacletDocumentation-SetKeywords-NewlineSeparated"
 ]
 
 (* Test setTechNotes with empty string creates placeholder *)
@@ -1658,7 +1658,7 @@ VerificationTest[
         Length[placeholderCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1647,1-1662,2"
+    TestID -> "EditSymbolPacletDocumentation-SetTechNotes-EmptyCreatesPlaceholder"
 ]
 
 (* Test setRelatedGuides with empty string creates placeholder *)
@@ -1676,7 +1676,7 @@ VerificationTest[
         Length[placeholderCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1665,1-1680,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedGuides-EmptyCreatesPlaceholder"
 ]
 
 (* Test setRelatedLinks with empty string creates placeholder *)
@@ -1694,7 +1694,7 @@ VerificationTest[
         Length[placeholderCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1683,1-1698,2"
+    TestID -> "EditSymbolPacletDocumentation-SetRelatedLinks-EmptyCreatesPlaceholder"
 ]
 
 (* Test setKeywords with empty string creates placeholder *)
@@ -1712,7 +1712,7 @@ VerificationTest[
         Length[placeholderCells] >= 1
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetKeywords-EmptyCreatesPlaceholder@@Tests/PacletDocumentationTools.wlt:1701,1-1716,2"
+    TestID -> "EditSymbolPacletDocumentation-SetKeywords-EmptyCreatesPlaceholder"
 ]
 
 (* Test setHistory with only 'new' field *)
@@ -1728,7 +1728,7 @@ VerificationTest[
         result["operation"] === "setHistory"
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-SetHistory-OnlyNewField@@Tests/PacletDocumentationTools.wlt:1719,1-1732,2"
+    TestID -> "EditSymbolPacletDocumentation-SetHistory-OnlyNewField"
 ]
 
 (* Test multiple sequential operations on same notebook *)
@@ -1753,5 +1753,5 @@ VerificationTest[
         Length[seeAlsoButtons] >= 2 && MemberQ[keywordsCells, "sequential"]
     ],
     True,
-    TestID -> "EditSymbolPacletDocumentation-MultipleSequentialOperations@@Tests/PacletDocumentationTools.wlt:1735,1-1757,2"
+    TestID -> "EditSymbolPacletDocumentation-MultipleSequentialOperations"
 ]

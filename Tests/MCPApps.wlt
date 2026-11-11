@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/MCPApps.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/MCPApps.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -46,7 +46,7 @@ VerificationTest[
     |>,
     True,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-UIClient@@Tests/MCPApps.wlt:32,1-50,2"
+    TestID   -> "ClientSupportsUIQ-UIClient"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -63,7 +63,7 @@ VerificationTest[
     |>,
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-NoExtensions@@Tests/MCPApps.wlt:55,1-67,2"
+    TestID   -> "ClientSupportsUIQ-NoExtensions"
 ]
 
 VerificationTest[
@@ -79,7 +79,7 @@ VerificationTest[
     |>,
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-OtherExtension@@Tests/MCPApps.wlt:69,1-83,2"
+    TestID   -> "ClientSupportsUIQ-OtherExtension"
 ]
 
 VerificationTest[
@@ -92,14 +92,14 @@ VerificationTest[
     |>,
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-NoCapabilities@@Tests/MCPApps.wlt:85,1-96,2"
+    TestID   -> "ClientSupportsUIQ-NoCapabilities"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`clientSupportsUIQ @ <| "method" -> "initialize" |>,
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-NoParams@@Tests/MCPApps.wlt:98,1-103,2"
+    TestID   -> "ClientSupportsUIQ-NoParams"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -109,14 +109,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`clientSupportsUIQ @ "not an association",
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-NonAssociation@@Tests/MCPApps.wlt:108,1-113,2"
+    TestID   -> "ClientSupportsUIQ-NonAssociation"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`clientSupportsUIQ @ Null,
     False,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-Null@@Tests/MCPApps.wlt:115,1-120,2"
+    TestID   -> "ClientSupportsUIQ-Null"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -133,7 +133,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-NotSet@@Tests/MCPApps.wlt:129,1-137,2"
+    TestID   -> "MCPAppsEnabled-NotSet"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -146,7 +146,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-FalseLowercase@@Tests/MCPApps.wlt:142,1-150,2"
+    TestID   -> "MCPAppsEnabled-FalseLowercase"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -159,7 +159,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-FalseMixedCase@@Tests/MCPApps.wlt:155,1-163,2"
+    TestID   -> "MCPAppsEnabled-FalseMixedCase"
 ]
 
 VerificationTest[
@@ -169,7 +169,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-FalseUppercase@@Tests/MCPApps.wlt:165,1-173,2"
+    TestID   -> "MCPAppsEnabled-FalseUppercase"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -182,7 +182,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-TrueString@@Tests/MCPApps.wlt:178,1-186,2"
+    TestID   -> "MCPAppsEnabled-TrueString"
 ]
 
 VerificationTest[
@@ -192,7 +192,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-OneString@@Tests/MCPApps.wlt:188,1-196,2"
+    TestID   -> "MCPAppsEnabled-OneString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -221,7 +221,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "MCPAppsEnabled-Integration-DisablesUI@@Tests/MCPApps.wlt:201,1-225,2"
+    TestID   -> "MCPAppsEnabled-Integration-DisablesUI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -240,7 +240,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitResponse-IncludesExtensions@@Tests/MCPApps.wlt:234,1-244,2"
+    TestID   -> "InitResponse-IncludesExtensions"
 ]
 
 VerificationTest[
@@ -252,7 +252,7 @@ VerificationTest[
     ],
     <| "mimeTypes" -> { "text/html;profile=mcp-app" } |>,
     SameTest -> MatchQ,
-    TestID   -> "InitResponse-ExtensionsStructure@@Tests/MCPApps.wlt:246,1-256,2"
+    TestID   -> "InitResponse-ExtensionsStructure"
 ]
 
 VerificationTest[
@@ -264,7 +264,7 @@ VerificationTest[
     ],
     { "text/html;profile=mcp-app" },
     SameTest -> MatchQ,
-    TestID   -> "InitResponse-ExtensionsMimeType@@Tests/MCPApps.wlt:258,1-268,2"
+    TestID   -> "InitResponse-ExtensionsMimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -279,7 +279,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitResponse-OmitsExtensionsWhenFalse@@Tests/MCPApps.wlt:273,1-283,2"
+    TestID   -> "InitResponse-OmitsExtensionsWhenFalse"
 ]
 
 VerificationTest[
@@ -291,7 +291,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitResponse-OmitsExtensionsWhenUnset@@Tests/MCPApps.wlt:285,1-295,2"
+    TestID   -> "InitResponse-OmitsExtensionsWhenUnset"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -306,7 +306,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> Equal,
-    TestID   -> "InitResponse-StandardFieldsPresent@@Tests/MCPApps.wlt:300,1-310,2"
+    TestID   -> "InitResponse-StandardFieldsPresent"
 ]
 
 VerificationTest[
@@ -318,7 +318,7 @@ VerificationTest[
     ],
     <| "name" -> "TestServer", "version" -> "1.0.0" |>,
     SameTest -> MatchQ,
-    TestID   -> "InitResponse-ServerInfo@@Tests/MCPApps.wlt:312,1-322,2"
+    TestID   -> "InitResponse-ServerInfo"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -333,7 +333,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitResponse-BackwardCompat4Arg@@Tests/MCPApps.wlt:327,1-337,2"
+    TestID   -> "InitResponse-BackwardCompat4Arg"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -361,7 +361,7 @@ VerificationTest[
         "meta"     -> _Association
     } ],
     SameTest -> MatchQ,
-    TestID   -> "LoadUIResource-HTMLOnly@@Tests/MCPApps.wlt:346,1-365,2"
+    TestID   -> "LoadUIResource-HTMLOnly"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -388,7 +388,7 @@ VerificationTest[
         "meta"     -> KeyValuePattern[ "ui" -> _Association ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "LoadUIResource-WithJSON@@Tests/MCPApps.wlt:370,1-392,2"
+    TestID   -> "LoadUIResource-WithJSON"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -406,7 +406,7 @@ VerificationTest[
     ],
     "ui://wolfram/wolframalpha-viewer",
     SameTest -> Equal,
-    TestID   -> "LoadUIResource-URIFromFileName@@Tests/MCPApps.wlt:397,1-410,2"
+    TestID   -> "LoadUIResource-URIFromFileName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -424,7 +424,7 @@ VerificationTest[
     ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "LoadUIResource-EmptyMeta@@Tests/MCPApps.wlt:415,1-428,2"
+    TestID   -> "LoadUIResource-EmptyMeta"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -441,7 +441,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-ReturnsAssociation@@Tests/MCPApps.wlt:437,1-445,2"
+    TestID   -> "InitializeUIResources-ReturnsAssociation"
 ]
 
 VerificationTest[
@@ -451,7 +451,7 @@ VerificationTest[
     ],
     { "ui://wolfram/evaluator-viewer", "ui://wolfram/mcp-apps-test", "ui://wolfram/notebook-viewer", "ui://wolfram/wolframalpha-viewer" },
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-LoadsAllApps@@Tests/MCPApps.wlt:447,1-455,2"
+    TestID   -> "InitializeUIResources-LoadsAllApps"
 ]
 
 VerificationTest[
@@ -461,7 +461,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-HTMLIsString@@Tests/MCPApps.wlt:457,1-465,2"
+    TestID   -> "InitializeUIResources-HTMLIsString"
 ]
 
 VerificationTest[
@@ -471,7 +471,7 @@ VerificationTest[
     ],
     "text/html;profile=mcp-app",
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-MimeType@@Tests/MCPApps.wlt:467,1-475,2"
+    TestID   -> "InitializeUIResources-MimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -484,7 +484,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "ui" -> KeyValuePattern[ "csp" -> _Association ] ],
     SameTest -> MatchQ,
-    TestID   -> "InitializeUIResources-MetadataLoaded@@Tests/MCPApps.wlt:480,1-488,2"
+    TestID   -> "InitializeUIResources-MetadataLoaded"
 ]
 
 VerificationTest[
@@ -496,7 +496,7 @@ VerificationTest[
     ],
     { "https://www.wolframcloud.com", "https://wolfr.am" },
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-EvaluatorFrameDomains@@Tests/MCPApps.wlt:490,1-500,2"
+    TestID   -> "InitializeUIResources-EvaluatorFrameDomains"
 ]
 
 (* connect-src must allow data: URIs so the notebook embedder can instantiate
@@ -510,7 +510,7 @@ VerificationTest[
     ],
     { "https://www.wolframcloud.com", "data:" },
     SameTest -> Equal,
-    TestID   -> "InitializeUIResources-EvaluatorConnectDomains@@Tests/MCPApps.wlt:504,1-514,2"
+    TestID   -> "InitializeUIResources-EvaluatorConnectDomains"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -527,7 +527,7 @@ VerificationTest[
     ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "InitializeUIResources-GracefulFallback@@Tests/MCPApps.wlt:519,1-531,2"
+    TestID   -> "InitializeUIResources-GracefulFallback"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -547,7 +547,7 @@ VerificationTest[
     ],
     { KeyValuePattern[ { "uri" -> _String, "name" -> _String, "mimeType" -> _String } ].. },
     SameTest -> MatchQ,
-    TestID   -> "ListUIResources-ReturnsWhenUISupported@@Tests/MCPApps.wlt:540,1-551,2"
+    TestID   -> "ListUIResources-ReturnsWhenUISupported"
 ]
 
 VerificationTest[
@@ -560,7 +560,7 @@ VerificationTest[
     ],
     4,
     SameTest -> Equal,
-    TestID   -> "ListUIResources-ReturnsFourResources@@Tests/MCPApps.wlt:553,1-564,2"
+    TestID   -> "ListUIResources-ReturnsFourResources"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -576,7 +576,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ListUIResources-EmptyWhenNoUI@@Tests/MCPApps.wlt:569,1-580,2"
+    TestID   -> "ListUIResources-EmptyWhenNoUI"
 ]
 
 VerificationTest[
@@ -589,7 +589,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ListUIResources-EmptyWhenUnset@@Tests/MCPApps.wlt:582,1-593,2"
+    TestID   -> "ListUIResources-EmptyWhenUnset"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -605,7 +605,7 @@ VerificationTest[
     ],
     { "ui://wolfram/evaluator-viewer", "ui://wolfram/mcp-apps-test", "ui://wolfram/notebook-viewer", "ui://wolfram/wolframalpha-viewer" },
     SameTest -> Equal,
-    TestID   -> "ListUIResources-CorrectURIs@@Tests/MCPApps.wlt:598,1-609,2"
+    TestID   -> "ListUIResources-CorrectURIs"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -633,7 +633,7 @@ VerificationTest[
         "_meta"    -> _Association
     } ] } ],
     SameTest -> MatchQ,
-    TestID   -> "ReadUIResource-ValidURI@@Tests/MCPApps.wlt:618,1-637,2"
+    TestID   -> "ReadUIResource-ValidURI"
 ]
 
 VerificationTest[
@@ -650,7 +650,7 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "<!DOCTYPE html>" | "<html" ]),
     SameTest -> MatchQ,
-    TestID   -> "ReadUIResource-HTMLContent@@Tests/MCPApps.wlt:639,1-654,2"
+    TestID   -> "ReadUIResource-HTMLContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -669,7 +669,7 @@ VerificationTest[
     ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "ReadUIResource-UnknownURI@@Tests/MCPApps.wlt:659,1-673,2"
+    TestID   -> "ReadUIResource-UnknownURI"
 ]
 
 VerificationTest[
@@ -685,7 +685,7 @@ VerificationTest[
     ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "ReadUIResource-InvalidURIType@@Tests/MCPApps.wlt:675,1-689,2"
+    TestID   -> "ReadUIResource-InvalidURIType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -712,7 +712,7 @@ VerificationTest[
         "result"  -> KeyValuePattern[ "contents" -> { _Association.. } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleResourceRead-ValidURI@@Tests/MCPApps.wlt:698,1-716,2"
+    TestID   -> "HandleResourceRead-ValidURI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -738,7 +738,7 @@ VerificationTest[
         } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleResourceRead-UnknownURIError@@Tests/MCPApps.wlt:721,1-742,2"
+    TestID   -> "HandleResourceRead-UnknownURIError"
 ]
 
 VerificationTest[
@@ -755,7 +755,7 @@ VerificationTest[
     ],
     -32602,
     SameTest -> Equal,
-    TestID   -> "HandleResourceRead-ErrorCodeIs32602@@Tests/MCPApps.wlt:744,1-759,2"
+    TestID   -> "HandleResourceRead-ErrorCodeIs32602"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -775,7 +775,7 @@ VerificationTest[
     ],
     { True, -32603 },
     SameTest -> MatchQ,
-    TestID   -> "HandleResourceRead-InvalidParamsReturnsInternalError@@Tests/MCPApps.wlt:764,1-779,2"
+    TestID   -> "HandleResourceRead-InvalidParamsReturnsInternalError"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -795,7 +795,7 @@ VerificationTest[
     ],
     -32603,
     SameTest -> Equal,
-    TestID   -> "HandleResourceRead-MissingParamsReturnsInternalError@@Tests/MCPApps.wlt:784,1-799,2"
+    TestID   -> "HandleResourceRead-MissingParamsReturnsInternalError"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -818,7 +818,7 @@ VerificationTest[
         "result" -> KeyValuePattern[ "resources" -> { __Association } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleMethod-ResourcesList-UIClient@@Tests/MCPApps.wlt:805,1-822,2"
+    TestID   -> "HandleMethod-ResourcesList-UIClient"
 ]
 
 VerificationTest[
@@ -837,7 +837,7 @@ VerificationTest[
         "result" -> KeyValuePattern[ "resources" -> { } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleMethod-ResourcesList-NonUIClient@@Tests/MCPApps.wlt:824,1-841,2"
+    TestID   -> "HandleMethod-ResourcesList-NonUIClient"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -864,7 +864,7 @@ VerificationTest[
         } ] } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleMethod-ResourcesRead-ValidURI@@Tests/MCPApps.wlt:847,1-868,2"
+    TestID   -> "HandleMethod-ResourcesRead-ValidURI"
 ]
 
 VerificationTest[
@@ -886,7 +886,7 @@ VerificationTest[
         } ]
     } ],
     SameTest -> MatchQ,
-    TestID   -> "HandleMethod-ResourcesRead-UnknownURI@@Tests/MCPApps.wlt:870,1-890,2"
+    TestID   -> "HandleMethod-ResourcesRead-UnknownURI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -905,7 +905,7 @@ VerificationTest[
     ],
     { "_meta" -> _Association },
     SameTest -> MatchQ,
-    TestID   -> "ToolUIMetadata-KnownToolWithUI@@Tests/MCPApps.wlt:899,1-909,2"
+    TestID   -> "ToolUIMetadata-KnownToolWithUI"
 ]
 
 VerificationTest[
@@ -918,7 +918,7 @@ VerificationTest[
     ],
     "ui://wolfram/wolframalpha-viewer",
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-CorrectResourceURI@@Tests/MCPApps.wlt:911,1-922,2"
+    TestID   -> "ToolUIMetadata-CorrectResourceURI"
 ]
 
 VerificationTest[
@@ -931,7 +931,7 @@ VerificationTest[
     ],
     { "model", "app" },
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-CorrectVisibility@@Tests/MCPApps.wlt:924,1-935,2"
+    TestID   -> "ToolUIMetadata-CorrectVisibility"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -946,7 +946,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-WolframAlphaNoDeploy@@Tests/MCPApps.wlt:940,1-950,2"
+    TestID   -> "ToolUIMetadata-WolframAlphaNoDeploy"
 ]
 
 VerificationTest[
@@ -955,7 +955,7 @@ VerificationTest[
     ],
     { "_meta" -> KeyValuePattern[ "ui" -> KeyValuePattern[ "resourceUri" -> "ui://wolfram/evaluator-viewer" ] ] },
     SameTest -> MatchQ,
-    TestID   -> "ToolUIMetadata-EvaluatorTool@@Tests/MCPApps.wlt:952,1-959,2"
+    TestID   -> "ToolUIMetadata-EvaluatorTool"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -967,7 +967,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-UnknownTool@@Tests/MCPApps.wlt:964,1-971,2"
+    TestID   -> "ToolUIMetadata-UnknownTool"
 ]
 
 VerificationTest[
@@ -976,7 +976,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-KnownToolNoUI@@Tests/MCPApps.wlt:973,1-980,2"
+    TestID   -> "ToolUIMetadata-KnownToolNoUI"
 ]
 
 VerificationTest[
@@ -985,7 +985,7 @@ VerificationTest[
     ],
     { },
     SameTest -> Equal,
-    TestID   -> "ToolUIMetadata-KnownToolUIUnset@@Tests/MCPApps.wlt:982,1-989,2"
+    TestID   -> "ToolUIMetadata-KnownToolUIUnset"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1009,7 +1009,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "WithToolUIMetadata-AddsMetaToKnownTool@@Tests/MCPApps.wlt:998,1-1013,2"
+    TestID   -> "WithToolUIMetadata-AddsMetaToKnownTool"
 ]
 
 VerificationTest[
@@ -1026,7 +1026,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "WithToolUIMetadata-NoMetaForUnknownTool@@Tests/MCPApps.wlt:1015,1-1030,2"
+    TestID   -> "WithToolUIMetadata-NoMetaForUnknownTool"
 ]
 
 VerificationTest[
@@ -1042,7 +1042,7 @@ VerificationTest[
     ],
     "ui://wolfram/wolframalpha-viewer",
     SameTest -> Equal,
-    TestID   -> "WithToolUIMetadata-CorrectMetaContent@@Tests/MCPApps.wlt:1032,1-1046,2"
+    TestID   -> "WithToolUIMetadata-CorrectMetaContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1057,7 +1057,7 @@ VerificationTest[
     ],
     { <| "name" -> "WolframAlpha", "description" -> "test", "inputSchema" -> <| |> |> },
     SameTest -> Equal,
-    TestID   -> "WithToolUIMetadata-NoChangesWhenNoUI@@Tests/MCPApps.wlt:1051,1-1061,2"
+    TestID   -> "WithToolUIMetadata-NoChangesWhenNoUI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1073,7 +1073,7 @@ VerificationTest[
     ],
     { "WolframAlpha", "WA tool", <| "type" -> "object" |> },
     SameTest -> Equal,
-    TestID   -> "WithToolUIMetadata-PreservesExistingFields@@Tests/MCPApps.wlt:1066,1-1077,2"
+    TestID   -> "WithToolUIMetadata-PreservesExistingFields"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1099,7 +1099,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "HandleMethod-ToolsList-UIMetaPresent@@Tests/MCPApps.wlt:1083,1-1103,2"
+    TestID   -> "HandleMethod-ToolsList-UIMetaPresent"
 ]
 
 VerificationTest[
@@ -1121,7 +1121,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "HandleMethod-ToolsList-NoMetaForUnlinkedTool@@Tests/MCPApps.wlt:1105,1-1125,2"
+    TestID   -> "HandleMethod-ToolsList-NoMetaForUnlinkedTool"
 ]
 
 VerificationTest[
@@ -1141,7 +1141,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "HandleMethod-ToolsList-NoMetaWhenNoUI@@Tests/MCPApps.wlt:1127,1-1145,2"
+    TestID   -> "HandleMethod-ToolsList-NoMetaWhenNoUI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1155,7 +1155,7 @@ VerificationTest[
     BooleanQ @ Wolfram`AgentTools`Common`$deployCloudNotebooks,
     True,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebooks-Boolean@@Tests/MCPApps.wlt:1154,1-1159,2"
+    TestID   -> "DeployCloudNotebooks-Boolean"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1167,7 +1167,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebooks-BlockTrue@@Tests/MCPApps.wlt:1164,1-1171,2"
+    TestID   -> "DeployCloudNotebooks-BlockTrue"
 ]
 
 VerificationTest[
@@ -1176,7 +1176,7 @@ VerificationTest[
     ],
     False,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebooks-BlockFalse@@Tests/MCPApps.wlt:1173,1-1180,2"
+    TestID   -> "DeployCloudNotebooks-BlockFalse"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1195,7 +1195,7 @@ VerificationTest[
     ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "DeployCloudNotebookForMCPApp-AssertsDeployEnabled@@Tests/MCPApps.wlt:1189,1-1199,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-AssertsDeployEnabled"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1205,7 +1205,7 @@ VerificationTest[
     Quiet @ Wolfram`AgentTools`Common`deployCloudNotebookForMCPApp[ "not a notebook", "id" ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "DeployCloudNotebookForMCPApp-NotANotebook@@Tests/MCPApps.wlt:1204,1-1209,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-NotANotebook"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1223,7 +1223,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-InlineReturnsString@@Tests/MCPApps.wlt:1214,1-1227,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineReturnsString"
 ]
 
 VerificationTest[
@@ -1241,7 +1241,7 @@ VerificationTest[
     ],
     _Notebook,
     SameTest -> MatchQ,
-    TestID   -> "DeployCloudNotebookForMCPApp-InlineRoundTrips@@Tests/MCPApps.wlt:1229,1-1245,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineRoundTrips"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1259,7 +1259,7 @@ VerificationTest[
     ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "DeployCloudNotebookForMCPApp-InlineAssertsDeployEnabled@@Tests/MCPApps.wlt:1250,1-1263,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-InlineAssertsDeployEnabled"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1327,7 +1327,7 @@ VerificationTest[
     deliveryTest[ $Failed, $hostingAPISuccess, "CloudConnected" -> False ],
     <| "Result" -> $deliveryTestURL, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-NotConnected-UsesHostingAPI@@Tests/MCPApps.wlt:1326,1-1331,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-NotConnected-UsesHostingAPI"
 ]
 
 (* CloudDeploy succeeded: its URL is used and nothing is uploaded *)
@@ -1335,7 +1335,7 @@ VerificationTest[
     deliveryTest[ $cloudDeployTestURL, $hostingAPISuccess ],
     <| "Result" -> $cloudDeployTestURL, "CloudDeploys" -> 1, "Uploads" -> 0, "DeployCloudNotebooks" -> True |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeploy-NoUpload@@Tests/MCPApps.wlt:1334,1-1339,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeploy-NoUpload"
 ]
 
 (* CloudDeploy failed: the hosting API is the fallback and delivery stays enabled *)
@@ -1343,7 +1343,7 @@ VerificationTest[
     deliveryTest[ $Failed, $hostingAPISuccess, "CloudConnected" -> True ],
     <| "Result" -> $deliveryTestURL, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeployFailed-UsesHostingAPI@@Tests/MCPApps.wlt:1342,1-1347,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-CloudDeployFailed-UsesHostingAPI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1355,7 +1355,7 @@ VerificationTest[
     deliveryTest[ $Failed, Failure[ "ConnectionFailure", <| "MessageTemplate" -> "Unable to perform the request." |> ] ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ConnectionFailure-Disables@@Tests/MCPApps.wlt:1354,1-1359,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ConnectionFailure-Disables"
 ]
 
 (* An endpoint that is not deployed redirects to a login page (no JSON): delivery is disabled *)
@@ -1363,7 +1363,7 @@ VerificationTest[
     deliveryTest[ $Failed, HTTPResponse[ "", <| "StatusCode" -> 302, "ContentType" -> "text/plain" |> ] ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-Redirect-Disables@@Tests/MCPApps.wlt:1362,1-1367,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-Redirect-Disables"
 ]
 
 (* A server error: delivery is disabled *)
@@ -1374,7 +1374,7 @@ VerificationTest[
     ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ServerError-Disables@@Tests/MCPApps.wlt:1370,1-1378,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ServerError-Disables"
 ]
 
 (* A successful answer without a result URL is not usable either *)
@@ -1385,7 +1385,7 @@ VerificationTest[
     ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> False |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-NoResultURL-Disables@@Tests/MCPApps.wlt:1381,1-1389,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-NoResultURL-Disables"
 ]
 
 (* A client error concerns only this notebook: delivery stays enabled for later notebooks *)
@@ -1405,7 +1405,7 @@ VerificationTest[
     ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 1, "DeployCloudNotebooks" -> True |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ClientError-StaysEnabled@@Tests/MCPApps.wlt:1392,1-1409,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-ClientError-StaysEnabled"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1415,7 +1415,7 @@ VerificationTest[
     deliveryTest[ $Failed, $hostingAPISuccess, "SizeLimit" -> 100 ],
     <| "Result" -> $Failed, "CloudDeploys" -> 1, "Uploads" -> 0, "DeployCloudNotebooks" -> True |>,
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TooLarge-NotUploaded@@Tests/MCPApps.wlt:1414,1-1419,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TooLarge-NotUploaded"
 ]
 
 (* The size limit is the API's 10 MB *)
@@ -1423,7 +1423,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`$notebookUploadSizeLimit,
     10^7,
     SameTest -> Equal,
-    TestID   -> "NotebookUploadSizeLimit-10MB@@Tests/MCPApps.wlt:1422,1-1427,2"
+    TestID   -> "NotebookUploadSizeLimit-10MB"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1456,7 +1456,7 @@ VerificationTest[
     ],
     { True, "nb", True, True, False },
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFile@@Tests/MCPApps.wlt:1434,1-1460,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFile"
 ]
 
 (* The temporary file is removed even when the upload fails *)
@@ -1477,7 +1477,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFileRemovedOnFailure@@Tests/MCPApps.wlt:1463,1-1481,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-TemporaryFileRemovedOnFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1493,7 +1493,7 @@ VerificationTest[
     ],
     { $deliveryTestURL, True },
     SameTest -> Equal,
-    TestID   -> "NotebookUploadResult-Success@@Tests/MCPApps.wlt:1487,1-1497,2"
+    TestID   -> "NotebookUploadResult-Success"
 ]
 
 (* A 4xx client error disables nothing *)
@@ -1509,7 +1509,7 @@ VerificationTest[
     ],
     { $Failed, True },
     SameTest -> Equal,
-    TestID   -> "NotebookUploadResult-ClientError-StaysEnabled@@Tests/MCPApps.wlt:1500,1-1513,2"
+    TestID   -> "NotebookUploadResult-ClientError-StaysEnabled"
 ]
 
 (* A non-HTTPResponse (a Failure from URLRead) disables delivery *)
@@ -1522,7 +1522,7 @@ VerificationTest[
     ],
     { $Failed, False },
     SameTest -> Equal,
-    TestID   -> "NotebookUploadResult-NonResponse-Disables@@Tests/MCPApps.wlt:1516,1-1526,2"
+    TestID   -> "NotebookUploadResult-NonResponse-Disables"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1543,7 +1543,7 @@ VerificationTest[
     ],
     { $Failed, 0, True },
     SameTest -> Equal,
-    TestID   -> "CloudDeployNotebook-NotConnected-NotTried@@Tests/MCPApps.wlt:1532,1-1547,2"
+    TestID   -> "CloudDeployNotebook-NotConnected-NotTried"
 ]
 
 VerificationTest[
@@ -1560,7 +1560,7 @@ VerificationTest[
     ],
     { $Failed, 0 },
     SameTest -> Equal,
-    TestID   -> "CloudDeployNotebook-AfterFailure-NotTried@@Tests/MCPApps.wlt:1549,1-1564,2"
+    TestID   -> "CloudDeployNotebook-AfterFailure-NotTried"
 ]
 
 (* Constructing the cloud target needs a real cloud session, so the deploying branch is exercised only when
@@ -1587,7 +1587,7 @@ $cloudDeployNotebookTest @ VerificationTest[
     ],
     { $cloudDeployTestURL, True, True },
     SameTest -> Equal,
-    TestID   -> "CloudDeployNotebook-Connected-DeploysToHashedTarget@@Tests/MCPApps.wlt:1570,28-1591,2"
+    TestID   -> "CloudDeployNotebook-Connected-DeploysToHashedTarget"
 ]
 
 (* A CloudDeploy failure rules CloudDeploy out for the rest of the session *)
@@ -1604,7 +1604,7 @@ $cloudDeployNotebookTest @ VerificationTest[
     ],
     { $Failed, False },
     SameTest -> Equal,
-    TestID   -> "CloudDeployNotebook-Failure-ClearsUseCloudDeploy@@Tests/MCPApps.wlt:1594,28-1608,2"
+    TestID   -> "CloudDeployNotebook-Failure-ClearsUseCloudDeploy"
 ]
 
 (* A real deployment: the URL is in UUID form, as cloudNotebookUUID expects *)
@@ -1625,7 +1625,7 @@ $cloudDeployNotebookTest @ VerificationTest[
     ],
     { True, True, True },
     SameTest -> Equal,
-    TestID   -> "CloudDeployNotebook-Connected-RealDeploy@@Tests/MCPApps.wlt:1611,28-1629,2"
+    TestID   -> "CloudDeployNotebook-Connected-RealDeploy"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1663,7 +1663,7 @@ $notebookHostingAPITest @ VerificationTest[
     ],
     { True, True, True },
     SameTest -> Equal,
-    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-RealUpload@@Tests/MCPApps.wlt:1649,27-1667,2"
+    TestID   -> "DeployCloudNotebookForMCPApp-HostingAPI-RealUpload"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1704,7 +1704,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult@@Tests/MCPApps.wlt:1676,1-1708,2"
+    TestID   -> "MakeNotebookUIResult-CloudURLWrapsResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1733,7 +1733,7 @@ VerificationTest[
         "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable@@Tests/MCPApps.wlt:1716,1-1737,2"
+    TestID   -> "MakeNotebookUIResult-MarkerUUIDRecoverable"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1747,7 +1747,7 @@ VerificationTest[
     ],
     "https://www.wolframcloud.com/obj/e0f29bea-667b-4780-b36b-59de225e660e?syntaxMethod=editor",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-AppendsParameter@@Tests/MCPApps.wlt:1744,1-1751,2"
+    TestID   -> "NotebookEmbedURL-AppendsParameter"
 ]
 
 (* A URL that already has a query string gets the parameter appended with & *)
@@ -1755,7 +1755,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "https://www.wolframcloud.com/obj/x?a=1" ],
     "https://www.wolframcloud.com/obj/x?a=1&syntaxMethod=editor",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-AppendsToExistingQuery@@Tests/MCPApps.wlt:1754,1-1759,2"
+    TestID   -> "NotebookEmbedURL-AppendsToExistingQuery"
 ]
 
 (* Inline serialized notebooks are not URLs and pass through unchanged *)
@@ -1763,7 +1763,7 @@ VerificationTest[
     Wolfram`AgentTools`UIResources`Private`notebookEmbedURL[ "Notebook[{Cell[\"1 + 1\", \"Input\"]}]" ],
     "Notebook[{Cell[\"1 + 1\", \"Input\"]}]",
     SameTest -> Equal,
-    TestID   -> "NotebookEmbedURL-InlinePassthrough@@Tests/MCPApps.wlt:1762,1-1767,2"
+    TestID   -> "NotebookEmbedURL-InlinePassthrough"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1775,7 +1775,7 @@ VerificationTest[
     ],
     "e0f29bea-667b-4780-b36b-59de225e660e",
     SameTest -> MatchQ,
-    TestID   -> "CloudNotebookUUID-ExtractsUUID@@Tests/MCPApps.wlt:1772,1-1779,2"
+    TestID   -> "CloudNotebookUUID-ExtractsUUID"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1788,7 +1788,7 @@ VerificationTest[
     ],
     $Failed,
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-DeployFailed@@Tests/MCPApps.wlt:1784,1-1792,2"
+    TestID   -> "MakeNotebookUIResult-DeployFailed"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1810,7 +1810,7 @@ VerificationTest[
         "Notebook[{Cell[\"1 + 1\", \"Input\"]}]"
     },
     SameTest -> MatchQ,
-    TestID   -> "MakeNotebookUIResult-InlineNoMarker@@Tests/MCPApps.wlt:1799,1-1814,2"
+    TestID   -> "MakeNotebookUIResult-InlineNoMarker"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1826,7 +1826,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics@@Tests/MCPApps.wlt:1823,1-1830,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics"
 ]
 
 VerificationTest[
@@ -1835,7 +1835,7 @@ VerificationTest[
     ],
     _DynamicModuleBox,
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D@@Tests/MCPApps.wlt:1832,1-1839,2"
+    TestID   -> "DelayedDisplay-InlineWrapsGraphics3D"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1847,7 +1847,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-InlineSerializesGraphics@@Tests/MCPApps.wlt:1844,1-1851,2"
+    TestID   -> "DelayedDisplay-InlineSerializesGraphics"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1859,7 +1859,7 @@ VerificationTest[
     ],
     RowBox @ { "1", "+", "1" },
     SameTest -> MatchQ,
-    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged@@Tests/MCPApps.wlt:1856,1-1863,2"
+    TestID   -> "DelayedDisplay-InlineGraphicsFreeUnchanged"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1873,7 +1873,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "DelayedDisplay-NonInlineNoOp@@Tests/MCPApps.wlt:1868,1-1877,2"
+    TestID   -> "DelayedDisplay-NonInlineNoOp"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1896,7 +1896,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1891,1-1900,2"
+    TestID   -> "EvaluatorViewer-EvalCSPFallbackPresent"
 ]
 
 VerificationTest[
@@ -1907,7 +1907,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1902,1-1911,2"
+    TestID   -> "WolframAlphaViewer-EvalCSPFallbackPresent"
 ]
 
 VerificationTest[
@@ -1918,7 +1918,7 @@ VerificationTest[
     ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-EvalCSPFallbackPresent@@Tests/MCPApps.wlt:1913,1-1922,2"
+    TestID   -> "NotebookViewer-EvalCSPFallbackPresent"
 ]
 
 (* The eval-blocked iframe fallback can't be auto-sized, so each viewer must let the user
@@ -1937,7 +1937,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-IframeFallbackResizable@@Tests/MCPApps.wlt:1927,1-1941,2"
+    TestID   -> "NotebookViewers-IframeFallbackResizable"
 ]
 
 (* The resize drag's move/end listeners live on window, so each viewer must scope them to the
@@ -1956,7 +1956,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-ResizeDragScopedToPointer@@Tests/MCPApps.wlt:1946,1-1960,2"
+    TestID   -> "NotebookViewers-ResizeDragScopedToPointer"
 ]
 
 (* The embedder path must remain for hosts whose CSP does permit eval (fit-to-content sizing),
@@ -1974,7 +1974,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-EmbedderPathRetained@@Tests/MCPApps.wlt:1964,1-1978,2"
+    TestID   -> "NotebookViewers-EmbedderPathRetained"
 ]
 
 (* Under strict CSP the fallback frames the notebook URL directly, so each viewer must
@@ -1994,7 +1994,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist@@Tests/MCPApps.wlt:1983,1-1998,2"
+    TestID   -> "NotebookViewers-IframeFallbackCloudAllowlist"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
