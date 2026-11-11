@@ -8,21 +8,21 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/PacletTools.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/PacletTools.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`Tools`PacletTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadPacletToolsContext@@Tests/PacletTools.wlt:21,1-26,2"
+    TestID   -> "LoadPacletToolsContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -32,21 +32,21 @@ VerificationTest[
     $checkPacletTool = $DefaultMCPTools[ "CheckPaclet" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "GetCheckPacletTool@@Tests/PacletTools.wlt:31,1-36,2"
+    TestID   -> "GetCheckPacletTool"
 ]
 
 VerificationTest[
     $checkPacletTool[ "Name" ],
     "CheckPaclet",
     SameTest -> SameQ,
-    TestID   -> "CheckPacletToolName@@Tests/PacletTools.wlt:38,1-43,2"
+    TestID   -> "CheckPacletToolName"
 ]
 
 VerificationTest[
     StringQ @ $checkPacletTool[ "Description" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "CheckPacletToolDescription@@Tests/PacletTools.wlt:45,1-50,2"
+    TestID   -> "CheckPacletToolDescription"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -56,14 +56,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`validatePacletPath @ DirectoryName[ $TestFileName, 2 ],
     File[ _String ],
     SameTest -> MatchQ,
-    TestID   -> "ValidatePacletPath-ExistingDirectory@@Tests/PacletTools.wlt:55,1-60,2"
+    TestID   -> "ValidatePacletPath-ExistingDirectory"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`validatePacletPath @ $TestFileName,
     File[ _String ],
     SameTest -> MatchQ,
-    TestID   -> "ValidatePacletPath-ExistingFile@@Tests/PacletTools.wlt:62,1-67,2"
+    TestID   -> "ValidatePacletPath-ExistingFile"
 ]
 
 VerificationTest[
@@ -71,7 +71,7 @@ VerificationTest[
     _Failure,
     { AgentTools::PacletToolsInvalidPath },
     SameTest -> MatchQ,
-    TestID   -> "ValidatePacletPath-MissingPath@@Tests/PacletTools.wlt:69,1-75,2"
+    TestID   -> "ValidatePacletPath-MissingPath"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -85,14 +85,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`formatCheckResult @ Dataset @ { },
     _String? (StringContainsQ[ "No issues found" ]),
     SameTest -> MatchQ,
-    TestID   -> "FormatCheckResult-EmptyDataset@@Tests/PacletTools.wlt:84,1-89,2"
+    TestID   -> "FormatCheckResult-EmptyDataset"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`formatCheckResult @ { },
     _String? (StringContainsQ[ "No issues found" ]),
     SameTest -> MatchQ,
-    TestID   -> "FormatCheckResult-EmptyList@@Tests/PacletTools.wlt:91,1-96,2"
+    TestID   -> "FormatCheckResult-EmptyList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -111,84 +111,84 @@ VerificationTest[
     StringQ @ $mixedResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-IsString@@Tests/PacletTools.wlt:101,1-115,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "# Paclet Check Results" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-HasHeader@@Tests/PacletTools.wlt:117,1-122,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "## Summary" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-HasSummary@@Tests/PacletTools.wlt:124,1-129,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-HasSummary"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "| Error | 2 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-ErrorCount@@Tests/PacletTools.wlt:131,1-136,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-ErrorCount"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "| Warning | 1 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-WarningCount@@Tests/PacletTools.wlt:138,1-143,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-WarningCount"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "| Suggestion | 3 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-SuggestionCount@@Tests/PacletTools.wlt:145,1-150,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-SuggestionCount"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "## Errors" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-HasErrorsSection@@Tests/PacletTools.wlt:152,1-157,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-HasErrorsSection"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "## Warnings" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-HasWarningsSection@@Tests/PacletTools.wlt:159,1-164,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-HasWarningsSection"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "## Suggestions" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-HasSuggestionsSection@@Tests/PacletTools.wlt:166,1-171,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-HasSuggestionsSection"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "**MissingPublisherID**: No publisher ID specified" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-ErrorItem@@Tests/PacletTools.wlt:173,1-178,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-ErrorItem"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "**VersionUnchanged**: Version has not changed" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-WarningItem@@Tests/PacletTools.wlt:180,1-185,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-WarningItem"
 ]
 
 VerificationTest[
     StringContainsQ[ $mixedResult, "**MissingTests**: No test files found" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-SuggestionItem@@Tests/PacletTools.wlt:187,1-192,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-SuggestionItem"
 ]
 
 (* Verify CellID is not in the output *)
@@ -196,7 +196,7 @@ VerificationTest[
     StringFreeQ[ $mixedResult, "CellID" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-MixedSeverity-NoCellID@@Tests/PacletTools.wlt:195,1-200,2"
+    TestID   -> "FormatCheckResult-MixedSeverity-NoCellID"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -206,7 +206,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`formatCheckResult @ Dataset @ $mixedRows,
     $mixedResult,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-DatasetMatchesList@@Tests/PacletTools.wlt:205,1-210,2"
+    TestID   -> "FormatCheckResult-DatasetMatchesList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -221,7 +221,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-SingleLevelOnly@@Tests/PacletTools.wlt:215,1-225,2"
+    TestID   -> "FormatCheckResult-SingleLevelOnly"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -232,14 +232,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`formatCheckResult @ ExportString[ <| "Hints" -> $mixedRows |>, "JSON" ],
     $mixedResult,
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-JSONMatchesList@@Tests/PacletTools.wlt:231,1-236,2"
+    TestID   -> "FormatCheckResult-JSONMatchesList"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`PacletTools`Private`formatCheckResult @ ExportString[ <| "Hints" -> { } |>, "JSON" ],
     _String? (StringContainsQ[ "No issues found" ]),
     SameTest -> MatchQ,
-    TestID   -> "FormatCheckResult-EmptyJSON@@Tests/PacletTools.wlt:238,1-243,2"
+    TestID   -> "FormatCheckResult-EmptyJSON"
 ]
 
 VerificationTest[
@@ -247,7 +247,7 @@ VerificationTest[
     Failure[ "AgentTools::Internal", _ ],
     { General::AgentToolsInternal },
     SameTest -> MatchQ,
-    TestID   -> "FormatCheckResult-JSONWithoutHints@@Tests/PacletTools.wlt:245,1-251,2"
+    TestID   -> "FormatCheckResult-JSONWithoutHints"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -275,7 +275,7 @@ VerificationTest[
     },
     { True, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-PrivateUseCharacters@@Tests/PacletTools.wlt:256,1-279,2"
+    TestID   -> "FormatCheckResult-PrivateUseCharacters"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -296,7 +296,7 @@ VerificationTest[
     },
     { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-NoDefinitionNotebook@@Tests/PacletTools.wlt:284,1-300,2"
+    TestID   -> "FormatCheckResult-NoDefinitionNotebook"
 ]
 
 VerificationTest[
@@ -306,7 +306,7 @@ VerificationTest[
     ],
     "# Paclet Check Failed\n\nError: Could not check File[/some/paclet].",
     SameTest -> SameQ,
-    TestID   -> "FormatCheckResult-GenericFailure@@Tests/PacletTools.wlt:302,1-310,2"
+    TestID   -> "FormatCheckResult-GenericFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -324,35 +324,35 @@ VerificationTest[
     StringQ @ $buildSuccessResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-Success-IsString@@Tests/PacletTools.wlt:319,1-328,2"
+    TestID   -> "FormatBuildResult-Success-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildSuccessResult, "# Paclet Build Successful" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-Success-HasHeader@@Tests/PacletTools.wlt:330,1-335,2"
+    TestID   -> "FormatBuildResult-Success-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildSuccessResult, "| Paclet | DevPublisher/MyPaclet |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-Success-HasPacletName@@Tests/PacletTools.wlt:337,1-342,2"
+    TestID   -> "FormatBuildResult-Success-HasPacletName"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildSuccessResult, "| Version | 1.0.0 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-Success-HasVersion@@Tests/PacletTools.wlt:344,1-349,2"
+    TestID   -> "FormatBuildResult-Success-HasVersion"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildSuccessResult, "DevPublisher__MyPaclet-1.0.0.paclet" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-Success-HasArchivePath@@Tests/PacletTools.wlt:351,1-356,2"
+    TestID   -> "FormatBuildResult-Success-HasArchivePath"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -369,49 +369,49 @@ VerificationTest[
     StringQ @ $buildAbortedResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-IsString@@Tests/PacletTools.wlt:361,1-373,2"
+    TestID   -> "FormatBuildResult-CheckAborted-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "# Paclet Build Aborted" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-HasHeader@@Tests/PacletTools.wlt:375,1-380,2"
+    TestID   -> "FormatBuildResult-CheckAborted-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "pre-build check found errors" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-HasExplanation@@Tests/PacletTools.wlt:382,1-387,2"
+    TestID   -> "FormatBuildResult-CheckAborted-HasExplanation"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "## Summary" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-HasSummary@@Tests/PacletTools.wlt:389,1-394,2"
+    TestID   -> "FormatBuildResult-CheckAborted-HasSummary"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "| Error | 2 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-ErrorCount@@Tests/PacletTools.wlt:396,1-401,2"
+    TestID   -> "FormatBuildResult-CheckAborted-ErrorCount"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "## Errors" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-HasErrorsSection@@Tests/PacletTools.wlt:403,1-408,2"
+    TestID   -> "FormatBuildResult-CheckAborted-HasErrorsSection"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedResult, "**MissingPublisherID**: No publisher ID specified" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAborted-HasErrorItem@@Tests/PacletTools.wlt:410,1-415,2"
+    TestID   -> "FormatBuildResult-CheckAborted-HasErrorItem"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -428,14 +428,14 @@ VerificationTest[
     StringQ @ $buildAbortedDatasetResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAbortedDataset-IsString@@Tests/PacletTools.wlt:420,1-432,2"
+    TestID   -> "FormatBuildResult-CheckAbortedDataset-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildAbortedDatasetResult, "# Paclet Build Aborted" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAbortedDataset-HasHeader@@Tests/PacletTools.wlt:434,1-439,2"
+    TestID   -> "FormatBuildResult-CheckAbortedDataset-HasHeader"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -454,7 +454,7 @@ VerificationTest[
         |> ],
     $buildAbortedResult,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-CheckAbortedJSON@@Tests/PacletTools.wlt:444,1-458,2"
+    TestID   -> "FormatBuildResult-CheckAbortedJSON"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -468,21 +468,21 @@ VerificationTest[
     StringQ @ $buildFailedResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-GenericFailure-IsString@@Tests/PacletTools.wlt:463,1-472,2"
+    TestID   -> "FormatBuildResult-GenericFailure-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildFailedResult, "# Paclet Build Failed" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-GenericFailure-HasHeader@@Tests/PacletTools.wlt:474,1-479,2"
+    TestID   -> "FormatBuildResult-GenericFailure-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $buildFailedResult, "Something went wrong during build" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatBuildResult-GenericFailure-HasMessage@@Tests/PacletTools.wlt:481,1-486,2"
+    TestID   -> "FormatBuildResult-GenericFailure-HasMessage"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -496,7 +496,7 @@ VerificationTest[
         |> ],
     _String? (StringContainsQ[ "Details: Could not build File[/some/paclet] (reason)." ]),
     SameTest -> MatchQ,
-    TestID   -> "FormatBuildResult-MessageParameters@@Tests/PacletTools.wlt:491,1-500,2"
+    TestID   -> "FormatBuildResult-MessageParameters"
 ]
 
 VerificationTest[
@@ -507,7 +507,7 @@ VerificationTest[
         |> ],
     _String? (StringContainsQ[ "Details: No paclet definition notebook was found" ]),
     SameTest -> MatchQ,
-    TestID   -> "FormatBuildResult-NoDefinitionNotebook@@Tests/PacletTools.wlt:502,1-511,2"
+    TestID   -> "FormatBuildResult-NoDefinitionNotebook"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -527,42 +527,42 @@ VerificationTest[
     StringQ @ $submitSuccessResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-IsString@@Tests/PacletTools.wlt:520,1-531,2"
+    TestID   -> "FormatSubmitResult-Success-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessResult, "# Paclet Submission Successful" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-HasHeader@@Tests/PacletTools.wlt:533,1-538,2"
+    TestID   -> "FormatSubmitResult-Success-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessResult, "| Name | DevPublisher/MyPaclet |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-HasName@@Tests/PacletTools.wlt:540,1-545,2"
+    TestID   -> "FormatSubmitResult-Success-HasName"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessResult, "| Version | 1.0.0 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-HasVersion@@Tests/PacletTools.wlt:547,1-552,2"
+    TestID   -> "FormatSubmitResult-Success-HasVersion"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessResult, "| Status | Your paclet resource is being published |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-HasStatus@@Tests/PacletTools.wlt:554,1-559,2"
+    TestID   -> "FormatSubmitResult-Success-HasStatus"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessResult, "submitted to the Wolfram Language Paclet Repository" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-Success-HasConfirmation@@Tests/PacletTools.wlt:561,1-566,2"
+    TestID   -> "FormatSubmitResult-Success-HasConfirmation"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -580,21 +580,21 @@ VerificationTest[
     StringQ @ $submitSuccessExtras,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-SuccessExtras-IsString@@Tests/PacletTools.wlt:571,1-584,2"
+    TestID   -> "FormatSubmitResult-SuccessExtras-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessExtras, "| UUID | abc-123-def |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-SuccessExtras-HasUUID@@Tests/PacletTools.wlt:586,1-591,2"
+    TestID   -> "FormatSubmitResult-SuccessExtras-HasUUID"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitSuccessExtras, "| SubmissionID | sub-456 |" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-SuccessExtras-HasSubmissionID@@Tests/PacletTools.wlt:593,1-598,2"
+    TestID   -> "FormatSubmitResult-SuccessExtras-HasSubmissionID"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -610,35 +610,35 @@ VerificationTest[
     StringQ @ $submitAuthResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-NestedAuthFailure-IsString@@Tests/PacletTools.wlt:603,1-614,2"
+    TestID   -> "FormatSubmitResult-NestedAuthFailure-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitAuthResult, "# Paclet Submission Failed" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasHeader@@Tests/PacletTools.wlt:616,1-621,2"
+    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitAuthResult, "Authentication required" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasAuthMessage@@Tests/PacletTools.wlt:623,1-628,2"
+    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasAuthMessage"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitAuthResult, "$PublisherID" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasPublisherIDGuidance@@Tests/PacletTools.wlt:630,1-635,2"
+    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasPublisherIDGuidance"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitAuthResult, "CloudConnect[]" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasCloudConnectGuidance@@Tests/PacletTools.wlt:637,1-642,2"
+    TestID   -> "FormatSubmitResult-NestedAuthFailure-HasCloudConnectGuidance"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -654,21 +654,21 @@ VerificationTest[
     StringQ @ $submitGenericResult,
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-GenericNestedFailure-IsString@@Tests/PacletTools.wlt:647,1-658,2"
+    TestID   -> "FormatSubmitResult-GenericNestedFailure-IsString"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitGenericResult, "# Paclet Submission Failed" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-GenericNestedFailure-HasHeader@@Tests/PacletTools.wlt:660,1-665,2"
+    TestID   -> "FormatSubmitResult-GenericNestedFailure-HasHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $submitGenericResult, "The server rejected the submission" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FormatSubmitResult-GenericNestedFailure-HasMessage@@Tests/PacletTools.wlt:667,1-672,2"
+    TestID   -> "FormatSubmitResult-GenericNestedFailure-HasMessage"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -684,14 +684,14 @@ VerificationTest[
     $checkPacletTool[ <| "path" -> $noDefNBPacletDirectory |> ],
     _String? (StringStartsQ[ #, "# Paclet Check Failed" ] && StringContainsQ[ #, "No paclet definition notebook was found" ] &),
     SameTest -> MatchQ,
-    TestID   -> "CheckPacletTool-NoDefinitionNotebook@@Tests/PacletTools.wlt:682,1-688,2"
+    TestID   -> "CheckPacletTool-NoDefinitionNotebook"
 ]
 
 VerificationTest[
     $DefaultMCPTools[ "BuildPaclet" ][ <| "path" -> $noDefNBPacletDirectory |> ],
     _String? (StringStartsQ[ #, "# Paclet Build Failed" ] && StringContainsQ[ #, "No paclet definition notebook was found" ] &),
     SameTest -> MatchQ,
-    TestID   -> "BuildPacletTool-NoDefinitionNotebook@@Tests/PacletTools.wlt:690,1-695,2"
+    TestID   -> "BuildPacletTool-NoDefinitionNotebook"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

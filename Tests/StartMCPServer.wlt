@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/StartMCPServer.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/StartMCPServer.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 VerificationTest[
@@ -21,7 +21,7 @@ VerificationTest[
     Wolfram`AgentToolsTests`MCPServerTestUtilities`$MCPTestSourceDirectory = DirectoryName[ $TestFileName, 2 ],
     _String? DirectoryQ,
     SameTest -> MatchQ,
-    TestID   -> "LoadTestUtilities@@Tests/StartMCPServer.wlt:18,1-25,2"
+    TestID   -> "LoadTestUtilities"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -40,14 +40,14 @@ skipIfScript @ VerificationTest[
     $process = StartMCPTestServer[ "ServerName" -> "WolframLanguage" ],
     _ProcessObject,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ServerStarts@@Tests/StartMCPServer.wlt:39,16-44,2"
+    TestID   -> "WolframLanguage-ServerStarts"
 ]
 
 skipIfScript @ VerificationTest[
     ProcessStatus @ $process,
     "Running",
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ServerRunning@@Tests/StartMCPServer.wlt:46,16-51,2"
+    TestID   -> "WolframLanguage-ServerRunning"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -57,35 +57,35 @@ skipIfScript @ VerificationTest[
     $initResponse = MCPInitialize[ "ClientName" -> "test-client" ],
     KeyValuePattern[ "result" -> _Association ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-Initialize@@Tests/StartMCPServer.wlt:56,16-61,2"
+    TestID   -> "WolframLanguage-Initialize"
 ]
 
 skipIfScript @ VerificationTest[
     $initResponse[[ "result", "protocolVersion" ]],
     "2024-11-05",
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ProtocolVersion@@Tests/StartMCPServer.wlt:63,16-68,2"
+    TestID   -> "WolframLanguage-ProtocolVersion"
 ]
 
 skipIfScript @ VerificationTest[
     $initResponse[[ "result", "serverInfo", "name" ]],
     "WolframLanguage",
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ServerInfoName@@Tests/StartMCPServer.wlt:70,16-75,2"
+    TestID   -> "WolframLanguage-ServerInfoName"
 ]
 
 skipIfScript @ VerificationTest[
     $initResponse[[ "result", "serverInfo", "version" ]],
     _String,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ServerInfoVersion@@Tests/StartMCPServer.wlt:77,16-82,2"
+    TestID   -> "WolframLanguage-ServerInfoVersion"
 ]
 
 skipIfScript @ VerificationTest[
     KeyExistsQ[ $initResponse[[ "result", "capabilities" ]], "tools" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-CapabilitiesTools@@Tests/StartMCPServer.wlt:84,16-89,2"
+    TestID   -> "WolframLanguage-CapabilitiesTools"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -95,7 +95,7 @@ skipIfScript @ VerificationTest[
     $pingResponse = SendMCPRequest[ "ping" ],
     KeyValuePattern[ "result" -> <| |> ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-Ping@@Tests/StartMCPServer.wlt:94,16-99,2"
+    TestID   -> "WolframLanguage-Ping"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -105,14 +105,14 @@ skipIfScript @ VerificationTest[
     $toolsResponse = SendMCPRequest[ "tools/list" ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "tools" -> { __Association } ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolsList@@Tests/StartMCPServer.wlt:104,16-109,2"
+    TestID   -> "WolframLanguage-ToolsList"
 ]
 
 skipIfScript @ VerificationTest[
     MemberQ[ $toolsResponse[[ "result", "tools", All, "name" ]], "WolframLanguageEvaluator" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolsListContainsEvaluator@@Tests/StartMCPServer.wlt:111,16-116,2"
+    TestID   -> "WolframLanguage-ToolsListContainsEvaluator"
 ]
 
 skipIfScript @ VerificationTest[
@@ -120,7 +120,7 @@ skipIfScript @ VerificationTest[
     AllTrue[ { "name", "description", "inputSchema" }, KeyExistsQ[ $toolSchema, # ] & ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolSchemaComplete@@Tests/StartMCPServer.wlt:118,16-124,2"
+    TestID   -> "WolframLanguage-ToolSchemaComplete"
 ]
 
 skipIfScript @ VerificationTest[
@@ -130,14 +130,14 @@ skipIfScript @ VerificationTest[
     ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> False ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolCallSimple@@Tests/StartMCPServer.wlt:126,16-134,2"
+    TestID   -> "WolframLanguage-ToolCallSimple"
 ]
 
 skipIfScript @ VerificationTest[
     StringContainsQ[ $evalResponse[[ "result", "content", 1, "text" ]], "2" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolCallResult@@Tests/StartMCPServer.wlt:136,16-141,2"
+    TestID   -> "WolframLanguage-ToolCallResult"
 ]
 
 skipIfScript @ VerificationTest[
@@ -147,14 +147,14 @@ skipIfScript @ VerificationTest[
     ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> False ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolCallComplex@@Tests/StartMCPServer.wlt:143,16-151,2"
+    TestID   -> "WolframLanguage-ToolCallComplex"
 ]
 
 skipIfScript @ VerificationTest[
     StringContainsQ[ $evalResponse2[[ "result", "content", 1, "text" ]], "541" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ToolCallComplexResult@@Tests/StartMCPServer.wlt:153,16-158,2"
+    TestID   -> "WolframLanguage-ToolCallComplexResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -164,7 +164,7 @@ skipIfScript @ VerificationTest[
     $promptsResponse = SendMCPRequest[ "prompts/list" ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "prompts" -> _List ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-PromptsList@@Tests/StartMCPServer.wlt:163,16-168,2"
+    TestID   -> "WolframLanguage-PromptsList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -174,7 +174,7 @@ skipIfScript @ VerificationTest[
     $unknownMethodResponse = SendMCPRequest[ "unknown/method" ],
     KeyValuePattern[ "error" -> KeyValuePattern[ "code" -> -32601 ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-UnknownMethod@@Tests/StartMCPServer.wlt:173,16-178,2"
+    TestID   -> "WolframLanguage-UnknownMethod"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -187,7 +187,7 @@ skipIfScript @ VerificationTest[
     ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> True ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-NonExistentToolReturnsError@@Tests/StartMCPServer.wlt:183,16-191,2"
+    TestID   -> "WolframLanguage-NonExistentToolReturnsError"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -200,14 +200,14 @@ skipIfScript @ VerificationTest[
     ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "isError" -> False ] ],
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-PrintOutputEvaluates@@Tests/StartMCPServer.wlt:196,16-204,2"
+    TestID   -> "WolframLanguage-PrintOutputEvaluates"
 ]
 
 skipIfScript @ VerificationTest[
     StringContainsQ[ $printResponse[[ "result", "content", 1, "text" ]], "TestOutput123" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-PrintOutputCaptured@@Tests/StartMCPServer.wlt:206,16-211,2"
+    TestID   -> "WolframLanguage-PrintOutputCaptured"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -217,7 +217,7 @@ skipIfScript @ VerificationTest[
     StopMCPTestServer[ ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguage-ServerStopped@@Tests/StartMCPServer.wlt:216,16-221,2"
+    TestID   -> "WolframLanguage-ServerStopped"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -231,14 +231,14 @@ skipIfScript @ VerificationTest[
     $processWolfram = StartMCPTestServer[ "ServerName" -> "Wolfram" ],
     _ProcessObject,
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-ServerStarts@@Tests/StartMCPServer.wlt:230,16-235,2"
+    TestID   -> "Wolfram-ServerStarts"
 ]
 
 skipIfScript @ VerificationTest[
     ProcessStatus @ $processWolfram,
     "Running",
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-ServerRunning@@Tests/StartMCPServer.wlt:237,16-242,2"
+    TestID   -> "Wolfram-ServerRunning"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -248,14 +248,14 @@ skipIfScript @ VerificationTest[
     $initWolfram = MCPInitialize[ ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "protocolVersion" -> "2024-11-05" ] ],
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-Initialize@@Tests/StartMCPServer.wlt:247,16-252,2"
+    TestID   -> "Wolfram-Initialize"
 ]
 
 skipIfScript @ VerificationTest[
     $initWolfram[[ "result", "serverInfo", "name" ]],
     "Wolfram",
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-ServerInfoName@@Tests/StartMCPServer.wlt:254,16-259,2"
+    TestID   -> "Wolfram-ServerInfoName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -265,7 +265,7 @@ skipIfScript @ VerificationTest[
     $toolsWolfram = SendMCPRequest[ "tools/list" ],
     KeyValuePattern[ "result" -> KeyValuePattern[ "tools" -> { __Association } ] ],
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-ToolsList@@Tests/StartMCPServer.wlt:264,16-269,2"
+    TestID   -> "Wolfram-ToolsList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -275,7 +275,7 @@ skipIfScript @ VerificationTest[
     StopMCPTestServer[ ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "Wolfram-ServerStopped@@Tests/StartMCPServer.wlt:274,16-279,2"
+    TestID   -> "Wolfram-ServerStopped"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -289,7 +289,7 @@ skipIfScript @ VerificationTest[
     $rootsProcess = StartMCPTestServer[ "ServerName" -> "WolframLanguage" ],
     _ProcessObject,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-ServerStarts@@Tests/StartMCPServer.wlt:288,16-293,2"
+    TestID   -> "RootsHandshake-ServerStarts"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -305,7 +305,7 @@ skipIfScript @ VerificationTest[
     AllTrue[ { $rootsTmpDir1, $rootsTmpDir2 }, DirectoryQ ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-CreateTempDirs@@Tests/StartMCPServer.wlt:298,16-309,2"
+    TestID   -> "RootsHandshake-CreateTempDirs"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -318,7 +318,7 @@ skipIfScript @ VerificationTest[
     ],
     KeyValuePattern[ "result" -> _Association ],
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-Initialize@@Tests/StartMCPServer.wlt:314,16-322,2"
+    TestID   -> "RootsHandshake-Initialize"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -332,7 +332,7 @@ skipIfScript @ VerificationTest[
         "method"  -> "roots/list"
     } ],
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-EmitsRootsList@@Tests/StartMCPServer.wlt:327,16-336,2"
+    TestID   -> "RootsHandshake-EmitsRootsList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -353,7 +353,7 @@ skipIfScript @ VerificationTest[
     StringContainsQ[ $rootsDirCheck[[ "result", "content", 1, "text" ]], "True" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-RootApplied@@Tests/StartMCPServer.wlt:343,16-357,2"
+    TestID   -> "RootsHandshake-RootApplied"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -368,7 +368,7 @@ skipIfScript @ VerificationTest[
         "method"  -> "roots/list"
     } ],
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-ListChangedReFetch@@Tests/StartMCPServer.wlt:362,16-372,2"
+    TestID   -> "RootsHandshake-ListChangedReFetch"
 ]
 
 (* The re-fetch must use a fresh UUID so client-side correlation does not collide. *)
@@ -376,7 +376,7 @@ skipIfScript @ VerificationTest[
     $rootsListRequest2[ "id" ] =!= $rootsListRequest[ "id" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-ListChangedNewID@@Tests/StartMCPServer.wlt:375,16-380,2"
+    TestID   -> "RootsHandshake-ListChangedNewID"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -397,7 +397,7 @@ skipIfScript @ VerificationTest[
     StringContainsQ[ $rootsDirCheck2[[ "result", "content", 1, "text" ]], "{False, True}" ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-ListChangedApplied@@Tests/StartMCPServer.wlt:385,16-401,2"
+    TestID   -> "RootsHandshake-ListChangedApplied"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -410,7 +410,7 @@ skipIfScript @ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "RootsHandshake-ServerStopped@@Tests/StartMCPServer.wlt:406,16-414,2"
+    TestID   -> "RootsHandshake-ServerStopped"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -424,7 +424,7 @@ skipIfScript @ VerificationTest[
     $noRootsProcess = StartMCPTestServer[ "ServerName" -> "WolframLanguage" ],
     _ProcessObject,
     SameTest -> MatchQ,
-    TestID   -> "NoRootsCap-ServerStarts@@Tests/StartMCPServer.wlt:423,16-428,2"
+    TestID   -> "NoRootsCap-ServerStarts"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -434,7 +434,7 @@ skipIfScript @ VerificationTest[
     $noRootsInitResponse = MCPInitialize[ "ClientName" -> "test-client-no-roots" ],
     KeyValuePattern[ "result" -> _Association ],
     SameTest -> MatchQ,
-    TestID   -> "NoRootsCap-Initialize@@Tests/StartMCPServer.wlt:433,16-438,2"
+    TestID   -> "NoRootsCap-Initialize"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -446,7 +446,7 @@ skipIfScript @ VerificationTest[
     ReadMCPMessage[ "Timeout" -> 3 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "NoRootsCap-NoRootsListEmitted@@Tests/StartMCPServer.wlt:445,16-450,2"
+    TestID   -> "NoRootsCap-NoRootsListEmitted"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -456,7 +456,7 @@ skipIfScript @ VerificationTest[
     StopMCPTestServer[ ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "NoRootsCap-ServerStopped@@Tests/StartMCPServer.wlt:455,16-460,2"
+    TestID   -> "NoRootsCap-ServerStopped"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -476,7 +476,7 @@ VerificationTest[
     $mockPaclet[ "Name" ],
     "MockMCPPacletTest",
     SameTest -> MatchQ,
-    TestID   -> "PacletInit-LoadMockPaclet@@Tests/StartMCPServer.wlt:472,1-480,2"
+    TestID   -> "PacletInit-LoadMockPaclet"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -491,14 +491,14 @@ VerificationTest[
     Wolfram`AgentTools`Server`Local`Private`stdinShutdownQ @ EndOfFile,
     True,
     SameTest -> Equal,
-    TestID   -> "StdinShutdownQ-EndOfFile@@Tests/StartMCPServer.wlt:490,1-495,2"
+    TestID   -> "StdinShutdownQ-EndOfFile"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Local`Private`stdinShutdownQ @ "Quit",
     True,
     SameTest -> Equal,
-    TestID   -> "StdinShutdownQ-Quit@@Tests/StartMCPServer.wlt:497,1-502,2"
+    TestID   -> "StdinShutdownQ-Quit"
 ]
 
 VerificationTest[
@@ -506,14 +506,14 @@ VerificationTest[
         "{\"jsonrpc\":\"2.0\",\"id\":0,\"method\":\"initialize\"}",
     False,
     SameTest -> Equal,
-    TestID   -> "StdinShutdownQ-RequestLine@@Tests/StartMCPServer.wlt:504,1-510,2"
+    TestID   -> "StdinShutdownQ-RequestLine"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Local`Private`stdinShutdownQ @ "",
     False,
     SameTest -> Equal,
-    TestID   -> "StdinShutdownQ-EmptyLine@@Tests/StartMCPServer.wlt:512,1-517,2"
+    TestID   -> "StdinShutdownQ-EmptyLine"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -539,7 +539,7 @@ VerificationTest[
     $initTestValue,
     11,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-RunsBothInits@@Tests/StartMCPServer.wlt:522,1-543,2"
+    TestID   -> "RunToolInitialization-RunsBothInits"
 ]
 
 VerificationTest[
@@ -554,14 +554,14 @@ VerificationTest[
     $initTestValue2,
     0,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-NoInitIsNoOp@@Tests/StartMCPServer.wlt:545,1-558,2"
+    TestID   -> "RunToolInitialization-NoInitIsNoOp"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runToolInitialization[ { } ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-EmptyListIsNoOp@@Tests/StartMCPServer.wlt:560,1-565,2"
+    TestID   -> "RunToolInitialization-EmptyListIsNoOp"
 ]
 
 VerificationTest[
@@ -583,7 +583,7 @@ VerificationTest[
     $initTestValue3,
     42,
     SameTest -> MatchQ,
-    TestID   -> "RunToolInitialization-MixedInitAndNoInit@@Tests/StartMCPServer.wlt:567,1-587,2"
+    TestID   -> "RunToolInitialization-MixedInitAndNoInit"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -595,7 +595,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsurePacletsForStart-InstalledPacletSucceeds@@Tests/StartMCPServer.wlt:592,1-599,2"
+    TestID   -> "EnsurePacletsForStart-InstalledPacletSucceeds"
 ]
 
 VerificationTest[
@@ -604,7 +604,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsurePacletsForStart-BuiltInServerSucceeds@@Tests/StartMCPServer.wlt:601,1-608,2"
+    TestID   -> "EnsurePacletsForStart-BuiltInServerSucceeds"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -616,7 +616,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsureDependenciesForStart-InstalledPacletDeps@@Tests/StartMCPServer.wlt:613,1-620,2"
+    TestID   -> "EnsureDependenciesForStart-InstalledPacletDeps"
 ]
 
 VerificationTest[
@@ -625,7 +625,7 @@ VerificationTest[
     ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "EnsureDependenciesForStart-NoPacletDepsIsNoOp@@Tests/StartMCPServer.wlt:622,1-629,2"
+    TestID   -> "EnsureDependenciesForStart-NoPacletDepsIsNoOp"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -640,7 +640,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ builtInServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-BuiltInIsNoOp@@Tests/StartMCPServer.wlt:634,1-644,2"
+    TestID   -> "RunServerInitialization-BuiltInIsNoOp"
 ]
 
 VerificationTest[
@@ -652,7 +652,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ fileServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-FileBasedIsNoOp@@Tests/StartMCPServer.wlt:646,1-656,2"
+    TestID   -> "RunServerInitialization-FileBasedIsNoOp"
 ]
 
 VerificationTest[
@@ -668,7 +668,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`runServerInitialization[ pacletServerData ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "RunServerInitialization-PacletServerNoInit@@Tests/StartMCPServer.wlt:658,1-672,2"
+    TestID   -> "RunServerInitialization-PacletServerNoInit"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -678,7 +678,7 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`disambiguateToolNames[ { } ],
     <| |>,
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-EmptyList@@Tests/StartMCPServer.wlt:677,1-682,2"
+    TestID   -> "DisambiguateToolNames-EmptyList"
 ]
 
 VerificationTest[
@@ -688,7 +688,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha", "Beta" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-NoCollisions@@Tests/StartMCPServer.wlt:684,1-692,2"
+    TestID   -> "DisambiguateToolNames-NoCollisions"
 ]
 
 VerificationTest[
@@ -698,7 +698,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-TwoCollisions@@Tests/StartMCPServer.wlt:694,1-702,2"
+    TestID   -> "DisambiguateToolNames-TwoCollisions"
 ]
 
 VerificationTest[
@@ -709,7 +709,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Search2", "Search3" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-ThreeCollisions@@Tests/StartMCPServer.wlt:704,1-713,2"
+    TestID   -> "DisambiguateToolNames-ThreeCollisions"
 ]
 
 VerificationTest[
@@ -721,7 +721,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha", "Search1", "Beta", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-MixedCollisions@@Tests/StartMCPServer.wlt:715,1-725,2"
+    TestID   -> "DisambiguateToolNames-MixedCollisions"
 ]
 
 VerificationTest[
@@ -732,7 +732,7 @@ VerificationTest[
     { result["Search1"]["Description"], result["Search2"]["Description"] },
     { "Search JIRA", "Search Slack" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-ValuesPreserved@@Tests/StartMCPServer.wlt:727,1-736,2"
+    TestID   -> "DisambiguateToolNames-ValuesPreserved"
 ]
 
 VerificationTest[
@@ -741,7 +741,7 @@ VerificationTest[
     Keys @ result,
     { "Alpha" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-SingleTool@@Tests/StartMCPServer.wlt:738,1-745,2"
+    TestID   -> "DisambiguateToolNames-SingleTool"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -760,7 +760,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-RestrictedDigitCharacter@@Tests/StartMCPServer.wlt:753,1-764,2"
+    TestID   -> "ToolSchema-RestrictedDigitCharacter"
 ]
 
 (* The basic "String" Interpreter produces a redundant "(?ms).*" pattern -- toolSchema drops it. *)
@@ -774,7 +774,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-PlainStringDropsMatchAnyPattern@@Tests/StartMCPServer.wlt:767,1-778,2"
+    TestID   -> "ToolSchema-PlainStringDropsMatchAnyPattern"
 ]
 
 (* No parameters -> empty properties and no required keys. *)
@@ -784,7 +784,7 @@ VerificationTest[
     ],
     <| "type" -> "object", "properties" -> <| |>, "required" -> { } |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-NoParameters@@Tests/StartMCPServer.wlt:781,1-788,2"
+    TestID   -> "ToolSchema-NoParameters"
 ]
 
 (* Non-string types have no "pattern" field, so toolSchema passes them through untouched. *)
@@ -798,7 +798,7 @@ VerificationTest[
         "required" -> { "n" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-NumberType@@Tests/StartMCPServer.wlt:791,1-802,2"
+    TestID   -> "ToolSchema-NumberType"
 ]
 
 VerificationTest[
@@ -811,7 +811,7 @@ VerificationTest[
         "required" -> { "i" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-IntegerType@@Tests/StartMCPServer.wlt:804,1-815,2"
+    TestID   -> "ToolSchema-IntegerType"
 ]
 
 VerificationTest[
@@ -824,7 +824,7 @@ VerificationTest[
         "required" -> { "b" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-BooleanType@@Tests/StartMCPServer.wlt:817,1-828,2"
+    TestID   -> "ToolSchema-BooleanType"
 ]
 
 (* Optional parameter is absent from "required". *)
@@ -838,7 +838,7 @@ VerificationTest[
         "required" -> { }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-OptionalParameter@@Tests/StartMCPServer.wlt:831,1-842,2"
+    TestID   -> "ToolSchema-OptionalParameter"
 ]
 
 (* Help text shows up as "description" on the parameter schema. *)
@@ -854,7 +854,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-ParameterWithHelp@@Tests/StartMCPServer.wlt:845,1-858,2"
+    TestID   -> "ToolSchema-ParameterWithHelp"
 ]
 
 (* Multiple parameters of mixed types preserve order in "required". *)
@@ -871,7 +871,7 @@ VerificationTest[
         "required" -> { "a", "b" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-MultipleParameters@@Tests/StartMCPServer.wlt:861,1-875,2"
+    TestID   -> "ToolSchema-MultipleParameters"
 ]
 
 (* Restricted enumeration: the "(?ms)(?:red|green|blue)" pattern from LLMTool should lose its leading flags. *)
@@ -887,7 +887,7 @@ VerificationTest[
         "required" -> { "color" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-RestrictedEnumeration@@Tests/StartMCPServer.wlt:878,1-891,2"
+    TestID   -> "ToolSchema-RestrictedEnumeration"
 ]
 
 (* Private-use-area (PUA) characters in strings are escaped via safeString/convertPUACharacters. *)
@@ -907,7 +907,7 @@ VerificationTest[
         "required" -> { "x" }
     |>,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-PUACharactersEscaped@@Tests/StartMCPServer.wlt:894,1-911,2"
+    TestID   -> "ToolSchema-PUACharactersEscaped"
 ]
 
 (* Return value is an Association suitable for direct use as a JSON Schema object. *)
@@ -917,7 +917,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ToolSchema-ReturnsAssociation@@Tests/StartMCPServer.wlt:914,1-921,2"
+    TestID   -> "ToolSchema-ReturnsAssociation"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -929,7 +929,7 @@ VerificationTest[
     data[ "name" ],
     "Search1",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-NameOverride@@Tests/StartMCPServer.wlt:926,1-933,2"
+    TestID   -> "CreateMCPToolData-NameOverride"
 ]
 
 VerificationTest[
@@ -938,7 +938,7 @@ VerificationTest[
     data[ "description" ],
     "Search things",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-DescriptionPreserved@@Tests/StartMCPServer.wlt:935,1-942,2"
+    TestID   -> "CreateMCPToolData-DescriptionPreserved"
 ]
 
 VerificationTest[
@@ -947,7 +947,7 @@ VerificationTest[
     dataOriginal[ "name" ],
     "MyTool",
     SameTest -> MatchQ,
-    TestID   -> "CreateMCPToolData-SingleArgUsesToolName@@Tests/StartMCPServer.wlt:944,1-951,2"
+    TestID   -> "CreateMCPToolData-SingleArgUsesToolName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -963,7 +963,7 @@ VerificationTest[
     { disambiguated["Search1"]["Description"], disambiguated["Search2"]["Description"] },
     { "Search JIRA", "Search Slack" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateIntegration-LookupRouting@@Tests/StartMCPServer.wlt:956,1-967,2"
+    TestID   -> "DisambiguateIntegration-LookupRouting"
 ]
 
 VerificationTest[
@@ -975,7 +975,7 @@ VerificationTest[
     toolDataList[[ All, "name" ]],
     { "Search1", "Search2" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateIntegration-WireNames@@Tests/StartMCPServer.wlt:969,1-979,2"
+    TestID   -> "DisambiguateIntegration-WireNames"
 ]
 
 VerificationTest[
@@ -989,7 +989,7 @@ VerificationTest[
     Keys @ result,
     { "Search1", "Evaluate1", "Search2", "Evaluate2", "Unique" },
     SameTest -> MatchQ,
-    TestID   -> "DisambiguateToolNames-MultipleGroups@@Tests/StartMCPServer.wlt:981,1-993,2"
+    TestID   -> "DisambiguateToolNames-MultipleGroups"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1012,7 +1012,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "SafeString-PreservesStandardFormStrings@@Tests/StartMCPServer.wlt:1002,1-1016,2"
+    TestID   -> "SafeString-PreservesStandardFormStrings"
 ]
 
 (* Responses are sanitized before JSON encoding so PUA characters never reach the wire.
@@ -1040,7 +1040,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON@@Tests/StartMCPServer.wlt:1021,1-1044,2"
+    TestID   -> "SanitizeResponse-PUACharactersProduceValidJSON"
 ]
 
 (* Non-string values and association structure pass through sanitization unchanged. *)
@@ -1048,7 +1048,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`sanitizeResponse @ <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     <| "a" -> { 1, True, Null }, "b" -> <| "c" -> 3.5 |> |>,
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-NonStringsUntouched@@Tests/StartMCPServer.wlt:1047,1-1052,2"
+    TestID   -> "SanitizeResponse-NonStringsUntouched"
 ]
 
 (* Association keys are sanitized too: forwarded associations (e.g. _meta) can carry arbitrary keys. *)
@@ -1066,7 +1066,7 @@ VerificationTest[
     ],
     { True, True },
     SameTest -> MatchQ,
-    TestID   -> "SanitizeResponse-PUAKeysSanitized@@Tests/StartMCPServer.wlt:1055,1-1070,2"
+    TestID   -> "SanitizeResponse-PUAKeysSanitized"
 ]
 
 (* Strings without PUA characters are returned unchanged. *)
@@ -1076,7 +1076,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA@@Tests/StartMCPServer.wlt:1073,1-1080,2"
+    TestID   -> "ConvertPUACharacters-NoOpWithoutPUA"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1088,7 +1088,7 @@ VerificationTest[
     True,
     True,
     SameTest -> MatchQ,
-    TestID   -> "PacletCleanup-UnloadMockPaclet@@Tests/StartMCPServer.wlt:1085,1-1092,2"
+    TestID   -> "PacletCleanup-UnloadMockPaclet"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

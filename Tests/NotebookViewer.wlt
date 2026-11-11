@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/NotebookViewer.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/NotebookViewer.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -29,14 +29,14 @@ VerificationTest[
     KeyExistsQ[ $DefaultMCPTools, "NotebookViewer" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-RegisteredInDefaultTools@@Tests/NotebookViewer.wlt:28,1-33,2"
+    TestID   -> "NotebookViewer-RegisteredInDefaultTools"
 ]
 
 VerificationTest[
     Head @ $DefaultMCPTools[ "NotebookViewer" ],
     LLMTool,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-IsLLMTool@@Tests/NotebookViewer.wlt:35,1-40,2"
+    TestID   -> "NotebookViewer-IsLLMTool"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -53,7 +53,7 @@ VerificationTest[
     MatchQ[ result, <| "Content" -> { _Association } |> ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ReturnsContentStructure@@Tests/NotebookViewer.wlt:49,1-57,2"
+    TestID   -> "NotebookViewer-ReturnsContentStructure"
 ]
 
 VerificationTest[
@@ -63,7 +63,7 @@ VerificationTest[
     result[[ "Content", 1, "type" ]],
     "text",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ContentTypeIsText@@Tests/NotebookViewer.wlt:59,1-67,2"
+    TestID   -> "NotebookViewer-ContentTypeIsText"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -77,7 +77,7 @@ VerificationTest[
     json[ "url" ],
     "https://www.wolframcloud.com/obj/test/notebook",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ResponseContainsURL@@Tests/NotebookViewer.wlt:72,1-81,2"
+    TestID   -> "NotebookViewer-ResponseContainsURL"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -91,7 +91,7 @@ VerificationTest[
     json[ "allowInteract" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-DefaultAllowInteract@@Tests/NotebookViewer.wlt:86,1-95,2"
+    TestID   -> "NotebookViewer-DefaultAllowInteract"
 ]
 
 VerificationTest[
@@ -102,7 +102,7 @@ VerificationTest[
     json[ "allowInteract" ],
     False,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ExplicitAllowInteractFalse@@Tests/NotebookViewer.wlt:97,1-106,2"
+    TestID   -> "NotebookViewer-ExplicitAllowInteractFalse"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -116,7 +116,7 @@ VerificationTest[
     MissingQ @ json[ "maxHeight" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-DefaultOmitsMaxHeight@@Tests/NotebookViewer.wlt:111,1-120,2"
+    TestID   -> "NotebookViewer-DefaultOmitsMaxHeight"
 ]
 
 VerificationTest[
@@ -127,7 +127,7 @@ VerificationTest[
     json[ "maxHeight" ],
     1200,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ExplicitMaxHeight@@Tests/NotebookViewer.wlt:122,1-131,2"
+    TestID   -> "NotebookViewer-ExplicitMaxHeight"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -141,7 +141,7 @@ VerificationTest[
     json[ "allowInteract" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-MissingAllowInteractDefaultsToTrue@@Tests/NotebookViewer.wlt:136,1-145,2"
+    TestID   -> "NotebookViewer-MissingAllowInteractDefaultsToTrue"
 ]
 
 VerificationTest[
@@ -152,7 +152,7 @@ VerificationTest[
     MissingQ @ json[ "maxHeight" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-MissingMaxHeightOmitsKey@@Tests/NotebookViewer.wlt:147,1-156,2"
+    TestID   -> "NotebookViewer-MissingMaxHeightOmitsKey"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -166,14 +166,14 @@ VerificationTest[
     KeyExistsQ[ Wolfram`AgentTools`Common`$toolUIAssociations, "NotebookViewer" ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-InToolUIAssociations@@Tests/NotebookViewer.wlt:165,1-170,2"
+    TestID   -> "NotebookViewer-InToolUIAssociations"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`$toolUIAssociations[ "NotebookViewer" ],
     "ui://wolfram/notebook-viewer",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-CorrectResourceURI@@Tests/NotebookViewer.wlt:172,1-177,2"
+    TestID   -> "NotebookViewer-CorrectResourceURI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -186,7 +186,7 @@ VerificationTest[
     ],
     "ui://wolfram/notebook-viewer",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ToolUIMetadataResourceURI@@Tests/NotebookViewer.wlt:182,1-190,2"
+    TestID   -> "NotebookViewer-ToolUIMetadataResourceURI"
 ]
 
 VerificationTest[
@@ -196,7 +196,7 @@ VerificationTest[
     ],
     { "model", "app" },
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ToolUIMetadataVisibility@@Tests/NotebookViewer.wlt:192,1-200,2"
+    TestID   -> "NotebookViewer-ToolUIMetadataVisibility"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -209,7 +209,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-InResourceRegistry@@Tests/NotebookViewer.wlt:205,1-213,2"
+    TestID   -> "NotebookViewer-InResourceRegistry"
 ]
 
 VerificationTest[
@@ -219,7 +219,7 @@ VerificationTest[
     ],
     "text/html;profile=mcp-app",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ResourceMimeType@@Tests/NotebookViewer.wlt:215,1-223,2"
+    TestID   -> "NotebookViewer-ResourceMimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -239,7 +239,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ReadUIResourceContainsEmbedder@@Tests/NotebookViewer.wlt:228,1-243,2"
+    TestID   -> "NotebookViewer-ReadUIResourceContainsEmbedder"
 ]
 
 VerificationTest[
@@ -256,7 +256,7 @@ VerificationTest[
     ],
     "text/html;profile=mcp-app",
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-ReadUIResourceMimeType@@Tests/NotebookViewer.wlt:245,1-260,2"
+    TestID   -> "NotebookViewer-ReadUIResourceMimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -269,7 +269,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "ui" -> KeyValuePattern[ "prefersBorder" -> True ] ],
     SameTest -> MatchQ,
-    TestID   -> "NotebookViewer-JSONMetadataLoaded@@Tests/NotebookViewer.wlt:265,1-273,2"
+    TestID   -> "NotebookViewer-JSONMetadataLoaded"
 ]
 
 VerificationTest[
@@ -281,7 +281,7 @@ VerificationTest[
     ],
     { "https://www.wolframcloud.com", "https://wolfr.am" },
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-CSPFrameDomains@@Tests/NotebookViewer.wlt:275,1-285,2"
+    TestID   -> "NotebookViewer-CSPFrameDomains"
 ]
 
 VerificationTest[
@@ -293,7 +293,7 @@ VerificationTest[
     ],
     { "https://unpkg.com", "https://www.wolframcloud.com" },
     SameTest -> Equal,
-    TestID   -> "NotebookViewer-CSPResourceDomains@@Tests/NotebookViewer.wlt:287,1-297,2"
+    TestID   -> "NotebookViewer-CSPResourceDomains"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

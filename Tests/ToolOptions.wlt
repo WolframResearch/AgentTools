@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/ToolOptions.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/ToolOptions.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -25,14 +25,14 @@ VerificationTest[
     Wolfram`AgentTools`Common`$defaultToolOptions,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-IsAssociation@@Tests/ToolOptions.wlt:24,1-29,2"
+    TestID   -> "DefaultToolOptions-IsAssociation"
 ]
 
 VerificationTest[
     Sort @ Keys @ Wolfram`AgentTools`Common`$defaultToolOptions,
     { "WolframAlphaContext", "WolframContext", "WolframLanguageContext", "WolframLanguageEvaluator" },
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-Keys@@Tests/ToolOptions.wlt:31,1-36,2"
+    TestID   -> "DefaultToolOptions-Keys"
 ]
 
 VerificationTest[
@@ -44,14 +44,14 @@ VerificationTest[
         "MaxCharacterCount" -> 10000
     },
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-WolframLanguageEvaluator@@Tests/ToolOptions.wlt:38,1-48,2"
+    TestID   -> "DefaultToolOptions-WolframLanguageEvaluator"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`$defaultToolOptions[ "WolframLanguageContext" ],
     KeyValuePattern[ "MaxItems" -> 10 ],
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-WolframLanguageContext@@Tests/ToolOptions.wlt:50,1-55,2"
+    TestID   -> "DefaultToolOptions-WolframLanguageContext"
 ]
 
 VerificationTest[
@@ -61,7 +61,7 @@ VerificationTest[
         "IncludeWolframLanguageResults" -> Automatic
     },
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-WolframAlphaContext@@Tests/ToolOptions.wlt:57,1-65,2"
+    TestID   -> "DefaultToolOptions-WolframAlphaContext"
 ]
 
 VerificationTest[
@@ -71,7 +71,7 @@ VerificationTest[
         "WolframAlphaMaxItems"    -> Automatic
     },
     SameTest -> MatchQ,
-    TestID   -> "DefaultToolOptions-WolframContext@@Tests/ToolOptions.wlt:67,1-75,2"
+    TestID   -> "DefaultToolOptions-WolframContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -82,7 +82,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
     ],
     Automatic,
-    TestID -> "ToolOptionValue-FallbackToDefault@@Tests/ToolOptions.wlt:80,1-86,2"
+    TestID -> "ToolOptionValue-FallbackToDefault"
 ]
 
 VerificationTest[
@@ -90,7 +90,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
     ],
     60,
-    TestID -> "ToolOptionValue-FallbackToDefault-TimeConstraint@@Tests/ToolOptions.wlt:88,1-94,2"
+    TestID -> "ToolOptionValue-FallbackToDefault-TimeConstraint"
 ]
 
 VerificationTest[
@@ -98,7 +98,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacterCount" ]
     ],
     10000,
-    TestID -> "ToolOptionValue-FallbackToDefault-MaxCharacterCount@@Tests/ToolOptions.wlt:96,1-102,2"
+    TestID -> "ToolOptionValue-FallbackToDefault-MaxCharacterCount"
 ]
 
 VerificationTest[
@@ -107,7 +107,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "MaxCharacterCount" ]
     ],
     100000,
-    TestID -> "ToolOptionValue-UserOverride-MaxCharacterCount@@Tests/ToolOptions.wlt:104,1-111,2"
+    TestID -> "ToolOptionValue-UserOverride-MaxCharacterCount"
 ]
 
 VerificationTest[
@@ -115,7 +115,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageContext", "MaxItems" ]
     ],
     10,
-    TestID -> "ToolOptionValue-FallbackToDefault-MaxItems@@Tests/ToolOptions.wlt:113,1-119,2"
+    TestID -> "ToolOptionValue-FallbackToDefault-MaxItems"
 ]
 
 VerificationTest[
@@ -124,7 +124,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "Method" ]
     ],
     "Local",
-    TestID -> "ToolOptionValue-UserOverride@@Tests/ToolOptions.wlt:121,1-128,2"
+    TestID -> "ToolOptionValue-UserOverride"
 ]
 
 VerificationTest[
@@ -133,7 +133,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
     ],
     60,
-    TestID -> "ToolOptionValue-UserOverridePartial-FallbackForOtherKeys@@Tests/ToolOptions.wlt:130,1-137,2"
+    TestID -> "ToolOptionValue-UserOverridePartial-FallbackForOtherKeys"
 ]
 
 VerificationTest[
@@ -142,7 +142,7 @@ VerificationTest[
     ],
     _Missing,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptionValue-MissingTool@@Tests/ToolOptions.wlt:139,1-146,2"
+    TestID   -> "ToolOptionValue-MissingTool"
 ]
 
 VerificationTest[
@@ -151,7 +151,7 @@ VerificationTest[
     ],
     _Missing,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptionValue-MissingOption@@Tests/ToolOptions.wlt:148,1-155,2"
+    TestID   -> "ToolOptionValue-MissingOption"
 ]
 
 VerificationTest[
@@ -160,7 +160,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageEvaluator", "TimeConstraint" ]
     ],
     120,
-    TestID -> "ToolOptionValue-CustomTimeConstraint@@Tests/ToolOptions.wlt:157,1-164,2"
+    TestID -> "ToolOptionValue-CustomTimeConstraint"
 ]
 
 VerificationTest[
@@ -169,7 +169,7 @@ VerificationTest[
         Wolfram`AgentTools`Common`toolOptionValue[ "WolframLanguageContext", "MaxItems" ]
     ],
     5,
-    TestID -> "ToolOptionValue-CustomMaxItems@@Tests/ToolOptions.wlt:166,1-173,2"
+    TestID -> "ToolOptionValue-CustomMaxItems"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -179,28 +179,28 @@ VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-Failed@@Tests/ToolOptions.wlt:178,1-183,2"
+    TestID   -> "ParseToolOptions-Failed"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ $Failed ],
     _Association,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-FailedReturnsAssociation@@Tests/ToolOptions.wlt:185,1-190,2"
+    TestID   -> "ParseToolOptions-FailedReturnsAssociation"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "" ],
     _Association,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-EmptyString@@Tests/ToolOptions.wlt:192,1-197,2"
+    TestID   -> "ParseToolOptions-EmptyString"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`parseToolOptions[ "invalid json" ],
     _Association,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-InvalidJSON@@Tests/ToolOptions.wlt:199,1-204,2"
+    TestID   -> "ParseToolOptions-InvalidJSON"
 ]
 
 VerificationTest[
@@ -209,7 +209,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-ValidJSON@@Tests/ToolOptions.wlt:206,1-213,2"
+    TestID   -> "ParseToolOptions-ValidJSON"
 ]
 
 VerificationTest[
@@ -220,7 +220,7 @@ VerificationTest[
         "WolframLanguageEvaluator" -> KeyValuePattern @ { "ImageExportMethod" -> None, "Method" -> Automatic }
     ],
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-SymbolConversion@@Tests/ToolOptions.wlt:215,1-224,2"
+    TestID   -> "ParseToolOptions-SymbolConversion"
 ]
 
 (* Values that JSON can't represent are written with a "_wl_" prefix (see toolOptionsJSONString) and restored when
@@ -239,7 +239,7 @@ VerificationTest[
         |>
     |>,
     SameTest -> SameQ,
-    TestID   -> "ParseToolOptions-PrefixedExpressions@@Tests/ToolOptions.wlt:228,1-243,2"
+    TestID   -> "ParseToolOptions-PrefixedExpressions"
 ]
 
 (* Strings without the prefix are always strings: *)
@@ -249,7 +249,7 @@ VerificationTest[
     ],
     <| "Tool" -> <| "A" -> { "All", "Automatic", "None" }, "B" -> "Infinity", "C" -> "Quantity[2, \"Weeks\"]" |> |>,
     SameTest -> SameQ,
-    TestID   -> "ParseToolOptions-PlainStringsUnchanged@@Tests/ToolOptions.wlt:246,1-253,2"
+    TestID   -> "ParseToolOptions-PlainStringsUnchanged"
 ]
 
 VerificationTest[
@@ -258,7 +258,7 @@ VerificationTest[
     ],
     <| "WolframAlphaContext" -> <| "MaxItems" -> 3 |> |>,
     SameTest -> MatchQ,
-    TestID   -> "ParseToolOptions-Non-AssociationValues@@Tests/ToolOptions.wlt:255,1-262,2"
+    TestID   -> "ParseToolOptions-Non-AssociationValues"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -274,7 +274,7 @@ VerificationTest[
         ]
     ],
     "Local",
-    TestID -> "RoundTrip-MethodPreserved@@Tests/ToolOptions.wlt:267,1-278,2"
+    TestID -> "RoundTrip-MethodPreserved"
 ]
 
 VerificationTest[
@@ -287,7 +287,7 @@ VerificationTest[
         ]
     ],
     120,
-    TestID -> "RoundTrip-TimeConstraintPreserved@@Tests/ToolOptions.wlt:280,1-291,2"
+    TestID -> "RoundTrip-TimeConstraintPreserved"
 ]
 
 VerificationTest[
@@ -300,7 +300,7 @@ VerificationTest[
         ]
     ],
     5,
-    TestID -> "RoundTrip-MaxItemsPreserved@@Tests/ToolOptions.wlt:293,1-304,2"
+    TestID -> "RoundTrip-MaxItemsPreserved"
 ]
 
 VerificationTest[
@@ -321,7 +321,7 @@ VerificationTest[
         ]
     ],
     { "Local", 20, None },
-    TestID -> "RoundTrip-MultipleToolsPreserved@@Tests/ToolOptions.wlt:306,1-325,2"
+    TestID -> "RoundTrip-MultipleToolsPreserved"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -346,7 +346,7 @@ VerificationTest[
         KeyExistsQ[ env, "MCP_TOOL_OPTIONS" ]
     ],
     True,
-    TestID -> "InstallMCPServer-ToolOptionsEnvVarExists@@Tests/ToolOptions.wlt:330,1-350,2"
+    TestID -> "InstallMCPServer-ToolOptionsEnvVarExists"
 ]
 
 VerificationTest[
@@ -370,7 +370,7 @@ VerificationTest[
     ],
     KeyValuePattern @ { "Method" -> "Local", "TimeConstraint" -> 120 },
     SameTest -> MatchQ,
-    TestID   -> "InstallMCPServer-ToolOptionsRoundTrip@@Tests/ToolOptions.wlt:352,1-374,2"
+    TestID   -> "InstallMCPServer-ToolOptionsRoundTrip"
 ]
 
 (* Values that JSON can't represent survive the round trip through the server configuration, and strings stay strings: *)
@@ -399,7 +399,7 @@ VerificationTest[
         Wolfram`AgentTools`Server`Shared`Private`parseToolOptions @ env[ "MCP_TOOL_OPTIONS" ] === opts
     ],
     True,
-    TestID -> "InstallMCPServer-ToolOptionsNonJSONValuesRoundTrip@@Tests/ToolOptions.wlt:377,1-403,2"
+    TestID -> "InstallMCPServer-ToolOptionsNonJSONValuesRoundTrip"
 ]
 
 VerificationTest[
@@ -421,7 +421,7 @@ VerificationTest[
         KeyExistsQ[ env, "MCP_TOOL_OPTIONS" ]
     ],
     False,
-    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar@@Tests/ToolOptions.wlt:405,1-425,2"
+    TestID -> "InstallMCPServer-EmptyToolOptionsNoEnvVar"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -430,7 +430,7 @@ VerificationTest[
 VerificationTest[
     Wolfram`AgentTools`InstallMCPServer`Private`validateToolOptions[ <| |>, MCPServerObject[ "Wolfram" ] ],
     <| |>,
-    TestID -> "ValidateToolOptions-Empty@@Tests/ToolOptions.wlt:430,1-434,2"
+    TestID -> "ValidateToolOptions-Empty"
 ]
 
 VerificationTest[
@@ -440,7 +440,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "Method" -> "Local" ] ],
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-ValidOptions@@Tests/ToolOptions.wlt:436,1-444,2"
+    TestID   -> "ValidateToolOptions-ValidOptions"
 ]
 
 VerificationTest[
@@ -448,7 +448,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptions },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-InvalidType@@Tests/ToolOptions.wlt:446,1-452,2"
+    TestID   -> "ValidateToolOptions-InvalidType"
 ]
 
 VerificationTest[
@@ -459,7 +459,7 @@ VerificationTest[
     KeyValuePattern[ "NonexistentTool" -> KeyValuePattern[ "Foo" -> "Bar" ] ],
     { AgentTools::UnrecognizedToolOption },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedToolName@@Tests/ToolOptions.wlt:454,1-463,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedToolName"
 ]
 
 VerificationTest[
@@ -470,7 +470,7 @@ VerificationTest[
     KeyValuePattern[ "WolframLanguageEvaluator" -> KeyValuePattern[ "NonexistentOption" -> "value" ] ],
     { AgentTools::UnrecognizedToolOptionName },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-UnrecognizedOptionName@@Tests/ToolOptions.wlt:465,1-474,2"
+    TestID   -> "ValidateToolOptions-UnrecognizedOptionName"
 ]
 
 VerificationTest[
@@ -481,7 +481,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-NonAssociationValue@@Tests/ToolOptions.wlt:476,1-485,2"
+    TestID   -> "ValidateToolOptions-NonAssociationValue"
 ]
 
 VerificationTest[
@@ -492,7 +492,7 @@ VerificationTest[
     <| "WolframLanguageContext" -> <| "MaxItems" -> 5 |> |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-MixedValidAndInvalid@@Tests/ToolOptions.wlt:487,1-496,2"
+    TestID   -> "ValidateToolOptions-MixedValidAndInvalid"
 ]
 
 VerificationTest[
@@ -503,7 +503,7 @@ VerificationTest[
     <| |>,
     { AgentTools::InvalidToolOptionValue },
     SameTest -> MatchQ,
-    TestID   -> "ValidateToolOptions-BooleanValue@@Tests/ToolOptions.wlt:498,1-507,2"
+    TestID   -> "ValidateToolOptions-BooleanValue"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -513,7 +513,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`$toolOptions,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "ToolOptionsInitialized@@Tests/ToolOptions.wlt:512,1-517,2"
+    TestID   -> "ToolOptionsInitialized"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

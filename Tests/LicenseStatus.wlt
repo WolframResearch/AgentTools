@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/LicenseStatus.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/LicenseStatus.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -40,21 +40,21 @@ VerificationTest[
     KeyExistsQ[ $DefaultMCPTools, "WolframLicenseStatus" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-InDefaultMCPTools@@Tests/LicenseStatus.wlt:39,1-44,2"
+    TestID   -> "LicenseStatusTool-InDefaultMCPTools"
 ]
 
 VerificationTest[
     $licenseTool = $DefaultMCPTools[ "WolframLicenseStatus" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "LicenseStatusTool-IsLLMTool@@Tests/LicenseStatus.wlt:46,1-51,2"
+    TestID   -> "LicenseStatusTool-IsLLMTool"
 ]
 
 VerificationTest[
     { $licenseTool[ "Name" ], $licenseTool[ "Parameters" ], Wolfram`AgentTools`Common`$licenseToolName },
     { "WolframLicenseStatus", { }, "WolframLicenseStatus" },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-NameAndNoParameters@@Tests/LicenseStatus.wlt:53,1-58,2"
+    TestID   -> "LicenseStatusTool-NameAndNoParameters"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -68,7 +68,7 @@ VerificationTest[
     licenseStatusAt[ <| |>, $now ],
     None,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-NoLicense-Empty@@Tests/LicenseStatus.wlt:67,1-72,2"
+    TestID   -> "LicenseStatus-NoLicense-Empty"
 ]
 
 (* License handling is on only when "Expired" or "ExpirationDate" is present: the other license keys alone don't
@@ -86,7 +86,7 @@ VerificationTest[
     ],
     None,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-NoLicense-UnrelatedKeys@@Tests/LicenseStatus.wlt:76,1-90,2"
+    TestID   -> "LicenseStatus-NoLicense-UnrelatedKeys"
 ]
 
 (* A regular kernel has no license *)
@@ -94,7 +94,7 @@ VerificationTest[
     { $StandaloneMCPServerInformation, licenseStatusAt[ ], licenseInstructionsOf[ ] },
     { <| |>, None, None },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-NoLicense-Default@@Tests/LicenseStatus.wlt:93,1-98,2"
+    TestID   -> "LicenseStatus-NoLicense-Default"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -113,7 +113,7 @@ VerificationTest[
         "Message"         -> "Your MCP server license expires in 5 days, on 2026-11-01."
     |>,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Result@@Tests/LicenseStatus.wlt:103,1-117,2"
+    TestID   -> "LicenseStatus-Result"
 ]
 
 VerificationTest[
@@ -138,7 +138,7 @@ VerificationTest[
         "Message"         -> "Your Wolfram MCP Server license expires in 35 days, on 2026-12-01. Visit https://example.com/renew for instructions on how to continue."
     |>,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Result-AllKeys@@Tests/LicenseStatus.wlt:119,1-142,2"
+    TestID   -> "LicenseStatus-Result-AllKeys"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -148,7 +148,7 @@ VerificationTest[
     licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 11, 1, 12 ] |>, $now ][ "Message" ],
     "Your MCP server license expires in 5 days, on 2026-11-01.",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-Days@@Tests/LicenseStatus.wlt:147,1-152,2"
+    TestID   -> "LicenseStatus-Message-Days"
 ]
 
 (* Days are calendar days: 20 hours from now, but tomorrow *)
@@ -156,7 +156,7 @@ VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 10, 28, 8 ] |>, $now ], { "DaysRemaining", "Message" } ],
     { 1, "Your MCP server license expires in 1 day, on 2026-10-28." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-OneDay@@Tests/LicenseStatus.wlt:155,1-160,2"
+    TestID   -> "LicenseStatus-Message-OneDay"
 ]
 
 (* 37 hours from now, but the day after tomorrow *)
@@ -164,7 +164,7 @@ VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 10, 29, 1 ] |>, $now ], { "DaysRemaining", "Message" } ],
     { 2, "Your MCP server license expires in 2 days, on 2026-10-29." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-CalendarDays@@Tests/LicenseStatus.wlt:163,1-168,2"
+    TestID   -> "LicenseStatus-Message-CalendarDays"
 ]
 
 VerificationTest[
@@ -174,7 +174,7 @@ VerificationTest[
     ],
     { False, 0, True, "Your MCP server license expires in less than a day, on 2026-10-27." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-LessThanADay@@Tests/LicenseStatus.wlt:170,1-178,2"
+    TestID   -> "LicenseStatus-Message-LessThanADay"
 ]
 
 VerificationTest[
@@ -184,21 +184,21 @@ VerificationTest[
     ],
     { True, 0, False, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-Expired@@Tests/LicenseStatus.wlt:180,1-188,2"
+    TestID   -> "LicenseStatus-Message-Expired"
 ]
 
 VerificationTest[
     licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 11, 1, 12 ], "InstructionsURL" -> $url |>, $now ][ "Message" ],
     "Your MCP server license expires in 5 days, on 2026-11-01. Visit https://example.com/renew for instructions on how to continue.",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-InstructionsURL@@Tests/LicenseStatus.wlt:190,1-195,2"
+    TestID   -> "LicenseStatus-Message-InstructionsURL"
 ]
 
 VerificationTest[
     licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 10, 20, 23 ], "InstructionsURL" -> $url |>, $now ][ "Message" ],
     "Your MCP server license has expired. Visit https://example.com/renew for instructions on how to continue.",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-ExpiredInstructionsURL@@Tests/LicenseStatus.wlt:197,1-202,2"
+    TestID   -> "LicenseStatus-Message-ExpiredInstructionsURL"
 ]
 
 VerificationTest[
@@ -211,7 +211,7 @@ VerificationTest[
         "Your Wolfram MCP Server license has expired."
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-ProductName@@Tests/LicenseStatus.wlt:204,1-215,2"
+    TestID   -> "LicenseStatus-Message-ProductName"
 ]
 
 (* Blank instructions URLs are ignored *)
@@ -225,7 +225,7 @@ VerificationTest[
         { None, "Your MCP server license expires in 5 days, on 2026-11-01." }
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Message-BlankInstructionsURL@@Tests/LicenseStatus.wlt:218,1-229,2"
+    TestID   -> "LicenseStatus-Message-BlankInstructionsURL"
 ]
 
 (* Invalid optional values fall back to the defaults *)
@@ -239,7 +239,7 @@ VerificationTest[
     ],
     { "MCP server", 14, None, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-InvalidOptionalValues@@Tests/LicenseStatus.wlt:232,1-243,2"
+    TestID   -> "LicenseStatus-InvalidOptionalValues"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -250,14 +250,14 @@ VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> None |>, $now ], { "ExpirationDate", "Expired", "Warning", "Message" } ],
     { None, True, False, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-FailClosed-NoneDate@@Tests/LicenseStatus.wlt:249,1-254,2"
+    TestID   -> "LicenseStatus-FailClosed-NoneDate"
 ]
 
 VerificationTest[
     Lookup[ licenseStatusAt[ <| "Expired" -> False |>, $now ], { "ExpirationDate", "Expired", "Warning", "Message" } ],
     { None, True, False, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-FailClosed-MissingDate@@Tests/LicenseStatus.wlt:256,1-261,2"
+    TestID   -> "LicenseStatus-FailClosed-MissingDate"
 ]
 
 VerificationTest[
@@ -269,7 +269,7 @@ VerificationTest[
     },
     { { None, True }, { None, True }, { None, True }, { None, True } },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-FailClosed-NonDate@@Tests/LicenseStatus.wlt:263,1-273,2"
+    TestID   -> "LicenseStatus-FailClosed-NonDate"
 ]
 
 (* "Expired" -> True overrides a future expiration date *)
@@ -280,14 +280,14 @@ VerificationTest[
     ],
     { True, 0, False, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-ExpiredTrue-FutureDate@@Tests/LicenseStatus.wlt:276,1-284,2"
+    TestID   -> "LicenseStatus-ExpiredTrue-FutureDate"
 ]
 
 VerificationTest[
     Lookup[ licenseStatusAt[ <| "Expired" -> True |>, $now ], { "Expired", "Message" } ],
     { True, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-ExpiredTrue-NoDate@@Tests/LicenseStatus.wlt:286,1-291,2"
+    TestID   -> "LicenseStatus-ExpiredTrue-NoDate"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -297,7 +297,7 @@ VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> $now |>, $now ], { "Expired", "Warning", "Message" } ],
     { True, False, "Your MCP server license has expired." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-ExpiresExactlyNow@@Tests/LicenseStatus.wlt:296,1-301,2"
+    TestID   -> "LicenseStatus-ExpiresExactlyNow"
 ]
 
 VerificationTest[
@@ -307,7 +307,7 @@ VerificationTest[
     ],
     { False, 0, "Your MCP server license expires in less than a day, on 2026-10-27." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-OneSecondLeft@@Tests/LicenseStatus.wlt:303,1-311,2"
+    TestID   -> "LicenseStatus-OneSecondLeft"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -317,14 +317,14 @@ VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 11, 10, 12 ] |>, $now ], { "WarningDays", "DaysRemaining", "Warning" } ],
     { 14, 14, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Warning-DefaultWarningDays-Boundary@@Tests/LicenseStatus.wlt:316,1-321,2"
+    TestID   -> "LicenseStatus-Warning-DefaultWarningDays-Boundary"
 ]
 
 VerificationTest[
     Lookup[ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 11, 11, 12 ] |>, $now ], { "WarningDays", "DaysRemaining", "Warning" } ],
     { 14, 15, False },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Warning-DefaultWarningDays-Outside@@Tests/LicenseStatus.wlt:323,1-328,2"
+    TestID   -> "LicenseStatus-Warning-DefaultWarningDays-Outside"
 ]
 
 VerificationTest[
@@ -334,7 +334,7 @@ VerificationTest[
     },
     { { 5, True }, { 6, False } },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Warning-CustomWarningDays@@Tests/LicenseStatus.wlt:330,1-338,2"
+    TestID   -> "LicenseStatus-Warning-CustomWarningDays"
 ]
 
 (* With WarningDays 0, reminders appear only on the last day *)
@@ -345,7 +345,7 @@ VerificationTest[
     },
     { True, False },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Warning-ZeroWarningDays@@Tests/LicenseStatus.wlt:341,1-349,2"
+    TestID   -> "LicenseStatus-Warning-ZeroWarningDays"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -357,7 +357,7 @@ VerificationTest[
     licenseStatusAt[ <| "ExpirationDate" -> DateObject[ { 2026, 10, 27, 23, 0, 0 }, TimeZone -> -7 ] |>, $now ][ "Message" ],
     "Your MCP server license expires in less than a day, on 2026-10-27.",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-TimeZone-BehindUTC@@Tests/LicenseStatus.wlt:356,1-361,2"
+    TestID   -> "LicenseStatus-TimeZone-BehindUTC"
 ]
 
 (* Now is 2026-10-28 01:00 at UTC+13, and the license expires at 2026-10-29 01:00 there, which is 2026-10-28 12:00 UTC *)
@@ -365,7 +365,7 @@ VerificationTest[
     licenseStatusAt[ <| "ExpirationDate" -> DateObject[ { 2026, 10, 29, 1, 0, 0 }, TimeZone -> 13 ] |>, $now ][ "Message" ],
     "Your MCP server license expires in 1 day, on 2026-10-29.",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-TimeZone-AheadOfUTC@@Tests/LicenseStatus.wlt:364,1-369,2"
+    TestID   -> "LicenseStatus-TimeZone-AheadOfUTC"
 ]
 
 VerificationTest[
@@ -378,7 +378,7 @@ VerificationTest[
         "Your MCP server license expires in 6 days, on 2026-11-02."
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-TimeZone-Named@@Tests/LicenseStatus.wlt:371,1-382,2"
+    TestID   -> "LicenseStatus-TimeZone-Named"
 ]
 
 (* The time zone in which "now" is given does not matter *)
@@ -388,7 +388,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-TimeZone-NowZoneIrrelevant@@Tests/LicenseStatus.wlt:385,1-392,2"
+    TestID   -> "LicenseStatus-TimeZone-NowZoneIrrelevant"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -401,7 +401,7 @@ VerificationTest[
     ],
     { False, 3, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Current-Valid@@Tests/LicenseStatus.wlt:398,1-405,2"
+    TestID   -> "LicenseStatus-Current-Valid"
 ]
 
 VerificationTest[
@@ -410,7 +410,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatus-Current-Expired@@Tests/LicenseStatus.wlt:407,1-414,2"
+    TestID   -> "LicenseStatus-Current-Expired"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -420,7 +420,7 @@ VerificationTest[
     licenseInstructionsOf[ None ],
     None,
     SameTest -> SameQ,
-    TestID   -> "LicenseInstructions-NoLicense@@Tests/LicenseStatus.wlt:419,1-424,2"
+    TestID   -> "LicenseInstructions-NoLicense"
 ]
 
 VerificationTest[
@@ -438,14 +438,14 @@ VerificationTest[
     ],
     { True, True, True, True, True, False },
     SameTest -> SameQ,
-    TestID   -> "LicenseInstructions-BeforeExpiration@@Tests/LicenseStatus.wlt:426,1-442,2"
+    TestID   -> "LicenseInstructions-BeforeExpiration"
 ]
 
 VerificationTest[
     licenseInstructionsOf @ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 11, 1, 12 ] |>, $now ],
     "This MCP server runs under a time-limited license. Your MCP server license expires in 5 days, on 2026-11-01. Use the WolframLicenseStatus tool to check the status of the license. When a tool result ends with a license reminder, pass it on to the user.",
     SameTest -> SameQ,
-    TestID   -> "LicenseInstructions-BeforeExpiration-Text@@Tests/LicenseStatus.wlt:444,1-449,2"
+    TestID   -> "LicenseInstructions-BeforeExpiration-Text"
 ]
 
 (* Outside the warning period, the instructions still say when the license expires *)
@@ -453,14 +453,14 @@ VerificationTest[
     licenseInstructionsOf @ licenseStatusAt[ <| "ExpirationDate" -> utc[ 2026, 12, 1, 12 ] |>, $now ],
     _String? (StringContainsQ[ "Your MCP server license expires in 35 days, on 2026-12-01." ]),
     SameTest -> MatchQ,
-    TestID   -> "LicenseInstructions-OutsideWarningPeriod@@Tests/LicenseStatus.wlt:452,1-457,2"
+    TestID   -> "LicenseInstructions-OutsideWarningPeriod"
 ]
 
 VerificationTest[
     licenseInstructionsOf @ licenseStatusAt[ <| "Expired" -> True, "InstructionsURL" -> $url |>, $now ],
     "This MCP server runs under a time-limited license. Your MCP server license has expired. Visit https://example.com/renew for instructions on how to continue. Every prompt and every tool call other than WolframLicenseStatus fails. Help the user follow those instructions.",
     SameTest -> SameQ,
-    TestID   -> "LicenseInstructions-Expired-InstructionsURL@@Tests/LicenseStatus.wlt:459,1-464,2"
+    TestID   -> "LicenseInstructions-Expired-InstructionsURL"
 ]
 
 VerificationTest[
@@ -474,7 +474,7 @@ VerificationTest[
     ],
     { True, True, False, False },
     SameTest -> SameQ,
-    TestID   -> "LicenseInstructions-Expired-NoInstructionsURL@@Tests/LicenseStatus.wlt:466,1-478,2"
+    TestID   -> "LicenseInstructions-Expired-NoInstructionsURL"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -487,7 +487,7 @@ VerificationTest[
     },
     { "This MCP server does not have a time-limited license.", "This MCP server does not have a time-limited license." },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-NoLicense@@Tests/LicenseStatus.wlt:483,1-491,2"
+    TestID   -> "LicenseStatusTool-NoLicense"
 ]
 
 VerificationTest[
@@ -506,7 +506,7 @@ VerificationTest[
     ],
     { True, True, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-License@@Tests/LicenseStatus.wlt:493,1-510,2"
+    TestID   -> "LicenseStatusTool-License"
 ]
 
 VerificationTest[
@@ -515,14 +515,14 @@ VerificationTest[
     ],
     False,
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-License-NoInstructionsURL@@Tests/LicenseStatus.wlt:512,1-519,2"
+    TestID   -> "LicenseStatusTool-License-NoInstructionsURL"
 ]
 
 VerificationTest[
     Block[ { $StandaloneMCPServerInformation = <| "Expired" -> True |> }, $licenseTool[ <| |> ] ],
     "Your MCP server license has expired.\n\nExpiration date: unknown\nDays remaining: 0",
     SameTest -> SameQ,
-    TestID   -> "LicenseStatusTool-Expired@@Tests/LicenseStatus.wlt:521,1-526,2"
+    TestID   -> "LicenseStatusTool-Expired"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -603,7 +603,7 @@ VerificationTest[
     MCPServerObjectQ /@ { licenseServer, licenseServerWithTool, licenseServerWithInstructions },
     { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Fixtures@@Tests/LicenseStatus.wlt:602,1-607,2"
+    TestID   -> "LicenseServer-Fixtures"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -613,7 +613,7 @@ VerificationTest[
     { licenseToolNames[ licenseServer, $noLicense ], licenseToolNames[ licenseServer, <| "Version" -> "1.0.0" |> ] },
     { { "LicenseEcho" }, { "LicenseEcho" } },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-NoLicense-ToolList@@Tests/LicenseStatus.wlt:612,1-617,2"
+    TestID   -> "LicenseServer-NoLicense-ToolList"
 ]
 
 VerificationTest[
@@ -623,7 +623,7 @@ VerificationTest[
     },
     { False, "Server instructions." },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-NoLicense-Instructions@@Tests/LicenseStatus.wlt:619,1-627,2"
+    TestID   -> "LicenseServer-NoLicense-Instructions"
 ]
 
 VerificationTest[
@@ -633,7 +633,7 @@ VerificationTest[
     },
     { $echoResult, $echoResult },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-NoLicense-ToolResult@@Tests/LicenseStatus.wlt:629,1-637,2"
+    TestID   -> "LicenseServer-NoLicense-ToolResult"
 ]
 
 (* WolframLicenseStatus is an ordinary default tool that any server can list *)
@@ -650,7 +650,7 @@ VerificationTest[
         |>
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-NoLicense-ListedByName@@Tests/LicenseStatus.wlt:640,1-654,2"
+    TestID   -> "LicenseServer-NoLicense-ListedByName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -662,7 +662,7 @@ VerificationTest[
     ],
     { instructions_String, instructions_String } /; StringStartsQ[ instructions, "This MCP server runs under a time-limited license." ],
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Instructions-Set@@Tests/LicenseStatus.wlt:659,1-666,2"
+    TestID   -> "LicenseServer-Instructions-Set"
 ]
 
 VerificationTest[
@@ -671,7 +671,7 @@ VerificationTest[
     ],
     { instructions_String, license_String } /; instructions === "Server instructions.\n\n" <> license,
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Instructions-Appended@@Tests/LicenseStatus.wlt:668,1-675,2"
+    TestID   -> "LicenseServer-Instructions-Appended"
 ]
 
 VerificationTest[
@@ -680,14 +680,14 @@ VerificationTest[
     ],
     { instructions_String, license_String } /; instructions === "First.\n\nSecond.\n\n" <> license,
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Instructions-AppendedToPrompts@@Tests/LicenseStatus.wlt:677,1-684,2"
+    TestID   -> "LicenseServer-Instructions-AppendedToPrompts"
 ]
 
 VerificationTest[
     licenseInitResponse[ licenseServer, $expiredLicense ][ "instructions" ],
     "This MCP server runs under a time-limited license. Your MCP server license has expired. Visit https://example.com/renew for instructions on how to continue. Every prompt and every tool call other than WolframLicenseStatus fails. Help the user follow those instructions.",
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Instructions-Expired@@Tests/LicenseStatus.wlt:686,1-691,2"
+    TestID   -> "LicenseServer-Instructions-Expired"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -707,7 +707,7 @@ VerificationTest[
         { "LicenseEcho", "WolframLicenseStatus" }
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-LicenseTool-Added@@Tests/LicenseStatus.wlt:696,1-711,2"
+    TestID   -> "LicenseServer-LicenseTool-Added"
 ]
 
 VerificationTest[
@@ -717,14 +717,14 @@ VerificationTest[
     ][ "inputSchema" ],
     KeyValuePattern @ { "type" -> "object", "properties" -> <| |> },
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-LicenseTool-NoParameters@@Tests/LicenseStatus.wlt:713,1-721,2"
+    TestID   -> "LicenseServer-LicenseTool-NoParameters"
 ]
 
 VerificationTest[
     licenseToolNames[ licenseServerWithTool, $warningLicense ],
     { "WolframLicenseStatus", "LicenseEcho" },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-LicenseTool-NotDuplicated@@Tests/LicenseStatus.wlt:723,1-728,2"
+    TestID   -> "LicenseServer-LicenseTool-NotDuplicated"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -748,14 +748,14 @@ VerificationTest[
         message_String
     } /; StringStartsQ[ message, "Your MCP server license expires in 3 days, on " ],
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Warning-ReminderAppended@@Tests/LicenseStatus.wlt:733,1-752,2"
+    TestID   -> "LicenseServer-Warning-ReminderAppended"
 ]
 
 VerificationTest[
     licenseToolCall[ licenseServer, $validLicense, "LicenseEcho", <| "x" -> "hi" |> ],
     $echoResult,
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Warning-NoReminderOutsideWarningPeriod@@Tests/LicenseStatus.wlt:754,1-759,2"
+    TestID   -> "LicenseServer-Warning-NoReminderOutsideWarningPeriod"
 ]
 
 (* The license tool gets no reminder *)
@@ -766,7 +766,7 @@ VerificationTest[
         "isError" -> False
     |>,
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Warning-LicenseToolNoReminder@@Tests/LicenseStatus.wlt:762,1-770,2"
+    TestID   -> "LicenseServer-Warning-LicenseToolNoReminder"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -791,7 +791,7 @@ VerificationTest[
         0
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Expired-ToolNotRun@@Tests/LicenseStatus.wlt:775,1-795,2"
+    TestID   -> "LicenseServer-Expired-ToolNotRun"
 ]
 
 (* Sanity check for the test above: the same call runs the tool with a valid license *)
@@ -803,7 +803,7 @@ VerificationTest[
     ],
     { $echoResult, 1 },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Valid-ToolRuns@@Tests/LicenseStatus.wlt:798,1-807,2"
+    TestID   -> "LicenseServer-Valid-ToolRuns"
 ]
 
 VerificationTest[
@@ -816,7 +816,7 @@ VerificationTest[
         <| "content" -> { <| "type" -> "text", "text" -> "Your MCP server license has expired." |> }, "isError" -> True |>
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Expired-ExpiredTrueAndNoneDate@@Tests/LicenseStatus.wlt:809,1-820,2"
+    TestID   -> "LicenseServer-Expired-ExpiredTrueAndNoneDate"
 ]
 
 (* The license tool keeps working after expiration, without an appended reminder *)
@@ -832,14 +832,14 @@ VerificationTest[
         "isError" -> False
     |>,
     SameTest -> MatchQ,
-    TestID   -> "LicenseServer-Expired-LicenseToolRuns@@Tests/LicenseStatus.wlt:823,1-836,2"
+    TestID   -> "LicenseServer-Expired-LicenseToolRuns"
 ]
 
 VerificationTest[
     licenseToolCall[ licenseServerWithTool, $expiredLicense, "WolframLicenseStatus", <| |> ][ "isError" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Expired-ListedLicenseToolRuns@@Tests/LicenseStatus.wlt:838,1-843,2"
+    TestID   -> "LicenseServer-Expired-ListedLicenseToolRuns"
 ]
 
 (* The license is read again on every request: a server started with a valid license expires on time *)
@@ -852,7 +852,7 @@ VerificationTest[
     ],
     { $echoResult, True },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-LicenseReadOnEveryRequest@@Tests/LicenseStatus.wlt:846,1-856,2"
+    TestID   -> "LicenseServer-LicenseReadOnEveryRequest"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -906,7 +906,7 @@ VerificationTest[
         0
     },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Expired-PromptNotRun@@Tests/LicenseStatus.wlt:891,1-910,2"
+    TestID   -> "LicenseServer-Expired-PromptNotRun"
 ]
 
 VerificationTest[
@@ -917,7 +917,7 @@ VerificationTest[
     ],
     { { $promptResult, $promptResult, $promptResult }, 3 },
     SameTest -> SameQ,
-    TestID   -> "LicenseServer-Valid-PromptRuns@@Tests/LicenseStatus.wlt:912,1-921,2"
+    TestID   -> "LicenseServer-Valid-PromptRuns"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

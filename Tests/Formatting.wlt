@@ -5,21 +5,21 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/Formatting.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/Formatting.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 VerificationTest[
     $testResourceDirectory = FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "TestResources" },
     _? DirectoryQ,
     SameTest -> MatchQ,
-    TestID   -> "Setup-TestResources@@Tests/Formatting.wlt:18,1-23,2"
+    TestID   -> "Setup-TestResources"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -30,7 +30,7 @@ VerificationTest[
     ToBoxes @ MCPServerObject[ "Wolfram" ],
     _InterpretationBox,
     SameTest -> MatchQ,
-    TestID   -> "ToBoxes-Wolfram@@Tests/Formatting.wlt:29,1-34,2"
+    TestID   -> "ToBoxes-Wolfram"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -42,21 +42,21 @@ VerificationTest[
     PacletDirectoryLoad @ $mockPacletDirectory,
     { __String },
     SameTest -> MatchQ,
-    TestID   -> "MockPacletDirectory@@Tests/Formatting.wlt:40,1-46,2"
+    TestID   -> "MockPacletDirectory"
 ]
 
 VerificationTest[
     server = MCPServerObject[ "MockMCPPacletTest/TestServer" ],
     _MCPServerObject? MCPServerObjectQ,
     SameTest -> MatchQ,
-    TestID   -> "MCPServerObject-Paclet@@Tests/Formatting.wlt:48,1-53,2"
+    TestID   -> "MCPServerObject-Paclet"
 ]
 
 VerificationTest[
     ToBoxes @ server,
     _InterpretationBox,
     SameTest -> MatchQ,
-    TestID   -> "ToBoxes-Paclet@@Tests/Formatting.wlt:55,1-60,2"
+    TestID   -> "ToBoxes-Paclet"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -73,7 +73,7 @@ VerificationTest[
     ],
     _InterpretationBox,
     SameTest -> MatchQ,
-    TestID   -> "MakeMCPServerObjectBoxes-Paclet@@Tests/Formatting.wlt:69,1-77,2"
+    TestID   -> "MakeMCPServerObjectBoxes-Paclet"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -84,5 +84,5 @@ VerificationTest[
     PacletDirectoryUnload @ $mockPacletDirectory,
     { Except[ $mockPacletDirectory ]... },
     SameTest -> MatchQ,
-    TestID   -> "MockPacletCleanup@@Tests/Formatting.wlt:83,1-88,2"
+    TestID   -> "MockPacletCleanup"
 ]

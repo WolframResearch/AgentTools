@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/MCPRoots.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/MCPRoots.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -26,14 +26,14 @@ VerificationTest[
     BooleanQ @ Wolfram`AgentTools`Common`$clientSupportsRoots,
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-ClientSupportsRootsIsBoolean@@Tests/MCPRoots.wlt:25,1-30,2"
+    TestID   -> "MCPRoots-ClientSupportsRootsIsBoolean"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`$mcpRoot === None || StringQ @ Wolfram`AgentTools`Common`$mcpRoot,
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-McpRootIsNoneOrString@@Tests/MCPRoots.wlt:32,1-37,2"
+    TestID   -> "MCPRoots-McpRootIsNoneOrString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -47,7 +47,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-RootURIToPathFileScheme@@Tests/MCPRoots.wlt:44,1-51,2"
+    TestID   -> "MCPRoots-RootURIToPathFileScheme"
 ]
 
 (* Non-file URIs are rejected. *)
@@ -55,7 +55,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`rootURIToPath[ "https://example.com/path" ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-RootURIToPathNonFileScheme@@Tests/MCPRoots.wlt:54,1-59,2"
+    TestID   -> "MCPRoots-RootURIToPathNonFileScheme"
 ]
 
 (* Non-strings are rejected. *)
@@ -63,7 +63,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`rootURIToPath[ 42 ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-RootURIToPathNonString@@Tests/MCPRoots.wlt:62,1-67,2"
+    TestID   -> "MCPRoots-RootURIToPathNonString"
 ]
 
 (* Malformed Windows URIs (backslashes, missing third slash) emitted by some clients
@@ -85,7 +85,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-RootURIToPathWindowsBackslashURI@@Tests/MCPRoots.wlt:71,1-89,2"
+    TestID   -> "MCPRoots-RootURIToPathWindowsBackslashURI"
 ]
 
 (* Two-slash URIs with drive letters (file://H:/Documents/...) are also normalized. *)
@@ -106,7 +106,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-RootURIToPathWindowsTwoSlashURI@@Tests/MCPRoots.wlt:92,1-110,2"
+    TestID   -> "MCPRoots-RootURIToPathWindowsTwoSlashURI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -118,7 +118,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file://H:\\Documents\\AgentTools" ],
     "file:///H:/Documents/AgentTools",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURIBackslashes@@Tests/MCPRoots.wlt:117,1-122,2"
+    TestID   -> "MCPRoots-NormalizeFileURIBackslashes"
 ]
 
 (* The third slash before a drive letter is added when missing. *)
@@ -126,7 +126,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file://H:/Documents/AgentTools" ],
     "file:///H:/Documents/AgentTools",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURITwoSlashes@@Tests/MCPRoots.wlt:125,1-130,2"
+    TestID   -> "MCPRoots-NormalizeFileURITwoSlashes"
 ]
 
 (* Lowercase drive letters are also normalized. *)
@@ -134,7 +134,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file://c:\\Users\\me" ],
     "file:///c:/Users/me",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURILowercaseDrive@@Tests/MCPRoots.wlt:133,1-138,2"
+    TestID   -> "MCPRoots-NormalizeFileURILowercaseDrive"
 ]
 
 (* Already-well-formed URIs pass through unchanged. *)
@@ -142,7 +142,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file:///H:/Documents/AgentTools" ],
     "file:///H:/Documents/AgentTools",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURIWellFormed@@Tests/MCPRoots.wlt:141,1-146,2"
+    TestID   -> "MCPRoots-NormalizeFileURIWellFormed"
 ]
 
 (* POSIX file URIs (no drive letter) are not given an extra slash. *)
@@ -150,7 +150,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file:///home/user/project" ],
     "file:///home/user/project",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURIPosix@@Tests/MCPRoots.wlt:149,1-154,2"
+    TestID   -> "MCPRoots-NormalizeFileURIPosix"
 ]
 
 (* UNC-style file URIs (file://server/share) are left intact. *)
@@ -158,7 +158,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`normalizeFileURI[ "file://server/share/path" ],
     "file://server/share/path",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-NormalizeFileURIUNC@@Tests/MCPRoots.wlt:157,1-162,2"
+    TestID   -> "MCPRoots-NormalizeFileURIUNC"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -181,7 +181,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootSingle@@Tests/MCPRoots.wlt:169,1-185,2"
+    TestID   -> "MCPRoots-PickFirstValidRootSingle"
 ]
 
 (* The first invalid root is skipped, and the second valid root is returned. *)
@@ -203,7 +203,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootMultiFallback@@Tests/MCPRoots.wlt:188,1-207,2"
+    TestID   -> "MCPRoots-PickFirstValidRootMultiFallback"
 ]
 
 (* An empty list returns None. *)
@@ -211,7 +211,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`pickFirstValidRoot[ { } ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootEmpty@@Tests/MCPRoots.wlt:210,1-215,2"
+    TestID   -> "MCPRoots-PickFirstValidRootEmpty"
 ]
 
 (* Entries without "uri" are skipped. *)
@@ -221,7 +221,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootNoURIKey@@Tests/MCPRoots.wlt:218,1-225,2"
+    TestID   -> "MCPRoots-PickFirstValidRootNoURIKey"
 ]
 
 (* Non-file:// schemes are skipped. *)
@@ -231,7 +231,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootNonFileScheme@@Tests/MCPRoots.wlt:228,1-235,2"
+    TestID   -> "MCPRoots-PickFirstValidRootNonFileScheme"
 ]
 
 (* All-invalid lists return None. *)
@@ -244,7 +244,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootAllInvalid@@Tests/MCPRoots.wlt:238,1-248,2"
+    TestID   -> "MCPRoots-PickFirstValidRootAllInvalid"
 ]
 
 (* Non-list inputs return None. *)
@@ -252,7 +252,7 @@ VerificationTest[
     Wolfram`AgentTools`MCPRoots`Private`pickFirstValidRoot[ "not a list" ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-PickFirstValidRootNonList@@Tests/MCPRoots.wlt:251,1-256,2"
+    TestID   -> "MCPRoots-PickFirstValidRootNonList"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -291,7 +291,7 @@ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-HandleRootsListResponseSuccess@@Tests/MCPRoots.wlt:266,1-295,2"
+    TestID   -> "MCPRoots-HandleRootsListResponseSuccess"
 ]
 
 (* An error response logs the error and does not apply a root. *)
@@ -317,7 +317,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-HandleRootsListResponseError@@Tests/MCPRoots.wlt:298,1-321,2"
+    TestID   -> "MCPRoots-HandleRootsListResponseError"
 ]
 
 (* An empty roots list does not apply a root. *)
@@ -343,7 +343,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-HandleRootsListResponseEmpty@@Tests/MCPRoots.wlt:324,1-347,2"
+    TestID   -> "MCPRoots-HandleRootsListResponseEmpty"
 ]
 
 (* All roots invalid - no root applied. *)
@@ -372,7 +372,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-HandleRootsListResponseAllInvalid@@Tests/MCPRoots.wlt:350,1-376,2"
+    TestID   -> "MCPRoots-HandleRootsListResponseAllInvalid"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -399,7 +399,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-OnClientInitializedNoCapability@@Tests/MCPRoots.wlt:383,1-403,2"
+    TestID   -> "MCPRoots-OnClientInitializedNoCapability"
 ]
 
 (* When the client advertised roots, a roots/list request is sent. *)
@@ -422,7 +422,7 @@ VerificationTest[
     ],
     "roots/list",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-OnClientInitializedSendsRequest@@Tests/MCPRoots.wlt:406,1-426,2"
+    TestID   -> "MCPRoots-OnClientInitializedSendsRequest"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -449,7 +449,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-OnRootsListChangedNoCapability@@Tests/MCPRoots.wlt:433,1-453,2"
+    TestID   -> "MCPRoots-OnRootsListChangedNoCapability"
 ]
 
 (* When the client advertised roots, list_changed triggers a fresh roots/list request. *)
@@ -472,7 +472,7 @@ VerificationTest[
     ],
     "roots/list",
     SameTest -> MatchQ,
-    TestID   -> "MCPRoots-OnRootsListChangedSendsRequest@@Tests/MCPRoots.wlt:456,1-476,2"
+    TestID   -> "MCPRoots-OnRootsListChangedSendsRequest"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

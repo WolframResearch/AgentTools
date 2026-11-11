@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/WolframAlpha-UI.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/WolframAlpha-UI.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -29,14 +29,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframAlpha`Private`toContentList[ "hello" ],
     { <| "type" -> "text", "text" -> "hello" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-String@@Tests/WolframAlpha-UI.wlt:28,1-33,2"
+    TestID   -> "toContentList-String"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`WolframAlpha`Private`toContentList[ "" ],
     { <| "type" -> "text", "text" -> "" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-EmptyString@@Tests/WolframAlpha-UI.wlt:35,1-40,2"
+    TestID   -> "toContentList-EmptyString"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -46,7 +46,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`WolframAlpha`Private`toContentList[ { <| "type" -> "text", "text" -> "a" |> } ],
     { <| "type" -> "text", "text" -> "a" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-List@@Tests/WolframAlpha-UI.wlt:45,1-50,2"
+    TestID   -> "toContentList-List"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -58,7 +58,7 @@ VerificationTest[
     ],
     { <| "type" -> "text", "text" -> "x" |>, <| "type" -> "image", "data" -> "abc" |> },
     SameTest -> MatchQ,
-    TestID   -> "toContentList-AssociationContent@@Tests/WolframAlpha-UI.wlt:55,1-62,2"
+    TestID   -> "toContentList-AssociationContent"
 ]
 
 
@@ -75,7 +75,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "wolframAlphaToolEvaluate-NoUI@@Tests/WolframAlpha-UI.wlt:72,1-79,2"
+    TestID   -> "wolframAlphaToolEvaluate-NoUI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -87,7 +87,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "wolframAlphaToolEvaluate-WithUI@@Tests/WolframAlpha-UI.wlt:84,1-91,2"
+    TestID   -> "wolframAlphaToolEvaluate-WithUI"
 ]
 
 (* If UI result was returned with Content, verify it has items *)
@@ -98,7 +98,7 @@ VerificationTest[
         StringQ @ $waUIResult
     ],
     True,
-    TestID -> "wolframAlphaToolEvaluate-WithUI-HasContent@@Tests/WolframAlpha-UI.wlt:94,1-102,2"
+    TestID -> "wolframAlphaToolEvaluate-WithUI-HasContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -117,7 +117,7 @@ VerificationTest[
     ],
     _String | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "wolframAlphaToolEvaluate-NoDeploy@@Tests/WolframAlpha-UI.wlt:111,1-121,2"
+    TestID   -> "wolframAlphaToolEvaluate-NoDeploy"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -133,7 +133,7 @@ VerificationTest[
     ],
     "ui://wolfram/wolframalpha-viewer",
     SameTest -> Equal,
-    TestID   -> "WolframAlphaAssociation-DeployEnabled@@Tests/WolframAlpha-UI.wlt:130,1-137,2"
+    TestID   -> "WolframAlphaAssociation-DeployEnabled"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -145,7 +145,7 @@ VerificationTest[
     ],
     None,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlphaAssociation-DeployDisabled@@Tests/WolframAlpha-UI.wlt:142,1-149,2"
+    TestID   -> "WolframAlphaAssociation-DeployDisabled"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

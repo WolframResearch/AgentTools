@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/MCPAppsTest.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/MCPAppsTest.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -29,14 +29,14 @@ VerificationTest[
     KeyExistsQ[ $DefaultMCPTools, "MCPAppsTest" ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-RegisteredInDefaultTools@@Tests/MCPAppsTest.wlt:28,1-33,2"
+    TestID   -> "MCPAppsTest-RegisteredInDefaultTools"
 ]
 
 VerificationTest[
     Head @ $DefaultMCPTools[ "MCPAppsTest" ],
     LLMTool,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-IsLLMTool@@Tests/MCPAppsTest.wlt:35,1-40,2"
+    TestID   -> "MCPAppsTest-IsLLMTool"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -53,7 +53,7 @@ VerificationTest[
     MatchQ[ result, <| "Content" -> { _Association } |> ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ReturnsContentStructure@@Tests/MCPAppsTest.wlt:49,1-57,2"
+    TestID   -> "MCPAppsTest-ReturnsContentStructure"
 ]
 
 VerificationTest[
@@ -63,7 +63,7 @@ VerificationTest[
     result[[ "Content", 1, "type" ]],
     "text",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ContentTypeIsText@@Tests/MCPAppsTest.wlt:59,1-67,2"
+    TestID   -> "MCPAppsTest-ContentTypeIsText"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -77,7 +77,7 @@ VerificationTest[
     json[ "echo" ],
     "test echo",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-EchoesMessage@@Tests/MCPAppsTest.wlt:72,1-81,2"
+    TestID   -> "MCPAppsTest-EchoesMessage"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -91,7 +91,7 @@ VerificationTest[
     StringQ @ json[ "timestamp" ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ContainsTimestamp@@Tests/MCPAppsTest.wlt:86,1-95,2"
+    TestID   -> "MCPAppsTest-ContainsTimestamp"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -105,7 +105,7 @@ VerificationTest[
     AssociationQ @ json[ "server" ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ContainsServerInfo@@Tests/MCPAppsTest.wlt:100,1-109,2"
+    TestID   -> "MCPAppsTest-ContainsServerInfo"
 ]
 
 VerificationTest[
@@ -116,7 +116,7 @@ VerificationTest[
     { StringQ @ json[ "server", "name" ], StringQ @ json[ "server", "version" ], NumberQ @ json[ "server", "kernel" ] },
     { True, True, True },
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ServerInfoFields@@Tests/MCPAppsTest.wlt:111,1-120,2"
+    TestID   -> "MCPAppsTest-ServerInfoFields"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -130,14 +130,14 @@ VerificationTest[
     KeyExistsQ[ Wolfram`AgentTools`Common`$toolUIAssociations, "MCPAppsTest" ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-InToolUIAssociations@@Tests/MCPAppsTest.wlt:129,1-134,2"
+    TestID   -> "MCPAppsTest-InToolUIAssociations"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`$toolUIAssociations[ "MCPAppsTest" ],
     "ui://wolfram/mcp-apps-test",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-CorrectResourceURI@@Tests/MCPAppsTest.wlt:136,1-141,2"
+    TestID   -> "MCPAppsTest-CorrectResourceURI"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -150,7 +150,7 @@ VerificationTest[
     ],
     "ui://wolfram/mcp-apps-test",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ToolUIMetadataResourceURI@@Tests/MCPAppsTest.wlt:146,1-154,2"
+    TestID   -> "MCPAppsTest-ToolUIMetadataResourceURI"
 ]
 
 VerificationTest[
@@ -160,7 +160,7 @@ VerificationTest[
     ],
     { "model", "app" },
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ToolUIMetadataVisibility@@Tests/MCPAppsTest.wlt:156,1-164,2"
+    TestID   -> "MCPAppsTest-ToolUIMetadataVisibility"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -173,7 +173,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-InResourceRegistry@@Tests/MCPAppsTest.wlt:169,1-177,2"
+    TestID   -> "MCPAppsTest-InResourceRegistry"
 ]
 
 VerificationTest[
@@ -183,7 +183,7 @@ VerificationTest[
     ],
     "text/html;profile=mcp-app",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ResourceMimeType@@Tests/MCPAppsTest.wlt:179,1-187,2"
+    TestID   -> "MCPAppsTest-ResourceMimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -203,7 +203,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ReadUIResourceContainsMCPAppsTest@@Tests/MCPAppsTest.wlt:192,1-207,2"
+    TestID   -> "MCPAppsTest-ReadUIResourceContainsMCPAppsTest"
 ]
 
 VerificationTest[
@@ -220,7 +220,7 @@ VerificationTest[
     ],
     "text/html;profile=mcp-app",
     SameTest -> Equal,
-    TestID   -> "MCPAppsTest-ReadUIResourceMimeType@@Tests/MCPAppsTest.wlt:209,1-224,2"
+    TestID   -> "MCPAppsTest-ReadUIResourceMimeType"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -233,7 +233,7 @@ VerificationTest[
     ],
     KeyValuePattern[ "ui" -> KeyValuePattern[ "prefersBorder" -> True ] ],
     SameTest -> MatchQ,
-    TestID   -> "MCPAppsTest-JSONMetadataLoaded@@Tests/MCPAppsTest.wlt:229,1-237,2"
+    TestID   -> "MCPAppsTest-JSONMetadataLoaded"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

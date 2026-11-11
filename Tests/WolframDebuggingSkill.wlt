@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/WolframDebuggingSkill.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/WolframDebuggingSkill.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* The tests deliberately use uncaught Throw and Print inside the helpers that contain or capture them *)
@@ -60,7 +60,7 @@ VerificationTest[
     ],
     { Null, { }, True, { } },
     SameTest -> MatchQ,
-    TestID   -> "Load-NoMessagesNoGlobalSymbols@@Tests/WolframDebuggingSkill.wlt:48,1-64,2"
+    TestID   -> "Load-NoMessagesNoGlobalSymbols"
 ]
 
 VerificationTest[
@@ -77,7 +77,7 @@ VerificationTest[
         "WithHTTPLog", "WithOverrides"
     },
     SameTest -> SameQ,
-    TestID   -> "Load-PublicSymbols@@Tests/WolframDebuggingSkill.wlt:66,1-81,2"
+    TestID   -> "Load-PublicSymbols"
 ]
 
 VerificationTest[
@@ -91,7 +91,7 @@ VerificationTest[
     ],
     { },
     SameTest -> SameQ,
-    TestID   -> "Load-UsageAndProtected@@Tests/WolframDebuggingSkill.wlt:83,1-95,2"
+    TestID   -> "Load-UsageAndProtected"
 ]
 
 (* loading must not evaluate autoload stubs (a load-time list containing EvaluationData loaded Evaluation.mx): the
@@ -115,14 +115,14 @@ VerificationTest[
     ],
     { },
     SameTest -> SameQ,
-    TestID   -> "Load-NoAutoloadTriggers@@Tests/WolframDebuggingSkill.wlt:99,1-119,2"
+    TestID   -> "Load-NoAutoloadTriggers"
 ]
 
 VerificationTest[
     { MemberQ[ $ContextPath, "WolframDebugging`" ], MemberQ[ $ContextPath, "WolframDebugging`Private`" ], wdtHandlerCounts[ ] === $wdtHandlers },
     { True, False, True },
     SameTest -> SameQ,
-    TestID   -> "Load-NoSideEffects@@Tests/WolframDebuggingSkill.wlt:121,1-126,2"
+    TestID   -> "Load-NoSideEffects"
 ]
 
 VerificationTest[
@@ -132,7 +132,7 @@ VerificationTest[
     ],
     { True, True, "{1, 2, 3, 4, 5, <<92>>, 98, 99, 100}" },
     SameTest -> SameQ,
-    TestID   -> "Load-Reload@@Tests/WolframDebuggingSkill.wlt:128,1-136,2"
+    TestID   -> "Load-Reload"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -229,7 +229,7 @@ VerificationTest[
         "\"a\\nb\""
     },
     SameTest -> SameQ,
-    TestID   -> "ShortString@@Tests/WolframDebuggingSkill.wlt:214,1-233,2"
+    TestID   -> "ShortString"
 ]
 
 VerificationTest[
@@ -239,7 +239,7 @@ VerificationTest[
         "Expected"          -> _String
     } ],
     SameTest -> MatchQ,
-    TestID   -> "ShortString-InvalidCall@@Tests/WolframDebuggingSkill.wlt:235,1-243,2"
+    TestID   -> "ShortString-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -256,14 +256,14 @@ VerificationTest[
         "Notes"         -> { ___String }
     },
     SameTest -> MatchQ,
-    TestID   -> "EnvironmentInfo@@Tests/WolframDebuggingSkill.wlt:248,1-260,2"
+    TestID   -> "EnvironmentInfo"
 ]
 
 VerificationTest[
     WolframDebugging`EnvironmentInfo[ 1 ],
     Failure[ "WolframDebugging", KeyValuePattern[ "Expected" -> "EnvironmentInfo[]" ] ],
     SameTest -> MatchQ,
-    TestID   -> "EnvironmentInfo-InvalidCall@@Tests/WolframDebuggingSkill.wlt:262,1-267,2"
+    TestID   -> "EnvironmentInfo-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -290,7 +290,7 @@ VerificationTest[
     |>,
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "CollectMessages@@Tests/WolframDebuggingSkill.wlt:276,1-294,2"
+    TestID   -> "CollectMessages"
 ]
 
 VerificationTest[
@@ -298,7 +298,7 @@ VerificationTest[
     { True, True, True, True, False, False },
     { Power::infy, Power::infy, Power::infy, General::stop },
     SameTest -> SameQ,
-    TestID   -> "CollectMessages-PrintedFlags@@Tests/WolframDebuggingSkill.wlt:296,1-302,2"
+    TestID   -> "CollectMessages-PrintedFlags"
 ]
 
 VerificationTest[
@@ -309,14 +309,14 @@ VerificationTest[
     <| "Result" -> Missing[ "Stopped" ], "MessageCount" -> 2 |>,
     { First::nofirst, Last::nolast },
     SameTest -> SameQ,
-    TestID   -> "CollectMessages-StopAt@@Tests/WolframDebuggingSkill.wlt:304,1-313,2"
+    TestID   -> "CollectMessages-StopAt"
 ]
 
 VerificationTest[
     WolframDebugging`CollectMessages[ Quiet[ 1 / 0 ], "IncludeQuieted" -> True, "StackFrames" -> 0 ][ "Messages" ],
     { KeyValuePattern @ { "Message" -> HoldForm[ Power::infy ], "Printed" -> False, "Quieted" -> True } },
     SameTest -> MatchQ,
-    TestID   -> "CollectMessages-IncludeQuieted@@Tests/WolframDebuggingSkill.wlt:315,1-320,2"
+    TestID   -> "CollectMessages-IncludeQuieted"
 ]
 
 VerificationTest[
@@ -331,7 +331,7 @@ VerificationTest[
         $Aborted
     },
     SameTest -> MatchQ,
-    TestID   -> "CollectMessages-ThrowAndAbortContained@@Tests/WolframDebuggingSkill.wlt:322,1-335,2"
+    TestID   -> "CollectMessages-ThrowAndAbortContained"
 ]
 
 VerificationTest[
@@ -341,7 +341,7 @@ VerificationTest[
     },
     { Missing[ "TooLarge", KeyValuePattern @ { "ByteCount" -> _Integer, "Preview" -> _String } ], 10000 },
     SameTest -> MatchQ,
-    TestID   -> "CollectMessages-MaxResultBytes@@Tests/WolframDebuggingSkill.wlt:337,1-345,2"
+    TestID   -> "CollectMessages-MaxResultBytes"
 ]
 
 VerificationTest[
@@ -356,7 +356,7 @@ VerificationTest[
         Failure[ "WolframDebugging", KeyValuePattern[ "Expected" -> "CollectMessages[expr, opts]" ] ]
     },
     SameTest -> MatchQ,
-    TestID   -> "CollectMessages-InvalidCall@@Tests/WolframDebuggingSkill.wlt:347,1-360,2"
+    TestID   -> "CollectMessages-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -372,7 +372,7 @@ VerificationTest[
     |>,
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "StackAtMessage@@Tests/WolframDebuggingSkill.wlt:365,1-376,2"
+    TestID   -> "StackAtMessage"
 ]
 
 VerificationTest[
@@ -388,7 +388,7 @@ VerificationTest[
     },
     { Power::infy, Power::infy, Power::infy },
     SameTest -> SameQ,
-    TestID   -> "StackAtMessage-Selection@@Tests/WolframDebuggingSkill.wlt:378,1-392,2"
+    TestID   -> "StackAtMessage-Selection"
 ]
 
 VerificationTest[
@@ -414,7 +414,7 @@ VerificationTest[
     },
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "StackAtMessage-RawStack@@Tests/WolframDebuggingSkill.wlt:394,1-418,2"
+    TestID   -> "StackAtMessage-RawStack"
 ]
 
 VerificationTest[
@@ -425,7 +425,7 @@ VerificationTest[
     },
     { _Failure, _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "StackAtMessage-InvalidCall@@Tests/WolframDebuggingSkill.wlt:420,1-429,2"
+    TestID   -> "StackAtMessage-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -441,14 +441,14 @@ VerificationTest[
         { HoldPattern[ wdtOtherFn[ x_ ] ] :> 1 / x }
     },
     SameTest -> SameQ,
-    TestID   -> "StackAtCall@@Tests/WolframDebuggingSkill.wlt:434,1-445,2"
+    TestID   -> "StackAtCall"
 ]
 
 VerificationTest[
     KeyTake[ WolframDebugging`StackAtCall[ wdtMyFn[ 1, 4 ], _wdtOtherFn, "MaxCount" -> 2, "Stop" -> False, "RawStack" -> True ], { "Result", "Count", "RawStacks" } ],
     <| "Result" -> { 1, 1 / 2, 1 / 3, 1 / 4 }, "Count" -> 2, "RawStacks" -> { { __ }, { __ } } |>,
     SameTest -> MatchQ,
-    TestID   -> "StackAtCall-RecordAndContinue@@Tests/WolframDebuggingSkill.wlt:447,1-452,2"
+    TestID   -> "StackAtCall-RecordAndContinue"
 ]
 
 VerificationTest[
@@ -463,7 +463,7 @@ VerificationTest[
         Failure[ "WolframDebugging", _ ]
     },
     SameTest -> MatchQ,
-    TestID   -> "StackAtCall-InvalidCall@@Tests/WolframDebuggingSkill.wlt:454,1-467,2"
+    TestID   -> "StackAtCall-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -486,7 +486,7 @@ VerificationTest[
         "(1 frames)\n1| f[]"
     },
     SameTest -> SameQ,
-    TestID   -> "FormatStack@@Tests/WolframDebuggingSkill.wlt:472,1-490,2"
+    TestID   -> "FormatStack"
 ]
 
 (* frames of curried calls: the heads (wdtCurried[1][2]) must not be evaluated while formatting *)
@@ -507,7 +507,7 @@ VerificationTest[
         0
     },
     SameTest -> SameQ,
-    TestID   -> "FormatStack-CompoundHeadsNotEvaluated@@Tests/WolframDebuggingSkill.wlt:493,1-511,2"
+    TestID   -> "FormatStack-CompoundHeadsNotEvaluated"
 ]
 
 VerificationTest[
@@ -518,7 +518,7 @@ VerificationTest[
     },
     { _Failure, _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "FormatStack-InvalidCall@@Tests/WolframDebuggingSkill.wlt:513,1-522,2"
+    TestID   -> "FormatStack-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -531,7 +531,7 @@ VerificationTest[
     },
     { { { "wdtF", 2 }, { "Plus", 1 } }, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "StackSummary@@Tests/WolframDebuggingSkill.wlt:527,1-535,2"
+    TestID   -> "StackSummary"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -553,7 +553,7 @@ VerificationTest[
     |>,
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "CaptureEvaluation@@Tests/WolframDebuggingSkill.wlt:540,1-557,2"
+    TestID   -> "CaptureEvaluation"
 ]
 
 VerificationTest[
@@ -565,7 +565,7 @@ VerificationTest[
     },
     { "Throw[1, \"t\"]", "Throw[2]", True, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "CaptureEvaluation-ThrowAbortInvalid@@Tests/WolframDebuggingSkill.wlt:559,1-569,2"
+    TestID   -> "CaptureEvaluation-ThrowAbortInvalid"
 ]
 
 VerificationTest[
@@ -578,7 +578,7 @@ VerificationTest[
     },
     { "2", { } },
     SameTest -> SameQ,
-    TestID   -> "CaptureFunction-SelfContained@@Tests/WolframDebuggingSkill.wlt:571,1-582,2"
+    TestID   -> "CaptureFunction-SelfContained"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -597,21 +597,21 @@ VerificationTest[
         "Result"     -> $TimedOut
     },
     SameTest -> MatchQ,
-    TestID   -> "SampleStacks-TimedOut@@Tests/WolframDebuggingSkill.wlt:591,1-601,2"
+    TestID   -> "SampleStacks-TimedOut"
 ]
 
 VerificationTest[
     KeyTake[ WolframDebugging`SampleStacks[ wdtCollatz[ 4 ], 5 ], { "TimedOut", "Result", "TimeLimit" } ],
     <| "TimedOut" -> False, "Result" -> 2, "TimeLimit" -> 5. |>,
     SameTest -> SameQ,
-    TestID   -> "SampleStacks-Finished@@Tests/WolframDebuggingSkill.wlt:603,1-608,2"
+    TestID   -> "SampleStacks-Finished"
 ]
 
 VerificationTest[
     { WolframDebugging`SampleStacks[ 1, -1 ], WolframDebugging`SampleStacks[ 1, "Interval" -> 0 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "SampleStacks-InvalidCall@@Tests/WolframDebuggingSkill.wlt:610,1-615,2"
+    TestID   -> "SampleStacks-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -622,7 +622,7 @@ VerificationTest[
     <| "Calls" -> <| "wdtMyFn" -> 1, "wdtOtherFn" -> 7 |>, "Result" -> { -1 / 3, -1 / 2, -1, ComplexInfinity, 1, 1 / 2, 1 / 3 } |>,
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "TimeCalls@@Tests/WolframDebuggingSkill.wlt:620,1-626,2"
+    TestID   -> "TimeCalls"
 ]
 
 VerificationTest[
@@ -637,7 +637,7 @@ VerificationTest[
         True
     },
     SameTest -> MatchQ,
-    TestID   -> "TimeCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:628,1-641,2"
+    TestID   -> "TimeCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -647,7 +647,7 @@ VerificationTest[
     { WolframDebugging`TraceAvailableQ[ ], WolframDebugging`TraceAvailableQ[ 1 ] },
     { Trace[ 1 + 1 ] =!= { }, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "TraceAvailableQ@@Tests/WolframDebuggingSkill.wlt:646,1-651,2"
+    TestID   -> "TraceAvailableQ"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -661,14 +661,14 @@ VerificationTest[
         Failure[ "TraceUnavailable", _ ]
     ],
     SameTest -> MatchQ,
-    TestID   -> "TraceCalls@@Tests/WolframDebuggingSkill.wlt:657,1-665,2"
+    TestID   -> "TraceCalls"
 ]
 
 VerificationTest[
     { WolframDebugging`TraceCalls[ 1, _f, 0 ], WolframDebugging`TraceCalls[ 1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "TraceCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:667,1-672,2"
+    TestID   -> "TraceCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -678,14 +678,14 @@ VerificationTest[
     WolframDebugging`CountCalls[ wdtFib[ 8 ], _wdtFib | _wdtHlp ],
     If[ WolframDebugging`TraceAvailableQ[ ], <| "wdtFib" -> 67, "wdtHlp" -> 33 |>, Failure[ "TraceUnavailable", _ ] ],
     SameTest -> MatchQ,
-    TestID   -> "CountCalls@@Tests/WolframDebuggingSkill.wlt:677,1-682,2"
+    TestID   -> "CountCalls"
 ]
 
 VerificationTest[
     WolframDebugging`CountCalls[ 1, _f, "MaxEntries" -> 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "CountCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:684,1-689,2"
+    TestID   -> "CountCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -706,14 +706,14 @@ VerificationTest[
         { Failure[ "TraceUnavailable", _ ], Failure[ "TraceUnavailable", _ ] }
     ],
     SameTest -> MatchQ,
-    TestID   -> "FindHang@@Tests/WolframDebuggingSkill.wlt:694,1-710,2"
+    TestID   -> "FindHang"
 ]
 
 VerificationTest[
     WolframDebugging`FindHang[ 1, -5 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "FindHang-InvalidCall@@Tests/WolframDebuggingSkill.wlt:712,1-717,2"
+    TestID   -> "FindHang-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -741,7 +741,7 @@ VerificationTest[
         { HoldPattern[ wdtFact[ 0 ] ] :> 1, HoldPattern[ wdtFact[ n_ ] ] :> n * wdtFact[ n - 1 ] }
     },
     SameTest -> SameQ,
-    TestID   -> "LogCalls@@Tests/WolframDebuggingSkill.wlt:726,1-745,2"
+    TestID   -> "LogCalls"
 ]
 
 VerificationTest[
@@ -760,7 +760,7 @@ VerificationTest[
         _Failure
     },
     SameTest -> MatchQ,
-    TestID   -> "LogCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:747,1-764,2"
+    TestID   -> "LogCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -782,7 +782,7 @@ VerificationTest[
         { 3, 4 }
     },
     SameTest -> SameQ,
-    TestID   -> "WithOverrides@@Tests/WolframDebuggingSkill.wlt:769,1-786,2"
+    TestID   -> "WithOverrides"
 ]
 
 VerificationTest[
@@ -797,7 +797,7 @@ VerificationTest[
         Failure[ "WolframDebugging", KeyValuePattern[ "Function" -> "WolframDebugging`WithOverrides" ] ]
     },
     SameTest -> MatchQ,
-    TestID   -> "WithOverrides-InvalidCall@@Tests/WolframDebuggingSkill.wlt:788,1-801,2"
+    TestID   -> "WithOverrides-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -812,7 +812,7 @@ VerificationTest[
     ],
     { "CHANGED", True, 1 / 2, { }, _String? ( StringEndsQ[ "`wdtOtherFn" ] ) },
     SameTest -> MatchQ,
-    TestID   -> "SnapshotRestoreDefinitions@@Tests/WolframDebuggingSkill.wlt:806,1-816,2"
+    TestID   -> "SnapshotRestoreDefinitions"
 ]
 
 VerificationTest[
@@ -824,7 +824,7 @@ VerificationTest[
     },
     { _Failure, _Failure, _Failure, True },
     SameTest -> MatchQ,
-    TestID   -> "SnapshotRestoreDefinitions-InvalidCall@@Tests/WolframDebuggingSkill.wlt:818,1-828,2"
+    TestID   -> "SnapshotRestoreDefinitions-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -845,14 +845,14 @@ VerificationTest[
         }
     |>,
     SameTest -> SameQ,
-    TestID   -> "WatchChanges@@Tests/WolframDebuggingSkill.wlt:837,1-849,2"
+    TestID   -> "WatchChanges"
 ]
 
 VerificationTest[
     { WolframDebugging`WatchChanges[ { 1 }, 1 ], WolframDebugging`WatchChanges[ { wdtCounter }, 1, "MaxEvents" -> -1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "WatchChanges-InvalidCall@@Tests/WolframDebuggingSkill.wlt:851,1-856,2"
+    TestID   -> "WatchChanges-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -868,14 +868,14 @@ VerificationTest[
         <| "Stopped" -> False, "Result" -> 5 |>
     },
     SameTest -> SameQ,
-    TestID   -> "StopWhen@@Tests/WolframDebuggingSkill.wlt:861,1-872,2"
+    TestID   -> "StopWhen"
 ]
 
 VerificationTest[
     WolframDebugging`StopWhen[ 1, # > 2 &, 1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "StopWhen-InvalidCall@@Tests/WolframDebuggingSkill.wlt:874,1-879,2"
+    TestID   -> "StopWhen-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -885,14 +885,14 @@ VerificationTest[
     WolframDebugging`NewSymbolsDuring @ ToExpression[ "wdtNewSymbol" <> ToString @ $SessionID <> " + 1" ],
     KeyValuePattern @ { "Count" -> 1, "NewSymbols" -> { _String? ( StringContainsQ[ "wdtNewSymbol" ] ) } },
     SameTest -> MatchQ,
-    TestID   -> "NewSymbolsDuring@@Tests/WolframDebuggingSkill.wlt:884,1-889,2"
+    TestID   -> "NewSymbolsDuring"
 ]
 
 VerificationTest[
     WolframDebugging`NewSymbolsDuring[ 1, 2 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "NewSymbolsDuring-InvalidCall@@Tests/WolframDebuggingSkill.wlt:891,1-896,2"
+    TestID   -> "NewSymbolsDuring-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -907,14 +907,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FileWritesDuring@@Tests/WolframDebuggingSkill.wlt:901,1-911,2"
+    TestID   -> "FileWritesDuring"
 ]
 
 VerificationTest[
     WolframDebugging`FileWritesDuring[ 1, "MaxFiles" -> 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "FileWritesDuring-InvalidCall@@Tests/WolframDebuggingSkill.wlt:913,1-918,2"
+    TestID   -> "FileWritesDuring-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -930,7 +930,7 @@ VerificationTest[
         <| "Result" -> Null, "PrintCount" -> 5, "Prints" -> { "1", "2" } |>
     },
     SameTest -> SameQ,
-    TestID   -> "CapturePrints@@Tests/WolframDebuggingSkill.wlt:923,1-934,2"
+    TestID   -> "CapturePrints"
 ]
 
 VerificationTest[
@@ -944,14 +944,14 @@ VerificationTest[
     ],
     ConstantArray[ <| "Result" -> 3, "PrintCount" -> 4, "Prints" -> { "<< 1 + 1", ">> 2", ">> lbl {1, 2}", "text" } |>, 2 ],
     SameTest -> SameQ,
-    TestID   -> "CapturePrints-Notebooks@@Tests/WolframDebuggingSkill.wlt:936,1-948,2"
+    TestID   -> "CapturePrints-Notebooks"
 ]
 
 VerificationTest[
     WolframDebugging`CapturePrints[ 1, 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "CapturePrints-InvalidCall@@Tests/WolframDebuggingSkill.wlt:950,1-955,2"
+    TestID   -> "CapturePrints-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -961,14 +961,14 @@ VerificationTest[
     WolframDebugging`FailedAssertions[ wdtAssert[ -1 ] + wdtAssert[ 2 ] ],
     KeyValuePattern @ { "Result" -> 1, "Count" -> 1, "Failed" -> { KeyValuePattern @ { "Assert" -> "-1 > 0", "Callers" -> { "wdtAssert" } } } },
     SameTest -> MatchQ,
-    TestID   -> "FailedAssertions@@Tests/WolframDebuggingSkill.wlt:960,1-965,2"
+    TestID   -> "FailedAssertions"
 ]
 
 VerificationTest[
     WolframDebugging`FailedAssertions[ ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "FailedAssertions-InvalidCall@@Tests/WolframDebuggingSkill.wlt:967,1-972,2"
+    TestID   -> "FailedAssertions-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -984,14 +984,14 @@ VerificationTest[
         "OtherNewSymbols"    -> { }
     },
     SameTest -> MatchQ,
-    TestID   -> "LeakCheck@@Tests/WolframDebuggingSkill.wlt:977,1-988,2"
+    TestID   -> "LeakCheck"
 ]
 
 VerificationTest[
     WolframDebugging`LeakCheck[ 1, -1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "LeakCheck-InvalidCall@@Tests/WolframDebuggingSkill.wlt:990,1-995,2"
+    TestID   -> "LeakCheck-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1009,7 +1009,7 @@ VerificationTest[
         "Rules"   -> { "DownValues[[1]]: wdtArea[(r_)?NumericQ] -> test NumericQ[\"4\"] gave False" }
     },
     SameTest -> MatchQ,
-    TestID   -> "WhyNoMatch-PatternTest@@Tests/WolframDebuggingSkill.wlt:1004,1-1013,2"
+    TestID   -> "WhyNoMatch-PatternTest"
 ]
 
 VerificationTest[
@@ -1024,7 +1024,7 @@ VerificationTest[
         "DownValues[[1]] applies: wdtArea[(r_)?NumericQ]"
     },
     SameTest -> SameQ,
-    TestID   -> "WhyNoMatch-Reasons@@Tests/WolframDebuggingSkill.wlt:1015,1-1028,2"
+    TestID   -> "WhyNoMatch-Reasons"
 ]
 
 VerificationTest[
@@ -1033,7 +1033,7 @@ VerificationTest[
         "DownValues[[1]]: wdtRep[x:{__Integer}] -> argument #1: {1, 2, 3.} -> element 3: 3. does not match _Integer (from __Integer) (head Real, pattern needs Integer)"
     },
     SameTest -> SameQ,
-    TestID   -> "WhyNoMatch-NamedListPattern@@Tests/WolframDebuggingSkill.wlt:1030,1-1037,2"
+    TestID   -> "WhyNoMatch-NamedListPattern"
 ]
 
 VerificationTest[
@@ -1048,14 +1048,14 @@ VerificationTest[
         _String? ( StringStartsQ[ "the analysis was interrupted" ] )
     },
     SameTest -> MatchQ,
-    TestID   -> "WhyNoMatch-NoDefinitionsBuiltinThrow@@Tests/WolframDebuggingSkill.wlt:1039,1-1052,2"
+    TestID   -> "WhyNoMatch-NoDefinitionsBuiltinThrow"
 ]
 
 VerificationTest[
     { WolframDebugging`WhyNoMatch[ wdtArea[ 1 ], "MaxRules" -> -1 ], WolframDebugging`WhyNoMatch[ ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "WhyNoMatch-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1054,1-1059,2"
+    TestID   -> "WhyNoMatch-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1071,14 +1071,14 @@ VerificationTest[
         |>
     |>,
     SameTest -> SameQ,
-    TestID   -> "StuckCalls@@Tests/WolframDebuggingSkill.wlt:1064,1-1075,2"
+    TestID   -> "StuckCalls"
 ]
 
 VerificationTest[
     WolframDebugging`StuckCalls[ 1, "MaxHeads" -> 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "StuckCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1077,1-1082,2"
+    TestID   -> "StuckCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1098,14 +1098,14 @@ VerificationTest[
     },
     { "wdtRP[x_] := x + 1", "wdtRP[x_] := x + 1", "wd...", Missing[ "UnknownSymbol", _ ], { ReadProtected } },
     SameTest -> MatchQ,
-    TestID   -> "ShowDefinition@@Tests/WolframDebuggingSkill.wlt:1091,1-1102,2"
+    TestID   -> "ShowDefinition"
 ]
 
 VerificationTest[
     { WolframDebugging`ShowDefinition[ wdtRP, 0 ], WolframDebugging`ShowDefinition[ 1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "ShowDefinition-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1104,1-1109,2"
+    TestID   -> "ShowDefinition-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1131,14 +1131,14 @@ VerificationTest[
         Missing[ "UnknownSymbol", _ ]
     },
     SameTest -> MatchQ,
-    TestID   -> "SymbolKind@@Tests/WolframDebuggingSkill.wlt:1114,1-1135,2"
+    TestID   -> "SymbolKind"
 ]
 
 VerificationTest[
     WolframDebugging`SymbolKind[ Plus, 1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "SymbolKind-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1137,1-1142,2"
+    TestID   -> "SymbolKind-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1160,7 +1160,7 @@ VerificationTest[
         }
     },
     SameTest -> MatchQ,
-    TestID   -> "FindSymbolSource@@Tests/WolframDebuggingSkill.wlt:1147,1-1164,2"
+    TestID   -> "FindSymbolSource"
 ]
 
 VerificationTest[
@@ -1171,7 +1171,7 @@ VerificationTest[
     },
     { Missing[ "UnknownSymbol", _ ], _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "FindSymbolSource-UnknownAndInvalid@@Tests/WolframDebuggingSkill.wlt:1166,1-1175,2"
+    TestID   -> "FindSymbolSource-UnknownAndInvalid"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1191,7 +1191,7 @@ VerificationTest[
         _Failure
     },
     SameTest -> MatchQ,
-    TestID   -> "PacletRoot@@Tests/WolframDebuggingSkill.wlt:1180,1-1195,2"
+    TestID   -> "PacletRoot"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1216,14 +1216,14 @@ VerificationTest[
         "NewFiles"  -> { _String? ( StringStartsQ[ "wdt-" ] @* FileNameTake ) }
     },
     SameTest -> MatchQ,
-    TestID   -> "LoadTrace@@Tests/WolframDebuggingSkill.wlt:1204,1-1220,2"
+    TestID   -> "LoadTrace"
 ]
 
 VerificationTest[
     WolframDebugging`LoadTrace[ 1, "MaxLoads" -> -1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "LoadTrace-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1222,1-1227,2"
+    TestID   -> "LoadTrace-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1238,14 +1238,14 @@ VerificationTest[
         "StaleMX"    -> { }
     },
     SameTest -> MatchQ,
-    TestID   -> "ContextSourceInfo@@Tests/WolframDebuggingSkill.wlt:1232,1-1242,2"
+    TestID   -> "ContextSourceInfo"
 ]
 
 VerificationTest[
     { WolframDebugging`ContextSourceInfo[ "CodeParser" ], WolframDebugging`ContextSourceInfo[ ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "ContextSourceInfo-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1244,1-1249,2"
+    TestID   -> "ContextSourceInfo-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1261,14 +1261,14 @@ VerificationTest[
     },
     { False, False, False, True, Missing[ "UnknownSymbol", _ ] },
     SameTest -> MatchQ,
-    TestID   -> "AutoloadStubQ-EnsureLoaded@@Tests/WolframDebuggingSkill.wlt:1254,1-1265,2"
+    TestID   -> "AutoloadStubQ-EnsureLoaded"
 ]
 
 VerificationTest[
     { WolframDebugging`AutoloadStubQ[ 1 ], WolframDebugging`EnsureLoaded[ Plus, Times ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "AutoloadStubQ-EnsureLoaded-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1267,1-1272,2"
+    TestID   -> "AutoloadStubQ-EnsureLoaded-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1290,14 +1290,14 @@ VerificationTest[
         { "Wrong", "Msg" }
     },
     SameTest -> SameQ,
-    TestID   -> "TestFailureSummary@@Tests/WolframDebuggingSkill.wlt:1281,1-1294,2"
+    TestID   -> "TestFailureSummary"
 ]
 
 VerificationTest[
     { WolframDebugging`TestFailureSummary[ { } ], WolframDebugging`TestFailureSummary[ 1 ], WolframDebugging`TestFailureSummary[ { }, "Format" -> "XML" ] },
     { { }, _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "TestFailureSummary-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1296,1-1301,2"
+    TestID   -> "TestFailureSummary-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1313,14 +1313,14 @@ VerificationTest[
         3
     },
     SameTest -> SameQ,
-    TestID   -> "TestSource@@Tests/WolframDebuggingSkill.wlt:1306,1-1317,2"
+    TestID   -> "TestSource"
 ]
 
 VerificationTest[
     WolframDebugging`TestSource[ "/nonexistent-wdt/x.wlt", "Wrong" ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "TestSource-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1319,1-1324,2"
+    TestID   -> "TestSource-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1337,14 +1337,14 @@ VerificationTest[
     },
     { Power::infy, Power::infy },
     SameTest -> MatchQ,
-    TestID   -> "ReproduceTest@@Tests/WolframDebuggingSkill.wlt:1329,1-1341,2"
+    TestID   -> "ReproduceTest"
 ]
 
 VerificationTest[
     { WolframDebugging`ReproduceTest[ 1 ], WolframDebugging`ReproduceTest[ HoldComplete[ 1 ], "Frames" -> -1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "ReproduceTest-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1343,1-1348,2"
+    TestID   -> "ReproduceTest-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1360,7 +1360,7 @@ VerificationTest[
         "Failures"  -> _String? ( StringStartsQ[ "Wrong [Failure/SameTestFailure]" ] )
     },
     SameTest -> MatchQ,
-    TestID   -> "RunTestsByID@@Tests/WolframDebuggingSkill.wlt:1353,1-1364,2"
+    TestID   -> "RunTestsByID"
 ]
 
 (* as in MCP Local: the session context is on $ContextPath and must not capture the test file's symbols *)
@@ -1377,7 +1377,7 @@ VerificationTest[
     ],
     { 1, 1 },
     SameTest -> SameQ,
-    TestID   -> "RunTestsByID-SessionContextOnPath@@Tests/WolframDebuggingSkill.wlt:1367,1-1381,2"
+    TestID   -> "RunTestsByID-SessionContextOnPath"
 ]
 
 (* the default context: the file is read in $Context (Sessions`<id>` in the MCP evaluator) and sees its definitions;
@@ -1395,14 +1395,14 @@ VerificationTest[
     ],
     { 1, 1 },
     SameTest -> SameQ,
-    TestID   -> "RunTestsByID-AutomaticContext@@Tests/WolframDebuggingSkill.wlt:1385,1-1399,2"
+    TestID   -> "RunTestsByID-AutomaticContext"
 ]
 
 VerificationTest[
     { WolframDebugging`RunTestsByID[ "/nonexistent-wdt/x.wlt", "Wrong" ], WolframDebugging`RunTestsByID[ $wdtTestFile, "Wrong", "ReturnReport" -> 1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "RunTestsByID-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1401,1-1406,2"
+    TestID   -> "RunTestsByID-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1412,21 +1412,21 @@ VerificationTest[
     { WolframDebugging`CheckTestFile @ $wdtTestFile, WolframDebugging`CheckTestFile[ $wdtBadTestFile ][[ All, "Issue" ]] },
     { { }, { "DuplicateTestID", "NoTestID", "MalformedVerificationTest", "TopLevelAbort" } },
     SameTest -> SameQ,
-    TestID   -> "CheckTestFile@@Tests/WolframDebuggingSkill.wlt:1411,1-1416,2"
+    TestID   -> "CheckTestFile"
 ]
 
 VerificationTest[
     WolframDebugging`CheckTestFile @ $wdtSyntaxTestFile,
     { KeyValuePattern @ { "Line" -> 3, "Issue" -> "SyntaxError", "Detail" -> _String } },
     SameTest -> MatchQ,
-    TestID   -> "CheckTestFile-UnclosedCall@@Tests/WolframDebuggingSkill.wlt:1418,1-1423,2"
+    TestID   -> "CheckTestFile-UnclosedCall"
 ]
 
 VerificationTest[
     WolframDebugging`CheckTestFile[ "/nonexistent-wdt/x.wlt" ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "CheckTestFile-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1425,1-1430,2"
+    TestID   -> "CheckTestFile-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1451,7 +1451,7 @@ VerificationTest[
     },
     { wdtTask::boom },
     SameTest -> MatchQ,
-    TestID   -> "TaskReport-SubmitAndWait@@Tests/WolframDebuggingSkill.wlt:1439,1-1455,2"
+    TestID   -> "TaskReport-SubmitAndWait"
 ]
 
 (* an outer time limit stops the wait: the task must still be removed *)
@@ -1462,14 +1462,14 @@ VerificationTest[
     },
     { "OuterTimeOut", True },
     SameTest -> SameQ,
-    TestID   -> "SubmitAndWait-OuterTimeLimit@@Tests/WolframDebuggingSkill.wlt:1458,1-1466,2"
+    TestID   -> "SubmitAndWait-OuterTimeLimit"
 ]
 
 VerificationTest[
     { WolframDebugging`TaskReport[ 1 ], WolframDebugging`SubmitAndWait[ 1, -1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "TaskReport-SubmitAndWait-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1468,1-1473,2"
+    TestID   -> "TaskReport-SubmitAndWait-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1497,7 +1497,7 @@ VerificationTest[
         "skipped"
     ],
     SameTest -> MatchQ,
-    TestID   -> "ParallelCapture-KernelReport@@Tests/WolframDebuggingSkill.wlt:1482,1-1501,2"
+    TestID   -> "ParallelCapture-KernelReport"
 ]
 
 VerificationTest[
@@ -1505,7 +1505,7 @@ VerificationTest[
     Kernels[ ],
     { },
     SameTest -> SameQ,
-    TestID   -> "ParallelCapture-CloseKernels@@Tests/WolframDebuggingSkill.wlt:1503,1-1509,2"
+    TestID   -> "ParallelCapture-CloseKernels"
 ]
 
 VerificationTest[
@@ -1517,7 +1517,7 @@ VerificationTest[
     },
     { <| "Kernels" -> { }, "SubkernelPIDs" -> { } |>, _Failure, _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "ParallelCapture-KernelReport-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1511,1-1521,2"
+    TestID   -> "ParallelCapture-KernelReport-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1542,14 +1542,14 @@ VerificationTest[
         <| "Failure" -> "ConnectionFailure", "Text" -> _String, "URL" -> "http://localhost:1" |>
     },
     SameTest -> MatchQ,
-    TestID   -> "HTTPSummary@@Tests/WolframDebuggingSkill.wlt:1530,1-1546,2"
+    TestID   -> "HTTPSummary"
 ]
 
 VerificationTest[
     { WolframDebugging`HTTPSummary[ 1 ], WolframDebugging`HTTPSummary[ <| "StatusCode" -> 200 |>, "MaxLength" -> 0 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "HTTPSummary-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1548,1-1553,2"
+    TestID   -> "HTTPSummary-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1569,14 +1569,14 @@ VerificationTest[
     },
     { Power::infy },
     SameTest -> MatchQ,
-    TestID   -> "DebugHTTPResponse@@Tests/WolframDebuggingSkill.wlt:1558,1-1573,2"
+    TestID   -> "DebugHTTPResponse"
 ]
 
 VerificationTest[
     WolframDebugging`DebugHTTPResponse[ APIFunction[ { }, 1 & ], 1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "DebugHTTPResponse-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1575,1-1580,2"
+    TestID   -> "DebugHTTPResponse-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1601,7 +1601,7 @@ VerificationTest[
     },
     { Power::infy },
     SameTest -> SameQ,
-    TestID   -> "HTTPDiagnostics@@Tests/WolframDebuggingSkill.wlt:1585,1-1605,2"
+    TestID   -> "HTTPDiagnostics"
 ]
 
 (* a debug=1 request gets a report only with "Debug" -> Automatic, since the report goes to whoever made the request;
@@ -1640,14 +1640,14 @@ VerificationTest[
         "DebugRequested"
     },
     SameTest -> SameQ,
-    TestID   -> "HTTPDiagnostics-DebugParameter@@Tests/WolframDebuggingSkill.wlt:1610,1-1644,2"
+    TestID   -> "HTTPDiagnostics-DebugParameter"
 ]
 
 VerificationTest[
     WolframDebugging`HTTPDiagnostics[ 1, "TimeLimit" -> -1 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "HTTPDiagnostics-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1646,1-1651,2"
+    TestID   -> "HTTPDiagnostics-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1665,14 +1665,14 @@ VerificationTest[
     ],
     { { KeyValuePattern @ { "Function" -> "URLFetch", "Method" -> "GET", "URL" -> "http://127.0.0.1:1/wdt", "Status" -> $Failed } }, True },
     SameTest -> MatchQ,
-    TestID   -> "WithHTTPLog@@Tests/WolframDebuggingSkill.wlt:1657,1-1669,2"
+    TestID   -> "WithHTTPLog"
 ]
 
 VerificationTest[
     WolframDebugging`WithHTTPLog[ 1, "URLLength" -> 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "WithHTTPLog-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1671,1-1676,2"
+    TestID   -> "WithHTTPLog-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1693,14 +1693,14 @@ VerificationTest[
     ],
     { { "Kind", "TraceWorks" }, True, <| |>, <| "Limits/RecursionLimit" -> { _, 77 } |> },
     SameTest -> MatchQ,
-    TestID   -> "EnvironmentFingerprint-FingerprintDiff@@Tests/WolframDebuggingSkill.wlt:1685,1-1697,2"
+    TestID   -> "EnvironmentFingerprint-FingerprintDiff"
 ]
 
 VerificationTest[
     { WolframDebugging`EnvironmentFingerprint[ { "NoSuchKey" } ], WolframDebugging`FingerprintDiff[ 1, 2 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "EnvironmentFingerprint-FingerprintDiff-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1699,1-1704,2"
+    TestID   -> "EnvironmentFingerprint-FingerprintDiff-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1710,14 +1710,14 @@ VerificationTest[
     Quiet @ WolframDebugging`FrontEndCalls[ NotebookDirectory[ ], 30 ],
     KeyValuePattern @ { "FrontEndCalls" -> _Association, "FrontEndMessages" -> { ___String }, "LaunchedFrontEnd" -> False },
     SameTest -> MatchQ,
-    TestID   -> "FrontEndCalls@@Tests/WolframDebuggingSkill.wlt:1709,1-1714,2"
+    TestID   -> "FrontEndCalls"
 ]
 
 VerificationTest[
     WolframDebugging`FrontEndCalls[ 1, 0 ],
     _Failure,
     SameTest -> MatchQ,
-    TestID   -> "FrontEndCalls-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1716,1-1721,2"
+    TestID   -> "FrontEndCalls-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1736,14 +1736,14 @@ VerificationTest[
         { <| "ExitCode" -> 0, "Status" -> "OK", "StdOut" -> "2\n", "KilledLeftovers" -> { } |>, <| "Status" -> "TimedOut" |> }
     ],
     SameTest -> MatchQ,
-    TestID   -> "RunIsolated@@Tests/WolframDebuggingSkill.wlt:1726,1-1740,2"
+    TestID   -> "RunIsolated"
 ]
 
 VerificationTest[
     { WolframDebugging`RunIsolated[ File[ "/nonexistent-wdt/x.wls" ] ], WolframDebugging`RunIsolated[ "1", "TimeLimit" -> 0 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "RunIsolated-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1742,1-1747,2"
+    TestID   -> "RunIsolated-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1757,14 +1757,14 @@ VerificationTest[
     { WolframDebugging`LintSummary[ "f[x_] := If[x = 1, {1,2,}, x]" ], WolframDebugging`LintSummary[ "f[x_] := x + 1" ] },
     { "L1:13 IfSet (Warning 0.85) `If` has `Set` as first argument.\nL1:25 Comma (Error 1.) Extra `,`.", "No issues." },
     SameTest -> SameQ,
-    TestID   -> "LintSummary@@Tests/WolframDebuggingSkill.wlt:1756,1-1761,2"
+    TestID   -> "LintSummary"
 ]
 
 VerificationTest[
     { WolframDebugging`LintSummary[ "f[x_] := x", 2 ], WolframDebugging`LintSummary[ 1 ] },
     { _Failure, _Failure },
     SameTest -> MatchQ,
-    TestID   -> "LintSummary-InvalidCall@@Tests/WolframDebuggingSkill.wlt:1763,1-1768,2"
+    TestID   -> "LintSummary-InvalidCall"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1781,7 +1781,7 @@ VerificationTest[
     },
     { False, { }, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "Cleanup-NoStateLeft@@Tests/WolframDebuggingSkill.wlt:1773,1-1785,2"
+    TestID   -> "Cleanup-NoStateLeft"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

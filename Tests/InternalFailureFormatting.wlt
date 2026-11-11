@@ -8,14 +8,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/InternalFailureFormatting.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/InternalFailureFormatting.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -31,7 +31,7 @@ VerificationTest[
     ],
     "AgentTools::Internal",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerBasic@@Tests/InternalFailureFormatting.wlt:28,1-35,2"
+    TestID   -> "ExtractFailureTag-MCPServerBasic"
 ]
 
 VerificationTest[
@@ -42,7 +42,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::Path@@Kernel/Common.wl:123,1-456,2",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerWithSource@@Tests/InternalFailureFormatting.wlt:37,1-46,2"
+    TestID   -> "ExtractFailureTag-MCPServerWithSource"
 ]
 
 VerificationTest[
@@ -56,7 +56,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::UnhandledDownValues::testSymbol",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerUnhandledDownValues@@Tests/InternalFailureFormatting.wlt:48,1-60,2"
+    TestID   -> "ExtractFailureTag-MCPServerUnhandledDownValues"
 ]
 
 VerificationTest[
@@ -68,7 +68,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::Path@@Kernel/Test.wl:10,1-20,2",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerMXSource@@Tests/InternalFailureFormatting.wlt:62,1-72,2"
+    TestID   -> "ExtractFailureTag-MCPServerMXSource"
 ]
 
 VerificationTest[
@@ -83,7 +83,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::ConfirmBy::testFunction",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerConfirmBy@@Tests/InternalFailureFormatting.wlt:74,1-87,2"
+    TestID   -> "ExtractFailureTag-MCPServerConfirmBy"
 ]
 
 VerificationTest[
@@ -99,7 +99,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::ConfirmBy::testFunction::Path",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerConfirmByWithSource@@Tests/InternalFailureFormatting.wlt:89,1-103,2"
+    TestID   -> "ExtractFailureTag-MCPServerConfirmByWithSource"
 ]
 
 VerificationTest[
@@ -114,7 +114,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::Function::someFunction",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerFunctionOnly@@Tests/InternalFailureFormatting.wlt:105,1-118,2"
+    TestID   -> "ExtractFailureTag-MCPServerFunctionOnly"
 ]
 
 VerificationTest[
@@ -130,7 +130,7 @@ VerificationTest[
     ],
     "AgentTools::Internal::Function::someFunction::Tag",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-MCPServerFunctionWithSource@@Tests/InternalFailureFormatting.wlt:120,1-134,2"
+    TestID   -> "ExtractFailureTag-MCPServerFunctionWithSource"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -142,7 +142,7 @@ VerificationTest[
     ],
     "Chatbook::Internal",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-ChatbookBasic@@Tests/InternalFailureFormatting.wlt:139,1-146,2"
+    TestID   -> "ExtractFailureTag-ChatbookBasic"
 ]
 
 VerificationTest[
@@ -153,7 +153,7 @@ VerificationTest[
     ],
     "Chatbook::Internal::Path@@Kernel/Chatbook.wl:100,1-200,2",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-ChatbookWithSource@@Tests/InternalFailureFormatting.wlt:148,1-157,2"
+    TestID   -> "ExtractFailureTag-ChatbookWithSource"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -165,14 +165,14 @@ VerificationTest[
     ],
     "SomeOther::Tag",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-OtherFailure@@Tests/InternalFailureFormatting.wlt:162,1-169,2"
+    TestID   -> "ExtractFailureTag-OtherFailure"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Common`extractFailureTag[ "not a failure" ],
     "Unknown",
     SameTest -> Equal,
-    TestID   -> "ExtractFailureTag-NotAFailure@@Tests/InternalFailureFormatting.wlt:171,1-176,2"
+    TestID   -> "ExtractFailureTag-NotAFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -184,7 +184,7 @@ VerificationTest[
     StringMatchQ[ fileName, __ ~~ ".mx" ],
     True,
     SameTest -> Equal,
-    TestID   -> "GenerateUniqueFailureFileName-EndsWithMX@@Tests/InternalFailureFormatting.wlt:182,1-188,2"
+    TestID   -> "GenerateUniqueFailureFileName-EndsWithMX"
 ]
 
 VerificationTest[
@@ -192,7 +192,7 @@ VerificationTest[
     StringMatchQ[ fileName, RegularExpression[ "\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}_[a-z0-9]{8}\\.mx" ] ],
     True,
     SameTest -> Equal,
-    TestID   -> "GenerateUniqueFailureFileName-Format@@Tests/InternalFailureFormatting.wlt:190,1-196,2"
+    TestID   -> "GenerateUniqueFailureFileName-Format"
 ]
 
 VerificationTest[
@@ -200,7 +200,7 @@ VerificationTest[
     Length @ Union @ names,
     10,
     SameTest -> Equal,
-    TestID   -> "GenerateUniqueFailureFileName-Uniqueness@@Tests/InternalFailureFormatting.wlt:198,1-204,2"
+    TestID   -> "GenerateUniqueFailureFileName-Uniqueness"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -214,7 +214,7 @@ VerificationTest[
     StringQ @ result,
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-ReturnsString@@Tests/InternalFailureFormatting.wlt:210,1-218,2"
+    TestID   -> "FormatInternalFailureForMCP-ReturnsString"
 ]
 
 VerificationTest[
@@ -224,7 +224,7 @@ VerificationTest[
     StringContainsQ[ result, "[Error]" ],
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-ContainsError@@Tests/InternalFailureFormatting.wlt:220,1-228,2"
+    TestID   -> "FormatInternalFailureForMCP-ContainsError"
 ]
 
 VerificationTest[
@@ -234,7 +234,7 @@ VerificationTest[
     StringContainsQ[ result, "https://github.com/WolframResearch/AgentTools/issues/new" ],
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-ContainsIssueURL@@Tests/InternalFailureFormatting.wlt:230,1-238,2"
+    TestID   -> "FormatInternalFailureForMCP-ContainsIssueURL"
 ]
 
 VerificationTest[
@@ -246,7 +246,7 @@ VerificationTest[
     StringContainsQ[ result, "AgentTools::Internal::Path@@Kernel/Test.wl:10,1-20,2" ],
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-ContainsExtractedTag@@Tests/InternalFailureFormatting.wlt:240,1-250,2"
+    TestID   -> "FormatInternalFailureForMCP-ContainsExtractedTag"
 ]
 
 VerificationTest[
@@ -256,7 +256,7 @@ VerificationTest[
     StringContainsQ[ result, "Chatbook::Internal" ],
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-ChatbookFailure@@Tests/InternalFailureFormatting.wlt:252,1-260,2"
+    TestID   -> "FormatInternalFailureForMCP-ChatbookFailure"
 ]
 
 VerificationTest[
@@ -265,7 +265,7 @@ VerificationTest[
     ],
     None,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-NonInternalFailure@@Tests/InternalFailureFormatting.wlt:262,1-269,2"
+    TestID   -> "FormatInternalFailureForMCP-NonInternalFailure"
 ]
 
 VerificationTest[
@@ -279,7 +279,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "FormatInternalFailureForMCP-NoBoxes@@Tests/InternalFailureFormatting.wlt:271,1-283,2"
+    TestID   -> "FormatInternalFailureForMCP-NoBoxes"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -293,7 +293,7 @@ VerificationTest[
     StringQ @ result,
     True,
     SameTest -> Equal,
-    TestID   -> "SafeString-InternalFailureReturnsString@@Tests/InternalFailureFormatting.wlt:289,1-297,2"
+    TestID   -> "SafeString-InternalFailureReturnsString"
 ]
 
 VerificationTest[
@@ -303,7 +303,7 @@ VerificationTest[
     StringContainsQ[ result, "[Error]" ],
     True,
     SameTest -> Equal,
-    TestID   -> "SafeString-InternalFailureContainsError@@Tests/InternalFailureFormatting.wlt:299,1-307,2"
+    TestID   -> "SafeString-InternalFailureContainsError"
 ]
 
 VerificationTest[
@@ -317,7 +317,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "SafeString-InternalFailureNoBoxes@@Tests/InternalFailureFormatting.wlt:309,1-321,2"
+    TestID   -> "SafeString-InternalFailureNoBoxes"
 ]
 
 VerificationTest[
@@ -327,7 +327,7 @@ VerificationTest[
     StringContainsQ[ result, "Chatbook::Internal" ],
     True,
     SameTest -> Equal,
-    TestID   -> "SafeString-ChatbookInternalFailure@@Tests/InternalFailureFormatting.wlt:323,1-331,2"
+    TestID   -> "SafeString-ChatbookInternalFailure"
 ]
 
 VerificationTest[
@@ -344,7 +344,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "SafeString-RegularFailureFallback@@Tests/InternalFailureFormatting.wlt:333,1-348,2"
+    TestID   -> "SafeString-RegularFailureFallback"
 ]
 
 VerificationTest[
@@ -353,7 +353,7 @@ VerificationTest[
     ],
     "[Error] Something went wrong: x",
     SameTest -> Equal,
-    TestID   -> "SafeString-FailureWithParameters-GH#271@@Tests/InternalFailureFormatting.wlt:350,1-357,2"
+    TestID   -> "SafeString-FailureWithParameters-GH#271"
 ]
 
 VerificationTest[
@@ -365,7 +365,7 @@ VerificationTest[
     ],
     "[Error] Cannot read File[data.txt] (confidence 1.5).",
     SameTest -> Equal,
-    TestID   -> "SafeString-FailureWithExpressionParameters-GH#271@@Tests/InternalFailureFormatting.wlt:359,1-369,2"
+    TestID   -> "SafeString-FailureWithExpressionParameters-GH#271"
 ]
 
 (* LLMTool returns Failure[ "ConfirmationFailed", ... ] for bad arguments, whose template already contains box markup *)
@@ -388,7 +388,7 @@ VerificationTest[
         s2_String /; StringContainsQ[ s2, "could not interpret value \"abc\"" ] && StringFreeQ[ s2, "Box" ]
     },
     SameTest -> MatchQ,
-    TestID   -> "SafeString-LLMToolParameterFailures-GH#271@@Tests/InternalFailureFormatting.wlt:372,1-392,2"
+    TestID   -> "SafeString-LLMToolParameterFailures-GH#271"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -401,7 +401,7 @@ VerificationTest[
     True,
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-NoError@@Tests/InternalFailureFormatting.wlt:398,1-405,2"
+    TestID   -> "CleanupOldFailureLogs-NoError"
 ]
 
 VerificationTest[
@@ -412,7 +412,7 @@ VerificationTest[
     ] <= 50,
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-MaxFiles@@Tests/InternalFailureFormatting.wlt:407,1-416,2"
+    TestID   -> "CleanupOldFailureLogs-MaxFiles"
 ]
 
 VerificationTest[
@@ -438,7 +438,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "CleanupOldFailureLogs-KeepsNewestFiles@@Tests/InternalFailureFormatting.wlt:418,1-442,2"
+    TestID   -> "CleanupOldFailureLogs-KeepsNewestFiles"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -453,7 +453,7 @@ VerificationTest[
     StringQ @ bugReportText,
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-ReturnsString@@Tests/InternalFailureFormatting.wlt:448,1-457,2"
+    TestID   -> "BugReportBody-ReturnsString"
 ]
 
 VerificationTest[
@@ -464,7 +464,7 @@ VerificationTest[
     ! StringContainsQ[ bugReportText, "## Settings" ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-NoSettingsSection@@Tests/InternalFailureFormatting.wlt:459,1-468,2"
+    TestID   -> "BugReportBody-NoSettingsSection"
 ]
 
 VerificationTest[
@@ -475,7 +475,7 @@ VerificationTest[
     ! StringContainsQ[ bugReportText, "%%" ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-NoTemplatePlaceholders@@Tests/InternalFailureFormatting.wlt:470,1-479,2"
+    TestID   -> "BugReportBody-NoTemplatePlaceholders"
 ]
 
 VerificationTest[
@@ -490,7 +490,7 @@ VerificationTest[
     ],
     True,
     SameTest -> Equal,
-    TestID   -> "BugReportBody-ContainsExpectedSections@@Tests/InternalFailureFormatting.wlt:481,1-494,2"
+    TestID   -> "BugReportBody-ContainsExpectedSections"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
