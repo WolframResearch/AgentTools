@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/AgentSkillsBuild.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/AgentSkillsBuild.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* The builder is loaded from the checkout, never from the loaded paclet: in CI the tests run against a build directory
@@ -21,7 +21,7 @@ VerificationTest[
     Get @ FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "Scripts", "Resources", "AgentSkillsBuilder.wl" },
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadBuilder@@Tests/AgentSkillsBuild.wlt:20,1-25,2"
+    TestID   -> "LoadBuilder"
 ]
 
 VerificationTest[
@@ -33,7 +33,7 @@ VerificationTest[
     },
     { True, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "LoadBuilder-Definitions@@Tests/AgentSkillsBuild.wlt:27,1-37,2"
+    TestID   -> "LoadBuilder-Definitions"
 ]
 
 (* :!CodeAnalysis::BeginBlock:: *)
@@ -267,7 +267,7 @@ Run: wolframscript -f Scripts/BuildAgentSkills.wls",
     ],
     <| "Missing" -> { }, "Extra" -> { }, "Different" -> { } |>,
     SameTest -> SameQ,
-    TestID   -> "CommittedSkills-UpToDate@@Tests/AgentSkillsBuild.wlt:243,1-271,2"
+    TestID   -> "CommittedSkills-UpToDate"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -280,7 +280,7 @@ VerificationTest[
     Wolfram`AgentSkillsBuilder`agentSkillsVersion @ $skillsCommittedDirectory,
     _String? (StringMatchQ[ DigitCharacter.. ~~ ("." ~~ DigitCharacter..).. ]),
     SameTest -> MatchQ,
-    TestID   -> "CommittedSkills-Version@@Tests/AgentSkillsBuild.wlt:279,1-284,2"
+    TestID   -> "CommittedSkills-Version"
 ]
 
 VerificationTest[
@@ -290,7 +290,7 @@ VerificationTest[
     ],
     AssociationMap[ 1 &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "CommittedSkills-OneVersionLine@@Tests/AgentSkillsBuild.wlt:286,1-294,2"
+    TestID   -> "CommittedSkills-OneVersionLine"
 ]
 
 (* The build stamps the current paclet version, and paclet versions only increase *)
@@ -304,7 +304,7 @@ VerificationTest[
     ],
     { _String, _String, True },
     SameTest -> MatchQ,
-    TestID   -> "CommittedSkills-VersionNotNewerThanPaclet@@Tests/AgentSkillsBuild.wlt:297,1-308,2"
+    TestID   -> "CommittedSkills-VersionNotNewerThanPaclet"
 ]
 
 (* The build adds only the version line to the source SKILL.md *)
@@ -320,7 +320,7 @@ VerificationTest[
     ],
     AssociationMap[ True &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "CommittedSkills-OnlyVersionAdded@@Tests/AgentSkillsBuild.wlt:311,1-324,2"
+    TestID   -> "CommittedSkills-OnlyVersionAdded"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -349,7 +349,7 @@ VerificationTest[
     ],
     AssociationMap[ { #, True, True, #, True } &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "CommittedSkills-Parse@@Tests/AgentSkillsBuild.wlt:330,1-353,2"
+    TestID   -> "CommittedSkills-Parse"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -359,14 +359,14 @@ VerificationTest[
     DirectoryQ @ $skillsAssetLocation,
     True,
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-Directory@@Tests/AgentSkillsBuild.wlt:358,1-363,2"
+    TestID   -> "PacletAsset-Directory"
 ]
 
 VerificationTest[
     skillsBuildEntries @ $skillsAssetLocation,
     $expectedSkillNames,
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-SkillNames@@Tests/AgentSkillsBuild.wlt:365,1-370,2"
+    TestID   -> "PacletAsset-SkillNames"
 ]
 
 (* Missing required files for each skill *)
@@ -384,7 +384,7 @@ VerificationTest[
     ],
     AssociationMap[ { } &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-RequiredFiles@@Tests/AgentSkillsBuild.wlt:373,1-388,2"
+    TestID   -> "PacletAsset-RequiredFiles"
 ]
 
 (* Each skill contains exactly the files that its manifest entry defines and the hand-authored files of its source *)
@@ -401,7 +401,7 @@ VerificationTest[
         $expectedSkillNames
     ],
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-MatchesManifest@@Tests/AgentSkillsBuild.wlt:391,1-405,2"
+    TestID   -> "PacletAsset-MatchesManifest"
 ]
 
 (* The built paclet ships the committed skills unchanged *)
@@ -409,7 +409,7 @@ ifBuiltPaclet @ VerificationTest[
     Wolfram`AgentSkillsBuilder`agentSkillsDifferences[ $skillsCommittedDirectory, $skillsAssetLocation ],
     <| "Missing" -> { }, "Extra" -> { }, "Different" -> { } |>,
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-MatchesCheckout@@Tests/AgentSkillsBuild.wlt:408,17-413,2"
+    TestID   -> "PacletAsset-MatchesCheckout"
 ]
 
 (* Without a build, the asset is the committed directory of the checkout *)
@@ -417,7 +417,7 @@ ifSourcePaclet @ VerificationTest[
     sameDirectoryQ[ $skillsAssetLocation, $skillsCommittedDirectory ],
     True,
     SameTest -> SameQ,
-    TestID   -> "PacletAsset-SourceLocation@@Tests/AgentSkillsBuild.wlt:416,18-421,2"
+    TestID   -> "PacletAsset-SourceLocation"
 ]
 
 VerificationTest[
@@ -427,7 +427,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "PacletInfo-DeclaresAsset@@Tests/AgentSkillsBuild.wlt:423,1-431,2"
+    TestID   -> "PacletInfo-DeclaresAsset"
 ]
 
 VerificationTest[
@@ -438,7 +438,7 @@ VerificationTest[
     ],
     { True },
     SameTest -> SameQ,
-    TestID   -> "PacletInfo-AssetEntry@@Tests/AgentSkillsBuild.wlt:433,1-442,2"
+    TestID   -> "PacletInfo-AssetEntry"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -457,14 +457,14 @@ VerificationTest[
     ],
     AssociationMap[ { } &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "SourceSkills-OnlyHandAuthoredFiles@@Tests/AgentSkillsBuild.wlt:450,1-461,2"
+    TestID   -> "SourceSkills-OnlyHandAuthoredFiles"
 ]
 
 VerificationTest[
     AssociationMap[ MemberQ[ skillsBuildFiles @ FileNameJoin @ { $skillsSourceDirectory, # }, "SKILL.md" ] &, $expectedSkillNames ],
     AssociationMap[ True &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "SourceSkills-SkillMarkdown@@Tests/AgentSkillsBuild.wlt:463,1-468,2"
+    TestID   -> "SourceSkills-SkillMarkdown"
 ]
 
 VerificationTest[
@@ -477,7 +477,7 @@ VerificationTest[
     ],
     AssociationMap[ { } &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "SourceSkills-NoVersion@@Tests/AgentSkillsBuild.wlt:470,1-481,2"
+    TestID   -> "SourceSkills-NoVersion"
 ]
 
 VerificationTest[
@@ -489,7 +489,7 @@ VerificationTest[
     },
     { $expectedSkillNames, $expectedSkillNames, $expectedSkillNames, $expectedSkillNames },
     SameTest -> SameQ,
-    TestID   -> "SkillNames-Consistent@@Tests/AgentSkillsBuild.wlt:483,1-493,2"
+    TestID   -> "SkillNames-Consistent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -501,7 +501,7 @@ VerificationTest[
     Lookup[ $skillsMarketplace[ "plugins" ], "source" ],
     { "./Assets/AgentSkills".. },
     SameTest -> MatchQ,
-    TestID   -> "Marketplace-Source@@Tests/AgentSkillsBuild.wlt:500,1-505,2"
+    TestID   -> "Marketplace-Source"
 ]
 
 (* Listed skills that are not built skill directories with a SKILL.md *)
@@ -514,7 +514,7 @@ VerificationTest[
     ],
     { },
     SameTest -> SameQ,
-    TestID   -> "Marketplace-SkillsExist@@Tests/AgentSkillsBuild.wlt:508,1-518,2"
+    TestID   -> "Marketplace-SkillsExist"
 ]
 
 VerificationTest[
@@ -523,7 +523,7 @@ VerificationTest[
     ],
     $expectedSkillNames,
     SameTest -> SameQ,
-    TestID   -> "Marketplace-AllSkillsListed@@Tests/AgentSkillsBuild.wlt:520,1-527,2"
+    TestID   -> "Marketplace-AllSkillsListed"
 ]
 
 (* The plugins match the built-in bundles: WolframLanguage (and WolframPacletDevelopment) and WolframAlpha *)
@@ -534,7 +534,7 @@ VerificationTest[
         "wolfram-alpha"                -> { "./wolfram-alpha" }
     |>,
     SameTest -> SameQ,
-    TestID   -> "Marketplace-PluginSkills@@Tests/AgentSkillsBuild.wlt:530,1-538,2"
+    TestID   -> "Marketplace-PluginSkills"
 ]
 
 (* Scripts/BuildAgentSkills.wls writes the version of the built skills into the marketplace *)
@@ -542,7 +542,7 @@ VerificationTest[
     $skillsMarketplace[ "metadata", "version" ] === Wolfram`AgentSkillsBuilder`agentSkillsVersion @ $skillsCommittedDirectory,
     True,
     SameTest -> SameQ,
-    TestID   -> "Marketplace-VersionMatchesSkills@@Tests/AgentSkillsBuild.wlt:541,1-546,2"
+    TestID   -> "Marketplace-VersionMatchesSkills"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -567,7 +567,7 @@ VerificationTest[
         "DeployAgentTools"                                                            -> True
     |>,
     SameTest -> SameQ,
-    TestID   -> "SetUpReference-RequiredContent@@Tests/AgentSkillsBuild.wlt:553,1-571,2"
+    TestID   -> "SetUpReference-RequiredContent"
 ]
 
 (* The obsolete remote service (services.wolfram.com, which needed an API key passed as a bearer token) is gone *)
@@ -578,7 +578,7 @@ VerificationTest[
     ],
     <| "services.wolfram.com" -> False, "mcp-service" -> False, "Bearer" -> False, "73463" -> False |>,
     SameTest -> SameQ,
-    TestID   -> "SetUpReference-NoObsoleteService@@Tests/AgentSkillsBuild.wlt:574,1-582,2"
+    TestID   -> "SetUpReference-NoObsoleteService"
 ]
 
 VerificationTest[
@@ -589,7 +589,7 @@ VerificationTest[
     ],
     AssociationMap[ True &, $expectedSkillNames ],
     SameTest -> SameQ,
-    TestID   -> "SetUpReference-SameInEverySkill@@Tests/AgentSkillsBuild.wlt:584,1-593,2"
+    TestID   -> "SetUpReference-SameInEverySkill"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -602,7 +602,7 @@ VerificationTest[
     ],
     "---\nname: x\ndescription: d\nmetadata:\n  author: A\n  license: MIT\n  version: 2.0.1\ncompatibility: c\n---\n\n# Body\n",
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-AppendsLast@@Tests/AgentSkillsBuild.wlt:598,1-606,2"
+    TestID   -> "StampSkillVersion-AppendsLast"
 ]
 
 VerificationTest[
@@ -612,7 +612,7 @@ VerificationTest[
     ],
     "---\nname: x\nmetadata:\n  author: A\n  version: 2.0.1\n---\nBody\n",
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-ReplacesExisting@@Tests/AgentSkillsBuild.wlt:608,1-616,2"
+    TestID   -> "StampSkillVersion-ReplacesExisting"
 ]
 
 (* Every version entry of the block is removed, including quoted keys and continuation lines *)
@@ -623,21 +623,21 @@ VerificationTest[
     ],
     "---\nname: x\nmetadata:\n  author: A\n  version: 2.0.1\n---\nBody\n",
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-RemovesAllVersionEntries@@Tests/AgentSkillsBuild.wlt:619,1-627,2"
+    TestID   -> "StampSkillVersion-RemovesAllVersionEntries"
 ]
 
 VerificationTest[
     Wolfram`AgentSkillsBuilder`stampSkillVersion[ "---\nname: x\ndescription: d\n---\n\nBody\n", "2.0.1" ],
     "---\nname: x\ndescription: d\nmetadata:\n  version: 2.0.1\n---\n\nBody\n",
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-CreatesMetadata@@Tests/AgentSkillsBuild.wlt:629,1-634,2"
+    TestID   -> "StampSkillVersion-CreatesMetadata"
 ]
 
 VerificationTest[
     Wolfram`AgentSkillsBuilder`stampSkillVersion[ "---\nname: x\nmetadata:\n    author: A\n---\nBody", "2.0.1" ],
     "---\nname: x\nmetadata:\n    author: A\n    version: 2.0.1\n---\nBody",
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-KeepsIndentation@@Tests/AgentSkillsBuild.wlt:636,1-641,2"
+    TestID   -> "StampSkillVersion-KeepsIndentation"
 ]
 
 (* Lines in the body that look like frontmatter, and CRLF line endings in the body, are never changed *)
@@ -654,7 +654,7 @@ VerificationTest[
         "---\nname: x\nmetadata:\n  version: 2.0.1\n---\nLine 1\r\n  version: x\r\n"
     },
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-BodyUnchanged@@Tests/AgentSkillsBuild.wlt:644,1-658,2"
+    TestID   -> "StampSkillVersion-BodyUnchanged"
 ]
 
 (* Versions that YAML would read as numbers are quoted *)
@@ -667,7 +667,7 @@ VerificationTest[
         "---\nname: x\nmetadata:\n  version: 1.0-beta\n---\n"
     },
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-QuotesNumericVersions@@Tests/AgentSkillsBuild.wlt:661,1-671,2"
+    TestID   -> "StampSkillVersion-QuotesNumericVersions"
 ]
 
 VerificationTest[
@@ -678,7 +678,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "StampSkillVersion-Idempotent@@Tests/AgentSkillsBuild.wlt:673,1-682,2"
+    TestID   -> "StampSkillVersion-Idempotent"
 ]
 
 VerificationTest[
@@ -689,7 +689,7 @@ VerificationTest[
     },
     { Failure[ "MissingFrontmatter", _ ], Failure[ "MissingFrontmatter", _ ], Failure[ "MissingFrontmatter", _ ] },
     SameTest -> MatchQ,
-    TestID   -> "StampSkillVersion-NoFrontmatter@@Tests/AgentSkillsBuild.wlt:684,1-693,2"
+    TestID   -> "StampSkillVersion-NoFrontmatter"
 ]
 
 VerificationTest[
@@ -706,14 +706,14 @@ VerificationTest[
         Failure[ "InvalidArguments", _ ]
     },
     SameTest -> MatchQ,
-    TestID   -> "StampSkillVersion-InvalidArguments@@Tests/AgentSkillsBuild.wlt:695,1-710,2"
+    TestID   -> "StampSkillVersion-InvalidArguments"
 ]
 
 VerificationTest[
     Wolfram`AgentSkillsBuilder`stampSkillVersion[ "---\nname: x\nmetadata: { author: A }\n---\nBody\n", "2.0.1" ],
     Failure[ "UnsupportedMetadata", _ ],
     SameTest -> MatchQ,
-    TestID   -> "StampSkillVersion-FlowMetadata@@Tests/AgentSkillsBuild.wlt:712,1-717,2"
+    TestID   -> "StampSkillVersion-FlowMetadata"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -733,7 +733,7 @@ VerificationTest[
     ],
     { Failure[ "OutputDirectoryNotEmpty", _ ], { "keep.txt" }, "keep\n" },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-OutputDirectoryNotEmpty@@Tests/AgentSkillsBuild.wlt:727,1-737,2"
+    TestID   -> "BuildAgentSkills-OutputDirectoryNotEmpty"
 ]
 
 VerificationTest[
@@ -743,7 +743,7 @@ VerificationTest[
     ],
     { Failure[ "InvalidOutputDirectory", _ ], "file\n" },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-OutputPathIsFile@@Tests/AgentSkillsBuild.wlt:739,1-747,2"
+    TestID   -> "BuildAgentSkills-OutputPathIsFile"
 ]
 
 (* An empty existing directory is a valid output directory *)
@@ -757,7 +757,7 @@ VerificationTest[
     ],
     { Success[ "AgentSkillsBuilt", _ ], "1.0.0" },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-EmptyOutputDirectory@@Tests/AgentSkillsBuild.wlt:750,1-761,2"
+    TestID   -> "BuildAgentSkills-EmptyOutputDirectory"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -774,7 +774,7 @@ VerificationTest[
     ],
     { Failure[ "InvalidVersion", _ ], Failure[ "InvalidVersion", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-InvalidVersion@@Tests/AgentSkillsBuild.wlt:766,1-778,2"
+    TestID   -> "BuildAgentSkills-InvalidVersion"
 ]
 
 VerificationTest[
@@ -787,7 +787,7 @@ VerificationTest[
     ],
     { Failure[ "InvalidSourceDirectory", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-InvalidSourceDirectory@@Tests/AgentSkillsBuild.wlt:780,1-791,2"
+    TestID   -> "BuildAgentSkills-InvalidSourceDirectory"
 ]
 
 VerificationTest[
@@ -800,14 +800,14 @@ VerificationTest[
     ],
     { Failure[ "InvalidTools", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-InvalidTools@@Tests/AgentSkillsBuild.wlt:793,1-804,2"
+    TestID   -> "BuildAgentSkills-InvalidTools"
 ]
 
 VerificationTest[
     Wolfram`AgentSkillsBuilder`buildAgentSkills[ $skillsCheckoutDirectory ],
     Failure[ "InvalidArguments", _ ],
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-InvalidArgumentCount@@Tests/AgentSkillsBuild.wlt:806,1-811,2"
+    TestID   -> "BuildAgentSkills-InvalidArgumentCount"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -840,7 +840,7 @@ VerificationTest[
         True
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy@@Tests/AgentSkillsBuild.wlt:819,1-844,2"
+    TestID   -> "BuildAgentSkills-SourceCopy"
 ]
 
 (* A script name in the manifest that is not a tool *)
@@ -855,7 +855,7 @@ VerificationTest[
     ],
     { Failure[ "ToolNotFound", KeyValuePattern[ "MessageParameters" -> { "NotARealTool" } ] ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-UnknownTool@@Tests/AgentSkillsBuild.wlt:847,1-859,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-UnknownTool"
 ]
 
 (* A source skill directory with a file outside of its references and scripts directories *)
@@ -877,7 +877,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-ExtraSkillFile@@Tests/AgentSkillsBuild.wlt:862,1-881,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-ExtraSkillFile"
 ]
 
 (* A hand-authored script with the path of a generated script (e.g. a leftover copy of a built skill) *)
@@ -899,7 +899,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-GeneratedScriptConflict@@Tests/AgentSkillsBuild.wlt:884,1-903,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-GeneratedScriptConflict"
 ]
 
 (* Operating system metadata files (e.g. a .DS_Store created by Finder) are ignored in the sources *)
@@ -913,7 +913,7 @@ VerificationTest[
     ],
     { _Success, Sort @ $expectedSkillNames },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-IgnoresJunkFiles@@Tests/AgentSkillsBuild.wlt:906,1-917,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-IgnoresJunkFiles"
 ]
 
 (* A source skill directory that is not in the manifest *)
@@ -929,7 +929,7 @@ VerificationTest[
     ],
     { Failure[ "UnlistedSkillDirectory", KeyValuePattern[ "MessageParameters" -> { _, { "unlisted-skill" } } ] ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-UnlistedSkillDirectory@@Tests/AgentSkillsBuild.wlt:920,1-933,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-UnlistedSkillDirectory"
 ]
 
 (* A skill in the manifest without a source directory *)
@@ -942,7 +942,7 @@ VerificationTest[
     ],
     { Failure[ "MissingSkillDirectory", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-SourceCopy-MissingSkillDirectory@@Tests/AgentSkillsBuild.wlt:936,1-946,2"
+    TestID   -> "BuildAgentSkills-SourceCopy-MissingSkillDirectory"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -985,7 +985,7 @@ VerificationTest[
         "# Guide\n\nSome guidance.\n"
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic@@Tests/AgentSkillsBuild.wlt:953,1-989,2"
+    TestID   -> "BuildAgentSkills-Synthetic"
 ]
 
 VerificationTest[
@@ -1005,7 +1005,7 @@ VerificationTest[
     ],
     { True, True, True, True, True, True, True },
     SameTest -> SameQ,
-    TestID   -> "BuildAgentSkills-Synthetic-GeneratedScripts@@Tests/AgentSkillsBuild.wlt:991,1-1009,2"
+    TestID   -> "BuildAgentSkills-Synthetic-GeneratedScripts"
 ]
 
 VerificationTest[
@@ -1015,7 +1015,7 @@ VerificationTest[
     ],
     { Success[ "AgentSkillsBuilt", _ ], { { __String } } },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-LogFunction@@Tests/AgentSkillsBuild.wlt:1011,1-1019,2"
+    TestID   -> "BuildAgentSkills-Synthetic-LogFunction"
 ]
 
 (* The source SKILL.md may use CRLF line endings and a byte order mark: the built SKILL.md uses neither *)
@@ -1033,7 +1033,7 @@ VerificationTest[
 # Test Skill\n\nmetadata:\n  version: body\n"
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-NormalizesLineEndings@@Tests/AgentSkillsBuild.wlt:1022,1-1037,2"
+    TestID   -> "BuildAgentSkills-Synthetic-NormalizesLineEndings"
 ]
 
 VerificationTest[
@@ -1046,7 +1046,7 @@ VerificationTest[
     ],
     { Failure[ "SkillNameMismatch", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-NameMismatch@@Tests/AgentSkillsBuild.wlt:1039,1-1050,2"
+    TestID   -> "BuildAgentSkills-Synthetic-NameMismatch"
 ]
 
 VerificationTest[
@@ -1058,7 +1058,7 @@ VerificationTest[
     ],
     { Failure[ "MissingFrontmatter", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-NoFrontmatter@@Tests/AgentSkillsBuild.wlt:1052,1-1062,2"
+    TestID   -> "BuildAgentSkills-Synthetic-NoFrontmatter"
 ]
 
 VerificationTest[
@@ -1071,7 +1071,7 @@ VerificationTest[
     ],
     { Failure[ "MissingReference", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-MissingReference@@Tests/AgentSkillsBuild.wlt:1064,1-1075,2"
+    TestID   -> "BuildAgentSkills-Synthetic-MissingReference"
 ]
 
 (* "Scripts" is reserved for the generated script reference *)
@@ -1086,7 +1086,7 @@ VerificationTest[
     ],
     { Failure[ "InvalidReferenceName", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-ReservedReferenceName@@Tests/AgentSkillsBuild.wlt:1078,1-1090,2"
+    TestID   -> "BuildAgentSkills-Synthetic-ReservedReferenceName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1138,7 +1138,7 @@ VerificationTest[
         "# Tips \[LongDash] \:03bb\n"
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredFiles@@Tests/AgentSkillsBuild.wlt:1097,1-1142,2"
+    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredFiles"
 ]
 
 (* A skill may consist of SKILL.md and hand-authored files only: no scripts are generated and there is no
@@ -1156,7 +1156,7 @@ VerificationTest[
         { "test-skill/references/Guide.md", "test-skill/scripts/Helpers.wl", "test-skill/SKILL.md" }
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredFilesOnly@@Tests/AgentSkillsBuild.wlt:1146,1-1160,2"
+    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredFilesOnly"
 ]
 
 (* Hand-authored files may not have the paths of generated files, ignoring case: generated scripts, shared
@@ -1186,7 +1186,7 @@ VerificationTest[
         { Failure[ "SkillFileConflict", KeyValuePattern[ "MessageParameters" -> { { "references/scripts.md" }, "test-skill" } ] ], False }
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredConflicts@@Tests/AgentSkillsBuild.wlt:1164,1-1190,2"
+    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredConflicts"
 ]
 
 (* Hand-authored files may not have paths that differ only in case, since they would overwrite each other when the
@@ -1208,7 +1208,7 @@ ifCaseSensitive @ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredCaseConflict@@Tests/AgentSkillsBuild.wlt:1194,19-1212,2"
+    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredCaseConflict"
 ]
 
 (* Only files with simple names directly in the references and scripts directories are allowed *)
@@ -1237,7 +1237,7 @@ VerificationTest[
         False
     },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-UnexpectedSkillFiles@@Tests/AgentSkillsBuild.wlt:1215,1-1241,2"
+    TestID   -> "BuildAgentSkills-Synthetic-UnexpectedSkillFiles"
 ]
 
 (* Hand-authored files must be UTF-8 text *)
@@ -1257,7 +1257,7 @@ VerificationTest[
     ],
     { Failure[ "InvalidUTF8", _ ], False },
     SameTest -> MatchQ,
-    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredInvalidUTF8@@Tests/AgentSkillsBuild.wlt:1244,1-1261,2"
+    TestID   -> "BuildAgentSkills-Synthetic-HandAuthoredInvalidUTF8"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1272,7 +1272,7 @@ VerificationTest[
     ],
     <| "Missing" -> { }, "Extra" -> { }, "Different" -> { } |>,
     SameTest -> SameQ,
-    TestID   -> "AgentSkillsDifferences-Identical@@Tests/AgentSkillsBuild.wlt:1266,1-1276,2"
+    TestID   -> "AgentSkillsDifferences-Identical"
 ]
 
 VerificationTest[
@@ -1288,7 +1288,7 @@ VerificationTest[
     ],
     <| "Missing" -> { "a/scripts/Run.wls" }, "Extra" -> { "b/references/Extra.md" }, "Different" -> { "a/SKILL.md" } |>,
     SameTest -> SameQ,
-    TestID   -> "AgentSkillsDifferences-ChangedMissingExtra@@Tests/AgentSkillsBuild.wlt:1278,1-1292,2"
+    TestID   -> "AgentSkillsDifferences-ChangedMissingExtra"
 ]
 
 VerificationTest[
@@ -1303,7 +1303,7 @@ VerificationTest[
     ],
     <| "Missing" -> { }, "Extra" -> { }, "Different" -> { "a/Other.md" } |>,
     SameTest -> SameQ,
-    TestID   -> "AgentSkillsDifferences-IgnoresCRLF@@Tests/AgentSkillsBuild.wlt:1294,1-1307,2"
+    TestID   -> "AgentSkillsDifferences-IgnoresCRLF"
 ]
 
 VerificationTest[
@@ -1318,7 +1318,7 @@ VerificationTest[
     ],
     <| "Missing" -> { }, "Extra" -> { }, "Different" -> { } |>,
     SameTest -> SameQ,
-    TestID   -> "AgentSkillsDifferences-IgnoresJunkFiles@@Tests/AgentSkillsBuild.wlt:1309,1-1322,2"
+    TestID   -> "AgentSkillsDifferences-IgnoresJunkFiles"
 ]
 
 VerificationTest[
@@ -1340,7 +1340,7 @@ VerificationTest[
         Failure[ "InvalidArguments", _ ]
     },
     SameTest -> MatchQ,
-    TestID   -> "AgentSkillsDifferences-NotADirectory@@Tests/AgentSkillsBuild.wlt:1324,1-1344,2"
+    TestID   -> "AgentSkillsDifferences-NotADirectory"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1353,7 +1353,7 @@ VerificationTest[
     |>,
     "1.2.3",
     SameTest -> SameQ,
-    TestID   -> "AgentSkillsVersion-Shared@@Tests/AgentSkillsBuild.wlt:1349,1-1357,2"
+    TestID   -> "AgentSkillsVersion-Shared"
 ]
 
 VerificationTest[
@@ -1376,7 +1376,7 @@ VerificationTest[
         Failure[ "InvalidDirectory", _ ]
     },
     SameTest -> MatchQ,
-    TestID   -> "AgentSkillsVersion-Failures@@Tests/AgentSkillsBuild.wlt:1359,1-1380,2"
+    TestID   -> "AgentSkillsVersion-Failures"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1387,7 +1387,7 @@ VerificationTest[
     DirectoryQ @ $skillsBuildTestBase,
     False,
     SameTest -> SameQ,
-    TestID   -> "Cleanup@@Tests/AgentSkillsBuild.wlt:1385,1-1391,2"
+    TestID   -> "Cleanup"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

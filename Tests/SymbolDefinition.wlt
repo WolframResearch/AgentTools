@@ -8,21 +8,21 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/SymbolDefinition.wlt:7,1-12,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/SymbolDefinition.wlt:14,1-19,2"
+    TestID   -> "LoadContext"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`Tools`SymbolDefinition`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadPrivateContext@@Tests/SymbolDefinition.wlt:21,1-26,2"
+    TestID   -> "LoadPrivateContext"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -32,28 +32,28 @@ VerificationTest[
     $symbolDefinitionTool = $DefaultMCPTools[ "SymbolDefinition" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "GetTool@@Tests/SymbolDefinition.wlt:31,1-36,2"
+    TestID   -> "GetTool"
 ]
 
 VerificationTest[
     $symbolDefinitionTool[ "Name" ],
     "SymbolDefinition",
     SameTest -> SameQ,
-    TestID   -> "ToolName@@Tests/SymbolDefinition.wlt:38,1-43,2"
+    TestID   -> "ToolName"
 ]
 
 VerificationTest[
     StringQ @ $symbolDefinitionTool[ "Description" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolDescription@@Tests/SymbolDefinition.wlt:45,1-50,2"
+    TestID   -> "ToolDescription"
 ]
 
 VerificationTest[
     ListQ @ $symbolDefinitionTool[ "Parameters" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolParameters@@Tests/SymbolDefinition.wlt:52,1-57,2"
+    TestID   -> "ToolParameters"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -67,28 +67,28 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`parseSymbolNames[ "System`Plus" ],
     { "System`Plus" },
     SameTest -> MatchQ,
-    TestID   -> "ParseSingleSymbol@@Tests/SymbolDefinition.wlt:66,1-71,2"
+    TestID   -> "ParseSingleSymbol"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`parseSymbolNames[ "System`Plus, System`Times, System`Map" ],
     { "System`Plus", "System`Times", "System`Map" },
     SameTest -> MatchQ,
-    TestID   -> "ParseMultipleSymbols@@Tests/SymbolDefinition.wlt:73,1-78,2"
+    TestID   -> "ParseMultipleSymbols"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`parseSymbolNames[ "  System`Plus  ,  System`Times  " ],
     { "System`Plus", "System`Times" },
     SameTest -> MatchQ,
-    TestID   -> "ParseWhitespaceHandling@@Tests/SymbolDefinition.wlt:80,1-85,2"
+    TestID   -> "ParseWhitespaceHandling"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`parseSymbolNames[ "" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "ParseEmptyInput@@Tests/SymbolDefinition.wlt:87,1-92,2"
+    TestID   -> "ParseEmptyInput"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -102,35 +102,35 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`validateSymbolName[ "MySymbol" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ValidateSimpleName@@Tests/SymbolDefinition.wlt:101,1-106,2"
+    TestID   -> "ValidateSimpleName"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`validateSymbolName[ "System`Plus" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ValidateQualifiedName@@Tests/SymbolDefinition.wlt:108,1-113,2"
+    TestID   -> "ValidateQualifiedName"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`validateSymbolName[ "My`Context`Symbol" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ValidateDeepContext@@Tests/SymbolDefinition.wlt:115,1-120,2"
+    TestID   -> "ValidateDeepContext"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`validateSymbolName[ "Invalid!Symbol" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "ValidateInvalidChars@@Tests/SymbolDefinition.wlt:122,1-127,2"
+    TestID   -> "ValidateInvalidChars"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`validateSymbolName[ "123Invalid" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "ValidateStartsWithNumber@@Tests/SymbolDefinition.wlt:129,1-134,2"
+    TestID   -> "ValidateStartsWithNumber"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -140,14 +140,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`symbolExistsQ[ "System`Plus" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ExistsSystemSymbol@@Tests/SymbolDefinition.wlt:139,1-144,2"
+    TestID   -> "ExistsSystemSymbol"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`symbolExistsQ[ "NonExistentContext12345`NonExistentSymbol67890" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "ExistsNonexistent@@Tests/SymbolDefinition.wlt:146,1-151,2"
+    TestID   -> "ExistsNonexistent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -157,21 +157,21 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`splitSymbolName[ "System`Plus" ],
     { "System`", "Plus" },
     SameTest -> MatchQ,
-    TestID   -> "SplitName-Simple@@Tests/SymbolDefinition.wlt:156,1-161,2"
+    TestID   -> "SplitName-Simple"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`splitSymbolName[ "My`Deep`Context`Symbol" ],
     { "My`Deep`Context`", "Symbol" },
     SameTest -> MatchQ,
-    TestID   -> "SplitName-Deep@@Tests/SymbolDefinition.wlt:163,1-168,2"
+    TestID   -> "SplitName-Deep"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`splitSymbolName[ "UnqualifiedSymbol" ],
     { "Global`", "UnqualifiedSymbol" },
     SameTest -> MatchQ,
-    TestID   -> "SplitName-Unqualified@@Tests/SymbolDefinition.wlt:170,1-175,2"
+    TestID   -> "SplitName-Unqualified"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -186,7 +186,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`isReadProtectedQ[ "System`AASTriangle" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "IsReadProtected-AASTriangle@@Tests/SymbolDefinition.wlt:184,1-190,2"
+    TestID   -> "IsReadProtected-AASTriangle"
 ]
 
 VerificationTest[
@@ -194,7 +194,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`isReadProtectedQ[ "System`List" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "IsReadProtected-List@@Tests/SymbolDefinition.wlt:192,1-198,2"
+    TestID   -> "IsReadProtected-List"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -204,7 +204,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`isLockedQ[ "System`Plus" ],
     False,
     SameTest -> SameQ,
-    TestID   -> "IsLocked-Plus@@Tests/SymbolDefinition.wlt:203,1-208,2"
+    TestID   -> "IsLocked-Plus"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -218,14 +218,14 @@ VerificationTest[
     $subtractDef = Wolfram`AgentTools`Tools`SymbolDefinition`Private`extractDefinition[ "System`Subtract" ],
     { ___ },
     SameTest -> MatchQ,
-    TestID   -> "ExtractSubtract@@Tests/SymbolDefinition.wlt:217,1-222,2"
+    TestID   -> "ExtractSubtract"
 ]
 
 VerificationTest[
     Length[ $subtractDef ] > 0,
     True,
     SameTest -> SameQ,
-    TestID   -> "ExtractSubtractNonEmpty@@Tests/SymbolDefinition.wlt:224,1-229,2"
+    TestID   -> "ExtractSubtractNonEmpty"
 ]
 
 VerificationTest[
@@ -235,14 +235,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ExtractMap@@Tests/SymbolDefinition.wlt:231,1-239,2"
+    TestID   -> "ExtractMap"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`extractDefinition[ "NonExistent12345`Symbol" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "ExtractNonexistent@@Tests/SymbolDefinition.wlt:241,1-246,2"
+    TestID   -> "ExtractNonexistent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -256,7 +256,7 @@ VerificationTest[
     $plusKernelDefs = Wolfram`AgentTools`Tools`SymbolDefinition`Private`getKernelCodeDefinitions[ "System`Plus" ],
     { __HoldForm },
     SameTest -> MatchQ,
-    TestID   -> "KernelCode-Plus@@Tests/SymbolDefinition.wlt:255,1-260,2"
+    TestID   -> "KernelCode-Plus"
 ]
 
 VerificationTest[
@@ -266,14 +266,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "KernelCode-PlusHasDownCode@@Tests/SymbolDefinition.wlt:262,1-270,2"
+    TestID   -> "KernelCode-PlusHasDownCode"
 ]
 
 VerificationTest[
     $timesKernelDefs = Wolfram`AgentTools`Tools`SymbolDefinition`Private`getKernelCodeDefinitions[ "System`Times" ],
     { __HoldForm },
     SameTest -> MatchQ,
-    TestID   -> "KernelCode-Times@@Tests/SymbolDefinition.wlt:272,1-277,2"
+    TestID   -> "KernelCode-Times"
 ]
 
 VerificationTest[
@@ -281,7 +281,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`getKernelCodeDefinitions[ "Wolfram`AgentTools`CreateMCPServer" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "KernelCode-PacletSymbolEmpty@@Tests/SymbolDefinition.wlt:279,1-285,2"
+    TestID   -> "KernelCode-PacletSymbolEmpty"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -298,7 +298,7 @@ VerificationTest[
     ],
     { HoldForm[ List ], HoldForm[ Plus ], HoldForm[ Times ], HoldForm[ Map ] },
     SameTest -> MatchQ,
-    TestID   -> "ExtractSymbols@@Tests/SymbolDefinition.wlt:294,1-302,2"
+    TestID   -> "ExtractSymbols"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -310,7 +310,7 @@ VerificationTest[
     ],
     { "System`" },
     SameTest -> MatchQ,
-    TestID   -> "GetContexts@@Tests/SymbolDefinition.wlt:307,1-314,2"
+    TestID   -> "GetContexts"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -322,7 +322,7 @@ VerificationTest[
     ],
     _List? (MemberQ[ #, "System`" ] && MemberQ[ #, "Global`" ] &),
     SameTest -> MatchQ,
-    TestID   -> "BuildContextPath@@Tests/SymbolDefinition.wlt:319,1-326,2"
+    TestID   -> "BuildContextPath"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -334,14 +334,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ #, "System`" ] &),
     SameTest -> MatchQ,
-    TestID   -> "GenerateContextMap@@Tests/SymbolDefinition.wlt:331,1-338,2"
+    TestID   -> "GenerateContextMap"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`generateContextMap[ { } ],
     "",
     SameTest -> SameQ,
-    TestID   -> "GenerateContextMapEmpty@@Tests/SymbolDefinition.wlt:340,1-345,2"
+    TestID   -> "GenerateContextMapEmpty"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -355,7 +355,7 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`truncateIfNeeded[ "Short string", 1000 ],
     "Short string",
     SameTest -> SameQ,
-    TestID   -> "Truncate-NoTruncation@@Tests/SymbolDefinition.wlt:354,1-359,2"
+    TestID   -> "Truncate-NoTruncation"
 ]
 
 VerificationTest[
@@ -365,14 +365,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ #, "truncated" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Truncate-Applied@@Tests/SymbolDefinition.wlt:361,1-369,2"
+    TestID   -> "Truncate-Applied"
 ]
 
 VerificationTest[
     StringContainsQ[ $truncated, "100/500" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "Truncate-ShowsCharCount@@Tests/SymbolDefinition.wlt:371,1-376,2"
+    TestID   -> "Truncate-ShowsCharCount"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -386,14 +386,14 @@ VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`formatError[ "System`Plus", "Test error message" ],
     "# Plus\n\nError: Test error message",
     SameTest -> SameQ,
-    TestID   -> "FormatError-Simple@@Tests/SymbolDefinition.wlt:385,1-390,2"
+    TestID   -> "FormatError-Simple"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`formatError[ "My`Context`Symbol", "Another error" ],
     "# Symbol\n\nError: Another error",
     SameTest -> SameQ,
-    TestID   -> "FormatError-Qualified@@Tests/SymbolDefinition.wlt:392,1-397,2"
+    TestID   -> "FormatError-Qualified"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -404,35 +404,35 @@ VerificationTest[
     $symbolDefResult1 = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "System`Plus" |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "BasicSystemSymbol@@Tests/SymbolDefinition.wlt:402,1-408,2"
+    TestID   -> "BasicSystemSymbol"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult1, "# Plus" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ContainsHeader@@Tests/SymbolDefinition.wlt:410,1-415,2"
+    TestID   -> "ContainsHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult1, "## Definition" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ContainsDefinitionSection@@Tests/SymbolDefinition.wlt:417,1-422,2"
+    TestID   -> "ContainsDefinitionSection"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult1, "```wl" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ContainsCodeBlock@@Tests/SymbolDefinition.wlt:424,1-429,2"
+    TestID   -> "ContainsCodeBlock"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult1, "<kernel function>" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "KernelCodeDetected@@Tests/SymbolDefinition.wlt:431,1-436,2"
+    TestID   -> "KernelCodeDetected"
 ]
 
 VerificationTest[
@@ -440,7 +440,7 @@ VerificationTest[
     StringContainsQ[ $symbolDefResult1, "Flat" ] && StringContainsQ[ $symbolDefResult1, "Protected" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ContainsAttributes@@Tests/SymbolDefinition.wlt:438,1-444,2"
+    TestID   -> "ContainsAttributes"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -452,21 +452,21 @@ VerificationTest[
     $unqualifiedResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Plus" |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "UnqualifiedSymbol-Plus@@Tests/SymbolDefinition.wlt:451,1-456,2"
+    TestID   -> "UnqualifiedSymbol-Plus"
 ]
 
 VerificationTest[
     StringContainsQ[ $unqualifiedResult, "# Plus" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "UnqualifiedSymbol-ContainsHeader@@Tests/SymbolDefinition.wlt:458,1-463,2"
+    TestID   -> "UnqualifiedSymbol-ContainsHeader"
 ]
 
 VerificationTest[
     StringContainsQ[ $unqualifiedResult, "## Definition" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "UnqualifiedSymbol-ContainsDefinition@@Tests/SymbolDefinition.wlt:465,1-470,2"
+    TestID   -> "UnqualifiedSymbol-ContainsDefinition"
 ]
 
 (* Test that unqualified symbol name resolves to the correct symbol *)
@@ -474,7 +474,7 @@ VerificationTest[
     StringContainsQ[ $unqualifiedResult, "<kernel function>" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "UnqualifiedSymbol-KernelFunction@@Tests/SymbolDefinition.wlt:473,1-478,2"
+    TestID   -> "UnqualifiedSymbol-KernelFunction"
 ]
 
 (* Test mixed qualified and unqualified symbol names *)
@@ -482,7 +482,7 @@ VerificationTest[
     $mixedQualifiedResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Plus, System`Times" |> ],
     _String? (StringContainsQ[ #, "# Plus" ] && StringContainsQ[ #, "# Times" ] &),
     SameTest -> MatchQ,
-    TestID   -> "UnqualifiedSymbol-MixedWithQualified@@Tests/SymbolDefinition.wlt:481,1-486,2"
+    TestID   -> "UnqualifiedSymbol-MixedWithQualified"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -492,14 +492,14 @@ VerificationTest[
     $symbolDefResult2 = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "System`Plus, System`Times" |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "MultipleSymbols@@Tests/SymbolDefinition.wlt:491,1-496,2"
+    TestID   -> "MultipleSymbols"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult2, "# Plus" ] && StringContainsQ[ $symbolDefResult2, "# Times" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "MultipleSymbolsHeaders@@Tests/SymbolDefinition.wlt:498,1-503,2"
+    TestID   -> "MultipleSymbolsHeaders"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -512,14 +512,14 @@ VerificationTest[
     |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "WithContextDetails@@Tests/SymbolDefinition.wlt:508,1-516,2"
+    TestID   -> "WithContextDetails"
 ]
 
 VerificationTest[
     StringContainsQ[ $symbolDefResult3, "## Contexts" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ContextsSection@@Tests/SymbolDefinition.wlt:518,1-523,2"
+    TestID   -> "ContextsSection"
 ]
 
 VerificationTest[
@@ -529,7 +529,7 @@ VerificationTest[
     |> ],
     _String? (! StringContainsQ[ #, "## Contexts" ] &),
     SameTest -> MatchQ,
-    TestID   -> "NoContextDetails@@Tests/SymbolDefinition.wlt:525,1-533,2"
+    TestID   -> "NoContextDetails"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -539,14 +539,14 @@ VerificationTest[
     $symbolDefResult4 = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "NonExistent`Symbol12345" |> ],
     _String? (StringContainsQ[ #, "does not exist" ] &),
     SameTest -> MatchQ,
-    TestID   -> "NonexistentSymbol@@Tests/SymbolDefinition.wlt:538,1-543,2"
+    TestID   -> "NonexistentSymbol"
 ]
 
 VerificationTest[
     $symbolDefResult5 = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Invalid!Symbol@Name" |> ],
     _String? (StringContainsQ[ #, "Invalid symbol name" ] &),
     SameTest -> MatchQ,
-    TestID   -> "InvalidSymbolName@@Tests/SymbolDefinition.wlt:545,1-550,2"
+    TestID   -> "InvalidSymbolName"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -563,14 +563,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FindSuggestions-Plus@@Tests/SymbolDefinition.wlt:559,1-567,2"
+    TestID   -> "FindSuggestions-Plus"
 ]
 
 VerificationTest[
     Wolfram`AgentTools`Tools`SymbolDefinition`Private`findSuggestions[ "Nonexistent`NonexistentSymbol98765" ],
     { },
     SameTest -> MatchQ,
-    TestID   -> "FindSuggestions-NoMatch@@Tests/SymbolDefinition.wlt:569,1-574,2"
+    TestID   -> "FindSuggestions-NoMatch"
 ]
 
 VerificationTest[
@@ -581,7 +581,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "FindSuggestions-FullyQualified@@Tests/SymbolDefinition.wlt:576,1-585,2"
+    TestID   -> "FindSuggestions-FullyQualified"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -595,14 +595,14 @@ VerificationTest[
         StringContainsQ[ #, "System`Plus" ] &
     ),
     SameTest -> MatchQ,
-    TestID   -> "DidYouMean-ShowsSuggestion@@Tests/SymbolDefinition.wlt:590,1-599,2"
+    TestID   -> "DidYouMean-ShowsSuggestion"
 ]
 
 VerificationTest[
     $noSuggestionResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Nonexistent`NoSuchSymbol98765" |> ],
     _String? (StringContainsQ[ #, "does not exist" ] && ! StringContainsQ[ #, "Did you mean" ] &),
     SameTest -> MatchQ,
-    TestID   -> "DidYouMean-NoSuggestionWhenNoMatch@@Tests/SymbolDefinition.wlt:601,1-606,2"
+    TestID   -> "DidYouMean-NoSuggestionWhenNoMatch"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -616,7 +616,7 @@ VerificationTest[
     |> ],
     _String? (StringContainsQ[ #, "truncated" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Truncation@@Tests/SymbolDefinition.wlt:611,1-620,2"
+    TestID   -> "Truncation"
 ]
 
 VerificationTest[
@@ -626,7 +626,7 @@ VerificationTest[
     |> ],
     _String? (StringContainsQ[ #, "truncated" ] &),
     SameTest -> MatchQ,
-    TestID   -> "CustomMaxLength@@Tests/SymbolDefinition.wlt:622,1-630,2"
+    TestID   -> "CustomMaxLength"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -646,7 +646,7 @@ VerificationTest[
     ],
     0,
     SameTest -> SameQ,
-    TestID   -> "EvaluationLeak-ExtractDefinition@@Tests/SymbolDefinition.wlt:637,1-650,2"
+    TestID   -> "EvaluationLeak-ExtractDefinition"
 ]
 
 (* Test that the full tool does not cause evaluation leaks *)
@@ -660,7 +660,7 @@ VerificationTest[
     ],
     0,
     SameTest -> SameQ,
-    TestID   -> "EvaluationLeak-FullTool@@Tests/SymbolDefinition.wlt:653,1-664,2"
+    TestID   -> "EvaluationLeak-FullTool"
 ]
 
 (* Test that definitions with side effects are captured correctly without executing them *)
@@ -672,7 +672,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "EvaluationLeak-CapturesDefinition@@Tests/SymbolDefinition.wlt:667,1-676,2"
+    TestID   -> "EvaluationLeak-CapturesDefinition"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -684,7 +684,7 @@ VerificationTest[
     $tableResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "System`Table" |> ],
     _String? (StringContainsQ[ #, "Attributes" ] &),
     SameTest -> MatchQ,
-    TestID   -> "AttributesDisplay-ContainsAttributes@@Tests/SymbolDefinition.wlt:683,1-688,2"
+    TestID   -> "AttributesDisplay-ContainsAttributes"
 ]
 
 VerificationTest[
@@ -693,7 +693,7 @@ VerificationTest[
     StringContainsQ[ $tableResult, "Attributes" ] && StringContainsQ[ $tableResult, "HoldAll" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "AttributesDisplay-ProperFormat@@Tests/SymbolDefinition.wlt:690,1-697,2"
+    TestID   -> "AttributesDisplay-ProperFormat"
 ]
 
 VerificationTest[
@@ -701,7 +701,7 @@ VerificationTest[
     StringContainsQ[ $tableResult, "Protected" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "AttributesDisplay-ShowsProtected@@Tests/SymbolDefinition.wlt:699,1-705,2"
+    TestID   -> "AttributesDisplay-ShowsProtected"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -711,7 +711,7 @@ VerificationTest[
     $subtractResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "System`Subtract" |> ],
     _String? (StringContainsQ[ #, "# Subtract" ] && StringContainsQ[ #, "## Definition" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Integration-Subtract@@Tests/SymbolDefinition.wlt:710,1-715,2"
+    TestID   -> "Integration-Subtract"
 ]
 
 VerificationTest[
@@ -721,14 +721,14 @@ VerificationTest[
     StringContainsQ[ $subtractResult, "<kernel function>" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "Integration-SubtractHasDefinition@@Tests/SymbolDefinition.wlt:717,1-725,2"
+    TestID   -> "Integration-SubtractHasDefinition"
 ]
 
 VerificationTest[
     $pacletResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Wolfram`AgentTools`CreateMCPServer" |> ],
     _String? (StringContainsQ[ #, "# CreateMCPServer" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Integration-PacletSymbol@@Tests/SymbolDefinition.wlt:727,1-732,2"
+    TestID   -> "Integration-PacletSymbol"
 ]
 
 VerificationTest[
@@ -736,7 +736,7 @@ VerificationTest[
     $privateResult = Quiet @ $symbolDefinitionTool[ <| "symbols" -> "Wolfram`AgentTools`Common`Private`addEnclosureTags" |> ],
     _String? (StringContainsQ[ #, "# addEnclosureTags" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Integration-PrivateSymbol@@Tests/SymbolDefinition.wlt:734,1-740,2"
+    TestID   -> "Integration-PrivateSymbol"
 ]
 
 VerificationTest[
@@ -749,7 +749,7 @@ VerificationTest[
         StringContainsQ[ #, "Invalid symbol name" ] &
     ),
     SameTest -> MatchQ,
-    TestID   -> "Integration-MixedSymbols@@Tests/SymbolDefinition.wlt:742,1-753,2"
+    TestID   -> "Integration-MixedSymbols"
 ]
 
 VerificationTest[
@@ -759,7 +759,7 @@ VerificationTest[
     |> ],
     _String? (StringContainsQ[ #, "## Contexts" ] && StringContainsQ[ #, "System`" ] &),
     SameTest -> MatchQ,
-    TestID   -> "Integration-ContextDetails@@Tests/SymbolDefinition.wlt:755,1-763,2"
+    TestID   -> "Integration-ContextDetails"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)

@@ -1,32 +1,32 @@
 VerificationTest[
     1 / 0,
     ComplexInfinity,
-    TestID -> "TestFile2-Division@@TestResources/TestFile2.wlt:1,1-5,2"
+    TestID -> "TestFile2-Division"
 ]
 
 VerificationTest[
     1 / 0,
     ComplexInfinity,
     { Power::infy },
-    TestID -> "TestFile2-Division-Error@@TestResources/TestFile2.wlt:7,1-12,2"
+    TestID -> "TestFile2-Division-Error"
 ]
 
 VerificationTest[
     Pause[ 2 ],
     Null,
     TimeConstraint -> Quantity[ 0.1, "Seconds" ],
-    TestID         -> "TestFile2-Pause@@TestResources/TestFile2.wlt:14,1-19,2"
+    TestID         -> "TestFile2-Pause"
 ]
 
 VerificationTest[
     x,
     y,
     SameTest -> Equal,
-    TestID   -> "TestFile2-Equal@@TestResources/TestFile2.wlt:21,1-26,2"
+    TestID   -> "TestFile2-Equal"
 ]
 
 VerificationTest[
     Print[ "Hello, world!" ],
     Null,
-    TestID -> "TestFile2-Print@@TestResources/TestFile2.wlt:28,1-32,2"
+    TestID -> "TestFile2-Print"
 ]

@@ -5,14 +5,14 @@ VerificationTest[
     Needs[ "Wolfram`AgentToolsTests`", FileNameJoin @ { DirectoryName @ $TestFileName, "Common.wl" } ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "GetDefinitions@@Tests/Tools.wlt:4,1-9,2"
+    TestID   -> "GetDefinitions"
 ]
 
 VerificationTest[
     Needs[ "Wolfram`AgentTools`" ],
     Null,
     SameTest -> MatchQ,
-    TestID   -> "LoadContext@@Tests/Tools.wlt:11,1-16,2"
+    TestID   -> "LoadContext"
 ]
 
 (* Helper function to extract text from tool results (handles both string and structured content) *)
@@ -28,7 +28,7 @@ VerificationTest[
     $DefaultMCPTools,
     _Association? AssociationQ,
     SameTest -> MatchQ,
-    TestID   -> "DefaultMCPTools-IsAssociation@@Tests/Tools.wlt:27,1-32,2"
+    TestID   -> "DefaultMCPTools-IsAssociation"
 ]
 
 VerificationTest[
@@ -57,14 +57,14 @@ VerificationTest[
         ]
     },
     SameTest -> MatchQ,
-    TestID   -> "DefaultMCPTools-Keys@@Tests/Tools.wlt:34,1-61,2"
+    TestID   -> "DefaultMCPTools-Keys"
 ]
 
 VerificationTest[
     AllTrue[ Values @ $DefaultMCPTools, MatchQ[ _LLMTool ] ],
     True,
     SameTest -> SameQ,
-    TestID   -> "DefaultMCPTools-AllLLMTools@@Tests/Tools.wlt:63,1-68,2"
+    TestID   -> "DefaultMCPTools-AllLLMTools"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -78,21 +78,21 @@ VerificationTest[
     $readNotebookTool = $DefaultMCPTools[ "ReadNotebook" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-GetTool@@Tests/Tools.wlt:77,1-82,2"
+    TestID   -> "ReadNotebook-GetTool"
 ]
 
 VerificationTest[
     $exampleNotebook = FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "TestResources", "document.nb" },
     _String? FileExistsQ,
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-FindExampleFile@@Tests/Tools.wlt:84,1-89,2"
+    TestID   -> "ReadNotebook-FindExampleFile"
 ]
 
 VerificationTest[
     $readNotebookResult = $readNotebookTool[ <| "notebook" -> $exampleNotebook |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-BasicRead@@Tests/Tools.wlt:91,1-96,2"
+    TestID   -> "ReadNotebook-BasicRead"
 ]
 
 VerificationTest[
@@ -100,7 +100,7 @@ VerificationTest[
     StringContainsQ[ $readNotebookResult, "\n```wl\n" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ReadNotebook-ContainsExpectedContent@@Tests/Tools.wlt:98,1-104,2"
+    TestID   -> "ReadNotebook-ContainsExpectedContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -110,7 +110,7 @@ VerificationTest[
     $readNotebookTool[ <| "notebook" -> "nonexistent_file_12345.nb" |> ],
     _String,
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-NonexistentFile@@Tests/Tools.wlt:109,1-114,2"
+    TestID   -> "ReadNotebook-NonexistentFile"
 ]
 
 (* A missing file is reported as such rather than being parsed as a NotebookObject specification. *)
@@ -118,14 +118,14 @@ VerificationTest[
     $readNotebookTool[ <| "notebook" -> "nonexistent_file_12345.nb" |> ],
     "File does not exist: nonexistent_file_12345.nb",
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-NonexistentFile-Message@@Tests/Tools.wlt:117,1-122,2"
+    TestID   -> "ReadNotebook-NonexistentFile-Message"
 ]
 
 VerificationTest[
     $readNotebookTool[ <| "notebook" -> "NotebookObject[oops]" |> ],
     _String? (StringStartsQ[ "Invalid notebook specification" ]),
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-InvalidNotebookObjectSpec@@Tests/Tools.wlt:124,1-129,2"
+    TestID   -> "ReadNotebook-InvalidNotebookObjectSpec"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -139,7 +139,7 @@ $cloudNotebookTest @ VerificationTest[
     $readNotebookTool[ <| "notebook" -> "https://www.wolfram.com/" |> ],
     _String? (StringStartsQ[ "URL does not point to a valid Wolfram notebook" ]),
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-URL-NotANotebook@@Tests/Tools.wlt:138,22-143,2"
+    TestID   -> "ReadNotebook-URL-NotANotebook"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -153,14 +153,14 @@ VerificationTest[
     $writeNotebookTool = $DefaultMCPTools[ "WriteNotebook" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-GetTool@@Tests/Tools.wlt:152,1-157,2"
+    TestID   -> "WriteNotebook-GetTool"
 ]
 
 VerificationTest[
     $tempNotebookFile = FileNameJoin[ { $TemporaryDirectory, "AgentToolsTest_" <> CreateUUID[ ] <> ".nb" } ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-CreateTempPath@@Tests/Tools.wlt:159,1-164,2"
+    TestID   -> "WriteNotebook-CreateTempPath"
 ]
 
 VerificationTest[
@@ -171,14 +171,14 @@ VerificationTest[
     |> ],
     _String? FileExistsQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-BasicWrite@@Tests/Tools.wlt:166,1-175,2"
+    TestID   -> "WriteNotebook-BasicWrite"
 ]
 
 VerificationTest[
     FileExistsQ @ $tempNotebookFile,
     True,
     SameTest -> SameQ,
-    TestID   -> "WriteNotebook-FileExists@@Tests/Tools.wlt:177,1-182,2"
+    TestID   -> "WriteNotebook-FileExists"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -192,7 +192,7 @@ VerificationTest[
     |> ],
     _String? (StringStartsQ[ "File already exists" ]),
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-NoOverwriteExisting@@Tests/Tools.wlt:187,1-196,2"
+    TestID   -> "WriteNotebook-NoOverwriteExisting"
 ]
 
 VerificationTest[
@@ -203,7 +203,7 @@ VerificationTest[
     |> ],
     _String? FileExistsQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-OverwriteExisting@@Tests/Tools.wlt:198,1-207,2"
+    TestID   -> "WriteNotebook-OverwriteExisting"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -218,7 +218,7 @@ VerificationTest[
     { DirectoryQ @ $missingDirRoot, StringQ @ $missingDirNotebookFile },
     { False, True },
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-MissingDirectory-Setup-GH#200@@Tests/Tools.wlt:215,1-222,2"
+    TestID   -> "WriteNotebook-MissingDirectory-Setup-GH#200"
 ]
 
 VerificationTest[
@@ -229,14 +229,14 @@ VerificationTest[
     |> ],
     _String? FileExistsQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-MissingDirectory-CreatesPath-GH#200@@Tests/Tools.wlt:224,1-233,2"
+    TestID   -> "WriteNotebook-MissingDirectory-CreatesPath-GH#200"
 ]
 
 VerificationTest[
     FileExistsQ @ $missingDirNotebookFile,
     True,
     SameTest -> SameQ,
-    TestID   -> "WriteNotebook-MissingDirectory-FileExists-GH#200@@Tests/Tools.wlt:235,1-240,2"
+    TestID   -> "WriteNotebook-MissingDirectory-FileExists-GH#200"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -248,7 +248,7 @@ VerificationTest[
     { FileExistsQ @ $tempNotebookFile, DirectoryQ @ $missingDirRoot },
     { False, False },
     SameTest -> SameQ,
-    TestID   -> "WriteNotebook-Cleanup@@Tests/Tools.wlt:245,1-252,2"
+    TestID   -> "WriteNotebook-Cleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -269,14 +269,14 @@ VerificationTest[
     $cloudWriteNotebookTool[ "Parameters" ][[ All, 1 ]],
     { "path", "permissions", "overwrite", "markdown" },
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-CloudOverride-Parameters@@Tests/Tools.wlt:268,1-273,2"
+    TestID   -> "WriteNotebook-CloudOverride-Parameters"
 ]
 
 VerificationTest[
     $cloudWriteNotebookTool[ "Description" ],
     _String? (StringContainsQ[ "cloud object" ]),
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-CloudOverride-Description@@Tests/Tools.wlt:275,1-280,2"
+    TestID   -> "WriteNotebook-CloudOverride-Description"
 ]
 
 (* The default tool is untouched by the override. *)
@@ -284,7 +284,7 @@ VerificationTest[
     $DefaultMCPTools[ "WriteNotebook" ][ "Parameters" ][[ All, 1 ]],
     { "file", "overwrite", "markdown" },
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-CloudOverride-DefaultUnchanged@@Tests/Tools.wlt:283,1-288,2"
+    TestID   -> "WriteNotebook-CloudOverride-DefaultUnchanged"
 ]
 
 (* The remaining tests write to (and clean up from) the connected cloud account; skipped otherwise. *)
@@ -296,14 +296,14 @@ $cloudNotebookTest @ VerificationTest[
     |> ],
     _String? (StringStartsQ[ "http" ]),
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-BasicWrite@@Tests/Tools.wlt:291,22-300,2"
+    TestID   -> "WriteNotebook-Cloud-BasicWrite"
 ]
 
 $cloudNotebookTest @ VerificationTest[
     FileExistsQ @ CloudObject @ $cloudNotebookResult,
     True,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-ObjectExists@@Tests/Tools.wlt:302,22-307,2"
+    TestID   -> "WriteNotebook-Cloud-ObjectExists"
 ]
 
 (* Poll (a few seconds at most) for the expected permissions, since cloud metadata reads can be transiently
@@ -334,7 +334,7 @@ $cloudNotebookTest @ VerificationTest[
     cloudNotebookPermissions[ $cloudNotebookResult, cloudNotebookPrivateQ ],
     _? cloudNotebookPrivateQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-DefaultPrivate@@Tests/Tools.wlt:333,22-338,2"
+    TestID   -> "WriteNotebook-Cloud-DefaultPrivate"
 ]
 
 (* ReadNotebook reads the cloud object back from its URL. *)
@@ -342,14 +342,14 @@ $cloudNotebookTest @ VerificationTest[
     $readNotebookTool[ <| "notebook" -> $cloudNotebookResult |> ],
     _String? (StringContainsQ[ "# Cloud Test Notebook" ]),
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-Cloud-URL@@Tests/Tools.wlt:341,22-346,2"
+    TestID   -> "ReadNotebook-Cloud-URL"
 ]
 
 $cloudNotebookTest @ VerificationTest[
     $cloudWriteNotebookTool[ <| "markdown" -> "# Another Test", "path" -> $cloudNotebookPath |> ],
     _String? (StringStartsQ[ "File already exists" ]),
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-NoOverwriteExisting@@Tests/Tools.wlt:348,22-353,2"
+    TestID   -> "WriteNotebook-Cloud-NoOverwriteExisting"
 ]
 
 $cloudNotebookTest @ VerificationTest[
@@ -361,14 +361,14 @@ $cloudNotebookTest @ VerificationTest[
     |> ],
     $cloudNotebookResult,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-OverwriteExisting@@Tests/Tools.wlt:355,22-365,2"
+    TestID   -> "WriteNotebook-Cloud-OverwriteExisting"
 ]
 
 $cloudNotebookTest @ VerificationTest[
     cloudNotebookPermissions[ $cloudNotebookResult, cloudNotebookPublicQ ],
     _? cloudNotebookPublicQ,
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-PublicPermissions@@Tests/Tools.wlt:367,22-372,2"
+    TestID   -> "WriteNotebook-Cloud-PublicPermissions"
 ]
 
 (* Only markdown is required: the omitted parameters arrive as Missing["NoInput"] and a new anonymous
@@ -377,14 +377,14 @@ $cloudNotebookTest @ VerificationTest[
     $cloudAnonymousNotebook = $cloudWriteNotebookTool[ <| "markdown" -> "# Anonymous Notebook" |> ],
     url_String /; StringStartsQ[ url, "http" ] && StringFreeQ[ url, "/Claude/" ],
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-AnonymousObject@@Tests/Tools.wlt:376,22-381,2"
+    TestID   -> "WriteNotebook-Cloud-AnonymousObject"
 ]
 
 $cloudNotebookTest @ VerificationTest[
     $readNotebookTool[ <| "notebook" -> $cloudAnonymousNotebook |> ],
     _String? (StringContainsQ[ "# Anonymous Notebook" ]),
     SameTest -> MatchQ,
-    TestID   -> "ReadNotebook-Cloud-AnonymousURL@@Tests/Tools.wlt:383,22-388,2"
+    TestID   -> "ReadNotebook-Cloud-AnonymousURL"
 ]
 
 $cloudNotebookTest @ VerificationTest[
@@ -392,7 +392,7 @@ $cloudNotebookTest @ VerificationTest[
     FileExistsQ /@ { CloudObject @ $cloudNotebookResult, CloudObject @ $cloudAnonymousNotebook },
     { False, False },
     SameTest -> MatchQ,
-    TestID   -> "WriteNotebook-Cloud-Cleanup@@Tests/Tools.wlt:390,22-396,2"
+    TestID   -> "WriteNotebook-Cloud-Cleanup"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -406,28 +406,28 @@ VerificationTest[
     $evaluatorTool = $DefaultMCPTools[ "WolframLanguageEvaluator" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-GetTool@@Tests/Tools.wlt:405,1-410,2"
+    TestID   -> "WolframLanguageEvaluator-GetTool"
 ]
 
 VerificationTest[
     $evalResult1 = $evaluatorTool[ <| "code" -> "1 + 1" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-BasicEval@@Tests/Tools.wlt:412,1-417,2"
+    TestID   -> "WolframLanguageEvaluator-BasicEval"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResult1, "2" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-CorrectResult@@Tests/Tools.wlt:419,1-424,2"
+    TestID   -> "WolframLanguageEvaluator-CorrectResult"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResult1, "Out[" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-HasOutLabel@@Tests/Tools.wlt:426,1-431,2"
+    TestID   -> "WolframLanguageEvaluator-HasOutLabel"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -437,14 +437,14 @@ VerificationTest[
     $evalResult2 = $evaluatorTool[ <| "code" -> "Range[5]", "timeConstraint" -> 30 |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-WithTimeConstraint@@Tests/Tools.wlt:436,1-441,2"
+    TestID   -> "WolframLanguageEvaluator-WithTimeConstraint"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResult2, "{1, 2, 3, 4, 5}" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-RangeResult@@Tests/Tools.wlt:443,1-448,2"
+    TestID   -> "WolframLanguageEvaluator-RangeResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -454,14 +454,14 @@ VerificationTest[
     $evalResult3 = $evaluatorTool[ <| "code" -> "Table[n^2, {n, 1, 4}]" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-TableExpression@@Tests/Tools.wlt:453,1-458,2"
+    TestID   -> "WolframLanguageEvaluator-TableExpression"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResult3, "{1, 4, 9, 16}" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-TableResult@@Tests/Tools.wlt:460,1-465,2"
+    TestID   -> "WolframLanguageEvaluator-TableResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -471,14 +471,14 @@ VerificationTest[
     $evalResult4 = $evaluatorTool[ <| "code" -> "StringJoin[\"Hello\", \" \", \"World\"]" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-StringExpression@@Tests/Tools.wlt:470,1-475,2"
+    TestID   -> "WolframLanguageEvaluator-StringExpression"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResult4, "Hello World" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-StringResult@@Tests/Tools.wlt:477,1-482,2"
+    TestID   -> "WolframLanguageEvaluator-StringResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -488,28 +488,28 @@ VerificationTest[
     $evalResultPrint1 = $evaluatorTool[ <| "code" -> "Print[\"Hello from Print\"]; 42" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-PrintBasic@@Tests/Tools.wlt:487,1-492,2"
+    TestID   -> "WolframLanguageEvaluator-PrintBasic"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResultPrint1, "Hello from Print" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-PrintOutputCaptured@@Tests/Tools.wlt:494,1-499,2"
+    TestID   -> "WolframLanguageEvaluator-PrintOutputCaptured"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResultPrint1, "42" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-PrintResultIncluded@@Tests/Tools.wlt:501,1-506,2"
+    TestID   -> "WolframLanguageEvaluator-PrintResultIncluded"
 ]
 
 VerificationTest[
     $evalResultPrint2 = $evaluatorTool[ <| "code" -> "Print[\"First\"]; Print[\"Second\"]; Print[\"Third\"]; \"Done\"" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-MultiplePrints@@Tests/Tools.wlt:508,1-513,2"
+    TestID   -> "WolframLanguageEvaluator-MultiplePrints"
 ]
 
 VerificationTest[
@@ -518,14 +518,14 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-MultiplePrintsCaptured@@Tests/Tools.wlt:515,1-522,2"
+    TestID   -> "WolframLanguageEvaluator-MultiplePrintsCaptured"
 ]
 
 VerificationTest[
     $evalResultPrint3 = $evaluatorTool[ <| "code" -> "Do[Print[i], {i, 3}]; \"Complete\"" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-PrintInLoop@@Tests/Tools.wlt:524,1-529,2"
+    TestID   -> "WolframLanguageEvaluator-PrintInLoop"
 ]
 
 VerificationTest[
@@ -534,7 +534,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-PrintInLoopCaptured@@Tests/Tools.wlt:531,1-538,2"
+    TestID   -> "WolframLanguageEvaluator-PrintInLoopCaptured"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -549,14 +549,14 @@ VerificationTest[
     _String | _Association,
     { First::nofirst },
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-GenuineMessage@@Tests/Tools.wlt:547,1-553,2"
+    TestID   -> "WolframLanguageEvaluator-GenuineMessage"
 ]
 
 VerificationTest[
     StringContainsQ[ extractToolText @ $evalResultMsg1, "First::nofirst" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-GenuineMessageCaptured@@Tests/Tools.wlt:555,1-560,2"
+    TestID   -> "WolframLanguageEvaluator-GenuineMessageCaptured"
 ]
 
 (* Messages quieted by the evaluated code do not appear in the tool result: *)
@@ -564,7 +564,7 @@ VerificationTest[
     StringFreeQ[ extractToolText @ $evaluatorTool[ <| "code" -> "Quiet[First[{}]]" |> ], "First::nofirst" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-QuietedMessageNotReported@@Tests/Tools.wlt:563,1-568,2"
+    TestID   -> "WolframLanguageEvaluator-QuietedMessageNotReported"
 ]
 
 (* Messages suppressed by kernel-internal mechanisms do not appear in the tool result: *)
@@ -575,7 +575,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-DeactivatedMessageNotReported@@Tests/Tools.wlt:571,1-579,2"
+    TestID   -> "WolframLanguageEvaluator-DeactivatedMessageNotReported"
 ]
 
 (* Messages that internal kernel code issues and suppresses during evaluation (e.g. inside FullSimplify)
@@ -590,14 +590,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "ExpIntegralEi" ]),
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-InternallySuppressedMessages@@Tests/Tools.wlt:584,1-594,2"
+    TestID   -> "WolframLanguageEvaluator-InternallySuppressedMessages"
 ]
 
 VerificationTest[
     StringFreeQ[ $evalResultMsg2, { "Message text not found", "::ivar", "General::messages" } ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-InternallySuppressedMessagesNotReported@@Tests/Tools.wlt:596,1-601,2"
+    TestID   -> "WolframLanguageEvaluator-InternallySuppressedMessagesNotReported"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -631,7 +631,7 @@ VerificationTest[
     ],
     { KeyValuePattern[ "Content" -> { __Association } ], True },
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageEvaluator-UIPathVersionCheck@@Tests/Tools.wlt:614,1-635,2"
+    TestID   -> "WolframLanguageEvaluator-UIPathVersionCheck"
 ]
 
 (* A failing version check aborts the UI path before any evaluation is attempted: *)
@@ -649,7 +649,7 @@ VerificationTest[
     ],
     { True, False },
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageEvaluator-UIPathVersionCheckFailure@@Tests/Tools.wlt:638,1-653,2"
+    TestID   -> "WolframLanguageEvaluator-UIPathVersionCheckFailure"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -665,14 +665,14 @@ VerificationTest[
     $wolframAlphaTool = $DefaultMCPTools[ "WolframAlpha" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlpha-GetTool@@Tests/Tools.wlt:664,1-669,2"
+    TestID   -> "WolframAlpha-GetTool"
 ]
 
 VerificationTest[
     $waResult = $wolframAlphaTool[ <| "query" -> "population of France" |> ],
     _String? StringQ | KeyValuePattern[ "Content" -> { __Association } ],
     SameTest -> MatchQ,
-    TestID   -> "WolframAlpha-BasicQuery@@Tests/Tools.wlt:671,1-676,2"
+    TestID   -> "WolframAlpha-BasicQuery"
 ]
 
 VerificationTest[
@@ -683,14 +683,14 @@ VerificationTest[
         ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlpha-ResultString@@Tests/Tools.wlt:678,1-687,2"
+    TestID   -> "WolframAlpha-ResultString"
 ]
 
 VerificationTest[
     StringLength @ $waResultString > 0,
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframAlpha-NonEmptyResult@@Tests/Tools.wlt:689,1-694,2"
+    TestID   -> "WolframAlpha-NonEmptyResult"
 ]
 
 (* TODO: multiple queries aren't supported until the next Chatbook paclet update *)
@@ -698,14 +698,14 @@ VerificationTest[
     $waResult = $wolframAlphaTool[ <| "query" -> "population of France\tpopulation of Germany" |> ],
     _String? StringQ,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlpha-MultipleQueries@@Tests/Tools.wlt:279,1-284,2"
+    TestID   -> "WolframAlpha-MultipleQueries"
 ]
 
 VerificationTest[
     StringCount[ $waResult, "<result query=" ],
     2,
     SameTest -> SameQ,
-    TestID   -> "WolframAlpha-MultipleQueriesResultCount@@Tests/Tools.wlt:286,1-291,2"
+    TestID   -> "WolframAlpha-MultipleQueriesResultCount"
 ] *)
 
 (* ::**************************************************************************************************************:: *)
@@ -719,28 +719,28 @@ VerificationTest[
     $wlContextTool = $DefaultMCPTools[ "WolframLanguageContext" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageContext-GetTool@@Tests/Tools.wlt:718,1-723,2"
+    TestID   -> "WolframLanguageContext-GetTool"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     $wlContextResult = $wlContextTool[ <| "context" -> "How to create a list of prime numbers in Wolfram Language" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframLanguageContext-BasicQuery@@Tests/Tools.wlt:725,23-730,2"
+    TestID   -> "WolframLanguageContext-BasicQuery"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     StringLength[ extractToolText @ $wlContextResult ] > 0,
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageContext-NonEmptyResult@@Tests/Tools.wlt:732,23-737,2"
+    TestID   -> "WolframLanguageContext-NonEmptyResult"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     StringContainsQ[ extractToolText @ $wlContextResult, "Prime" | "prime" | "Table" | "Range", IgnoreCase -> True ],
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframLanguageContext-RelevantContent@@Tests/Tools.wlt:739,23-744,2"
+    TestID   -> "WolframLanguageContext-RelevantContent"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -754,21 +754,21 @@ VerificationTest[
     $waContextTool = $DefaultMCPTools[ "WolframAlphaContext" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlphaContext-GetTool@@Tests/Tools.wlt:753,1-758,2"
+    TestID   -> "WolframAlphaContext-GetTool"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     $waContextResult = $waContextTool[ <| "context" -> "What is the distance from Earth to Mars" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframAlphaContext-BasicQuery@@Tests/Tools.wlt:760,23-765,2"
+    TestID   -> "WolframAlphaContext-BasicQuery"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     StringLength[ extractToolText @ $waContextResult ] > 0,
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframAlphaContext-NonEmptyResult@@Tests/Tools.wlt:767,23-772,2"
+    TestID   -> "WolframAlphaContext-NonEmptyResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -782,21 +782,21 @@ VerificationTest[
     $wolframContextTool = $DefaultMCPTools[ "WolframContext" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "WolframContext-GetTool@@Tests/Tools.wlt:781,1-786,2"
+    TestID   -> "WolframContext-GetTool"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     $wolframContextResult = $wolframContextTool[ <| "context" -> "How to compute derivatives symbolically" |> ],
     _String | _Association,
     SameTest -> MatchQ,
-    TestID   -> "WolframContext-BasicQuery@@Tests/Tools.wlt:788,23-793,2"
+    TestID   -> "WolframContext-BasicQuery"
 ]
 
 skipIfGitHubActions @ VerificationTest[
     StringLength[ extractToolText @ $wolframContextResult ] > 0,
     True,
     SameTest -> SameQ,
-    TestID   -> "WolframContext-NonEmptyResult@@Tests/Tools.wlt:795,23-800,2"
+    TestID   -> "WolframContext-NonEmptyResult"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -838,7 +838,7 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "usage limit" ]),
     SameTest -> MatchQ,
-    TestID   -> "RelatedWolframAlphaResults-UsageLimitMessage@@Tests/Tools.wlt:831,1-842,2"
+    TestID   -> "RelatedWolframAlphaResults-UsageLimitMessage"
 ]
 
 (* The service's own error message is surfaced to the agent. *)
@@ -846,7 +846,7 @@ VerificationTest[
     StringContainsQ[ $waUsageLimitResult, "credits-per-month-limit-exceeded" ],
     True,
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframAlphaResults-UsageLimitIncludesServiceMessage@@Tests/Tools.wlt:845,1-850,2"
+    TestID   -> "RelatedWolframAlphaResults-UsageLimitIncludesServiceMessage"
 ]
 
 (* It is NOT a Failure, so the MCP layer will not flag it as an error or emit a bug report. *)
@@ -854,7 +854,7 @@ VerificationTest[
     FailureQ @ $waUsageLimitResult,
     False,
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframAlphaResults-UsageLimitNotFailure@@Tests/Tools.wlt:853,1-858,2"
+    TestID   -> "RelatedWolframAlphaResults-UsageLimitNotFailure"
 ]
 
 (* The caller's message level (e.g. "Warning" from the combined WolframContext tool) is honored. *)
@@ -871,7 +871,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframAlphaResults-UsageLimitLevel@@Tests/Tools.wlt:861,1-875,2"
+    TestID   -> "RelatedWolframAlphaResults-UsageLimitLevel"
 ]
 
 (* A genuine string result is still returned unchanged (regression guard). *)
@@ -885,7 +885,7 @@ VerificationTest[
     ],
     "Some Wolfram|Alpha context.",
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframAlphaResults-NormalResultUnchanged@@Tests/Tools.wlt:878,1-889,2"
+    TestID   -> "RelatedWolframAlphaResults-NormalResultUnchanged"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -903,14 +903,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "usage limit" ]),
     SameTest -> MatchQ,
-    TestID   -> "RelatedDocumentation-UsageLimitMessage@@Tests/Tools.wlt:895,1-907,2"
+    TestID   -> "RelatedDocumentation-UsageLimitMessage"
 ]
 
 VerificationTest[
     FailureQ @ $docUsageLimitResult,
     False,
     SameTest -> SameQ,
-    TestID   -> "RelatedDocumentation-UsageLimitNotFailure@@Tests/Tools.wlt:909,1-914,2"
+    TestID   -> "RelatedDocumentation-UsageLimitNotFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -931,14 +931,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "usage limit" ]),
     SameTest -> MatchQ,
-    TestID   -> "RelatedWolframContext-UsageLimitMessage@@Tests/Tools.wlt:922,1-935,2"
+    TestID   -> "RelatedWolframContext-UsageLimitMessage"
 ]
 
 VerificationTest[
     FailureQ @ $wcUsageLimitResult,
     False,
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframContext-UsageLimitNotFailure@@Tests/Tools.wlt:937,1-942,2"
+    TestID   -> "RelatedWolframContext-UsageLimitNotFailure"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -967,7 +967,7 @@ VerificationTest[
     ],
     { True, False, True },
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframContext-LLMKitDisabledNoWarning@@Tests/Tools.wlt:951,1-971,2"
+    TestID   -> "RelatedWolframContext-LLMKitDisabledNoWarning"
 ]
 
 (* Regression guard: a genuinely unsubscribed user (LLMKit still enabled) DOES get the subscription
@@ -994,7 +994,7 @@ VerificationTest[
     ],
     { True, True, True },
     SameTest -> SameQ,
-    TestID   -> "RelatedWolframContext-UnsubscribedStillWarns@@Tests/Tools.wlt:976,1-998,2"
+    TestID   -> "RelatedWolframContext-UnsubscribedStillWarns"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -1021,7 +1021,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`documentationProvidedAvailableQ @ mockRelatedWAResultsNew,
     True,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedAvailableQ-Supported@@Tests/Tools.wlt:1019,1-1025,2"
+    TestID   -> "DocumentationProvidedAvailableQ-Supported"
 ]
 
 (* An older Chatbook without the option is reported as unsupported: *)
@@ -1030,7 +1030,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`documentationProvidedAvailableQ @ mockRelatedWAResultsOld,
     False,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedAvailableQ-Unsupported@@Tests/Tools.wlt:1028,1-1034,2"
+    TestID   -> "DocumentationProvidedAvailableQ-Unsupported"
 ]
 
 (* A Block-mocked RelatedWolframAlphaResults (as used elsewhere in this file) evaluates to a Function;
@@ -1039,7 +1039,7 @@ VerificationTest[
     Wolfram`AgentTools`Common`documentationProvidedAvailableQ[ "mocked" & ],
     False,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedAvailableQ-NonSymbol@@Tests/Tools.wlt:1038,1-1043,2"
+    TestID   -> "DocumentationProvidedAvailableQ-NonSymbol"
 ]
 
 (* The zero-argument form probes the Chatbook in use and returns a definite boolean: *)
@@ -1047,7 +1047,7 @@ VerificationTest[
     BooleanQ @ Wolfram`AgentTools`Common`documentationProvidedAvailableQ[ ],
     True,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedAvailableQ-Boolean@@Tests/Tools.wlt:1046,1-1051,2"
+    TestID   -> "DocumentationProvidedAvailableQ-Boolean"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1061,7 +1061,7 @@ VerificationTest[
     ],
     { },
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedOptions-NotProvided@@Tests/Tools.wlt:1058,1-1065,2"
+    TestID   -> "DocumentationProvidedOptions-NotProvided"
 ]
 
 (* From the combined tool with a supporting Chatbook, the option is included: *)
@@ -1071,7 +1071,7 @@ VerificationTest[
     ],
     { "DocumentationProvided" -> True },
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedOptions-Supported@@Tests/Tools.wlt:1068,1-1075,2"
+    TestID   -> "DocumentationProvidedOptions-Supported"
 ]
 
 (* From the combined tool with an older Chatbook, the option is omitted: *)
@@ -1081,7 +1081,7 @@ VerificationTest[
     ],
     { },
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvidedOptions-Unsupported@@Tests/Tools.wlt:1078,1-1085,2"
+    TestID   -> "DocumentationProvidedOptions-Unsupported"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1103,14 +1103,14 @@ VerificationTest[
     ],
     "Some Wolfram|Alpha context.",
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvided-StandaloneResultUnchanged@@Tests/Tools.wlt:1093,1-1107,2"
+    TestID   -> "DocumentationProvided-StandaloneResultUnchanged"
 ]
 
 VerificationTest[
     MemberQ[ $capturedWAArguments, "DocumentationProvided" -> _ ],
     False,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvided-NotPassedStandalone@@Tests/Tools.wlt:1109,1-1114,2"
+    TestID   -> "DocumentationProvided-NotPassedStandalone"
 ]
 
 (* The combined WolframContext tool passes the option when the loaded Chatbook supports it: *)
@@ -1129,14 +1129,14 @@ VerificationTest[
     ],
     _String? (StringContainsQ[ "Some Wolfram|Alpha context." ]),
     SameTest -> MatchQ,
-    TestID   -> "DocumentationProvided-CombinedResult@@Tests/Tools.wlt:1117,1-1133,2"
+    TestID   -> "DocumentationProvided-CombinedResult"
 ]
 
 VerificationTest[
     MemberQ[ $capturedWAArguments, "DocumentationProvided" -> True ],
     True,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvided-PassedFromCombined@@Tests/Tools.wlt:1135,1-1140,2"
+    TestID   -> "DocumentationProvided-PassedFromCombined"
 ]
 
 (* The combined tool must not pass the option to an older Chatbook that does not support it: *)
@@ -1156,7 +1156,7 @@ VerificationTest[
     MemberQ[ $capturedWAArguments, "DocumentationProvided" -> _ ],
     False,
     SameTest -> SameQ,
-    TestID   -> "DocumentationProvided-NotPassedUnsupported@@Tests/Tools.wlt:1143,1-1160,2"
+    TestID   -> "DocumentationProvided-NotPassedUnsupported"
 ]
 
 (* :!CodeAnalysis::EndBlock:: *)
@@ -1174,14 +1174,14 @@ VerificationTest[
     $testReportTool = $DefaultMCPTools[ "TestReport" ],
     _LLMTool,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-GetTool@@Tests/Tools.wlt:1173,1-1178,2"
+    TestID   -> "TestReport-GetTool"
 ]
 
 VerificationTest[
     $testResourceDirectory = FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "TestResources" },
     _String? DirectoryQ,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-TestResourceDirectory@@Tests/Tools.wlt:1180,1-1185,2"
+    TestID   -> "TestReport-TestResourceDirectory"
 ]
 
 VerificationTest[
@@ -1191,7 +1191,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-SingleFile@@Tests/Tools.wlt:1187,1-1195,2"
+    TestID   -> "TestReport-SingleFile"
 ]
 
 VerificationTest[
@@ -1205,7 +1205,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt"~~__~~"TestFile2.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-MultipleFiles@@Tests/Tools.wlt:1197,1-1209,2"
+    TestID   -> "TestReport-MultipleFiles"
 ]
 
 VerificationTest[
@@ -1215,7 +1215,7 @@ VerificationTest[
     |>,
     _String? (StringContainsQ[ "# Test Results Summary"~~__~~"TestFile1.wlt"~~__~~"TestFile2.wlt" ]),
     SameTest -> MatchQ,
-    TestID   -> "TestReport-Directory@@Tests/Tools.wlt:1211,1-1219,2"
+    TestID   -> "TestReport-Directory"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1251,7 +1251,7 @@ skipIfGitHubActions @ VerificationTest[
     ],
     True,
     SameTest -> MatchQ,
-    TestID   -> "TestReport-McpRootRelativePath@@Tests/Tools.wlt:1228,23-1255,2"
+    TestID   -> "TestReport-McpRootRelativePath"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1264,7 +1264,7 @@ VerificationTest[
     Failure[ "AgentTools::TestFileNotFound", _Association ],
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-NonexistentFile-GH#65@@Tests/Tools.wlt:1262,1-1268,2"
+    TestID   -> "TestReport-NonexistentFile-GH#65"
 ]
 
 VerificationTest[
@@ -1272,7 +1272,7 @@ VerificationTest[
     _? (FreeQ[ "AgentTools::Internal" ]),
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-NoInternalFailure-GH#65@@Tests/Tools.wlt:1270,1-1276,2"
+    TestID   -> "TestReport-NoInternalFailure-GH#65"
 ]
 
 VerificationTest[
@@ -1285,7 +1285,7 @@ VerificationTest[
     _? (FreeQ[ "AgentTools::Internal" ]),
     { AgentTools::TestFileNotFound },
     SameTest -> MatchQ,
-    TestID   -> "TestReport-MixedValidInvalidPaths-GH#65@@Tests/Tools.wlt:1278,1-1289,2"
+    TestID   -> "TestReport-MixedValidInvalidPaths-GH#65"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1302,7 +1302,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveNames@@Tests/Tools.wlt:1298,1-1306,2"
+    TestID   -> "ToolProperties-AllHaveNames"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1315,7 +1315,7 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveDescriptions@@Tests/Tools.wlt:1311,1-1319,2"
+    TestID   -> "ToolProperties-AllHaveDescriptions"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -1328,5 +1328,5 @@ VerificationTest[
     ],
     True,
     SameTest -> SameQ,
-    TestID   -> "ToolProperties-AllHaveParameters@@Tests/Tools.wlt:1324,1-1332,2"
+    TestID   -> "ToolProperties-AllHaveParameters"
 ]

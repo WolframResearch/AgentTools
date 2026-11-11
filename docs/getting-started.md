@@ -25,7 +25,7 @@ cd AgentTools
 
 ### Configuring Git Hooks
 
-Enable the pre-commit hooks to automatically format notebooks and annotate test IDs:
+Enable the pre-commit hooks to automatically format notebooks:
 
 ```bash
 git config --local core.hooksPath Scripts/.githooks
