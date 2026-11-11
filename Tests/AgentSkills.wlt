@@ -187,7 +187,7 @@ testSkillsRoot[ ] := File @ FileNameJoin @ { $HomeDirectory, ".claude", "skills"
 
 (* The built-in skills: the skills in the "AgentSkills" asset of the loaded paclet, as listed in the source manifest of
    the checkout (never the loaded paclet's location, which is a build directory without AgentSkills/ in CI) *)
-$builtInSkillNames = { "wolfram-alpha", "wolfram-debugging", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
+$builtInSkillNames = { "wolfram-agent-tools", "wolfram-alpha", "wolfram-debugging", "wolfram-language", "wolfram-notebooks", "wolfram-paclets" };
 $skillsManifestFile = FileNameJoin @ { DirectoryName[ $TestFileName, 2 ], "AgentSkills", "Manifest.wl" };
 $skillsAssetDirectory := PacletObject[ "Wolfram/AgentTools" ][ "AssetLocation", "AgentSkills" ];
 
@@ -668,7 +668,7 @@ VerificationTest[
 
 VerificationTest[
     FileExistsQ @ FileNameJoin @ { $skillsAssetDirectory, #, "SKILL.md" } & /@ $builtInSkillNames,
-    { True, True, True, True, True },
+    { True, True, True, True, True, True },
     SameTest -> SameQ,
     TestID   -> "DefaultAgentSkills-AssetSkillFiles"
 ]
@@ -761,6 +761,7 @@ VerificationTest[
         {
             DirectoryQ @ First @ dir,
             result[[ 1 ]] === {
+                Missing[ "NotAvailable", "wolfram-agent-tools" ],
                 Missing[ "NotAvailable", "wolfram-alpha" ],
                 Missing[ "NotAvailable", "wolfram-debugging" ],
                 dir,

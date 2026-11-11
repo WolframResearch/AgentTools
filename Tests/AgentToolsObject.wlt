@@ -62,10 +62,10 @@ VerificationTest[
 VerificationTest[
     #[ "AgentSkillNames" ] & /@ $DefaultAgentTools,
     <|
-        "Wolfram"                  -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
+        "Wolfram"                  -> { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" },
         "WolframAlpha"             -> { "wolfram-alpha" },
-        "WolframLanguage"          -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" },
-        "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging" }
+        "WolframLanguage"          -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging", "wolfram-agent-tools" },
+        "WolframPacletDevelopment" -> { "wolfram-language", "wolfram-notebooks", "wolfram-paclets", "wolfram-debugging", "wolfram-agent-tools" }
     |>,
     SameTest -> SameQ,
     TestID   -> "DefaultAgentTools-AgentSkillNames"
@@ -133,10 +133,11 @@ VerificationTest[
         {
             HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-language" ] ],
             HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-alpha" ] ],
-            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-debugging" ] ]
+            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-debugging" ] ],
+            HoldPattern[ LLMSkill ][ KeyValuePattern[ "Name" -> "wolfram-agent-tools" ] ]
         },
         { "Wolfram" },
-        { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
+        { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" },
         "AgentToolsObject"
     },
     SameTest -> MatchQ,
@@ -173,7 +174,7 @@ VerificationTest[
     With[ { skills = $wolfram /@ { "AgentSkills", "Skills", "LLMSkills" } },
         { SameQ @@ skills, MatchQ[ First @ skills, { __LLMSkill } ], Map[ #[ "Name" ] &, First @ skills ] }
     ],
-    { True, True, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" } },
+    { True, True, { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" } },
     SameTest -> SameQ,
     TestID   -> "AgentToolsObject-BuiltIn-LLMSkills"
 ]
@@ -186,7 +187,7 @@ VerificationTest[
             $wolfram[ "AgentSkills" ]
         ]
     ],
-    { True, True, True },
+    { True, True, True, True },
     SameTest -> SameQ,
     TestID   -> "AgentToolsObject-BuiltIn-SkillLocations"
 ]
@@ -215,7 +216,7 @@ VerificationTest[
         ]
     ],
     {
-        { "wolfram-language", "wolfram-alpha", "wolfram-debugging" },
+        { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" },
         Failure[ "AgentToolsObject::BuiltInAgentSkillMissing", KeyValuePattern[ "MessageParameters" :> { "wolfram-language" } ] ]
     },
     { AgentToolsObject::BuiltInAgentSkillMissing },
@@ -571,7 +572,7 @@ VerificationTest[
         toAgentToolsObject[ MCPServerObject[ "Wolfram" ] ] /@ { "Name", "AgentSkills", "AgentSkillNames" },
         AgentToolsObject[ "Wolfram" ][ "AgentSkillNames" ]
     },
-    { { "Wolfram", { }, { } }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging" } },
+    { { "Wolfram", { }, { } }, { "wolfram-language", "wolfram-alpha", "wolfram-debugging", "wolfram-agent-tools" } },
     SameTest -> SameQ,
     TestID   -> "toAgentToolsObject-MCPServerObject-NoSkills"
 ]
