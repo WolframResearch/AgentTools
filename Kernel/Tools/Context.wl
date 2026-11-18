@@ -94,6 +94,7 @@ The service returned the following message: `Message`" ];
 $defaultMCPTools[ "WolframContext" ] := LLMTool @ <|
     "Name"           -> "WolframContext",
     "DisplayName"    -> "Wolfram Context",
+    "Annotations"    -> <| "readOnlyHint" -> True |>,
     "Description"    -> $wolframContextToolDescription,
     "Function"       -> relatedWolframContext,
     "LLMKit"         -> "Suggested",
@@ -122,6 +123,7 @@ $defaultToolOptions[ "WolframContext" ] = <|
 $defaultMCPTools[ "WolframAlphaContext" ] := LLMTool @ <|
     "Name"           -> "WolframAlphaContext",
     "DisplayName"    -> "Wolfram|Alpha Context",
+    "Annotations"    -> <| "readOnlyHint" -> True |>,
     "Description"    -> $waContextToolDescription,
     "Function"       -> relatedWolframAlphaPrompt,
     "LLMKit"         -> "Required",
@@ -150,6 +152,7 @@ $defaultToolOptions[ "WolframAlphaContext" ] = <|
 $defaultMCPTools[ "WolframLanguageContext" ] := LLMTool @ <|
     "Name"           -> "WolframLanguageContext",
     "DisplayName"    -> "Wolfram Language Context",
+    "Annotations"    -> <| "readOnlyHint" -> True |>,
     "Description"    -> $wlContextToolDescription,
     "Function"       -> relatedDocumentation,
     "LLMKit"         -> "Suggested",

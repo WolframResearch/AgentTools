@@ -1056,6 +1056,37 @@ VerificationTest[
     TestID   -> "CreateMCPToolData-SingleArgUsesToolName"
 ]
 
+(* The "Annotations" property is merged into the tool's annotations along with the title from "DisplayName": *)
+VerificationTest[
+    tool = LLMTool[ <|
+        "Name"        -> "MyTool",
+        "DisplayName" -> "My Tool",
+        "Annotations" -> <| "readOnlyHint" -> True, "openWorldHint" -> False |>,
+        "Description" -> "A tool",
+        "Function"    -> Identity,
+        "Parameters"  -> { }
+    |> ];
+    Wolfram`AgentTools`Server`Shared`Private`createMCPToolData[ tool ][ "annotations" ],
+    <| "title" -> "My Tool", "readOnlyHint" -> True, "openWorldHint" -> False |>,
+    SameTest -> MatchQ,
+    TestID   -> "CreateMCPToolData-Annotations"
+]
+
+VerificationTest[
+    tool = LLMTool[ <| "Name" -> "MyTool", "Description" -> "A tool", "Function" -> Identity, "Parameters" -> { } |> ];
+    KeyExistsQ[ Wolfram`AgentTools`Server`Shared`Private`createMCPToolData[ tool ], "annotations" ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CreateMCPToolData-NoAnnotations"
+]
+
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`createMCPToolData[ $DefaultMCPTools[ "WolframAlpha" ] ][ "annotations" ],
+    <| "title" -> "Wolfram|Alpha", "readOnlyHint" -> True |>,
+    SameTest -> MatchQ,
+    TestID   -> "CreateMCPToolData-BuiltInAnnotations"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Disambiguation integration with evaluateTool*)

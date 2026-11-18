@@ -352,7 +352,9 @@ createMCPToolData[ mcpName_String, tool: HoldPattern[ _LLMTool ] ] := Enclose[
         title = Lookup[ data, "DisplayName", Missing[ ] ];
         If[ StringQ @ title, title = safeString @ title ];
 
-        annotations = If[ StringQ @ title, <| "title" -> title |>, Missing[ ] ];
+        (* Tool annotations (e.g. readOnlyHint) from the "Annotations" property, plus the title: *)
+        annotations = DeleteMissing @ <| "title" -> title, Lookup[ data, "Annotations", <| |> ] |>;
+        If[ annotations === <| |>, annotations = Missing[ ] ];
 
         DeleteMissing @ <|
             "name"        -> safeString @ mcpName,

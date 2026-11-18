@@ -62,6 +62,11 @@ Needs[ "Wolfram`AgentTools`Common`" ];
 $MCPEvaluationEnvironment = None;
 $MCPTransport             = None;
 
+(* Exported descriptor of the current client, for custom tools that adapt their results to it: True while handling a
+   request from a client that supports MCP Apps (when MCP Apps are enabled on the server), and False otherwise. It
+   reads $clientSupportsUI, which each transport sets per session (local) or request (cloud). *)
+$MCPClientSupportsUI := TrueQ @ $clientSupportsUI;
+
 (* Exported descriptors of the standalone MCP server product: a kernel that only runs the MCP server, without a full
    Mathematica installation and under its own licensing. Nothing in this paclet sets them; the standalone application
    sets both after the paclet has been loaded (loading resets them to the defaults below). Like the other exported
