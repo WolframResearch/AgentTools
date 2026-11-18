@@ -148,20 +148,20 @@ runCloudMCPServer // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*runCloudMCPServer0*)
-(* Transport-level validation followed by JSON-RPC dispatch, implementing the stateless subset of the
-   MCP Streamable HTTP transport (2025-11-25). Each transport check either passes or Throws its
-   HTTPResponse to $cloudResponseTag. On success the dispatch Block's value (an HTTPResponse) is
-   returned normally. *)
+(* Transport-level validation followed by JSON-RPC dispatch, implementing the MCP Streamable HTTP transport of the
+   modern protocol (2026-07-28), which is stateless, and the stateless subset of the legacy one (2025-11-25 and
+   earlier). Each transport check either passes or Throws its HTTPResponse to $cloudResponseTag. On success the
+   dispatch Block's value (an HTTPResponse) is returned normally. *)
 runCloudMCPServer0 // beginDefinition;
 
 runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
-    Module[ { headers, contentType, message, method, id, uiEnabled, req },
+    Module[ { headers, contentType, message, method, id, modern, error, uiEnabled, req },
 
         (* 1. Method: only POST is dispatched. GET (the optional server->client SSE stream) and DELETE
               (session teardown) -- and anything else -- return 405: there is no server-side session to
               stream from or tear down in the stateless transport. *)
         If[ ToUpperCase @ requestMethod @ request =!= "POST",
-            Throw[ emptyResponse[ 405 ], $cloudResponseTag ]
+            Throw[ HTTPResponse[ "", <| "StatusCode" -> 405, "Headers" -> { "Allow" -> "POST" } |> ], $cloudResponseTag ]
         ];
 
         headers = requestHeaders @ request;
@@ -187,13 +187,31 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
         method = Lookup[ message, "method", None ];
         id     = Lookup[ message, "id", Null ];
 
-        (* 5. Protocol-version header on non-initialize requests: present but unsupported -> 400. An
-              absent header is allowed (the spec says assume 2025-03-26, which is supported). *)
-        If[ method =!= "initialize" && ! supportedProtocolHeaderQ @ headers,
-            Throw[ emptyResponse[ 400 ], $cloudResponseTag ]
+        (* 5. Protocol version. A modern request must carry the required _meta fields with a supported version, and
+              the standard headers that mirror the body (MCP-Protocol-Version, Mcp-Method, Mcp-Name) -> otherwise 400
+              with the JSON-RPC error. For a legacy request, a present MCP-Protocol-Version header must name a
+              supported version -> otherwise 400 with UnsupportedProtocolVersionError; an absent header is allowed
+              (the spec says assume 2025-03-26, which is supported), and initialize is exempt (its version is
+              negotiated in the body). *)
+        modern = modernHTTPRequestQ[ headers, method, id, message ];
+        error  = Which[
+            modern,
+                modernHTTPRequestError[ headers, method, message ],
+            method =!= "initialize" && ! supportedProtocolHeaderQ @ headers,
+                unsupportedProtocolVersionError @ protocolVersionHeader @ headers,
+            True,
+                None
+        ];
+        If[ AssociationQ @ error,
+            Throw[
+                jsonResponse[ <| "jsonrpc" -> "2.0", "id" -> id, "error" -> error |>, contentType, { }, 400 ],
+                $cloudResponseTag
+            ]
         ];
 
-        (* 6. Re-establish the client's UI capability from the self-describing session ID. *)
+        (* 6. Re-establish the client's UI capability of a legacy request from the self-describing session ID. A
+              modern request declares its capabilities in _meta instead (see withModernClient in Shared.wl), and any
+              session ID it sends is ignored. *)
         uiEnabled = MemberQ[ getFeaturesFromSessionID @ sessionIDHeader @ headers, "MCPApps" ];
 
         req = <| "jsonrpc" -> "2.0", "id" -> id |>;
@@ -219,7 +237,7 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
                         $promptLookup = state[ "PromptLookup" ],
                         $toolOptions  = state[ "ToolOptions" ]
                     },
-                    dispatchCloudMethod[ method, id, message, req, contentType ]
+                    dispatchCloudMethod[ method, id, message, req, contentType, modern ]
                 ]
             ]
         ]
@@ -249,25 +267,36 @@ ensureHTTPResponse // endDefinition;
 (* Route the single JSON-RPC message. A request (a method plus a non-null id, not a notification)
    returns its result in a 200; a notification / response / id->Null returns 202 with an empty body. A
    dispatch or tool failure is reported in-band as JSON-RPC -32603 within a 200, mirroring the local
-   processRequest. initialize responses additionally carry a fresh self-describing Mcp-Session-Id. *)
+   processRequest. A modern request for a method the server does not implement gets its -32601 error with a 404
+   (see responseStatus). Legacy initialize responses additionally carry a fresh self-describing Mcp-Session-Id. *)
 dispatchCloudMethod // beginDefinition;
 
-dispatchCloudMethod[ method_, id_, message_, req_, contentType_ ] :=
+dispatchCloudMethod[ method_, id_, message_, req_, contentType_, modern_ ] :=
     Module[ { response, respHeaders },
         If[ replyOwedQ[ method, id ],
-            response    = catchAlways @ handleMethod[ method, message, req ];
+            response    = catchAlways @ handleRequest[ method, message, req ];
             respHeaders = sessionIDResponseHeaders @ method;
             If[ FailureQ @ response,
                 jsonResponse[ <| req, "error" -> <| "code" -> -32603, "message" -> "Internal error" |> |>, contentType, respHeaders ],
-                jsonResponse[ response, contentType, respHeaders ]
+                jsonResponse[ response, contentType, respHeaders, responseStatus[ modern, response ] ]
             ],
             (* No reply owed: still dispatch notifications for their side effects, then 202 empty. *)
-            If[ StringQ @ method, catchAlways @ handleMethod[ method, message, req ] ];
+            If[ StringQ @ method, catchAlways @ handleRequest[ method, message, req ] ];
             emptyResponse[ 202 ]
         ]
     ];
 
 dispatchCloudMethod // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*responseStatus*)
+(* The modern Streamable HTTP transport requires a 404 for a method the server does not implement, which the JSON-RPC
+   error body distinguishes from the 404 of a missing endpoint. Legacy requests keep getting their errors in a 200. *)
+responseStatus // beginDefinition;
+responseStatus[ True, KeyValuePattern[ "error" -> KeyValuePattern[ "code" -> -32601 ] ] ] := 404;
+responseStatus[ _, _ ] := 200;
+responseStatus // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
@@ -411,14 +440,118 @@ parseAcceptHeader // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*supportedProtocolHeaderQ*)
-(* The MCP-Protocol-Version request header must name a supported revision on non-initialize requests.
+(* The MCP-Protocol-Version request header must name a supported revision on legacy non-initialize requests.
    An absent header is allowed (the spec says assume 2025-03-26, which is supported). *)
 supportedProtocolHeaderQ // beginDefinition;
-supportedProtocolHeaderQ[ headers_Association ] := supportedProtocolHeaderQ @ Lookup[ headers, "mcp-protocol-version", Missing[ "Absent" ] ];
+supportedProtocolHeaderQ[ headers_Association ] := supportedProtocolHeaderQ @ protocolVersionHeader @ headers;
 supportedProtocolHeaderQ[ _Missing ] := True;
 supportedProtocolHeaderQ[ version_String ] := MemberQ[ $supportedProtocolVersions, version ];
 supportedProtocolHeaderQ[ _ ] := False;
 supportedProtocolHeaderQ // endDefinition;
+
+protocolVersionHeader // beginDefinition;
+protocolVersionHeader[ headers_Association ] := Lookup[ headers, "mcp-protocol-version", Missing[ "Absent" ] ];
+protocolVersionHeader // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*modernHTTPRequestQ*)
+(* A request (not a notification) is modern when its body says so (see modernRequestQ in Shared.wl) or its
+   MCP-Protocol-Version header names a modern version, in which case a body without the modern _meta fields is
+   rejected as malformed. Notifications carry no per-request _meta fields and are always accepted. *)
+modernHTTPRequestQ // beginDefinition;
+
+modernHTTPRequestQ[ headers_Association, method_, id_, message_ ] :=
+    And[
+        replyOwedQ[ method, id ],
+        method =!= "initialize",
+        modernRequestQ[ method, message ] || MemberQ[ $modernProtocolVersions, protocolVersionHeader @ headers ]
+    ];
+
+modernHTTPRequestQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*modernHTTPRequestError*)
+(* The JSON-RPC error (sent with a 400) for a modern request with invalid _meta fields (see modernRequestError in
+   Shared.wl) or with standard request headers that are missing or don't match the body, or None for a valid request.
+   A protocol version in _meta that differs from the MCP-Protocol-Version header is a header mismatch, checked first
+   so that a legacy version in the body isn't reported as unsupported. Mcp-Param-* headers are not checked, since no
+   tool parameters are mirrored into headers (x-mcp-header). *)
+$mcpNameParameters = <| "tools/call" -> "name", "prompts/get" -> "name", "resources/read" -> "uri" |>;
+
+modernHTTPRequestError // beginDefinition;
+
+modernHTTPRequestError[ headers_Association, method_, message_ ] :=
+    With[ { version = requestMetaValue[ message, "protocolVersion" ] },
+        If[ StringQ @ version && version =!= protocolVersionHeader @ headers,
+            headerMismatchError[ "MCP-Protocol-Version" ],
+            Replace[ modernRequestError @ message, None :> headerMismatchError[ headers, method, message ] ]
+        ]
+    ];
+
+modernHTTPRequestError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*headerMismatchError*)
+headerMismatchError // beginDefinition;
+
+headerMismatchError[ headers_Association, method_, message_ ] :=
+    Catch @ Module[ { expected },
+        expected = <|
+            "MCP-Protocol-Version" -> requestMetaValue[ message, "protocolVersion" ],
+            "Mcp-Method"           -> method,
+            If[ KeyExistsQ[ $mcpNameParameters, method ],
+                "Mcp-Name" -> Lookup[
+                    Replace[ Lookup[ message, "params" ], Except[ _Association ] :> <| |> ],
+                    $mcpNameParameters @ method,
+                    Missing[ "NotFound" ]
+                ],
+                Nothing
+            ]
+        |>;
+        KeyValueMap[
+            Function[ { name, value },
+                With[ { header = Lookup[ headers, ToLowerCase @ name, Missing[ "Absent" ] ] },
+                    (* Only Mcp-Name may be Base64-encoded: *)
+                    If[ If[ name === "Mcp-Name", decodeHeaderValue @ header, header ] =!= value || ! StringQ @ header,
+                        Throw @ headerMismatchError @ name
+                    ]
+                ]
+            ],
+            expected
+        ];
+        None
+    ];
+
+headerMismatchError[ name_String ] := <|
+    "code"    -> -32020,
+    "message" -> "Header mismatch: the " <> name <> " header is missing or does not match the request body"
+|>;
+
+headerMismatchError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*decodeHeaderValue*)
+(* Mcp-Name values that are not plain ASCII are sent Base64-encoded as "=?base64?{UTF-8 bytes in Base64}?=". A value
+   that isn't valid Base64 gives $Failed, which never matches the body; bytes that aren't valid UTF-8 decode to a
+   string that won't match a body value in practice. *)
+decodeHeaderValue // beginDefinition;
+
+decodeHeaderValue[ value_String ] :=
+    Replace[
+        StringCases[ value, StartOfString ~~ "=?base64?" ~~ encoded___ ~~ "?=" ~~ EndOfString :> encoded ],
+        {
+            { encoded_ } :> Replace[ Quiet @ BaseDecode @ encoded, { bytes_ByteArray :> Quiet @ ByteArrayToString @ bytes, _ :> $Failed } ],
+            _            :> value
+        }
+    ];
+
+decodeHeaderValue[ value_ ] := value;
+
+decodeHeaderValue // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
@@ -448,17 +581,18 @@ makeResponseString // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*jsonResponse*)
-(* A 200 response carrying the serialized JSON-RPC result. ContentType reflects the negotiated media
-   type (not always application/json -- a bug in the prototype). The body is UTF-8, and CharacterEncoding
+(* A response (200 unless another status is given) carrying the serialized JSON-RPC message. ContentType reflects
+   the negotiated media type (not always application/json -- a bug in the prototype). The body is UTF-8, and CharacterEncoding
    -> "UTF-8" makes the advertised charset match: application/json stays bare (JSON is UTF-8 by spec),
    while a text/event-stream response correctly advertises charset=utf-8 rather than a mismatched
    iso-8859-1. *)
 jsonResponse // beginDefinition;
-jsonResponse[ result_, contentType_String, headers_List ] :=
+jsonResponse[ result_, contentType_String, headers_List ] := jsonResponse[ result, contentType, headers, 200 ];
+jsonResponse[ result_, contentType_String, headers_List, status_Integer ] :=
     HTTPResponse[
         StringToByteArray @ makeResponseString[ contentType, result ],
         <|
-            "StatusCode"  -> 200,
+            "StatusCode"  -> status,
             "ContentType" -> contentType,
             "Headers"     -> headers
         |>,

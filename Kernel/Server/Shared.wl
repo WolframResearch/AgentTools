@@ -13,10 +13,14 @@ Needs[ "Wolfram`Chatbook`" -> "cb`" ];
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
 (*Configuration*)
-(* Supported MCP protocol revisions, newest first; the preferred version is returned when the
-   client requests an unsupported one (see negotiateProtocolVersion). Shared by both transports. *)
-$supportedProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" };
-$preferredProtocolVersion  = "2025-11-25";
+(* Supported MCP protocol revisions, newest first. Shared by both transports.
+   "Modern" revisions (2026-07-28 and later) are stateless: every request carries its protocol version and the client's
+   capabilities in _meta, and there is no initialize handshake. "Legacy" revisions (2025-11-25 and earlier) negotiate a
+   version with initialize. The server supports both eras (see handleRequest): an initialize request selects legacy
+   semantics, and any other request that carries a modern version in _meta is served statelessly. *)
+$modernProtocolVersions    = { "2026-07-28" };
+$legacyProtocolVersions    = { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" };
+$supportedProtocolVersions = Join[ $modernProtocolVersions, $legacyProtocolVersions ];
 $waImageFetchTimeout       = 5; (* seconds, applied to the whole WA image batch via TaskWait *)
 $clientName                = None;
 $clientSupportsUI          = False;
@@ -483,6 +487,192 @@ normalizeArgument // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Request Handling*)
+(* The entry point used by both transports for every incoming message. A legacy message is dispatched to handleMethod
+   as is, and the client information it relies on was stored by the legacy initialize request. A modern request
+   carries that information itself (in _meta), so it is validated, dispatched with the client information bound for
+   just this request, and its result is completed with the fields that modern results carry. *)
+$metaPrefix = "io.modelcontextprotocol/";
+
+(* Methods that only exist in the modern protocol, which are modern requests even without the _meta fields: *)
+$modernOnlyMethods = { "server/discover" };
+
+(* Results of these methods are cacheable and must carry caching hints (ttlMs and cacheScope). The tool, prompt, and
+   resource lists only change when a server is redeployed (cloud) or restarted (local), but a client should not use a
+   stale list for long after a redeployment. The "private" scope keeps shared caches (e.g. gateways) from serving a
+   private cloud deployment's results to other callers. *)
+$cacheableMethods = {
+    "server/discover",
+    "tools/list",
+    "prompts/list",
+    "resources/list",
+    "resources/templates/list",
+    "resources/read"
+};
+
+$cacheTTL   = 300000; (* milliseconds *)
+$cacheScope = "private";
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*handleRequest*)
+handleRequest // beginDefinition;
+handleRequest[ method_, msg_, req_ ] /; modernRequestQ[ method, msg ] := handleModernRequest[ method, msg, req ];
+handleRequest[ method_, msg_, req_ ] := handleMethod[ method, msg, req ];
+handleRequest // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*modernRequestQ*)
+(* A message is a modern request when it carries a protocol version in _meta that is not a legacy one (an unsupported
+   version included, so that it gets UnsupportedProtocolVersionError), or when it calls a modern-only method. An
+   initialize request always selects legacy semantics. Notifications (messages without an id) are not requests: they
+   carry no per-request _meta fields and must never get a response. *)
+modernRequestQ // beginDefinition;
+modernRequestQ[ "initialize", _ ] := False;
+modernRequestQ[ _, Except[ KeyValuePattern[ "id" -> Except[ Null ] ] ] ] := False;
+modernRequestQ[ method_String, _ ] /; MemberQ[ $modernOnlyMethods, method ] := True;
+modernRequestQ[ _, msg_ ] := modernVersionQ @ requestMetaValue[ msg, "protocolVersion" ];
+modernRequestQ // endDefinition;
+
+modernVersionQ // beginDefinition;
+modernVersionQ[ _Missing ] := False;
+modernVersionQ[ version_ ] := ! MemberQ[ $legacyProtocolVersions, version ];
+modernVersionQ // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*requestMetaValue*)
+(* The value of one of the io.modelcontextprotocol/ fields of a request's _meta, e.g. "protocolVersion" *)
+requestMetaValue // beginDefinition;
+requestMetaValue[ msg_, name_String ] := Lookup[ requestMeta @ msg, $metaPrefix <> name, Missing[ "NotFound" ] ];
+requestMetaValue // endDefinition;
+
+requestMeta // beginDefinition;
+requestMeta[ KeyValuePattern[ "params" -> KeyValuePattern[ "_meta" -> meta_Association ] ] ] := meta;
+requestMeta[ _ ] := <| |>;
+requestMeta // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*handleModernRequest*)
+handleModernRequest // beginDefinition;
+
+handleModernRequest[ method_, msg_, req_ ] :=
+    With[ { error = modernRequestError @ msg },
+        If[ AssociationQ @ error,
+            <| req, "error" -> error |>,
+            withModernClient[ msg, completeModernResponse[ method, handleMethod[ method, msg, req ] ] ]
+        ]
+    ];
+
+handleModernRequest // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*modernRequestError*)
+(* The JSON-RPC error for a modern request whose required _meta fields are missing or name a protocol version that is
+   not supported, or None for a valid request. The cloud transport also uses this to choose the HTTP status. *)
+modernRequestError // beginDefinition;
+
+modernRequestError[ msg_ ] :=
+    modernRequestError[ requestMetaValue[ msg, "protocolVersion" ], requestMetaValue[ msg, "clientCapabilities" ] ];
+
+modernRequestError[ version_String, _ ] /; ! MemberQ[ $modernProtocolVersions, version ] :=
+    unsupportedProtocolVersionError @ version;
+
+modernRequestError[ _String, _Association ] :=
+    None;
+
+modernRequestError[ _String, _ ] :=
+    invalidRequestMetaError[ "clientCapabilities" ];
+
+modernRequestError[ _, _ ] :=
+    invalidRequestMetaError[ "protocolVersion" ];
+
+modernRequestError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*unsupportedProtocolVersionError*)
+unsupportedProtocolVersionError // beginDefinition;
+
+unsupportedProtocolVersionError[ version_ ] := <|
+    "code"    -> -32022,
+    "message" -> "Unsupported protocol version",
+    "data"    -> <| "supported" -> $supportedProtocolVersions, "requested" -> version |>
+|>;
+
+unsupportedProtocolVersionError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*invalidRequestMetaError*)
+invalidRequestMetaError // beginDefinition;
+
+invalidRequestMetaError[ name_String ] := <|
+    "code"    -> -32602,
+    "message" -> "Invalid params: missing or invalid _meta field " <> $metaPrefix <> name
+|>;
+
+invalidRequestMetaError // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*withModernClient*)
+(* Binds the client information of a modern request for its evaluation, so that nothing carries over from other
+   requests (or from a legacy initialize in the same process). The spec says the client's self-reported identity should
+   not change the server's behavior, so stderr logging (see stderrEnabledQ) stays off, as for unrecognized legacy
+   clients. The server never sends requests of its own to a modern client (server-to-client requests were replaced by
+   multi round-trip requests), so roots are not requested (the Roots feature is deprecated as of 2026-07-28). *)
+withModernClient // beginDefinition;
+withModernClient // Attributes = { HoldRest };
+
+withModernClient[ msg_, eval_ ] :=
+    Block[
+        {
+            $clientName          = None,
+            $clientSupportsUI    = mcpAppsEnabledQ[ ] && clientSupportsUIQ @ requestMetaValue[ msg, "clientCapabilities" ],
+            $clientSupportsRoots = False
+        },
+        eval
+    ];
+
+withModernClient // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*completeModernResponse*)
+(* Every modern result has a resultType ("complete": this server never needs further input from the client) and the
+   server's identity in its _meta, and the results of cacheable methods have caching hints. Errors, notifications (a
+   Null response), and failures are returned as they are. *)
+completeModernResponse // beginDefinition;
+
+completeModernResponse[ method_, response: KeyValuePattern[ "result" -> result_Association ] ] :=
+    <| response, "result" -> completeModernResult[ method, result ] |>;
+
+completeModernResponse[ method_, response_ ] :=
+    response;
+
+completeModernResponse // endDefinition;
+
+
+completeModernResult // beginDefinition;
+
+completeModernResult[ method_, result_Association ] := <|
+    "resultType" -> "complete",
+    result,
+    If[ MemberQ[ $cacheableMethods, method ], <| "ttlMs" -> $cacheTTL, "cacheScope" -> $cacheScope |>, <| |> ],
+    "_meta" -> <|
+        Replace[ Lookup[ result, "_meta", <| |> ], Except[ _Association ] :> <| |> ],
+        $metaPrefix <> "serverInfo" -> serverInfo @ $currentMCPServer
+    |>
+|>;
+
+completeModernResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Method Dispatch*)
 
 (* ::**************************************************************************************************************:: *)
@@ -492,12 +682,13 @@ handleMethod // beginDefinition;
 
 handleMethod[ "initialize", msg_, req_ ] := (
     $clientName = Replace[ msg[[ "params", "clientInfo", "name" ]], Except[ _String ] :> None ];
-    $clientSupportsUI = mcpAppsEnabledQ[ ] && clientSupportsUIQ @ msg;
+    $clientSupportsUI = mcpAppsEnabledQ[ ] && clientSupportsUIQ @ msg[ "params", "capabilities" ];
     $clientSupportsRoots = ! MissingQ @ msg[ "params", "capabilities", "roots" ];
     If[ ! stderrEnabledQ[ ], $Messages = { } ];
     <| req, "result" -> initResponse[ $currentMCPServer, msg ] |>
 );
 
+handleMethod[ "server/discover", msg_, req_ ] := <| req, "result" -> discoverResult @ $currentMCPServer |>;
 handleMethod[ "ping"          , msg_, req_ ] := <| req, "result" -> <| |> |>;
 handleMethod[ "resources/list", msg_, req_ ] := <| req, "result" -> <| "resources" -> listUIResources[ ] |> |>;
 handleMethod[ "resources/read", msg_, req_ ] := handleResourceRead[ msg, req ];
@@ -998,52 +1189,90 @@ initResponse[ obj_MCPServerObject, clientMsg_Association ] :=
 initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_ ] :=
     initResponse[ name, version, tools0, prompts, <| |> ];
 
-initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, clientMsg_Association ] := Enclose[
-    Module[ { tools, instructions },
-        tools = If[ Length @ tools0 > 0, <| "listChanged" -> True |>, <| |> ];
-        instructions = ConfirmMatch[
-            withLicenseInstructions @ makeInstructions @ prompts,
-            _Missing | _String,
-            "Instructions"
-        ];
-        DeleteMissing @ <|
-            "protocolVersion" -> negotiateProtocolVersion @ clientMsg,
-            "instructions"    -> instructions,
-            "capabilities" -> <|
-                "prompts" -> <| |>,
-                "tools" -> tools,
-                If[ TrueQ @ $clientSupportsUI,
-                    "extensions" -> <|
-                        "io.modelcontextprotocol/ui" -> <|
-                            "mimeTypes" -> { "text/html;profile=mcp-app" }
-                        |>
-                    |>,
-                    Nothing
-                ]
-            |>,
-            "serverInfo" -> <| "name" -> name, "version" -> version |>
-        |>
-    ],
-    throwInternalFailure
-];
+initResponse[ name_String, version_String, tools0: { ___LLMTool }, prompts_, clientMsg_Association ] :=
+    DeleteMissing @ <|
+        "protocolVersion" -> negotiateProtocolVersion @ clientMsg,
+        "instructions"    -> serverInstructions @ prompts,
+        "capabilities"    -> serverCapabilities[ If[ Length @ tools0 > 0, <| "listChanged" -> True |>, <| |> ], $clientSupportsUI ],
+        "serverInfo"      -> <| "name" -> name, "version" -> version |>
+    |>;
 
 initResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*discoverResult*)
+(* The result of the modern server/discover request; the server's identity is added to its _meta along with the other
+   fields of a modern result (see completeModernResult). Unlike the legacy initialize result, which answers the
+   capabilities the client declared once for the session, it describes what the server supports: the MCP Apps
+   extension whenever it is enabled, since a client declares its own capabilities on each later request. The tools
+   capability does not claim listChanged, since the server never sends list-changed notifications (which a modern
+   client would have to request with subscriptions/listen). *)
+discoverResult // beginDefinition;
+
+discoverResult[ obj_MCPServerObject ] := DeleteMissing @ <|
+    "supportedVersions" -> $supportedProtocolVersions,
+    "capabilities"      -> serverCapabilities[ <| |>, mcpAppsEnabledQ[ ] ],
+    "instructions"      -> serverInstructions @ obj[ "Prompts" ]
+|>;
+
+discoverResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*serverCapabilities*)
+serverCapabilities // beginDefinition;
+
+serverCapabilities[ tools_Association, ui_ ] := <|
+    "prompts" -> <| |>,
+    "tools"   -> tools,
+    If[ TrueQ @ ui,
+        "extensions" -> <|
+            "io.modelcontextprotocol/ui" -> <|
+                "mimeTypes" -> { "text/html;profile=mcp-app" }
+            |>
+        |>,
+        Nothing
+    ]
+|>;
+
+serverCapabilities // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*serverInstructions*)
+serverInstructions // beginDefinition;
+
+serverInstructions[ prompts_ ] := Enclose[
+    ConfirmMatch[ withLicenseInstructions @ makeInstructions @ prompts, _Missing | _String, "Instructions" ],
+    throwInternalFailure
+];
+
+serverInstructions // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*serverInfo*)
+serverInfo // beginDefinition;
+serverInfo[ obj_MCPServerObject ] := <| "name" -> obj[ "Name" ], "version" -> obj[ "ServerVersion" ] |>;
+serverInfo // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)
 (*negotiateProtocolVersion*)
-(* Echo the client's requested protocol version when we support it, otherwise fall back to the
-   preferred version. A missing/malformed request also yields the preferred version. Per the MCP
-   lifecycle rules: https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle *)
+(* The protocol version of a legacy initialize response: the client's requested version when it is a supported legacy
+   version, otherwise the latest legacy version (a modern version can't be negotiated with initialize). A
+   missing/malformed request also yields the latest legacy version. Per the MCP lifecycle rules:
+   https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle *)
 negotiateProtocolVersion // beginDefinition;
 
 negotiateProtocolVersion[ clientMsg_Association ] :=
     negotiateProtocolVersion @ clientMsg[ "params", "protocolVersion" ];
 
-negotiateProtocolVersion[ version_String ] /; MemberQ[ $supportedProtocolVersions, version ] :=
+negotiateProtocolVersion[ version_String ] /; MemberQ[ $legacyProtocolVersions, version ] :=
     version;
 
-negotiateProtocolVersion[ _ ] := $preferredProtocolVersion;
+negotiateProtocolVersion[ _ ] := First @ $legacyProtocolVersions;
 
 negotiateProtocolVersion // endDefinition;
 

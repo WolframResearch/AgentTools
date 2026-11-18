@@ -14,7 +14,9 @@ Needs[ "Wolfram`AgentTools`Server`" ];
     Basic usage tracking for the local (stdio) MCP servers. See docs/usage-data.md.
 
     What is recorded for a server session:
-      * the client information from the "initialize" request (its "params": clientInfo, protocolVersion, capabilities)
+      * the client information from the legacy "initialize" request (its "params": clientInfo, protocolVersion,
+        capabilities), or, for a modern client (protocol 2026-07-28 and later, which has no initialize), the same
+        information from the _meta of its first valid request
       * one event per "tools/call" and "prompts/get" request: the tool/prompt name, whether it succeeded, and when
       * the product identity information that the paclet manager sends with every request to the paclet server
         (license, activation key, machine ID, product, release, system ID, language, license process counts, and the
@@ -227,7 +229,14 @@ recordUsageData // endDefinition;
 recordUsageData0 // beginDefinition;
 
 recordUsageData0[ "initialize", msg_Association, _ ] :=
-    setClientInformation @ msg;
+    setClientInformation @ msg[ "params" ];
+
+(* A modern client has no initialize request, so its client information is taken from the first valid modern request: *)
+recordUsageData0[ method_, msg_Association, response_ ] /;
+    $mcpClientInformation === Null && modernRequestQ[ method, msg ] && modernRequestError @ msg === None := (
+        setClientInformation @ modernClientInformation @ msg;
+        recordUsageData0[ method, msg, response ]
+    );
 
 recordUsageData0[ "tools/call", msg_Association, response_ ] :=
     recordUsageEvent[ "ToolCall", requestedName[ msg, $llmTools ], toolCallSuccessQ @ response ];
@@ -273,12 +282,26 @@ toolCallSuccessQ // endDefinition;
 (*setClientInformation*)
 setClientInformation // beginDefinition;
 
-setClientInformation[ msg_Association ] := (
-    $mcpClientInformation = Replace[ msg[ "params" ], Except[ _Association ] -> Null ];
+setClientInformation[ params_ ] := (
+    $mcpClientInformation = Replace[ params, Except[ _Association ] -> Null ];
     writeUsageDataFile[ ]
 );
 
 setClientInformation // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*modernClientInformation*)
+(* The client information of a modern request, in the shape of legacy initialize params *)
+modernClientInformation // beginDefinition;
+
+modernClientInformation[ msg_Association ] := DeleteMissing @ <|
+    "protocolVersion" -> requestMetaValue[ msg, "protocolVersion" ],
+    "capabilities"    -> requestMetaValue[ msg, "clientCapabilities" ],
+    "clientInfo"      -> requestMetaValue[ msg, "clientInfo" ]
+|>;
+
+modernClientInformation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

@@ -16,7 +16,7 @@ For each local server session (one server process, from start to exit):
 |-------|-------------|
 | `MCPSessionID` | A random UUID assigned when the server starts (`$mcpSessionID`) |
 | `ServerName` | The name of the MCP server, e.g. `"WolframLanguage"` |
-| `ClientInformation` | The `params` of the client's `initialize` request: `clientInfo` (name and version of the MCP client), `protocolVersion`, and `capabilities`. `null` until `initialize` has been received |
+| `ClientInformation` | The `params` of the client's `initialize` request: `clientInfo` (name and version of the MCP client), `protocolVersion`, and `capabilities`. A [modern client](protocol-versions.md) sends no `initialize`, so the same three fields are taken from the `_meta` of its first valid modern request. `null` until either has been received |
 | `Events` | One event per `tools/call` and `prompts/get` request (see below) |
 | `StandaloneMCPServer` | `true` when the server runs under the [standalone MCP server](#standalone-mcp-server) product, `false` for a regular kernel (`$StandaloneMCPServer`) |
 | `StandaloneMCPServerInformation` | The information the standalone MCP server product publishes about itself (version, build, and so on); an empty object for a regular kernel (`$StandaloneMCPServerInformation`) |

@@ -14,11 +14,13 @@ This means relative paths the LLM passes to a tool resolve against the project t
 
 When a client does not advertise the `roots` capability, no `roots/list` request is ever sent and tools fall back to running with the kernel's original working directory.
 
+The roots handshake only happens for **legacy** clients (protocol `2025-11-25` and earlier), which send `initialize` and `notifications/initialized`. A **modern** client (`2026-07-28`, see [protocol-versions.md](protocol-versions.md)) never gets a `roots/list` request, even if it declares `roots` in its capabilities. In that revision a server must not send its own requests to the client, and the Roots feature is deprecated: the spec suggests passing directories through tool parameters, resource URIs, or server configuration instead. For modern clients the working directory stays the server process's own.
+
 ## How It Works
 
 ### Capability Negotiation
 
-The roots handshake is gated on the client's advertised capabilities during `initialize`:
+The roots handshake is gated on the client's advertised capabilities during the legacy `initialize`:
 
 1. The client lists `roots` (optionally with `listChanged: true`) in its `capabilities`.
 2. The server records this in `$clientSupportsRoots` while building the `initialize` response.
@@ -80,6 +82,7 @@ Once a valid root is selected:
 | Condition | Behavior |
 |---|---|
 | Client does not advertise `roots` capability | No `roots/list` ever sent; `$mcpRoot` stays `None`. |
+| Modern (`2026-07-28`) client | No `roots/list` ever sent, whatever its capabilities; `$mcpRoot` stays `None`. |
 | Client never replies to `roots/list` | No timeout; server continues serving other requests. |
 | Response contains `"error"` | Error logged; no root applied. |
 | Response result has empty `roots` list | Logged; no root applied. |
@@ -124,13 +127,13 @@ Calls that already use a deliberate, explicit `ProcessDirectory` for another pur
 |------|-------------|
 | `Kernel/MCPClientRequests.wl` | Server-to-client request registry, response correlation, and notification dispatch |
 | `Kernel/MCPRoots.wl` | Roots-specific handlers: `onClientInitialized`, `onRootsListChanged`, `handleRootsListResponse`, `pickFirstValidRoot`, `rootURIToPath`, `normalizeFileURI`, `applyMCPRoot` |
-| `Kernel/Server/Shared.wl` | Method dispatch (`handleMethod`): `initialize` capability detection and `notifications/*` dispatch to `handleNotification` |
+| `Kernel/Server/Shared.wl` | Method dispatch (`handleMethod`): `initialize` capability detection and `notifications/*` dispatch to `handleNotification`; `withModernClient` sets `$clientSupportsRoots` to `False` for modern requests |
 | `Kernel/Server/Local.wl` | stdio read loop: routes UUID-keyed client responses to `handleClientResponse` |
 | `Kernel/CommonSymbols.wl` | Shared declarations (`$clientSupportsRoots`, `$mcpRoot`, `$mcpClientRequests`, `sendClientRequest`, `handleClientResponse`, `handleNotification`, `useEvaluatorKernel`, etc.) |
 | `Kernel/Tools/TestReport.wl` | First tool to honor `$mcpRoot` via `ProcessDirectory` on `RunProcess` |
 | `Tests/MCPClientRequests.wlt` | Unit tests for the request registry and dispatch |
 | `Tests/MCPRoots.wlt` | Unit tests for URI normalization, root selection, and response handling |
-| `Tests/StartMCPServer.wlt` | End-to-end roots handshake tests (with and without the `roots` capability, plus `list_changed`) |
+| `Tests/StartMCPServer.wlt` | End-to-end roots handshake tests (with and without the `roots` capability, plus `list_changed`), and `Modern-NoRootsListEmitted` (no `roots/list` for a modern client) |
 | `Tests/MCPServerTestUtilities.wl` | Adds `ReadMCPMessage` and `SendMCPResponse` helpers for tests that need to receive server-issued requests and reply to them |
 | `Specs/MCPRoots.md` | Design specification |
 
@@ -138,7 +141,7 @@ Calls that already use a deliberate, explicit `ProcessDirectory` for another pur
 
 | Symbol | Context | Description |
 |--------|---------|-------------|
-| `$clientSupportsRoots` | `Common` | `True` when the current client advertised `roots` in its `initialize` capabilities |
+| `$clientSupportsRoots` | `Common` | `True` when the current legacy client advertised `roots` in its `initialize` capabilities; always `False` for modern requests |
 | `$mcpRoot` | `Common` | Native path of the active project root, or `None` |
 | `$mcpClientRequests` | `Common` | Association of pending server-to-client requests, keyed by UUID |
 | `sendClientRequest` | `Common` | Sends a JSON-RPC request to the client and registers a response handler |

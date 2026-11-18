@@ -31,17 +31,10 @@ VerificationTest[
 (*UI-Capable Clients*)
 VerificationTest[
     Wolfram`AgentTools`Common`clientSupportsUIQ @ <|
-        "method" -> "initialize",
-        "params" -> <|
-            "protocolVersion" -> "2024-11-05",
-            "capabilities" -> <|
-                "extensions" -> <|
-                    "io.modelcontextprotocol/ui" -> <|
-                        "mimeTypes" -> { "text/html;profile=mcp-app" }
-                    |>
-                |>
-            |>,
-            "clientInfo" -> <| "name" -> "claude-desktop", "version" -> "1.0.0" |>
+        "extensions" -> <|
+            "io.modelcontextprotocol/ui" -> <|
+                "mimeTypes" -> { "text/html;profile=mcp-app" }
+            |>
         |>
     |>,
     True,
@@ -53,53 +46,33 @@ VerificationTest[
 (* ::Subsubsection::Closed:: *)
 (*Non-UI Clients*)
 VerificationTest[
-    Wolfram`AgentTools`Common`clientSupportsUIQ @ <|
-        "method" -> "initialize",
-        "params" -> <|
-            "protocolVersion" -> "2024-11-05",
-            "capabilities" -> <| |>,
-            "clientInfo" -> <| "name" -> "test-client" |>
-        |>
-    |>,
+    Wolfram`AgentTools`Common`clientSupportsUIQ @ <| |>,
     False,
     SameTest -> Equal,
     TestID   -> "ClientSupportsUIQ-NoExtensions"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`Common`clientSupportsUIQ @ <|
-        "method" -> "initialize",
-        "params" -> <|
-            "protocolVersion" -> "2024-11-05",
-            "capabilities" -> <|
-                "extensions" -> <| "other/extension" -> <| |> |>
-            |>,
-            "clientInfo" -> <| "name" -> "test-client" |>
-        |>
-    |>,
+    Wolfram`AgentTools`Common`clientSupportsUIQ @ <| "extensions" -> <| "other/extension" -> <| |> |> |>,
     False,
     SameTest -> Equal,
     TestID   -> "ClientSupportsUIQ-OtherExtension"
 ]
 
+(* Capabilities are missing when a legacy initialize request has none: *)
 VerificationTest[
-    Wolfram`AgentTools`Common`clientSupportsUIQ @ <|
-        "method" -> "initialize",
-        "params" -> <|
-            "protocolVersion" -> "2024-11-05",
-            "clientInfo" -> <| "name" -> "test-client" |>
-        |>
-    |>,
+    Wolfram`AgentTools`Common`clientSupportsUIQ @ Missing[ "KeyAbsent", "capabilities" ],
     False,
     SameTest -> Equal,
     TestID   -> "ClientSupportsUIQ-NoCapabilities"
 ]
 
+(* The extension's settings are not checked: *)
 VerificationTest[
-    Wolfram`AgentTools`Common`clientSupportsUIQ @ <| "method" -> "initialize" |>,
-    False,
+    Wolfram`AgentTools`Common`clientSupportsUIQ @ <| "extensions" -> <| "io.modelcontextprotocol/ui" -> <| |> |> |>,
+    True,
     SameTest -> Equal,
-    TestID   -> "ClientSupportsUIQ-NoParams"
+    TestID   -> "ClientSupportsUIQ-EmptySettings"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -207,13 +180,9 @@ VerificationTest[
         Wolfram`AgentTools`Common`$clientSupportsUI =
             Wolfram`AgentTools`Common`mcpAppsEnabledQ[ ] &&
             Wolfram`AgentTools`Common`clientSupportsUIQ @ <|
-                "params" -> <|
-                    "capabilities" -> <|
-                        "extensions" -> <|
-                            "io.modelcontextprotocol/ui" -> <|
-                                "mimeTypes" -> { "text/html;profile=mcp-app" }
-                            |>
-                        |>
+                "extensions" -> <|
+                    "io.modelcontextprotocol/ui" -> <|
+                        "mimeTypes" -> { "text/html;profile=mcp-app" }
                     |>
                 |>
             |>;

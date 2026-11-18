@@ -26,29 +26,22 @@ VerificationTest[
 (* ::Subsection::Closed:: *)
 (*Configuration*)
 
+(* Newest first, so the modern version is the one a client picks first from server/discover: *)
 VerificationTest[
     Wolfram`AgentTools`Common`$supportedProtocolVersions,
-    { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" },
+    { "2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" },
     SameTest -> MatchQ,
     TestID   -> "SupportedProtocolVersions-Value"
 ]
 
 VerificationTest[
-    Wolfram`AgentTools`Common`$preferredProtocolVersion,
-    "2025-11-25",
+    {
+        Wolfram`AgentTools`Common`$modernProtocolVersions,
+        Wolfram`AgentTools`Common`$legacyProtocolVersions
+    },
+    { { "2026-07-28" }, { "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" } },
     SameTest -> MatchQ,
-    TestID   -> "PreferredProtocolVersion-Value"
-]
-
-(* Invariant: the preferred version must itself be supported. *)
-VerificationTest[
-    MemberQ[
-        Wolfram`AgentTools`Common`$supportedProtocolVersions,
-        Wolfram`AgentTools`Common`$preferredProtocolVersion
-    ],
-    True,
-    SameTest -> Equal,
-    TestID   -> "PreferredProtocolVersion-IsSupported"
+    TestID   -> "ProtocolVersionEras-Value"
 ]
 
 (* ::**************************************************************************************************************:: *)
@@ -63,7 +56,7 @@ VerificationTest[
     TestID   -> "NegotiateProtocolVersion-EchoOld"
 ]
 
-(* A supported version is echoed back verbatim (newest/preferred). *)
+(* A supported version is echoed back verbatim (latest legacy version). *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion[ "2025-11-25" ],
     "2025-11-25",
@@ -79,7 +72,7 @@ VerificationTest[
     TestID   -> "NegotiateProtocolVersion-EchoIntermediate"
 ]
 
-(* An unsupported version falls back to the preferred version. *)
+(* An unsupported version falls back to the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion[ "1999-01-01" ],
     "2025-11-25",
@@ -87,7 +80,15 @@ VerificationTest[
     TestID   -> "NegotiateProtocolVersion-UnknownFallsBack"
 ]
 
-(* Non-string junk falls back to the preferred version rather than erroring. *)
+(* A modern version can't be negotiated with the legacy initialize handshake, so it also falls back. *)
+VerificationTest[
+    Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion[ "2026-07-28" ],
+    "2025-11-25",
+    SameTest -> MatchQ,
+    TestID   -> "NegotiateProtocolVersion-ModernFallsBack"
+]
+
+(* Non-string junk falls back to the latest legacy version rather than erroring. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion[ 12345 ],
     "2025-11-25",
@@ -120,7 +121,7 @@ VerificationTest[
     TestID   -> "NegotiateProtocolVersion-MessageUnknown"
 ]
 
-(* A message with no protocolVersion falls back to the preferred version. *)
+(* A message with no protocolVersion falls back to the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion @ <|
         "method" -> "initialize",
@@ -131,7 +132,7 @@ VerificationTest[
     TestID   -> "NegotiateProtocolVersion-MessageMissingVersion"
 ]
 
-(* An empty message falls back to the preferred version. *)
+(* An empty message falls back to the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`negotiateProtocolVersion @ <| |>,
     "2025-11-25",
@@ -164,7 +165,7 @@ VerificationTest[
     TestID   -> "InitResponse-EchoPreferredVersion"
 ]
 
-(* An unsupported requested version falls back to the preferred version. *)
+(* An unsupported requested version falls back to the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`initResponse[
         "TestServer", "1.0.0", { }, { },
@@ -175,7 +176,7 @@ VerificationTest[
     TestID   -> "InitResponse-UnknownVersionFallsBack"
 ]
 
-(* No client message at all (4-arg form) yields the preferred version. *)
+(* No client message at all (4-arg form) yields the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`initResponse[
         "TestServer", "1.0.0", { }, { }
@@ -185,7 +186,7 @@ VerificationTest[
     TestID   -> "InitResponse-NoClientMessageUsesPreferred"
 ]
 
-(* An empty client message yields the preferred version. *)
+(* An empty client message yields the latest legacy version. *)
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`initResponse[
         "TestServer", "1.0.0", { }, { }, <| |>
@@ -542,6 +543,14 @@ VerificationTest[
     TestID   -> "CloudHandler-Method-DELETE-405"
 ]
 
+(* A 405 response names the allowed method. *)
+VerificationTest[
+    Lookup[ KeyMap[ ToLowerCase, Association @ cloudRun[ <| "Method" -> "GET" |> ][ "Headers" ] ], "allow" ],
+    "POST",
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-405-Allow"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Transport: Origin validation*)
@@ -702,13 +711,25 @@ VerificationTest[
     TestID   -> "CloudHandler-Protocol-Supported-Allowed"
 ]
 
-(* An unsupported version on a non-initialize request -> 400. *)
+(* An unsupported version on a non-initialize request -> 400 with UnsupportedProtocolVersionError, which lists the
+   supported versions. *)
 VerificationTest[
-    cloudStatus @ <|
-        "Body"    -> cloudBody[ "ping", 1 ],
-        "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "1999-01-01" |>
-    |>,
-    400,
+    With[
+        {
+            resp = cloudRun @ <|
+                "Body"    -> cloudBody[ "ping", 1 ],
+                "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "1999-01-01" |>
+            |>
+        },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error" ] }
+    ],
+    {
+        400,
+        KeyValuePattern @ {
+            "code" -> -32022,
+            "data" -> KeyValuePattern @ { "supported" -> { "2026-07-28", __String }, "requested" -> "1999-01-01" }
+        }
+    },
     SameTest -> MatchQ,
     TestID   -> "CloudHandler-Protocol-Unsupported-400"
 ]
@@ -758,7 +779,7 @@ VerificationTest[
     TestID   -> "CloudHandler-Initialize-Negotiates"
 ]
 
-(* An unknown requested version falls back to the preferred one. *)
+(* An unknown requested version falls back to the latest legacy version. *)
 VerificationTest[
     cloudBodyJSON[ cloudRun @ <| "Body" -> cloudBody[ "initialize", 0, <| "protocolVersion" -> "1999-01-01" |> ] |> ][ "result", "protocolVersion" ],
     "2025-11-25",
@@ -955,6 +976,225 @@ VerificationTest[
     { KeyValuePattern[ { "uri" -> "ui://wolfram/mcp-apps-test", "text" -> _String } ] },
     SameTest -> MatchQ,
     TestID   -> "CloudHandler-ResourcesRead-UISessionReturnsHTML"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Modern protocol (2026-07-28)*)
+
+$cloudUICapabilities = <| "extensions" -> <| "io.modelcontextprotocol/ui" -> <| "mimeTypes" -> { "text/html;profile=mcp-app" } |> |> |>;
+
+(* A modern request: the per-request _meta fields in the body, and the standard headers that mirror the body. The
+   header overrides replace headers, or remove them when Missing[ ]. *)
+cloudModernRequest[ method_, params_: <| |>, headerOverrides_: <| |>, caps_: <| |> ] := <|
+    "Body" -> cloudBody[
+        method,
+        1,
+        <|
+            params,
+            "_meta" -> <|
+                "io.modelcontextprotocol/protocolVersion"    -> "2026-07-28",
+                "io.modelcontextprotocol/clientCapabilities" -> caps,
+                "io.modelcontextprotocol/clientInfo"         -> <| "name" -> "test-client", "version" -> "1.0.0" |>
+            |>
+        |>
+    ],
+    "Headers" -> DeleteMissing @ <|
+        "Accept"               -> "application/json, text/event-stream",
+        "MCP-Protocol-Version" -> "2026-07-28",
+        "Mcp-Method"           -> method,
+        Replace[ params, { KeyValuePattern[ "name" -> n_ ] :> ("Mcp-Name" -> n), KeyValuePattern[ "uri" -> u_ ] :> ("Mcp-Name" -> u), _ :> Nothing } ],
+        headerOverrides
+    |>
+|>;
+
+cloudModernRun[ args___ ] := cloudRun @ cloudModernRequest @ args;
+
+cloudModernError[ args___ ] := With[ { resp = cloudModernRun @ args }, { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] } ];
+
+(* server/discover needs no initialize: it reports the supported versions (modern first), the server's capabilities
+   (no listChanged, since no list-changed notifications are sent, and the MCP Apps extension, which is enabled by
+   default, even though this request doesn't declare it), and the server's identity in _meta, with caching hints. *)
+VerificationTest[
+    With[ { resp = cloudModernRun[ "server/discover" ] },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "result" ], cloudSessionID @ resp }
+    ],
+    {
+        200,
+        KeyValuePattern @ {
+            "resultType"        -> "complete",
+            "supportedVersions" -> { "2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05" },
+            "capabilities"      -> <| "prompts" -> <| |>, "tools" -> <| |>, "extensions" -> <| "io.modelcontextprotocol/ui" -> _ |> |>,
+            "ttlMs"             -> _Integer? NonNegative,
+            "cacheScope"        -> "private",
+            "_meta"             -> <| "io.modelcontextprotocol/serverInfo" -> KeyValuePattern[ "name" -> cloudTestServer[ "Name" ] ] |>
+        },
+        _Missing
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-Discover"
+]
+
+VerificationTest[
+    With[ { result = cloudBodyJSON[ cloudModernRun[ "tools/list" ] ][ "result" ] },
+        { Lookup[ result[ "tools" ], "name" ], KeyTake[ result, { "resultType", "ttlMs", "cacheScope" } ] }
+    ],
+    { { "PrimeFinder", "MCPAppsTest" }, <| "resultType" -> "complete", "ttlMs" -> _Integer, "cacheScope" -> "private" |> },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-ToolsList"
+]
+
+(* A tools/call result is complete but not cacheable. *)
+VerificationTest[
+    cloudBodyJSON[ cloudModernRun[ "tools/call", <| "name" -> "PrimeFinder", "arguments" -> <| "n" -> 5 |> |> ] ][ "result" ],
+    (KeyValuePattern @ {
+        "resultType" -> "complete",
+        "content"    -> { KeyValuePattern[ "text" -> "11" ] },
+        "isError"    -> False,
+        "_meta"      -> KeyValuePattern[ "io.modelcontextprotocol/serverInfo" -> _Association ]
+    })? (FreeQ[ #, "ttlMs" ] &),
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-ToolsCall"
+]
+
+(* An Mcp-Name value can be Base64-encoded. *)
+VerificationTest[
+    cloudModernRun[
+        "tools/call",
+        <| "name" -> "PrimeFinder", "arguments" -> <| "n" -> 5 |> |>,
+        <| "Mcp-Name" -> "=?base64?" <> BaseEncode @ StringToByteArray[ "PrimeFinder" ] <> "?=" |>
+    ][ "StatusCode" ],
+    200,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-MCPNameBase64"
+]
+
+(* With the UI extension in the request's client capabilities, UI support is on for that request only, without a
+   session ID. *)
+VerificationTest[
+    {
+        SelectFirst[ cloudBodyJSON[ cloudModernRun[ "tools/list", <| |>, <| |>, $cloudUICapabilities ] ][ "result", "tools" ], #[ "name" ] === "MCPAppsTest" & ],
+        KeyExistsQ[ SelectFirst[ cloudBodyJSON[ cloudModernRun[ "tools/list" ] ][ "result", "tools" ], #[ "name" ] === "MCPAppsTest" & ], "_meta" ]
+    },
+    {
+        KeyValuePattern[ "_meta" -> KeyValuePattern[ "ui" -> KeyValuePattern[ "resourceUri" -> "ui://wolfram/mcp-apps-test" ] ] ],
+        False
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-UIFromCapabilities"
+]
+
+(* A session ID sent with a modern request is ignored. *)
+VerificationTest[
+    KeyExistsQ[
+        SelectFirst[
+            cloudBodyJSON[ cloudModernRun[ "tools/list", <| |>, <| "Mcp-Session-Id" -> uiSessionID |> ] ][ "result", "tools" ],
+            #[ "name" ] === "MCPAppsTest" &
+        ],
+        "_meta"
+    ],
+    False,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-SessionIDIgnored"
+]
+
+VerificationTest[
+    cloudBodyJSON[
+        cloudModernRun[ "resources/read", <| "uri" -> "ui://wolfram/mcp-apps-test" |>, <| |>, $cloudUICapabilities ]
+    ][ "result" ],
+    KeyValuePattern @ { "resultType" -> "complete", "contents" -> { KeyValuePattern[ "text" -> _String ] }, "cacheScope" -> "private" },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-ResourcesRead"
+]
+
+(* The standard headers must be present and match the body -> otherwise 400 with HeaderMismatch. *)
+VerificationTest[
+    {
+        cloudModernError[ "tools/list", <| |>, <| "Mcp-Method" -> Missing[ ] |> ],
+        cloudModernError[ "tools/list", <| |>, <| "Mcp-Method" -> "prompts/list" |> ],
+        cloudModernError[ "tools/list", <| |>, <| "MCP-Protocol-Version" -> Missing[ ] |> ],
+        cloudModernError[ "tools/list", <| |>, <| "MCP-Protocol-Version" -> "2025-11-25" |> ],
+        cloudModernError[ "tools/call", <| "name" -> "PrimeFinder" |>, <| "Mcp-Name" -> Missing[ ] |> ],
+        cloudModernError[ "tools/call", <| "name" -> "PrimeFinder" |>, <| "Mcp-Name" -> "MCPAppsTest" |> ],
+        cloudModernError[ "tools/call", <| "name" -> "PrimeFinder" |>, <| "Mcp-Name" -> "=?base64?not base64?=" |> ],
+        (* Only Mcp-Name may be Base64-encoded: *)
+        cloudModernError[ "tools/list", <| |>, <| "Mcp-Method" -> "=?base64?" <> BaseEncode @ StringToByteArray[ "tools/list" ] <> "?=" |> ]
+    },
+    ConstantArray[ { 400, -32020 }, 8 ],
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-HeaderMismatch"
+]
+
+(* A modern header with a legacy version in the body's _meta is a header mismatch (not an unsupported version). *)
+VerificationTest[
+    With[ { resp = cloudRun @ <|
+            "Body"    -> cloudBody[ "tools/list", 1, <| "_meta" -> <|
+                "io.modelcontextprotocol/protocolVersion"    -> "2025-11-25",
+                "io.modelcontextprotocol/clientCapabilities" -> <| |>
+            |> |> ],
+            "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2026-07-28", "Mcp-Method" -> "tools/list" |>
+        |> },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] }
+    ],
+    { 400, -32020 },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-LegacyBodyVersionMismatch"
+]
+
+(* Missing required _meta fields -> 400 with Invalid params, including a modern header with no _meta in the body. *)
+VerificationTest[
+    {
+        With[ { resp = cloudRun @ <|
+                "Body"    -> cloudBody[ "tools/list", 1 ],
+                "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2026-07-28", "Mcp-Method" -> "tools/list" |>
+            |> },
+            { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] }
+        ],
+        With[ { resp = cloudRun @ <|
+                "Body"    -> cloudBody[ "tools/list", 1, <| "_meta" -> <| "io.modelcontextprotocol/protocolVersion" -> "2026-07-28" |> |> ],
+                "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2026-07-28", "Mcp-Method" -> "tools/list" |>
+            |> },
+            { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error", "code" ] }
+        ]
+    },
+    { { 400, -32602 }, { 400, -32602 } },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-MissingMeta"
+]
+
+(* A version the server does not support -> 400 with UnsupportedProtocolVersionError. *)
+VerificationTest[
+    With[ { resp = cloudRun @ <|
+            "Body"    -> cloudBody[ "tools/list", 1, <| "_meta" -> <|
+                "io.modelcontextprotocol/protocolVersion"    -> "2099-01-01",
+                "io.modelcontextprotocol/clientCapabilities" -> <| |>
+            |> |> ],
+            "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2099-01-01", "Mcp-Method" -> "tools/list" |>
+        |> },
+        { resp[ "StatusCode" ], cloudBodyJSON[ resp ][ "error" ] }
+    ],
+    { 400, KeyValuePattern @ { "code" -> -32022, "data" -> KeyValuePattern[ "requested" -> "2099-01-01" ] } },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-UnsupportedVersion"
+]
+
+(* A method the server does not implement -> 404 with Method not found (legacy requests keep getting a 200). *)
+VerificationTest[
+    Quiet @ cloudModernError[ "no/suchMethod" ],
+    { 404, -32601 },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-UnknownMethod-404"
+]
+
+(* Notifications carry no per-request _meta fields and are accepted with a modern header. *)
+VerificationTest[
+    cloudStatus @ <|
+        "Body"    -> cloudBody[ "notifications/cancelled", None, <| "requestId" -> 1 |> ],
+        "Headers" -> <| "Accept" -> "application/json", "MCP-Protocol-Version" -> "2026-07-28", "Mcp-Method" -> "notifications/cancelled" |>
+    |>,
+    202,
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Modern-Notification-202"
 ]
 
 (* ::**************************************************************************************************************:: *)

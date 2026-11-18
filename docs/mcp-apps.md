@@ -18,18 +18,22 @@ When a client does not support MCP Apps, all tools fall back to their standard t
 
 ### Capability Negotiation
 
-MCP Apps support is negotiated during the `initialize` handshake:
+How the client declares MCP Apps support depends on its [protocol era](protocol-versions.md).
+
+**Legacy clients** (`2025-11-25` and earlier) negotiate it during the `initialize` handshake:
 
 1. The client advertises support for the `io.modelcontextprotocol/ui` extension in its `capabilities`
 2. The server detects this and echoes the extension in its response
 3. For the rest of the session, the server enriches tool definitions and results with UI metadata
 
+**Modern clients** (`2026-07-28`) have no `initialize`. Each request declares the extension in the `io.modelcontextprotocol/clientCapabilities` field of its `_meta`, and `withModernClient` sets `$clientSupportsUI` for that request only. The `server/discover` result advertises the extension whenever MCP Apps is enabled on the server, whatever the request declared.
+
 The server checks two conditions before enabling MCP Apps:
 
-- The client must advertise `io.modelcontextprotocol/ui` in `capabilities.extensions`
+- The client must advertise `io.modelcontextprotocol/ui` in the `extensions` of its client capabilities (`initialize` `params.capabilities`, or a modern request's `_meta` `clientCapabilities`)
 - The `MCP_APPS_ENABLED` environment variable must not be set to `"false"`
 
-> **Cloud deployments.** MCP Apps are also supported by [cloud-deployed servers](cloud-deployment.md), whose stateless HTTP transport has no session store to hold `$clientSupportsUI` between requests. There, the negotiated capability is carried in a self-describing `Mcp-Session-Id` header that the client echoes on each request, re-establishing the same flag per request. If a client does not echo the session ID, MCP Apps simply stays off (fail-safe).
+> **Cloud deployments.** MCP Apps are also supported by [cloud-deployed servers](cloud-deployment.md), whose stateless HTTP transport has no session store to hold `$clientSupportsUI` between requests. Modern clients need nothing extra, since every request declares its capabilities. For legacy clients, the capability negotiated at `initialize` is carried in a self-describing `Mcp-Session-Id` header that the client echoes on each request, re-establishing the same flag per request. If a legacy client does not echo the session ID, MCP Apps simply stays off (fail-safe).
 
 ### UI Resources
 
@@ -296,7 +300,7 @@ Add tests in `Tests/` for the new resource. See the existing test files (`Tests/
 | `notebookUploadResult` | `UIResources` (private) | Interprets the API's answer: the hosted URL on success, `$Failed` for a 4xx error concerning only this notebook, and `disableNotebookDelivery` (clears `$deployCloudNotebooks`) when the API gave no usable answer |
 | `makeNotebookUIResult` | `Common` | Builds the UI-enhanced tool result from the text content and the delivered notebook value: carries `notebookUrl` in `_meta` (not `structuredContent`, which some clients treat as a replacement for `content`), and for cloud URLs wraps the content in a `<result uuid="…">…</result>` marker (the dropped-`_meta` workaround); returns `$Failed` when deployment failed |
 | `delayedDisplay` | `Common` | Wraps `WolframLanguageEvaluator` output boxes so graphics reconstruct asynchronously when notebooks are embedded inline; a no-op outside inline mode or for graphics-free output |
-| `clientSupportsUIQ` | `Common` | Checks if an `initialize` message advertises UI support |
+| `clientSupportsUIQ` | `Common` | Checks whether a client-capabilities association (legacy `initialize` `params.capabilities`, or a modern request's `_meta` `clientCapabilities`) advertises UI support |
 | `mcpAppsEnabledQ` | `Common` | Checks the `MCP_APPS_ENABLED` environment variable |
 | `initializeUIResources` | `Common` | Loads HTML assets into the resource registry |
 | `listUIResources` | `Common` | Returns the resource list for `resources/list` |
