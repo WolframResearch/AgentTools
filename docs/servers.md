@@ -296,7 +296,7 @@ Other tools (e.g. `WolframLanguageEvaluator`, `WolframAlpha`) do not depend on L
 
 ## MCP Apps Support
 
-All predefined servers support [MCP Apps](mcp-apps.md) when the client advertises the `io.modelcontextprotocol/ui` extension. When active, the `WolframAlpha` and `WolframLanguageEvaluator` tools are automatically enhanced with interactive UI (e.g., embedded cloud notebook viewers). No server configuration changes are needed; capability negotiation happens automatically during `initialize`.
+All predefined servers support [MCP Apps](mcp-apps.md) when the client advertises the `io.modelcontextprotocol/ui` extension. When active, the `WolframAlpha` and `WolframLanguageEvaluator` tools are automatically enhanced with interactive UI (e.g., embedded cloud notebook viewers). No server configuration changes are needed; the capability is negotiated automatically (during `initialize` for legacy clients, or from each request's client capabilities for 2026-07-28 clients).
 
 To disable MCP Apps for a specific installation, use:
 

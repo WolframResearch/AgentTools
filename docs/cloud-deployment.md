@@ -8,8 +8,10 @@ the Anthropic Messages API remote-MCP features — without a local kernel.
 
 Deploying a server to the cloud produces a set of `CloudObject`s: a live MCP endpoint, a public
 landing page with client-configuration help, and an owner-only admin page for managing API keys. The
-endpoint speaks a stateless subset of the MCP **Streamable HTTP** transport (protocol revision
-`2025-11-25`), and authentication is delegated to Wolfram Cloud's native `PermissionsKey` mechanism.
+endpoint speaks the MCP **Streamable HTTP** transport of protocol revision `2026-07-28`, which is
+stateless, and a stateless subset of the transport for legacy clients (`2025-11-25` and earlier; see
+[protocol-versions.md](protocol-versions.md)). Authentication is delegated to Wolfram Cloud's native
+`PermissionsKey` mechanism.
 
 Three entry points are provided:
 
@@ -291,14 +293,19 @@ Notes:
   mid-session is picked up by the next deploy (failed lookups are not cached), but *uninstalling* the
   cloud paclet after a light deploy breaks that deployment until you redeploy or reinstall.
 - The endpoint's behavior then comes from the **cloud-installed** paclet version, so keep it reasonably
-  current: `CloudEvaluate @ PacletInstall[ "Wolfram/AgentTools", UpdatePacletSites -> True ]`.
+  current: `CloudEvaluate @ PacletInstall[ "Wolfram/AgentTools", UpdatePacletSites -> True ]`. For
+  example, a light deployment supports protocol revision `2026-07-28` only once the cloud-installed
+  paclet does. Until then, clients that support both eras fall back to the legacy protocol.
 
 ## Stateless Evaluation Model
 
-The endpoint is **stateless**: each HTTP request (`initialize`, `tools/list`, `tools/call`, …) is a
-separate, self-contained kernel evaluation, matching the Wolfram Cloud `APIFunction`/`Delayed`
-execution model. There is no server-side session store, no persistent kernel between calls, and no
-warmup. The server rebuilds its tool and prompt tables from the server object on every request.
+The endpoint is **stateless**: each HTTP request (`server/discover`, `initialize`, `tools/list`,
+`tools/call`, …) is a separate, self-contained kernel evaluation, matching the Wolfram Cloud
+`APIFunction`/`Delayed` execution model. There is no server-side session store, no persistent kernel
+between calls, and no warmup. The server rebuilds its tool and prompt tables from the server object on
+every request. This fits protocol revision `2026-07-28`, where every request carries its protocol
+version and client capabilities and there is no `initialize`; legacy clients still send `initialize`
+first.
 
 The consequences, accepted for v1:
 
@@ -310,9 +317,9 @@ The consequences, accepted for v1:
   the **deploying** account (required outright for `WolframAlphaContext`; see the
   [LLMKit table](servers.md#llmkit-requirements)). Servers built around code execution and
   Wolfram|Alpha (`WolframLanguageEvaluator`, `WolframAlpha`) are the most practical to deploy.
-- **No cross-request kernel state.** Any client capability that must survive across requests
-  travels in a self-describing session ID (see [MCP Apps Support](#mcp-apps-support)), not in server
-  memory.
+- **No cross-request kernel state.** A modern client declares its capabilities in each request's
+  `_meta`. For a legacy client, any capability that must survive across requests travels in a
+  self-describing session ID (see [MCP Apps Support](#mcp-apps-support)), not in server memory.
 - **Evaluator sessions persist through files, not kernels.** The `WolframLanguageEvaluator` tool's
   optional `session` parameter still works: session files are written to the deploying account's
   persistent cloud user files (`$UserBaseDirectory/ApplicationData/Wolfram/AgentTools/Sessions/`).
@@ -338,18 +345,23 @@ cloud object (with `path` / `permissions` parameters) instead of a local file. T
 
 ## MCP Apps Support
 
-[MCP Apps](mcp-apps.md) interactive UI is **supported** in the cloud despite statelessness. Because
-`initialize` and later requests are separate evaluations, the client's `io.modelcontextprotocol/ui`
-capability cannot live in kernel state between them. Instead it travels in the `Mcp-Session-Id` header,
-which the endpoint makes *self-describing*:
+[MCP Apps](mcp-apps.md) interactive UI is **supported** in the cloud despite statelessness.
+
+A **modern** (`2026-07-28`) client declares the `io.modelcontextprotocol/ui` extension in the
+`clientCapabilities` of each request's `_meta`, so every request carries what the server needs. The
+server ignores any `Mcp-Session-Id` that a modern request sends.
+
+A **legacy** client declares its capabilities only once, at `initialize`. Because `initialize` and later
+requests are separate evaluations, the capability cannot live in kernel state between them. Instead it
+travels in the `Mcp-Session-Id` header, which the endpoint makes *self-describing*:
 
 - At `initialize`, the server encodes the negotiated capabilities into a fresh session ID and returns
   it in the `Mcp-Session-Id` response header.
 - On every later request, the client echoes that ID; the server decodes it and re-establishes the
   capability flags (in v1, `$clientSupportsUI`) for that request.
 
-So a UI-capable client still receives `_meta.ui` on `tools/list`, an enumerated `resources/list`, and
-app HTML from `resources/read` — all gated on the decoded capability. The design **fails safe**: if a
+Either way, a UI-capable client receives `_meta.ui` on `tools/list`, an enumerated `resources/list`, and
+app HTML from `resources/read`, all gated on the capability. The legacy design **fails safe**: if a
 client does not echo the session ID (or replays one minted by an older deployment), every request
 decodes to no features and MCP Apps simply stays off, with no correctness impact.
 
@@ -358,27 +370,37 @@ UI artifacts (Wolfram|Alpha notebooks, evaluator images) deploy to the existing 
 
 ## Endpoint Behavior (Stateless Streamable HTTP)
 
-The `/mcp` endpoint implements a stateless subset of the MCP Streamable HTTP transport
-(`2025-11-25`). It handles one JSON-RPC message per `POST` and always returns an `HTTPResponse`:
+The `/mcp` endpoint implements the MCP Streamable HTTP transport of `2026-07-28` and a stateless subset
+of the legacy transport (`2025-11-25` and earlier). It handles one JSON-RPC message per `POST` and always
+returns an `HTTPResponse`:
 
 | Situation | Response |
 |-----------|----------|
 | `POST` request (has `id` + `method`) | `200` with the JSON-RPC result (content type negotiated from `Accept`). |
-| `POST` notification / response / `id -> Null` | `202` with an empty body. |
-| Unknown method | `200` with an in-band JSON-RPC `-32601` error. |
+| `POST` notification / response / `id -> Null` | `202` with an empty body. Notifications skip the modern `_meta` and header checks. |
+| Unknown method, legacy request | `200` with an in-band JSON-RPC `-32601` error. |
+| Unknown method, modern request (including `subscriptions/listen`) | `404` with a JSON-RPC `-32601` error. |
 | Internal / tool failure | `200` with an in-band JSON-RPC `-32603` error. |
-| `GET` / `DELETE` (no session to stream or tear down) | `405`. |
+| `GET` / `DELETE` (no session to stream or tear down) | `405` with `Allow: POST`. |
 | Disallowed `Origin` (DNS-rebinding protection; absent `Origin` is allowed) | `403`. |
-| Unsupported `MCP-Protocol-Version` on a non-`initialize` request | `400`. |
+| Unsupported protocol version: a modern request's `_meta` version, or the `MCP-Protocol-Version` header of any other non-`initialize` message (notifications included) | `400` with a JSON-RPC `-32022` (UnsupportedProtocolVersion) error listing the supported versions. |
+| Modern request with missing or invalid `_meta` fields (`protocolVersion`, `clientCapabilities`) | `400` with a JSON-RPC `-32602` error. |
+| Modern request whose `MCP-Protocol-Version`, `Mcp-Method`, or `Mcp-Name` header is missing or does not match the body | `400` with a JSON-RPC `-32020` (HeaderMismatch) error. |
 | Unacceptable `Accept` (neither `application/json` nor `text/event-stream`) | `406`. |
 | Malformed / non-object JSON body | `400`. |
 | Unexpected pre-dispatch failure | `500`. |
 
-### Protocol version negotiation
+### Protocol versions
 
-Both the local (stdio) and cloud (HTTP) servers negotiate the protocol version: `initialize` echoes the
-client's requested `protocolVersion` when it is supported, otherwise returning the preferred
-`2025-11-25`. The supported set is `{"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}`.
+The endpoint serves both protocol eras. A request is modern when its `_meta` names a non-legacy protocol
+version, when it calls `server/discover`, or when its `MCP-Protocol-Version` header names a modern
+version. `initialize` always selects the legacy protocol, and its version negotiation only offers legacy
+versions. Modern results carry `resultType`, the server's identity in `_meta`, and caching hints.
+Session IDs are only issued for legacy `initialize`. See [protocol-versions.md](protocol-versions.md)
+for the details, which the local (stdio) server shares.
+
+The cloud cannot see when a client disconnects, so closing a response stream does not stop the work on
+a request, which the spec only recommends (SHOULD).
 
 ## Requirements and Limitations
 
@@ -400,8 +422,9 @@ client's requested `protocolVersion` when it is supported, otherwise returning t
   the directory-bundle deploy implementation (`cloudDeployDirectory`) behind the `CloudDeploy` UpValue
   and `CloudDeployMCPServerBundle`, the session-ID capability codec, the server-embedding deploy
   helpers, and the `/api/info` and `/api/admin` handlers
-- `Kernel/Server/Shared.wl` — transport-agnostic core shared with the local server (dispatch, tool/prompt
-  resolution, result formatting, `initializeServerState`, protocol-version negotiation)
+- `Kernel/Server/Shared.wl` — transport-agnostic core shared with the local server (dual-era request
+  handling via `handleRequest`, dispatch, tool/prompt resolution, result formatting,
+  `initializeServerState`, legacy protocol-version negotiation)
 - `Assets/Cloud/` — landing page (`index.html` + `assets/`) and admin page (`admin.html`)
 - `Kernel/Messages.wl` — `CloudDeployFailed`, `NotCloudConnected`, `InvalidCloudTarget`
 - `Tests/CloudDeployment.wlt` — tests
@@ -410,6 +433,7 @@ client's requested `protocolVersion` when it is supported, otherwise returning t
 ## Related Documentation
 
 - [servers.md](servers.md) - Predefined servers and creating custom servers to deploy
+- [protocol-versions.md](protocol-versions.md) - Supported MCP protocol versions and the dual-era design
 - [mcp-apps.md](mcp-apps.md) - MCP Apps system for interactive UI resources
 - [tools.md](tools.md) - Available MCP tools and creating custom tools
 - [deploy-agent-tools.md](deploy-agent-tools.md) - Managed deployment of tools to *local* agent clients

@@ -4,7 +4,7 @@ This document explains how MCP tools work in AgentTools and how to add new tools
 
 ## Overview
 
-MCP tools allow servers to expose callable functions to language models. Clients can discover available tools, view their parameter specifications, and invoke them with arguments. This follows the [MCP tools specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools.md).
+MCP tools allow servers to expose callable functions to language models. Clients can discover available tools, view their parameter specifications, and invoke them with arguments. This follows the [MCP tools specification](https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md).
 
 Tools are designed to be model-controlled, meaning the LLM decides when and how to use them based on the conversation context and user requests.
 

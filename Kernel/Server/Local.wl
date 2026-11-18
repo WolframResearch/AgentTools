@@ -146,12 +146,19 @@ preinstallVectorDatabases[ ] := preinstallVectorDatabases[ ] = (
 
 preinstallVectorDatabases // endDefinition;
 
-(* Test messages:
+(* Test messages (legacy):
 
 ```
 {"method":"initialize","params":{"clientInfo":{"name":"test-client"},"protocolVersion":"2024-11-05"},"jsonrpc":"2.0","id":0}
 {"method":"tools/list","params":{},"jsonrpc":"2.0","id":1}
 {"method":"tools/call","params":{"name":"WolframContext","arguments":{"context":"What's the 123456789th prime?"}},"jsonrpc":"2.0","id":2}
+```
+
+Test messages (modern, no initialize):
+
+```
+{"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}},"jsonrpc":"2.0","id":0}
+{"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}},"jsonrpc":"2.0","id":1}
 ```
 *)
 
@@ -204,7 +211,7 @@ processRequest[ ] :=
         ];
 
         req = <| "jsonrpc" -> "2.0", "id" -> id |>;
-        response = catchAlways @ handleMethod[ method, message, req ];
+        response = catchAlways @ handleRequest[ method, message, req ];
         recordUsageData[ method, message, response ];
         If[ method === "tools/list", $warmupTools = True ];
         writeLog[ "Response" -> response ];

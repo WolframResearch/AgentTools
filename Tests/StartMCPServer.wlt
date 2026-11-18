@@ -461,6 +461,112 @@ skipIfScript @ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Modern Protocol (2026-07-28)*)
+(* A modern client sends no initialize: every request carries the protocol version and the client capabilities in
+   its _meta, and every result is complete and identifies the server. *)
+modernParams[ params_Association, caps_: <| |> ] := <|
+    params,
+    "_meta" -> <|
+        "io.modelcontextprotocol/protocolVersion"    -> "2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities" -> caps,
+        "io.modelcontextprotocol/clientInfo"         -> <| "name" -> "modern-test-client", "version" -> "1.0.0" |>
+    |>
+|>;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Server Lifecycle*)
+skipIfScript @ VerificationTest[
+    $modernProcess = StartMCPTestServer[ "ServerName" -> "WolframLanguage" ],
+    _ProcessObject,
+    SameTest -> MatchQ,
+    TestID   -> "Modern-ServerStarts"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Discovery*)
+(* A dual-era client probes with server/discover before anything else; the modern version is listed first. *)
+skipIfScript @ VerificationTest[
+    SendMCPRequest[ "server/discover", modernParams @ <| |> ],
+    KeyValuePattern[ "result" -> KeyValuePattern @ {
+        "resultType"        -> "complete",
+        "supportedVersions" -> { "2026-07-28", __String },
+        "capabilities"      -> KeyValuePattern[ "tools" -> <| |> ],
+        "ttlMs"             -> _Integer,
+        "cacheScope"        -> "private",
+        "_meta"             -> KeyValuePattern[ "io.modelcontextprotocol/serverInfo" -> KeyValuePattern[ "name" -> "WolframLanguage" ] ]
+    } ],
+    SameTest -> MatchQ,
+    TestID   -> "Modern-Discover"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Tools*)
+skipIfScript @ VerificationTest[
+    With[ { result = SendMCPRequest[ "tools/list", modernParams @ <| |> ][ "result" ] },
+        { MemberQ[ result[[ "tools", All, "name" ]], "WolframLanguageEvaluator" ], KeyTake[ result, { "resultType", "cacheScope" } ] }
+    ],
+    { True, <| "resultType" -> "complete", "cacheScope" -> "private" |> },
+    SameTest -> MatchQ,
+    TestID   -> "Modern-ToolsList"
+]
+
+skipIfScript @ VerificationTest[
+    SendMCPRequest[
+        "tools/call",
+        modernParams @ <| "name" -> "WolframLanguageEvaluator", "arguments" -> <| "code" -> "1+1" |> |>
+    ],
+    KeyValuePattern[ "result" -> KeyValuePattern @ { "resultType" -> "complete", "isError" -> False, "content" -> { __Association } } ],
+    SameTest -> MatchQ,
+    TestID   -> "Modern-ToolsCall"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Invalid Requests*)
+skipIfScript @ VerificationTest[
+    SendMCPRequest[
+        "tools/list",
+        <| "_meta" -> <| "io.modelcontextprotocol/protocolVersion" -> "2099-01-01", "io.modelcontextprotocol/clientCapabilities" -> <| |> |> |>
+    ],
+    KeyValuePattern[ "error" -> KeyValuePattern @ { "code" -> -32022, "data" -> KeyValuePattern[ "supported" -> { "2026-07-28", __ } ] } ],
+    SameTest -> MatchQ,
+    TestID   -> "Modern-UnsupportedVersion"
+]
+
+skipIfScript @ VerificationTest[
+    SendMCPRequest[ "tools/list", <| "_meta" -> <| "io.modelcontextprotocol/protocolVersion" -> "2026-07-28" |> |> ],
+    KeyValuePattern[ "error" -> KeyValuePattern[ "code" -> -32602 ] ],
+    SameTest -> MatchQ,
+    TestID   -> "Modern-MissingClientCapabilities"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*No Server-to-Client Requests*)
+(* The server must not write JSON-RPC requests to a modern client, so a client declaring roots gets no roots/list. *)
+skipIfScript @ VerificationTest[
+    SendMCPRequest[ "tools/list", modernParams[ <| |>, <| "roots" -> <| |> |> ] ];
+    ReadMCPMessage[ "Timeout" -> 3 ],
+    _Failure,
+    SameTest -> MatchQ,
+    TestID   -> "Modern-NoRootsListEmitted"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*Server Cleanup*)
+skipIfScript @ VerificationTest[
+    StopMCPTestServer[ ],
+    Null,
+    SameTest -> MatchQ,
+    TestID   -> "Modern-ServerStopped"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Paclet Resolution and Tool Initialization*)
 
 (* :!CodeAnalysis::BeginBlock:: *)

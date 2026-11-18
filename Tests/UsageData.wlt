@@ -508,6 +508,34 @@ VerificationTest[
     TestID   -> "RecordUsageData-InitializeInvalidParams"
 ]
 
+(* A modern client (no initialize) has its client information taken from the _meta of its first valid request, which
+   is still recorded as an event; later requests don't replace it, and invalid modern requests are ignored. *)
+VerificationTest[
+    withUsageSession[
+        Module[ { meta },
+            meta = <|
+                "io.modelcontextprotocol/protocolVersion"    -> "2026-07-28",
+                "io.modelcontextprotocol/clientCapabilities" -> <| |>,
+                "io.modelcontextprotocol/clientInfo"         -> <| "name" -> "modern-client", "version" -> "1.0.0" |>
+            |>;
+            recordUsageData[
+                "tools/list",
+                <| "id" -> 1, "params" -> <| "_meta" -> <| meta, "io.modelcontextprotocol/protocolVersion" -> "2099-01-01" |> |> |>,
+                <| "error" -> <| "code" -> -32022 |> |>
+            ];
+            recordUsageData[ "tools/call", <| $toolCallMessage, "params" -> <| $toolCallMessage[ "params" ], "_meta" -> meta |> |>, $toolCallResponse ];
+            recordUsageData[ "tools/list", <| "id" -> 3, "params" -> <| "_meta" -> <| meta, "io.modelcontextprotocol/clientInfo" -> <| "name" -> "other" |> |> |> |>, <| "result" -> <| |> |> ];
+            { sessionData[ ][ "ClientInformation" ], Lookup[ sessionData[ ][ "Events" ], "Name" ] }
+        ]
+    ],
+    {
+        <| "protocolVersion" -> "2026-07-28", "capabilities" -> <| |>, "clientInfo" -> <| "name" -> "modern-client", "version" -> "1.0.0" |> |>,
+        { "PrimeFinder" }
+    },
+    SameTest -> SameQ,
+    TestID   -> "RecordUsageData-ModernClientInformation"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Tool Calls*)

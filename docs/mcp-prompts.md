@@ -4,7 +4,7 @@ This document explains how MCP prompts work in AgentTools and how to add new pro
 
 ## Overview
 
-MCP prompts allow servers to provide structured messages and instructions for interacting with language models. Clients can discover available prompts, retrieve their contents, and provide arguments to customize them. This follows the [MCP prompts specification](https://modelcontextprotocol.io/specification/2025-11-25/server/prompts.md).
+MCP prompts allow servers to provide structured messages and instructions for interacting with language models. Clients can discover available prompts, retrieve their contents, and provide arguments to customize them. This follows the [MCP prompts specification](https://modelcontextprotocol.io/specification/2026-07-28/server/prompts.md).
 
 Prompts are designed to be user-controlled, typically exposed through user-initiated commands in the client interface (e.g., slash commands), though clients are free to expose prompts through any interface pattern.
 

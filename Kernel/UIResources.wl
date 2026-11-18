@@ -412,10 +412,11 @@ cloudDeployWithAppearanceElements // endDefinition;
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*clientSupportsUIQ*)
+(* Whether the client capabilities (from a legacy initialize request, or from the _meta of a modern request) include
+   the MCP Apps extension *)
 clientSupportsUIQ // beginDefinition;
 
-clientSupportsUIQ[ msg_Association ] :=
-    ! MissingQ @ msg[ "params", "capabilities", "extensions", "io.modelcontextprotocol/ui" ];
+clientSupportsUIQ[ KeyValuePattern[ "extensions" -> KeyValuePattern[ "io.modelcontextprotocol/ui" -> _ ] ] ] := True;
 
 clientSupportsUIQ[ _ ] := False;
 

@@ -31,6 +31,13 @@ BeginPackage[ "Wolfram`AgentTools`Server`" ];
    transport (Cloud.wl) to describe a server for the /api/info landing-page endpoint. *)
 `serverToolListData;
 
+(* Modern (2026-07-28 and later) request handling: defined in Shared.wl and also used by the cloud transport (Cloud.wl)
+   to validate a request and choose the HTTP status before dispatching it. *)
+`modernRequestError;
+`modernRequestQ;
+`requestMetaValue;
+`unsupportedProtocolVersionError;
+
 Begin[ "`Private`" ];
 
 Needs[ "Wolfram`AgentTools`"        ];
