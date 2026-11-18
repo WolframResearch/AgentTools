@@ -111,13 +111,13 @@ The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) CLI can t
 
 ```sh
 # stdio, from the repository root
-npx @modelcontextprotocol/inspector --cli --protocol-era modern --connect-timeout 120000 \
+npx @modelcontextprotocol/inspector --cli --protocol-era modern \
     -e MCP_SERVER_NAME=WolframLanguage --method tools/list \
-    -- WolframKernel -script Scripts/StartMCPServer.wls
+    -- wolfram -script Scripts/StartMCPServer.wls
 
 # cloud
 npx @modelcontextprotocol/inspector --cli --protocol-era modern \
     --transport http --method tools/list "<dir>/mcp?_key=<key>"
 ```
 
-For stdio, start the server with `WolframKernel -script`: `wolframscript -f` produces no stdout when its output is piped. Kernel startup is slow, so give it a long `--connect-timeout` (about 120000 ms).
+For stdio, start the server with the `wolfram` executable that `InstallMCPServer` configures, found in `$InstallationDirectory` (`wolfram.exe` on Windows, `MacOS/wolfram` on macOS, `Executables/wolfram` on Linux). Other launchers hang: on Windows, `WolframKernel` opens a separate kernel window and never answers on stdio, and `wolframscript -f` produces no stdout when its output is piped. The server usually answers its first request within about 10 seconds. In the `auto` and `modern` eras, the Inspector waits 60 seconds for its `server/discover` probe, and `--connect-timeout` does not change that.
