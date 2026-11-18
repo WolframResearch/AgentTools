@@ -122,6 +122,39 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*Failures*)
+(* A failed query (e.g. no Wolfram|Alpha AppID) is returned as a Failure, which evaluateTool reports as a tool error,
+   with or without UI support. *)
+VerificationTest[
+    Block[ { Wolfram`Chatbook`$DefaultTools = <| "WolframAlpha" -> (Failure[ "TestFailure", <| |> ] &) |> },
+        Table[
+            Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = ui },
+                $DefaultMCPTools[ "WolframAlpha" ][ <| "query" -> "2+2" |> ]
+            ],
+            { ui, { False, True } }
+        ]
+    ],
+    { Failure[ "TestFailure", _ ], Failure[ "TestFailure", _ ] },
+    SameTest -> MatchQ,
+    TestID   -> "wolframAlphaToolEvaluate-Failure"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
+(*withCloudEvaluation*)
+(* Locally, the formatting code sees $CloudEvaluation as True. (In cloud kernels it's already True and can't be
+   Blocked, since it's Locked; that case can't be reproduced locally.) *)
+VerificationTest[
+    Block[ { $CloudEvaluation = False },
+        Wolfram`AgentTools`Tools`WolframAlpha`Private`withCloudEvaluation @ $CloudEvaluation
+    ],
+    True,
+    SameTest -> MatchQ,
+    TestID   -> "withCloudEvaluation-SetsTrue"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*Conditional UI Association*)
 
 (* ::**************************************************************************************************************:: *)

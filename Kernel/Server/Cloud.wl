@@ -755,7 +755,9 @@ $cloudSupportPacletVersion = "2.1.40";
 (*agentToolsCloudVersion*)
 (* The Wolfram/AgentTools version installed in the connected cloud account, as a version string, or
    Missing["NotConnected"|"NotFound"]. Follows the getLLMKitInfo caching pattern (Utilities.wl): the
-   no-argument form dispatches on the live session identity, and only a successful lookup memoizes. *)
+   no-argument form dispatches on the live session identity, and only a successful lookup memoizes. A version
+   that is too old for the light payloads (see cloudAgentToolsAvailableQ) isn't memoized, since the account can
+   be updated during the session. *)
 agentToolsCloudVersion // beginDefinition;
 
 agentToolsCloudVersion[ ] := agentToolsCloudVersion[ $CloudConnected, $CloudUserID, $CloudBase ];
@@ -766,9 +768,10 @@ agentToolsCloudVersion[ False, _, _ ] := Missing[ "NotConnected" ];
 (* Connected: one CloudEvaluate lookup per (user, cloud base), memoized only when it yields a version. *)
 agentToolsCloudVersion[ True, user_, cloudBase_ ] :=
     With[ { version = fetchAgentToolsCloudVersion[ ] },
-        If[ StringQ @ version,
-            agentToolsCloudVersion[ True, user, cloudBase ] = version,
-            Missing[ "NotFound" ]
+        Which[
+            ! StringQ @ version, Missing[ "NotFound" ],
+            cloudAgentToolsAvailableQ @ version, agentToolsCloudVersion[ True, user, cloudBase ] = version,
+            True, version
         ]
     ];
 
