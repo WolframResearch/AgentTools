@@ -155,13 +155,14 @@ runCloudMCPServer // endDefinition;
 runCloudMCPServer0 // beginDefinition;
 
 runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
-    Module[ { headers, contentType, message, method, id, modern, error, uiEnabled, req },
+    Module[ { httpMethod, headers, contentType, message, method, id, modern, error, uiEnabled, req },
 
         (* 1. Method: only POST is dispatched. GET (the optional server->client SSE stream) and DELETE
               (session teardown) -- and anything else -- return 405: there is no server-side session to
               stream from or tear down in the stateless transport. *)
-        If[ ToUpperCase @ requestMethod @ request =!= "POST",
-            Throw[ HTTPResponse[ "", <| "StatusCode" -> 405, "Headers" -> { "Allow" -> "POST" } |> ], $cloudResponseTag ]
+        httpMethod = ToUpperCase @ requestMethod @ request;
+        If[ httpMethod =!= "POST",
+            Throw[ methodNotAllowedResponse @ httpMethod, $cloudResponseTag ]
         ];
 
         headers = requestHeaders @ request;
@@ -244,6 +245,27 @@ runCloudMCPServer0[ obj_MCPServerObject, request_ ] :=
     ];
 
 runCloudMCPServer0 // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsubsection::Closed:: *)
+(*methodNotAllowedResponse*)
+(* The 405 for a non-POST request. It never changes, so for GET and DELETE (the methods legacy MCP clients send) it
+   asks Wolfram Cloud to cache it for a week: later requests with the same method are then answered without
+   starting a kernel. The cache entry only matches requests with that method, so a POST is never answered from
+   it. The cloud still checks permissions before using the cache, and redeploying the endpoint clears it. *)
+methodNotAllowedResponse // beginDefinition;
+
+methodNotAllowedResponse[ method: "GET"|"DELETE" ] :=
+    HTTPResponse[
+        "",
+        <| "StatusCode" -> 405, "Headers" -> { "Allow" -> "POST" } |>,
+        CachePersistence -> { 604800, <| Method -> method |> }
+    ];
+
+methodNotAllowedResponse[ _String ] :=
+    HTTPResponse[ "", <| "StatusCode" -> 405, "Headers" -> { "Allow" -> "POST" } |> ];
+
+methodNotAllowedResponse // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsubsection::Closed:: *)

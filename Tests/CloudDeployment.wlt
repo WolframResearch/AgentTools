@@ -551,6 +551,29 @@ VerificationTest[
     TestID   -> "CloudHandler-Method-405-Allow"
 ]
 
+(* The GET and DELETE 405s ask Wolfram Cloud to cache them, keyed on the request method so that the cache never
+   answers a POST. Other methods are not cached. *)
+VerificationTest[
+    FilterRules[ Options @ cloudRun @ <| "Method" -> # |>, CachePersistence ] & /@ { "GET", "DELETE", "PUT" },
+    {
+        { CachePersistence -> { 604800, <| Method -> "GET" |> } },
+        { CachePersistence -> { 604800, <| Method -> "DELETE" |> } },
+        { }
+    },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-405-CachePersistence"
+]
+
+(* A POST response must never carry a cache hint: its result depends on the request body. *)
+VerificationTest[
+    With[ { resp = cloudRun @ <| "Body" -> cloudBody[ "tools/list", 1 ] |> },
+        { resp[ "StatusCode" ], FilterRules[ Options @ resp, CachePersistence ] }
+    ],
+    { 200, { } },
+    SameTest -> MatchQ,
+    TestID   -> "CloudHandler-Method-POST-NoCachePersistence"
+]
+
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
 (*Transport: Origin validation*)

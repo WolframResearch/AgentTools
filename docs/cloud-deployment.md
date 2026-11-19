@@ -429,7 +429,7 @@ returns an `HTTPResponse`:
 | Unknown method, legacy request | `200` with an in-band JSON-RPC `-32601` error. |
 | Unknown method, modern request (including `subscriptions/listen`) | `404` with a JSON-RPC `-32601` error. |
 | Internal / tool failure | `200` with an in-band JSON-RPC `-32603` error. |
-| `GET` / `DELETE` (no session to stream or tear down) | `405` with `Allow: POST`. |
+| `GET` / `DELETE` (no session to stream or tear down) | `405` with `Allow: POST`. Wolfram Cloud caches it for a week per method (`CachePersistence -> {604800, <\|Method -> "GET"\|>}`), so repeat requests don't start a kernel. Permissions are still checked first, and a redeploy clears the cache. |
 | Disallowed `Origin` (DNS-rebinding protection; absent `Origin` is allowed) | `403`. |
 | Unsupported protocol version: a modern request's `_meta` version, or the `MCP-Protocol-Version` header of any other non-`initialize` message (notifications included) | `400` with a JSON-RPC `-32022` (UnsupportedProtocolVersion) error listing the supported versions. |
 | Modern request with missing or invalid `_meta` fields (`protocolVersion`, `clientCapabilities`) | `400` with a JSON-RPC `-32602` error. |
