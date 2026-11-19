@@ -38,10 +38,11 @@ $wolframAlphaToolQueryHelp = "The query to send to Wolfram|Alpha.";
 $defaultMCPTools[ "WolframAlpha" ] := LLMTool @ <|
     "Name"        -> "WolframAlpha",
     "DisplayName" -> "Wolfram|Alpha",
+    (* Deliberately read-only even for MCP Apps clients: the notebook deployed for the viewer is only a temporary
+       rendering of the result, removed within about a day (see UIResources.wl). *)
     "Annotations" -> <|
         "readOnlyHint"    -> True,
         "destructiveHint" -> False,
-        "idempotentHint"  -> False,
         "openWorldHint"   -> False
     |>,
     "Description" -> $wolframAlphaToolDescription,

@@ -300,14 +300,30 @@ Notes:
 ## Custom Handlers
 
 `RunCloudMCPServer[obj]` handles the current request (read with `HTTPRequestData`) and returns an
-`HTTPResponse`, so you can deploy your own expression that calls it, for example to run your own
-initialization or logging around each request, or to use your own permissions:
+`HTTPResponse`, so you can deploy your own expression that calls it, for example to log each request.
+Setup alone doesn't need a custom handler: a server's [`Initialization`](servers.md#server-initialization)
+runs on every request of an endpoint deployed with `CloudDeployMCPServer`, which also takes your own
+`Permissions`.
 
 ```wl
+reverseText[ text_String ] := StringReverse @ text;
+
+(* Defined with := so that CloudDeploy includes reverseText (see below): *)
+myTool := LLMTool[ <|
+    "Name"        -> "ReverseText",
+    "Description" -> "Reverses the given text.",
+    "Function"    -> (reverseText[ #text ] &),
+    "Parameters"  -> {
+        "text" -> <| "Interpreter" -> "String", "Help" -> "The text to reverse", "Required" -> True |>
+    }
+|> ];
+
+key = CreateUUID[ ];
+
 CloudDeploy[
     Delayed[
         Needs[ "Wolfram`AgentTools`" -> None ];
-        initialize[ ];
+        logRequest[ ];
         Wolfram`AgentTools`RunCloudMCPServer @ Wolfram`AgentTools`MCPServerObject @ <|
             "Name"          -> "MyServer",
             "ServerVersion" -> "1.0.0",
@@ -321,9 +337,11 @@ CloudDeploy[
 ```
 
 Nothing from AgentTools is embedded in such a deployment, so it needs a current `Wolfram/AgentTools` installed in
-the cloud account (see [Server Embedding & the Cloud Paclet](#server-embedding--the-cloud-paclet)), and the
-definitions of `initialize` and `myTool` must be included in the deployment (`CloudDeploy` includes them by
-default).
+the cloud account (see [Server Embedding & the Cloud Paclet](#server-embedding--the-cloud-paclet)).
+`CloudDeploy` includes your own definitions, such as `logRequest` and `myTool`, but it can't see inside an
+`LLMTool` that has already been evaluated. So define tools with `:=`, as above, or write them inline: with
+`myTool = LLMTool[ … ]`, `reverseText` would be missing in the cloud, and calls to the tool would return
+`reverseText[ … ]` unevaluated.
 
 ## Stateless Evaluation Model
 

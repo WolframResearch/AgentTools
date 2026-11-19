@@ -97,7 +97,6 @@ $defaultMCPTools[ "WolframContext" ] := LLMTool @ <|
     "Annotations"    -> <|
         "readOnlyHint"    -> True,
         "destructiveHint" -> False,
-        "idempotentHint"  -> False,
         "openWorldHint"   -> False
     |>,
     "Description"    -> $wolframContextToolDescription,
@@ -131,7 +130,6 @@ $defaultMCPTools[ "WolframAlphaContext" ] := LLMTool @ <|
     "Annotations"    -> <|
         "readOnlyHint"    -> True,
         "destructiveHint" -> False,
-        "idempotentHint"  -> False,
         "openWorldHint"   -> False
     |>,
     "Description"    -> $waContextToolDescription,
@@ -165,7 +163,6 @@ $defaultMCPTools[ "WolframLanguageContext" ] := LLMTool @ <|
     "Annotations"    -> <|
         "readOnlyHint"    -> True,
         "destructiveHint" -> False,
-        "idempotentHint"  -> False,
         "openWorldHint"   -> False
     |>,
     "Description"    -> $wlContextToolDescription,

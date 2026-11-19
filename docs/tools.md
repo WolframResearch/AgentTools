@@ -27,7 +27,7 @@ The tools system provides:
 |----------|------|----------|-------------|
 | `"Name"` | String | Yes | Unique identifier for the tool |
 | `"DisplayName"` | String | No | Human-readable display name |
-| `"Annotations"` | Association | No | [Tool annotations](https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md#tool-annotations) such as `"readOnlyHint"`, included in the tool's `annotations` in `tools/list` along with the title from `"DisplayName"`. The spec makes every hint optional, but some clients (e.g. ChatGPT connectors) require `"readOnlyHint"`, `"destructiveHint"`, `"idempotentHint"`, and `"openWorldHint"`, so annotated built-in tools give all four |
+| `"Annotations"` | Association | No | [Tool annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) such as `"readOnlyHint"`, included in the tool's `annotations` in `tools/list` along with the title from `"DisplayName"`. The spec makes every hint optional, but OpenAI requires `"readOnlyHint"`, `"destructiveHint"`, and `"openWorldHint"` on every tool of an app submitted to ChatGPT, so annotated built-in tools give these three |
 | `"Description"` | String | Yes | Detailed description of what the tool does |
 | `"Function"` | Symbol | Yes | The Wolfram Language function to call |
 | `"Parameters"` | List | Yes | Parameter specifications (see below) |

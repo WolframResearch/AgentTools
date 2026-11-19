@@ -1086,7 +1086,6 @@ VerificationTest[
         "title"           -> "Wolfram|Alpha",
         "readOnlyHint"    -> True,
         "destructiveHint" -> False,
-        "idempotentHint"  -> False,
         "openWorldHint"   -> False
     |>,
     SameTest -> MatchQ,
