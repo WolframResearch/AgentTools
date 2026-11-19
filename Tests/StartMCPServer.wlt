@@ -1082,7 +1082,13 @@ VerificationTest[
 
 VerificationTest[
     Wolfram`AgentTools`Server`Shared`Private`createMCPToolData[ $DefaultMCPTools[ "WolframAlpha" ] ][ "annotations" ],
-    <| "title" -> "Wolfram|Alpha", "readOnlyHint" -> True |>,
+    <|
+        "title"           -> "Wolfram|Alpha",
+        "readOnlyHint"    -> True,
+        "destructiveHint" -> False,
+        "idempotentHint"  -> False,
+        "openWorldHint"   -> False
+    |>,
     SameTest -> MatchQ,
     TestID   -> "CreateMCPToolData-BuiltInAnnotations"
 ]

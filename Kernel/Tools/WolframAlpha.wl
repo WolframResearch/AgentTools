@@ -38,7 +38,12 @@ $wolframAlphaToolQueryHelp = "The query to send to Wolfram|Alpha.";
 $defaultMCPTools[ "WolframAlpha" ] := LLMTool @ <|
     "Name"        -> "WolframAlpha",
     "DisplayName" -> "Wolfram|Alpha",
-    "Annotations" -> <| "readOnlyHint" -> True |>,
+    "Annotations" -> <|
+        "readOnlyHint"    -> True,
+        "destructiveHint" -> False,
+        "idempotentHint"  -> False,
+        "openWorldHint"   -> False
+    |>,
     "Description" -> $wolframAlphaToolDescription,
     "Function"    -> wolframAlphaToolEvaluate,
     "Options"     -> { },
