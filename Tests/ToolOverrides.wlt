@@ -57,6 +57,32 @@ VerificationTest[
 
 (* ::**************************************************************************************************************:: *)
 (* ::Section::Closed:: *)
+(*$MCPClientSupportsUI*)
+
+(* It follows the client state that the transports set, and is False outside a server session. *)
+VerificationTest[
+    {
+        $MCPClientSupportsUI,
+        Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = True }, $MCPClientSupportsUI ],
+        Block[ { Wolfram`AgentTools`Common`$clientSupportsUI = False }, $MCPClientSupportsUI ]
+    },
+    { False, True, False },
+    SameTest -> MatchQ,
+    TestID   -> "MCPClientSupportsUI-FollowsClientState"
+]
+
+VerificationTest[
+    {
+        MemberQ[ Wolfram`AgentTools`$AgentToolsProtectedNames, "Wolfram`AgentTools`$MCPClientSupportsUI" ],
+        MemberQ[ Attributes @ $MCPClientSupportsUI, Protected ]
+    },
+    { True, True },
+    SameTest -> MatchQ,
+    TestID   -> "MCPClientSupportsUI-Exported-Protected"
+]
+
+(* ::**************************************************************************************************************:: *)
+(* ::Section::Closed:: *)
 (*applyToolOverrides*)
 
 (* ::**************************************************************************************************************:: *)

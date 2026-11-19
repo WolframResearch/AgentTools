@@ -28,8 +28,8 @@ same directory-bundle deployment as an exported function — its first argument 
 `MCPServerObject`, so it also accepts a server name or association directly. `CloudDeployMCPServer` and
 `CloudDeployMCPServerBundle` are exported by the AgentTools paclet, so once the paclet is loaded you can
 call them unqualified. A further exported symbol, `RunCloudMCPServer`, is the HTTP request handler that
-runs *inside* the deployed endpoint — you do not call it directly, but it is exported so the deployed
-payload can reference it.
+runs *inside* the deployed endpoint. It is exported so the deployed payload can reference it, and so you
+can also call it from your own deployed expression (see [Custom Handlers](#custom-handlers)).
 
 > **Security note.** A deployed server exposes exactly the tools in its server object, including
 > code-execution tools such as `WolframLanguageEvaluator`. There is no built-in tool filtering or
@@ -296,6 +296,52 @@ Notes:
   current: `CloudEvaluate @ PacletInstall[ "Wolfram/AgentTools", UpdatePacletSites -> True ]`. For
   example, a light deployment supports protocol revision `2026-07-28` only once the cloud-installed
   paclet does. Until then, clients that support both eras fall back to the legacy protocol.
+
+## Custom Handlers
+
+`RunCloudMCPServer[obj]` handles the current request (read with `HTTPRequestData`) and returns an
+`HTTPResponse`, so you can deploy your own expression that calls it, for example to log each request.
+Setup alone doesn't need a custom handler: a server's [`Initialization`](servers.md#server-initialization)
+runs on every request of an endpoint deployed with `CloudDeployMCPServer`, which also takes your own
+`Permissions`.
+
+```wl
+reverseText[ text_String ] := StringReverse @ text;
+
+(* Defined with := so that CloudDeploy includes reverseText (see below): *)
+myTool := LLMTool[ <|
+    "Name"        -> "ReverseText",
+    "Description" -> "Reverses the given text.",
+    "Function"    -> (reverseText[ #text ] &),
+    "Parameters"  -> {
+        "text" -> <| "Interpreter" -> "String", "Help" -> "The text to reverse", "Required" -> True |>
+    }
+|> ];
+
+key = CreateUUID[ ];
+
+CloudDeploy[
+    Delayed[
+        Needs[ "Wolfram`AgentTools`" -> None ];
+        logRequest[ ];
+        Wolfram`AgentTools`RunCloudMCPServer @ Wolfram`AgentTools`MCPServerObject @ <|
+            "Name"          -> "MyServer",
+            "ServerVersion" -> "1.0.0",
+            "Location"      -> None,
+            "LLMEvaluator"  -> <| "Tools" -> { "WolframAlpha", myTool } |>
+        |>
+    ],
+    "MyServer/mcp",
+    Permissions -> { PermissionsKey[ key ] -> "Execute" }
+]
+```
+
+Nothing from AgentTools is embedded in such a deployment, so it needs a current `Wolfram/AgentTools` installed in
+the cloud account (see [Server Embedding & the Cloud Paclet](#server-embedding--the-cloud-paclet)).
+`CloudDeploy` includes your own definitions, such as `logRequest` and `myTool`, but it can't see inside an
+`LLMTool` that has already been evaluated. So define tools with `:=`, as above, or write them inline: with
+`myTool = LLMTool[ … ]`, `reverseText` would be missing in the cloud, and calls to the tool would return
+`reverseText[ … ]` unevaluated.
 
 ## Stateless Evaluation Model
 

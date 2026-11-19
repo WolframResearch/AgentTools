@@ -27,6 +27,7 @@ The tools system provides:
 |----------|------|----------|-------------|
 | `"Name"` | String | Yes | Unique identifier for the tool |
 | `"DisplayName"` | String | No | Human-readable display name |
+| `"Annotations"` | Association | No | [Tool annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) such as `"readOnlyHint"`, included in the tool's `annotations` in `tools/list` along with the title from `"DisplayName"`. The spec makes every hint optional, but OpenAI requires `"readOnlyHint"`, `"destructiveHint"`, and `"openWorldHint"` on every tool of an app submitted to ChatGPT, so annotated built-in tools give these three |
 | `"Description"` | String | Yes | Detailed description of what the tool does |
 | `"Function"` | Symbol | Yes | The Wolfram Language function to call |
 | `"Parameters"` | List | Yes | Parameter specifications (see below) |
@@ -406,6 +407,8 @@ $writeNotebookCloudOverrides = <|
     "Parameters"  -> { (* path, permissions, overwrite, markdown *) }
 |>;
 ```
+
+A third exported symbol describes the client: `$MCPClientSupportsUI` is `True` while handling a request from a client that supports [MCP Apps](mcp-apps.md) (when MCP Apps are enabled on the server), and `False` otherwise. Unlike the two above, it can change from request to request, so tools read it when they are evaluated rather than through `"Overrides"`. For example, a custom tool that replaces a built-in UI tool (and so gets that tool's viewer, since viewers are attached by tool name) can use it to decide whether to deploy a notebook for the viewer.
 
 Overrides replace whole properties (e.g. the entire `"Parameters"` list); `<| |>` or `None` leaves the tool unchanged. They are applied by `initializeServerState` (both transports) and by `serverToolListData` (the cloud landing page's `/api/info`), not when a tool is evaluated directly, so `$DefaultMCPTools["WriteNotebook"]` always holds the local definition.
 
