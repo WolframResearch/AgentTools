@@ -571,7 +571,11 @@ is not used (messages are still suppressed from the response body).
 1. **Method.** The endpoint handles `POST`. `GET` (the optional server→client SSE stream) and
    `DELETE` (session teardown) return **`405 Method Not Allowed`** — there is no server-side session
    state to stream from or tear down, so both are no-ops the spec permits a server to decline. (The
-   self-describing session ID needs no explicit teardown: it lives only in the client's copy.)
+   self-describing session ID needs no explicit teardown: it lives only in the client's copy.) These
+   405s never change, so they carry `CachePersistence -> {604800, <|Method -> "GET"|>}` (or `"DELETE"`):
+   Wolfram Cloud answers repeat requests with that method from its cache without starting a kernel.
+   The cache entry never matches a `POST`, the cloud checks permissions before using it, and a redeploy
+   clears it.
 2. **Origin validation.** If an `Origin` header is present and not allowed ⇒ **`403 Forbidden`**
    (DNS-rebinding protection). Absent `Origin` (typical for server-to-server LLM providers) is
    allowed.
