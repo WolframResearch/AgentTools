@@ -1351,6 +1351,24 @@ VerificationTest[
     TestID   -> "AgentToolsCloudVersion-NoCacheOnFailure"
 ]
 
+(* A version that is too old for the light payloads is returned but NOT cached, so updating the paclet in the
+   cloud account mid-session is picked up by the next deploy. *)
+VerificationTest[
+    Module[ { count = 0 },
+        Block[ { Wolfram`AgentTools`Server`Cloud`Private`fetchAgentToolsCloudVersion },
+            Wolfram`AgentTools`Server`Cloud`Private`fetchAgentToolsCloudVersion[ ] := ( count++; "0.0.1" );
+            {
+                Wolfram`AgentTools`Server`Cloud`Private`agentToolsCloudVersion[ True, "test-user-3", "test-base-3" ],
+                Wolfram`AgentTools`Server`Cloud`Private`agentToolsCloudVersion[ True, "test-user-3", "test-base-3" ],
+                count
+            }
+        ]
+    ],
+    { "0.0.1", "0.0.1", 2 },
+    SameTest -> MatchQ,
+    TestID   -> "AgentToolsCloudVersion-NoCacheWhenTooOld"
+]
+
 (* Version gate: the floor itself and anything newer pass; anything older or Missing fails closed. The
    "2.1.8" case guards the numeric (not lexicographic) component compare: 40 > 8. *)
 VerificationTest[

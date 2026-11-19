@@ -76,6 +76,8 @@ wolframAlphaToolEvaluate[ as_ ] := Quiet[
 
 wolframAlphaToolEvaluate[ as_, result_String ] := extractWolframAlphaImages @ result;
 wolframAlphaToolEvaluate[ as_, KeyValuePattern[ "String" -> result_String ] ] := extractWolframAlphaImages @ result;
+(* E.g. the query could not be sent (no Wolfram|Alpha AppID); evaluateTool reports it as a tool error: *)
+wolframAlphaToolEvaluate[ as_, failure_? FailureQ ] := failure;
 wolframAlphaToolEvaluate // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
@@ -89,11 +91,9 @@ wolframAlphaToolEvaluateUI[ as_ ] :=
         result = Block[
             {
                 (* Call Chatbook with $ChatNotebookEvaluation = True to get rich result *)
-                cb`$ChatNotebookEvaluation = True,
-                (* Set $CloudEvaluation to True since we're creating a notebook for the cloud *)
-                $CloudEvaluation = True
+                cb`$ChatNotebookEvaluation = True
             },
-            cb`$DefaultTools[ "WolframAlpha" ][ as ]
+            withCloudEvaluation @ cb`$DefaultTools[ "WolframAlpha" ][ as ]
         ];
 
         (* Try to create UI-enhanced result with cloud notebook *)
@@ -125,11 +125,9 @@ makeUIResult[ as_, KeyValuePattern[ { "Result" -> waResult_, "String" -> stringR
         formatted = Block[
             {
                 (* Format WA pods into notebook cells with FoldPods=True for compact display *)
-                cb`$DefaultToolOptions = <| cb`$DefaultToolOptions, "WolframAlpha" -> <| "FoldPods" -> True |> |>,
-                (* Set $CloudEvaluation to True since we're creating a notebook for the cloud *)
-                $CloudEvaluation = True
+                cb`$DefaultToolOptions = <| cb`$DefaultToolOptions, "WolframAlpha" -> <| "FoldPods" -> True |> |>
             },
-            Confirm[ cb`FormatWolframAlphaPods @ waResult, "Formatted" ]
+            withCloudEvaluation @ Confirm[ cb`FormatWolframAlphaPods @ waResult, "Formatted" ]
         ];
 
         nb = Notebook @ {
@@ -158,7 +156,21 @@ makeUIResult[ as_, KeyValuePattern[ { "Result" -> waResult_, "String" -> stringR
     throwInternalFailure
 ];
 
+(* No result to show; wolframAlphaToolEvaluateUI falls back to wolframAlphaToolEvaluate, which returns the failure: *)
+makeUIResult[ as_, failure_? FailureQ ] := failure;
+
 makeUIResult // endDefinition;
+
+(* ::**************************************************************************************************************:: *)
+(* ::Subsection::Closed:: *)
+(*withCloudEvaluation*)
+(* Evaluates with $CloudEvaluation set to True, since the results are formatted for a cloud notebook. Cloud kernels
+   already have it set, and they can't Block it since it's Locked there. *)
+withCloudEvaluation // beginDefinition;
+withCloudEvaluation // Attributes = { HoldFirst };
+withCloudEvaluation[ eval_ ] /; TrueQ @ $CloudEvaluation := eval;
+withCloudEvaluation[ eval_ ] := Block[ { $CloudEvaluation = True }, eval ];
+withCloudEvaluation // endDefinition;
 
 (* ::**************************************************************************************************************:: *)
 (* ::Subsection::Closed:: *)
