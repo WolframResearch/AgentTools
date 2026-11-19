@@ -6,7 +6,7 @@
 	},
 	"metadata":{
 		"description":"A collection of Wolfram agent skills",
-		"version":"2.2.18"
+		"version":"2.2.25"
 	},
 	"plugins":[
 		{
@@ -18,7 +18,8 @@
 				"./wolfram-language",
 				"./wolfram-debugging",
 				"./wolfram-notebooks",
-				"./wolfram-paclets"
+				"./wolfram-paclets",
+				"./wolfram-agent-tools"
 			]
 		},
 		{
